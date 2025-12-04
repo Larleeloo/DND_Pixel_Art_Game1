@@ -35,28 +35,54 @@ class GameScene implements Scene {
 
         System.out.println("GameScene: Initializing...");
 
-        entityManager = new EntityManager();
-        buttons = new ArrayList<>();
-        triggers = new ArrayList<>();
+        try {
+            entityManager = new EntityManager();
+            buttons = new ArrayList<>();
+            triggers = new ArrayList<>();
 
-        // Load level data if we have a path
-        if (levelPath != null && levelData == null) {
-            levelData = LevelLoader.load(levelPath);
+            // Load level data if we have a path
+            if (levelPath != null && levelData == null) {
+                System.out.println("GameScene: Loading level from: " + levelPath);
+                levelData = LevelLoader.load(levelPath);
+            }
+
+            if (levelData == null) {
+                System.err.println("GameScene: No level data! Creating default level.");
+                levelData = createDefaultLevel();
+            }
+
+            // Build the level
+            buildLevel();
+
+            // Create UI buttons
+            createUI();
+
+            initialized = true;
+            System.out.println("GameScene: Initialized level '" + levelData.name + "'");
+        } catch (Exception e) {
+            System.err.println("GameScene: Error during initialization: " + e.getMessage());
+            e.printStackTrace();
+
+            // Ensure we have at least a default level
+            if (levelData == null) {
+                System.err.println("GameScene: Creating fallback default level due to error");
+                try {
+                    levelData = createDefaultLevel();
+                } catch (Exception fallbackError) {
+                    System.err.println("GameScene: Even default level creation failed!");
+                    fallbackError.printStackTrace();
+                }
+            }
+
+            // Initialize minimal required components if they failed
+            if (entityManager == null) entityManager = new EntityManager();
+            if (buttons == null) buttons = new ArrayList<>();
+            if (triggers == null) triggers = new ArrayList<>();
+
+            // Mark as initialized anyway so we can at least draw something
+            initialized = true;
+            System.err.println("GameScene: Initialized with errors - may not display correctly");
         }
-
-        if (levelData == null) {
-            System.err.println("GameScene: No level data! Creating default level.");
-            levelData = createDefaultLevel();
-        }
-
-        // Build the level
-        buildLevel();
-
-        // Create UI buttons
-        createUI();
-
-        initialized = true;
-        System.out.println("GameScene: Initialized level '" + levelData.name + "'");
     }
 
     /**
@@ -184,7 +210,18 @@ class GameScene implements Scene {
 
     @Override
     public void draw(Graphics g) {
-        if (!initialized) return;
+        if (!initialized) {
+            System.err.println("GameScene: Cannot draw - scene not initialized");
+            return;
+        }
+
+        if (levelData == null) {
+            System.err.println("GameScene: Cannot draw - levelData is null");
+            g.setColor(Color.RED);
+            g.setFont(new Font("Arial", Font.BOLD, 24));
+            g.drawString("ERROR: Level data failed to load!", 50, 50);
+            return;
+        }
 
         Graphics2D g2d = (Graphics2D) g;
 
@@ -198,17 +235,22 @@ class GameScene implements Scene {
         g2d.drawLine(0, levelData.groundY, GamePanel.SCREEN_WIDTH, levelData.groundY);
 
         // Draw entities
-        entityManager.drawAll(g);
+        if (entityManager != null) {
+            entityManager.drawAll(g);
+        }
 
         // Draw UI buttons
-        for (UIButton button : buttons) {
-            button.draw(g);
+        if (buttons != null) {
+            for (UIButton button : buttons) {
+                button.draw(g);
+            }
         }
 
         // Draw level name
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
-        g.drawString(levelData.name, 10, 60);
+        String name = levelData.name != null ? levelData.name : "Unknown Level";
+        g.drawString(name, 10, 60);
 
         // Draw controls hint
         g.setFont(new Font("Arial", Font.BOLD, 16));
