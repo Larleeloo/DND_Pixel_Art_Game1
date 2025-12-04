@@ -13,6 +13,7 @@ class GamePanel extends JPanel implements Runnable {
     private EntityManager entityManager;
     private InputManager inputManager;
     private ArrayList<UIButton> buttons;
+    private AudioManager audioManager;
 
     public static final int SCREEN_WIDTH = 1920;  // Landscape width
     public static final int SCREEN_HEIGHT = 1080; // Landscape height
@@ -31,8 +32,21 @@ class GamePanel extends JPanel implements Runnable {
         entityManager = new EntityManager();
         inputManager = new InputManager();
         buttons = new ArrayList<>();
+        audioManager = new AudioManager();
 
         addKeyListener(inputManager);
+
+        // Load audio files
+        // Background music (use .wav files for best compatibility)
+        audioManager.loadMusic("assets/music.wav");
+
+        // Sound effects
+        audioManager.loadSound("jump", "assets/jump.wav");
+        audioManager.loadSound("collect", "assets/collect.wav");
+        audioManager.loadSound("drop", "assets/drop.wav");
+
+        // Start background music
+        audioManager.playMusic();
 
         // Add mouse listener for buttons
         MouseAdapter mouseAdapter = new MouseAdapter() {
@@ -131,12 +145,15 @@ class GamePanel extends JPanel implements Runnable {
         entityManager.addEntity(new ItemEntity(1350, 350, "assets/obstacle.png", "Trophy", "special"));
 
         // Start player on the ground
-        entityManager.addEntity(new PlayerEntity(100, 620, "assets/player.png"));
+        PlayerEntity player = new PlayerEntity(100, 620, "assets/player.png");
+        player.setAudioManager(audioManager);
+        entityManager.addEntity(player);
 
         // Create UI buttons
         // Exit button in top right corner
         UIButton exitButton = new UIButton(SCREEN_WIDTH - 150, 20, 120, 50, "Exit", () -> {
             System.out.println("Exit button clicked!");
+            audioManager.dispose();
             System.exit(0);
         });
         exitButton.setColors(
@@ -145,6 +162,17 @@ class GamePanel extends JPanel implements Runnable {
                 Color.WHITE                    // Text: White
         );
         buttons.add(exitButton);
+
+        // Music toggle button
+        UIButton musicButton = new UIButton(SCREEN_WIDTH - 290, 20, 120, 50, "Music", () -> {
+            audioManager.toggleMusic();
+        });
+        musicButton.setColors(
+                new Color(50, 100, 200, 200),  // Normal: Blue
+                new Color(80, 130, 255, 230),  // Hover: Brighter blue
+                Color.WHITE                     // Text: White
+        );
+        buttons.add(musicButton);
 
         System.out.println("GamePanel initialized. Ground at y=" + GROUND_Y);
     }
@@ -194,6 +222,10 @@ class GamePanel extends JPanel implements Runnable {
     private PlayerEntity getPlayer() {
         // Helper method to find the player
         return entityManager.getPlayer();
+    }
+
+    public AudioManager getAudioManager() {
+        return audioManager;
     }
 
     @Override

@@ -13,6 +13,7 @@ class PlayerEntity extends SpriteEntity {
     private int airTime = 0; // Track how long we've been in the air
 
     private Inventory inventory;
+    private AudioManager audioManager; // Reference to audio manager
 
     // Jump animation (optional GIF)
     private ImageIcon jumpAnimatedIcon;
@@ -27,12 +28,17 @@ class PlayerEntity extends SpriteEntity {
 
         // Initialize inventory with 10 slots
         this.inventory = new Inventory(10);
+        this.audioManager = null; // Will be set later
 
         // Optional jump animation
         tryLoadJumpSprite(spritePath.replace(".png", "_jump.gif"));
 
         System.out.println("Player created at: x=" + x + " y=" + y + " width=" + width + " height=" + height);
         System.out.println("Ground level set at: " + GROUND_Y);
+    }
+
+    public void setAudioManager(AudioManager audioManager) {
+        this.audioManager = audioManager;
     }
 
     private void tryLoadJumpSprite(String path) {
@@ -100,6 +106,11 @@ class PlayerEntity extends SpriteEntity {
                     item.collect();
                     boolean added = inventory.addItem(item);
                     System.out.println("Item added to inventory: " + added);
+
+                    // Play collect sound
+                    if (audioManager != null) {
+                        audioManager.playSound("collect");
+                    }
                 }
             }
         }
@@ -108,7 +119,11 @@ class PlayerEntity extends SpriteEntity {
         if (input.isKeyPressed(' ') && onGround) {
             velY = jumpStrength;
             onGround = false;
-            System.out.println("Jump! velY=" + velY);
+
+            // Play jump sound
+            if (audioManager != null) {
+                audioManager.playSound("jump");
+            }
         }
 
         // Apply gravity
@@ -210,5 +225,10 @@ class PlayerEntity extends SpriteEntity {
         item.x = x + dropOffset;
         item.y = y + (height / 2); // Drop at player's mid-height
         System.out.println("Dropped item: " + item.getItemName() + " at (" + item.x + ", " + item.y + ")");
+
+        // Play drop sound
+        if (audioManager != null) {
+            audioManager.playSound("drop");
+        }
     }
 }
