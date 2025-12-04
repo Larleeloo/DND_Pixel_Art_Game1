@@ -14,6 +14,7 @@ class SceneManager {
     private Scene currentScene;
     private Scene nextScene;
     private boolean transitioning;
+    private boolean fadeOutComplete;  // Track whether we're in fade-out or fade-in phase
     private float transitionAlpha;
     private float transitionSpeed;
     private AudioManager audioManager;
@@ -26,6 +27,7 @@ class SceneManager {
     private SceneManager() {
         scenes = new HashMap<>();
         transitioning = false;
+        fadeOutComplete = false;
         transitionAlpha = 0;
         transitionSpeed = 0.05f;
         transitionType = TRANSITION_FADE;
@@ -103,6 +105,7 @@ class SceneManager {
             // Start transition
             nextScene = scene;
             transitioning = true;
+            fadeOutComplete = false;
             transitionAlpha = 0;
             transitionType = transition;
             System.out.println("SceneManager: Starting transition to scene '" + name + "'");
@@ -162,48 +165,53 @@ class SceneManager {
      */
     private void updateTransition() {
         if (transitionType == TRANSITION_FADE) {
-            if (transitionAlpha < 1.0f && currentScene != null) {
-                // Fade out current scene
-                transitionAlpha += transitionSpeed;
-                if (transitionAlpha >= 1.0f) {
-                    transitionAlpha = 1.0f;
-                    // Switch scenes at peak of fade
-                    System.out.println("SceneManager: Transition at peak fade, switching scenes...");
-                    if (currentScene != null) {
+            if (!fadeOutComplete) {
+                // Phase 1: Fade out current scene
+                if (currentScene != null) {
+                    transitionAlpha += transitionSpeed;
+                    if (transitionAlpha >= 1.0f) {
+                        transitionAlpha = 1.0f;
+                        fadeOutComplete = true;
+                        // Switch scenes at peak of fade
+                        System.out.println("SceneManager: Transition at peak fade, switching scenes...");
                         System.out.println("SceneManager: Disposing old scene: " + currentScene.getName());
                         currentScene.dispose();
+                        currentScene = nextScene;
+                        if (currentScene != null) {
+                            System.out.println("SceneManager: Initializing new scene: " + currentScene.getName());
+                            currentScene.init();
+                        } else {
+                            System.err.println("SceneManager: ERROR - nextScene is null during transition!");
+                            transitioning = false;
+                            fadeOutComplete = false;
+                            return;
+                        }
+                        nextScene = null;
+                        System.out.println("SceneManager: Scene switch complete, starting fade in");
                     }
-                    currentScene = nextScene;
-                    if (currentScene != null) {
-                        System.out.println("SceneManager: Initializing new scene: " + currentScene.getName());
+                } else {
+                    // No current scene, just init the new one directly
+                    if (nextScene != null) {
+                        System.out.println("SceneManager: No current scene, initializing new one directly");
+                        currentScene = nextScene;
                         currentScene.init();
+                        nextScene = null;
+                        fadeOutComplete = true;
+                        transitionAlpha = 1.0f;
                     } else {
-                        System.err.println("SceneManager: ERROR - nextScene is null during transition!");
+                        System.err.println("SceneManager: ERROR - No current scene and no next scene!");
                         transitioning = false;
-                        return;
+                        fadeOutComplete = false;
                     }
-                    nextScene = null;
-                    System.out.println("SceneManager: Scene switch complete, starting fade in");
                 }
-            } else if (currentScene != null) {
-                // Fade in new scene
+            } else {
+                // Phase 2: Fade in new scene
                 transitionAlpha -= transitionSpeed;
                 if (transitionAlpha <= 0) {
                     transitionAlpha = 0;
                     transitioning = false;
+                    fadeOutComplete = false;
                     System.out.println("SceneManager: Transition complete - now showing " + currentScene.getName());
-                }
-            } else {
-                // No current scene, just init the new one
-                if (nextScene != null) {
-                    System.out.println("SceneManager: No current scene, initializing new one directly");
-                    currentScene = nextScene;
-                    currentScene.init();
-                    nextScene = null;
-                    transitioning = false;
-                } else {
-                    System.err.println("SceneManager: ERROR - No current scene and no next scene!");
-                    transitioning = false;
                 }
             }
         }
