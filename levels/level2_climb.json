@@ -1,0 +1,36 @@
+{
+  "name": "The Ascent",
+  "description": "Climb the platforms to reach the treasure",
+  "backgroundPath": "assets/background.png",
+  "musicPath": "assets/music.wav",
+  "playerSpawnX": 100,
+  "playerSpawnY": 620,
+  "playerSpritePath": "assets/player.png",
+  "levelWidth": 1920,
+  "levelHeight": 1080,
+  "groundY": 720,
+  "nextLevel": "levels/level3_challenge.json",
+  "platforms": [
+    { "x": 250, "y": 670, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 400, "y": 630, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 550, "y": 590, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 700, "y": 550, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 850, "y": 510, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1000, "y": 470, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1150, "y": 430, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1300, "y": 390, "spritePath": "assets/obstacle.png", "solid": true }
+  ],
+  "items": [
+    { "x": 200, "y": 650, "spritePath": "assets/obstacle.png", "itemName": "Key", "itemType": "key" },
+    { "x": 350, "y": 620, "spritePath": "assets/obstacle.png", "itemName": "Gem", "itemType": "collectible" },
+    { "x": 500, "y": 580, "spritePath": "assets/obstacle.png", "itemName": "Coin", "itemType": "collectible" },
+    { "x": 650, "y": 540, "spritePath": "assets/obstacle.png", "itemName": "Star", "itemType": "collectible" },
+    { "x": 800, "y": 500, "spritePath": "assets/obstacle.png", "itemName": "Crystal", "itemType": "collectible" },
+    { "x": 950, "y": 460, "spritePath": "assets/obstacle.png", "itemName": "Ruby", "itemType": "collectible" },
+    { "x": 1100, "y": 420, "spritePath": "assets/obstacle.png", "itemName": "Diamond", "itemType": "collectible" },
+    { "x": 1350, "y": 350, "spritePath": "assets/obstacle.png", "itemName": "Trophy", "itemType": "special" }
+  ],
+  "triggers": [
+    { "x": 1350, "y": 320, "width": 100, "height": 80, "type": "level_transition", "target": "levels/level3_challenge.json" }
+  ]
+}

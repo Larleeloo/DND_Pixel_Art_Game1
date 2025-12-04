@@ -1,0 +1,34 @@
+{
+  "name": "The Challenge",
+  "description": "A more difficult platforming challenge",
+  "backgroundPath": "assets/background.png",
+  "musicPath": "assets/music.wav",
+  "playerSpawnX": 100,
+  "playerSpawnY": 620,
+  "playerSpritePath": "assets/player.png",
+  "levelWidth": 1920,
+  "levelHeight": 1080,
+  "groundY": 720,
+  "platforms": [
+    { "x": 200, "y": 650, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 350, "y": 580, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 500, "y": 650, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 650, "y": 520, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 800, "y": 600, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 950, "y": 450, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1100, "y": 550, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1250, "y": 400, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1400, "y": 500, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1550, "y": 350, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 1700, "y": 450, "spritePath": "assets/obstacle.png", "solid": true }
+  ],
+  "items": [
+    { "x": 300, "y": 560, "spritePath": "assets/obstacle.png", "itemName": "Gold Coin", "itemType": "collectible" },
+    { "x": 600, "y": 500, "spritePath": "assets/obstacle.png", "itemName": "Silver Key", "itemType": "key" },
+    { "x": 900, "y": 430, "spritePath": "assets/obstacle.png", "itemName": "Emerald", "itemType": "collectible" },
+    { "x": 1200, "y": 380, "spritePath": "assets/obstacle.png", "itemName": "Sapphire", "itemType": "collectible" },
+    { "x": 1500, "y": 330, "spritePath": "assets/obstacle.png", "itemName": "Gold Key", "itemType": "key" },
+    { "x": 1750, "y": 400, "spritePath": "assets/obstacle.png", "itemName": "Crown", "itemType": "special" }
+  ],
+  "triggers": []
+}
