@@ -21,10 +21,10 @@
     { "x": 1300, "y": 670, "spritePath": "assets/obstacle.png", "solid": true }
   ],
   "items": [
-    { "x": 300, "y": 620, "spritePath": "assets/obstacle.png", "itemName": "First Coin", "itemType": "collectible" },
-    { "x": 500, "y": 620, "spritePath": "assets/obstacle.png", "itemName": "Second Coin", "itemType": "collectible" },
-    { "x": 700, "y": 620, "spritePath": "assets/obstacle.png", "itemName": "Third Coin", "itemType": "collectible" },
-    { "x": 900, "y": 620, "spritePath": "assets/obstacle.png", "itemName": "Key", "itemType": "key" }
+    { "x": 300, "y": 620, "spritePath": "assets/player_jump.gif", "itemName": "First Coin", "itemType": "collectible" },
+    { "x": 500, "y": 620, "spritePath": "assets/player_jump.gif", "itemName": "Second Coin", "itemType": "collectible" },
+    { "x": 700, "y": 620, "spritePath": "assets/player_jump.gif", "itemName": "Third Coin", "itemType": "collectible" },
+    { "x": 900, "y": 620, "spritePath": "assets/player_jump.gif", "itemName": "Key", "itemType": "key" }
   ],
   "triggers": [
     { "x": 1400, "y": 600, "width": 100, "height": 120, "type": "level_transition", "target": "levels/level2_climb.json" }
