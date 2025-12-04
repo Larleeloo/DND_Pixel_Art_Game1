@@ -117,12 +117,15 @@ class SceneManager {
      * @param transition The transition type to use
      */
     public void loadLevel(String levelPath, int transition) {
+        System.out.println("SceneManager: loadLevel() called with path: " + levelPath);
+
         // Create a new GameScene for this level
         GameScene gameScene = new GameScene(levelPath);
 
         // Register it temporarily (or replace existing)
         String sceneName = "game_" + levelPath.hashCode();
         scenes.put(sceneName, gameScene);
+        System.out.println("SceneManager: Registered scene '" + sceneName + "' for level " + levelPath);
 
         // Switch to it
         setScene(sceneName, transition);
@@ -153,12 +156,16 @@ class SceneManager {
                 if (transitionAlpha >= 1.0f) {
                     transitionAlpha = 1.0f;
                     // Switch scenes at peak of fade
+                    System.out.println("SceneManager: Transition at peak fade, switching scenes...");
                     if (currentScene != null) {
+                        System.out.println("SceneManager: Disposing old scene: " + currentScene.getName());
                         currentScene.dispose();
                     }
                     currentScene = nextScene;
+                    System.out.println("SceneManager: Initializing new scene: " + currentScene.getName());
                     currentScene.init();
                     nextScene = null;
+                    System.out.println("SceneManager: Scene switch complete, starting fade in");
                 }
             } else if (currentScene != null) {
                 // Fade in new scene
@@ -166,10 +173,11 @@ class SceneManager {
                 if (transitionAlpha <= 0) {
                     transitionAlpha = 0;
                     transitioning = false;
-                    System.out.println("SceneManager: Transition complete");
+                    System.out.println("SceneManager: Transition complete - now showing " + currentScene.getName());
                 }
             } else {
                 // No current scene, just init the new one
+                System.out.println("SceneManager: No current scene, initializing new one directly");
                 currentScene = nextScene;
                 currentScene.init();
                 nextScene = null;
