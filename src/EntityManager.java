@@ -12,6 +12,7 @@ class EntityManager {
     public void updateAll(InputManager input) {
         PlayerEntity player = null;
 
+        // Find the player
         for (Entity e : entities) {
             if (e instanceof PlayerEntity) {
                 player = (PlayerEntity) e;
@@ -19,10 +20,12 @@ class EntityManager {
             }
         }
 
+        // Update player with entity list for collisions
         if (player != null) {
             player.update(input, entities);
         }
 
+        // Update all other entities (items, obstacles, etc.)
         for (Entity e : entities) {
             if (!(e instanceof PlayerEntity)) {
                 e.update(input);
@@ -34,5 +37,14 @@ class EntityManager {
         for (Entity e : entities) {
             e.draw(g);
         }
+    }
+
+    public PlayerEntity getPlayer() {
+        for (Entity e : entities) {
+            if (e instanceof PlayerEntity) {
+                return (PlayerEntity) e;
+            }
+        }
+        return null;
     }
 }

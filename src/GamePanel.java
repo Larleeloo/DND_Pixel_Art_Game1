@@ -1,6 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 class GamePanel extends JPanel implements Runnable {
 
@@ -9,6 +12,7 @@ class GamePanel extends JPanel implements Runnable {
 
     private EntityManager entityManager;
     private InputManager inputManager;
+    private ArrayList<UIButton> buttons;
 
     public static final int SCREEN_WIDTH = 1920;  // Landscape width
     public static final int SCREEN_HEIGHT = 1080; // Landscape height
@@ -26,7 +30,63 @@ class GamePanel extends JPanel implements Runnable {
 
         entityManager = new EntityManager();
         inputManager = new InputManager();
+        buttons = new ArrayList<>();
+
         addKeyListener(inputManager);
+
+        // Add mouse listener for buttons
+        MouseAdapter mouseAdapter = new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                for (UIButton button : buttons) {
+                    button.handleMouseMove(e.getX(), e.getY());
+                }
+                repaint();
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                for (UIButton button : buttons) {
+                    button.handleClick(e.getX(), e.getY());
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // Handle inventory drag start
+                PlayerEntity player = getPlayer();
+                if (player != null) {
+                    player.getInventory().handleMousePressed(e.getX(), e.getY());
+                }
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // Handle inventory dragging
+                PlayerEntity player = getPlayer();
+                if (player != null) {
+                    player.getInventory().handleMouseDragged(e.getX(), e.getY());
+                }
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // Handle inventory drop
+                PlayerEntity player = getPlayer();
+                if (player != null) {
+                    ItemEntity droppedItem = player.getInventory().handleMouseReleased(e.getX(), e.getY());
+                    if (droppedItem != null) {
+                        // Drop the item into the world
+                        droppedItem.collected = false; // Make it collectible again
+                        player.dropItem(droppedItem);
+                        entityManager.addEntity(droppedItem);
+                    }
+                }
+            }
+        };
+        addMouseListener(mouseAdapter);
+        addMouseMotionListener(mouseAdapter);
 
         // Add background back in
         entityManager.addEntity(new BackgroundEntity("assets/background.png"));
@@ -59,8 +119,32 @@ class GamePanel extends JPanel implements Runnable {
         // Platform 8 - Top platform!
         entityManager.addEntity(new SpriteEntity(1300, 390, "assets/obstacle.png", true));
 
+        // Add collectible items scattered around the platforms!
+        // Place items ABOVE platforms so they're reachable
+        entityManager.addEntity(new ItemEntity(200, 650, "assets/obstacle.png", "Key", "key"));
+        entityManager.addEntity(new ItemEntity(350, 620, "assets/obstacle.png", "Gem", "collectible"));
+        entityManager.addEntity(new ItemEntity(500, 580, "assets/obstacle.png", "Coin", "collectible"));
+        entityManager.addEntity(new ItemEntity(650, 540, "assets/obstacle.png", "Star", "collectible"));
+        entityManager.addEntity(new ItemEntity(800, 500, "assets/obstacle.png", "Crystal", "collectible"));
+        entityManager.addEntity(new ItemEntity(950, 460, "assets/obstacle.png", "Ruby", "collectible"));
+        entityManager.addEntity(new ItemEntity(1100, 420, "assets/obstacle.png", "Diamond", "collectible"));
+        entityManager.addEntity(new ItemEntity(1350, 350, "assets/obstacle.png", "Trophy", "special"));
+
         // Start player on the ground
         entityManager.addEntity(new PlayerEntity(100, 620, "assets/player.png"));
+
+        // Create UI buttons
+        // Exit button in top right corner
+        UIButton exitButton = new UIButton(SCREEN_WIDTH - 150, 20, 120, 50, "Exit", () -> {
+            System.out.println("Exit button clicked!");
+            System.exit(0);
+        });
+        exitButton.setColors(
+                new Color(200, 50, 50, 200),  // Normal: Red
+                new Color(255, 80, 80, 230),  // Hover: Brighter red
+                Color.WHITE                    // Text: White
+        );
+        buttons.add(exitButton);
 
         System.out.println("GamePanel initialized. Ground at y=" + GROUND_Y);
     }
@@ -107,6 +191,11 @@ class GamePanel extends JPanel implements Runnable {
         entityManager.updateAll(inputManager);
     }
 
+    private PlayerEntity getPlayer() {
+        // Helper method to find the player
+        return entityManager.getPlayer();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -125,10 +214,14 @@ class GamePanel extends JPanel implements Runnable {
         // Now draw all entities
         entityManager.drawAll(g);
 
-        // Draw UI info on top
+        // Draw UI buttons on top
+        for (UIButton button : buttons) {
+            button.draw(g);
+        }
+
+        // Draw UI info
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
-        g.drawString("Ground Y: " + GROUND_Y, 10, 30);
-        g.drawString("Use A/D to move, SPACE to jump", 10, 60);
+        g.drawString("Use A/D to move, SPACE to jump, I for inventory", 10, 30);
     }
 }
