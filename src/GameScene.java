@@ -15,6 +15,10 @@ class GameScene implements Scene {
     private PlayerEntity player;
     private boolean initialized;
 
+    // Camera for scrolling levels
+    private Camera camera;
+    private BackgroundEntity background;
+
     public GameScene(String levelPath) {
         this.levelPath = levelPath;
         this.initialized = false;
@@ -89,8 +93,22 @@ class GameScene implements Scene {
      * Build entities from level data.
      */
     private void buildLevel() {
+        // Create camera
+        camera = new Camera(GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
+        camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
+        camera.setSmoothSpeed(0.08); // Smooth following
+        camera.setDeadZone(150, 50); // Player can move a bit before camera follows
+
         // Add background
-        entityManager.addEntity(new BackgroundEntity(levelData.backgroundPath));
+        background = new BackgroundEntity(levelData.backgroundPath);
+
+        // Configure background tiling for scrolling levels
+        if (levelData.scrollingEnabled) {
+            background.setTiling(levelData.tileBackgroundHorizontal, levelData.tileBackgroundVertical);
+            background.setCamera(camera);
+        }
+
+        entityManager.addEntity(background);
 
         // Add platforms
         for (LevelData.PlatformData p : levelData.platforms) {
@@ -121,6 +139,10 @@ class GameScene implements Scene {
             player.setAudioManager(audio);
         }
         entityManager.addEntity(player);
+
+        // Set camera to follow player and snap to initial position
+        camera.setTarget(player);
+        camera.snapToTarget();
     }
 
     /**
@@ -202,6 +224,11 @@ class GameScene implements Scene {
 
         entityManager.updateAll(input);
 
+        // Update camera to follow player
+        if (camera != null && levelData.scrollingEnabled) {
+            camera.update();
+        }
+
         // Check triggers
         if (player != null) {
             Rectangle playerBounds = player.getBounds();
@@ -230,6 +257,49 @@ class GameScene implements Scene {
 
         Graphics2D g2d = (Graphics2D) g;
 
+        // Use camera-based rendering for scrolling levels
+        if (levelData.scrollingEnabled && camera != null) {
+            drawWithCamera(g2d);
+        } else {
+            drawWithoutCamera(g2d);
+        }
+
+        // Draw UI elements (always in screen space, not affected by camera)
+        drawUI(g2d);
+    }
+
+    /**
+     * Draws the scene with camera transformation for scrolling levels.
+     */
+    private void drawWithCamera(Graphics2D g2d) {
+        // Save original transform
+        java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
+
+        // Apply camera transformation
+        camera.applyTransform(g2d);
+
+        // Draw ground area (extends across the level width)
+        g2d.setColor(new Color(34, 139, 34, 100));
+        g2d.fillRect(0, levelData.groundY, levelData.levelWidth, GamePanel.SCREEN_HEIGHT);
+
+        // Draw ground line (extends across the level width)
+        g2d.setStroke(new BasicStroke(4));
+        g2d.setColor(new Color(34, 139, 34));
+        g2d.drawLine(0, levelData.groundY, levelData.levelWidth, levelData.groundY);
+
+        // Draw all entities with camera (handles background tiling)
+        if (entityManager != null) {
+            entityManager.drawAllWithBackground(g2d, camera, background);
+        }
+
+        // Restore original transform for UI
+        g2d.setTransform(oldTransform);
+    }
+
+    /**
+     * Draws the scene without camera transformation (original behavior).
+     */
+    private void drawWithoutCamera(Graphics2D g2d) {
         // Draw ground area
         g2d.setColor(new Color(34, 139, 34, 100));
         g2d.fillRect(0, levelData.groundY, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT - levelData.groundY);
@@ -241,25 +311,39 @@ class GameScene implements Scene {
 
         // Draw entities
         if (entityManager != null) {
-            entityManager.drawAll(g);
+            entityManager.drawAll(g2d);
         }
+    }
 
+    /**
+     * Draws UI elements that are always in screen space.
+     */
+    private void drawUI(Graphics2D g2d) {
         // Draw UI buttons
         if (buttons != null) {
             for (UIButton button : buttons) {
-                button.draw(g);
+                button.draw(g2d);
             }
         }
 
         // Draw level name
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 20));
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 20));
         String name = levelData.name != null ? levelData.name : "Unknown Level";
-        g.drawString(name, 10, 60);
+        g2d.drawString(name, 10, 60);
 
         // Draw controls hint
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.drawString("A/D: Move | SPACE: Jump | I: Inventory", 10, 30);
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.drawString("A/D: Move | SPACE: Jump | I: Inventory", 10, 30);
+
+        // Draw camera position debug info for scrolling levels
+        if (levelData.scrollingEnabled && camera != null) {
+            g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2d.setColor(new Color(255, 255, 255, 180));
+            String camInfo = String.format("Camera: (%.0f, %.0f) | Level: %dx%d",
+                    camera.getX(), camera.getY(), levelData.levelWidth, levelData.levelHeight);
+            g2d.drawString(camInfo, 10, GamePanel.SCREEN_HEIGHT - 20);
+        }
     }
 
     @Override
@@ -271,6 +355,8 @@ class GameScene implements Scene {
         triggers = null;
         player = null;
         levelData = null;
+        camera = null;
+        background = null;
     }
 
     @Override
@@ -328,5 +414,14 @@ class GameScene implements Scene {
 
     public EntityManager getEntityManager() {
         return entityManager;
+    }
+
+    /**
+     * Gets the camera for this scene.
+     *
+     * @return Camera instance, or null if not initialized
+     */
+    public Camera getCamera() {
+        return camera;
     }
 }

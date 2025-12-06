@@ -25,6 +25,11 @@ class LevelData {
     // Ground configuration
     public int groundY;
 
+    // Scrolling/camera settings
+    public boolean scrollingEnabled = false;
+    public boolean tileBackgroundHorizontal = false;
+    public boolean tileBackgroundVertical = false;
+
     // Lists of entities
     public List<PlatformData> platforms;
     public List<ItemData> items;
@@ -213,6 +218,17 @@ class LevelData {
 
         public Builder groundY(int y) {
             data.groundY = y;
+            return this;
+        }
+
+        public Builder scrollingEnabled(boolean enabled) {
+            data.scrollingEnabled = enabled;
+            return this;
+        }
+
+        public Builder tileBackground(boolean horizontal, boolean vertical) {
+            data.tileBackgroundHorizontal = horizontal;
+            data.tileBackgroundVertical = vertical;
             return this;
         }
 

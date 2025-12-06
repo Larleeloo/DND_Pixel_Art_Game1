@@ -71,6 +71,11 @@ class LevelLoader {
             if (root.containsKey("levelHeight")) data.levelHeight = toInt(root.get("levelHeight"));
             if (root.containsKey("groundY")) data.groundY = toInt(root.get("groundY"));
 
+            // Parse scrolling/camera settings
+            if (root.containsKey("scrollingEnabled")) data.scrollingEnabled = toBool(root.get("scrollingEnabled"));
+            if (root.containsKey("tileBackgroundHorizontal")) data.tileBackgroundHorizontal = toBool(root.get("tileBackgroundHorizontal"));
+            if (root.containsKey("tileBackgroundVertical")) data.tileBackgroundVertical = toBool(root.get("tileBackgroundVertical"));
+
             // Parse platforms
             if (root.containsKey("platforms")) {
                 @SuppressWarnings("unchecked")
@@ -144,6 +149,18 @@ class LevelLoader {
             return Integer.parseInt((String) obj);
         }
         return 0;
+    }
+
+    /**
+     * Convert Object to boolean.
+     */
+    private static boolean toBool(Object obj) {
+        if (obj instanceof Boolean) {
+            return (Boolean) obj;
+        } else if (obj instanceof String) {
+            return Boolean.parseBoolean((String) obj);
+        }
+        return false;
     }
 
     /**
@@ -404,6 +421,9 @@ class LevelLoader {
         sb.append("  \"levelWidth\": ").append(data.levelWidth).append(",\n");
         sb.append("  \"levelHeight\": ").append(data.levelHeight).append(",\n");
         sb.append("  \"groundY\": ").append(data.groundY).append(",\n");
+        sb.append("  \"scrollingEnabled\": ").append(data.scrollingEnabled).append(",\n");
+        sb.append("  \"tileBackgroundHorizontal\": ").append(data.tileBackgroundHorizontal).append(",\n");
+        sb.append("  \"tileBackgroundVertical\": ").append(data.tileBackgroundVertical).append(",\n");
 
         if (data.nextLevel != null) {
             sb.append("  \"nextLevel\": \"").append(escape(data.nextLevel)).append("\",\n");
