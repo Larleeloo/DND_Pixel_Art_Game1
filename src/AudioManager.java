@@ -65,14 +65,59 @@ public class AudioManager {
     }
 
     /**
-     * Play a sound effect
+     * Play a sound effect by name (must be preloaded)
      */
     public void playSound(String name) {
         if (!sfxEnabled) return;
 
+        // Check if it's a path (contains / or \) - if so, try to load/play dynamically
+        if (name != null && (name.contains("/") || name.contains("\\"))) {
+            playSoundFromPath(name);
+            return;
+        }
+
         Clip clip = soundEffects.get(name);
         if (clip != null) {
             // Stop if already playing, reset to start
+            if (clip.isRunning()) {
+                clip.stop();
+            }
+            clip.setFramePosition(0);
+            setVolume(clip, sfxVolume);
+            clip.start();
+        }
+    }
+
+    /**
+     * Play a sound effect directly from a file path.
+     * Caches the clip for reuse.
+     */
+    public void playSoundFromPath(String path) {
+        if (!sfxEnabled || path == null) return;
+
+        // Check if already loaded
+        Clip clip = soundEffects.get(path);
+        if (clip == null) {
+            // Try to load it
+            try {
+                File soundFile = new File(path);
+                if (!soundFile.exists()) {
+                    // Sound file doesn't exist - fail silently
+                    return;
+                }
+
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+                clip = AudioSystem.getClip();
+                clip.open(audioStream);
+                soundEffects.put(path, clip);
+                System.out.println("Loaded sound from path: " + path);
+            } catch (Exception e) {
+                // Failed to load - fail silently
+                return;
+            }
+        }
+
+        if (clip != null) {
             if (clip.isRunning()) {
                 clip.stop();
             }
