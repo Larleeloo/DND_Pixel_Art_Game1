@@ -125,10 +125,29 @@ class LevelLoader {
                 }
             }
 
+            // Parse blocks
+            if (root.containsKey("blocks")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> blockList = (List<Map<String, Object>>) root.get("blocks");
+                for (Map<String, Object> b : blockList) {
+                    LevelData.BlockData block = new LevelData.BlockData();
+                    block.x = toInt(b.get("x"));
+                    block.y = toInt(b.get("y"));
+                    if (b.containsKey("blockType")) block.blockType = (String) b.get("blockType");
+                    if (b.containsKey("useGridCoords")) block.useGridCoords = toBool(b.get("useGridCoords"));
+                    // Parse optional color tint
+                    if (b.containsKey("tintRed")) block.tintRed = toInt(b.get("tintRed"));
+                    if (b.containsKey("tintGreen")) block.tintGreen = toInt(b.get("tintGreen"));
+                    if (b.containsKey("tintBlue")) block.tintBlue = toInt(b.get("tintBlue"));
+                    data.blocks.add(block);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
-                    data.triggers.size() + " triggers");
+                    data.triggers.size() + " triggers, " +
+                    data.blocks.size() + " blocks");
 
         } catch (Exception e) {
             System.err.println("LevelLoader: Failed to parse JSON");
@@ -474,6 +493,26 @@ class LevelLoader {
             sb.append(", \"type\": \"").append(escape(t.type)).append("\"");
             sb.append(", \"target\": \"").append(escape(t.target)).append("\" }");
             if (i < data.triggers.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
+
+        // Blocks
+        sb.append("  \"blocks\": [\n");
+        for (int i = 0; i < data.blocks.size(); i++) {
+            LevelData.BlockData b = data.blocks.get(i);
+            sb.append("    { \"x\": ").append(b.x);
+            sb.append(", \"y\": ").append(b.y);
+            sb.append(", \"blockType\": \"").append(escape(b.blockType)).append("\"");
+            sb.append(", \"useGridCoords\": ").append(b.useGridCoords);
+            // Include tint if set
+            if (b.hasTint()) {
+                sb.append(", \"tintRed\": ").append(b.tintRed);
+                sb.append(", \"tintGreen\": ").append(b.tintGreen);
+                sb.append(", \"tintBlue\": ").append(b.tintBlue);
+            }
+            sb.append(" }");
+            if (i < data.blocks.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append("  ]\n");

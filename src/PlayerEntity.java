@@ -87,16 +87,23 @@ class PlayerEntity extends SpriteEntity {
             facingRight = true;
         }
 
-        // Check horizontal collision with obstacles
+        // Check horizontal collision with obstacles (SpriteEntity and BlockEntity)
         Rectangle futureXBounds = new Rectangle(newX, y, width, height);
         boolean xCollision = false;
 
         for (Entity e : entities) {
-            if (e instanceof SpriteEntity && ((SpriteEntity) e).isSolid() && e != this) {
-                if (futureXBounds.intersects(e.getBounds())) {
-                    xCollision = true;
-                    break;
-                }
+            if (e == this) continue;
+
+            boolean isSolid = false;
+            if (e instanceof SpriteEntity && ((SpriteEntity) e).isSolid()) {
+                isSolid = true;
+            } else if (e instanceof BlockEntity && ((BlockEntity) e).isSolid()) {
+                isSolid = true;
+            }
+
+            if (isSolid && futureXBounds.intersects(e.getBounds())) {
+                xCollision = true;
+                break;
             }
         }
 
@@ -141,12 +148,21 @@ class PlayerEntity extends SpriteEntity {
         // Calculate new Y position
         newY = y + (int)velY;
 
-        // Check vertical collision with obstacles
+        // Check vertical collision with obstacles (SpriteEntity and BlockEntity)
         Rectangle futureYBounds = new Rectangle(x, newY, width, height);
         boolean foundPlatform = false;
 
         for (Entity e : entities) {
-            if (e instanceof SpriteEntity && ((SpriteEntity) e).isSolid() && e != this) {
+            if (e == this) continue;
+
+            boolean isSolid = false;
+            if (e instanceof SpriteEntity && ((SpriteEntity) e).isSolid()) {
+                isSolid = true;
+            } else if (e instanceof BlockEntity && ((BlockEntity) e).isSolid()) {
+                isSolid = true;
+            }
+
+            if (isSolid) {
                 Rectangle platformBounds = e.getBounds();
 
                 if (futureYBounds.intersects(platformBounds)) {
