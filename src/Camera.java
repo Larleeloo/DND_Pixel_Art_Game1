@@ -33,6 +33,11 @@ public class Camera {
     // Camera bounds enabled
     private boolean boundsEnabled = true;
 
+    // Periodic re-centering (to correct any drift)
+    private int recenterInterval = 120; // Frames between forced recenters (120 = 2 seconds at 60fps)
+    private int frameCounter = 0;
+    private boolean periodicRecenterEnabled = true;
+
     /**
      * Creates a new camera with the specified viewport dimensions.
      *
@@ -115,6 +120,9 @@ public class Camera {
             return;
         }
 
+        // Increment frame counter for periodic recentering
+        frameCounter++;
+
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2.0;
         double targetCenterY = targetBounds.y + targetBounds.height / 2.0;
@@ -123,21 +131,45 @@ public class Camera {
         double desiredX = targetCenterX - viewportWidth / 2.0;
         double desiredY = targetCenterY - viewportHeight / 2.0;
 
+        // Check if it's time for a forced recenter
+        boolean forceRecenter = periodicRecenterEnabled && (frameCounter >= recenterInterval);
+        if (forceRecenter) {
+            frameCounter = 0;
+        }
+
         // Apply smoothing - always move towards the target position
-        if (smoothingEnabled && smoothSpeed < 1.0) {
+        if (forceRecenter || smoothSpeed >= 1.0 || !smoothingEnabled) {
+            // Instant snap to target (forced recenter or no smoothing)
+            x = desiredX;
+            y = desiredY;
+        } else {
             // Use smoothing to gradually move camera
             x = lerp(x, desiredX, smoothSpeed);
             y = lerp(y, desiredY, smoothSpeed);
-        } else {
-            // Instant snap to target
-            x = desiredX;
-            y = desiredY;
         }
 
         // Clamp to level bounds
         if (boundsEnabled) {
             clampToBounds();
         }
+    }
+
+    /**
+     * Sets the interval for periodic re-centering.
+     *
+     * @param frames Number of frames between forced recenters (60 = 1 second at 60fps)
+     */
+    public void setRecenterInterval(int frames) {
+        this.recenterInterval = Math.max(1, frames);
+    }
+
+    /**
+     * Enables or disables periodic re-centering.
+     *
+     * @param enabled True to enable periodic recentering
+     */
+    public void setPeriodicRecenterEnabled(boolean enabled) {
+        this.periodicRecenterEnabled = enabled;
     }
 
     /**
