@@ -60,6 +60,11 @@ class LevelData {
         public String spritePath;
         public boolean solid;
 
+        // Optional color mask (RGB 0-255 each, -1 means no mask)
+        public int maskRed = -1;
+        public int maskGreen = -1;
+        public int maskBlue = -1;
+
         public PlatformData() {
             spritePath = "assets/obstacle.png";
             solid = true;
@@ -76,6 +81,20 @@ class LevelData {
             this.y = y;
             this.spritePath = spritePath;
             this.solid = solid;
+        }
+
+        public PlatformData(int x, int y, String spritePath, boolean solid, int maskRed, int maskGreen, int maskBlue) {
+            this.x = x;
+            this.y = y;
+            this.spritePath = spritePath;
+            this.solid = solid;
+            this.maskRed = maskRed;
+            this.maskGreen = maskGreen;
+            this.maskBlue = maskBlue;
+        }
+
+        public boolean hasColorMask() {
+            return maskRed >= 0 && maskGreen >= 0 && maskBlue >= 0;
         }
     }
 
@@ -204,6 +223,11 @@ class LevelData {
 
         public Builder addPlatform(int x, int y, String sprite, boolean solid) {
             data.platforms.add(new PlatformData(x, y, sprite, solid));
+            return this;
+        }
+
+        public Builder addPlatform(int x, int y, String sprite, boolean solid, int maskRed, int maskGreen, int maskBlue) {
+            data.platforms.add(new PlatformData(x, y, sprite, solid, maskRed, maskGreen, maskBlue));
             return this;
         }
 

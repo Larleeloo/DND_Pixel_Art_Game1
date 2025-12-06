@@ -1,0 +1,35 @@
+{
+  "name": "Color Mastery",
+  "description": "A level showcasing color-masked obstacles in different hues",
+  "backgroundPath": "assets/background.png",
+  "musicPath": "assets/music.wav",
+  "playerSpawnX": 100,
+  "playerSpawnY": 620,
+  "playerSpritePath": "assets/player.png",
+  "levelWidth": 1920,
+  "levelHeight": 1080,
+  "groundY": 720,
+  "nextLevel": "levels/level1_tutorial.json",
+  "platforms": [
+    { "x": 150, "y": 670, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 255, "maskGreen": 100, "maskBlue": 100 },
+    { "x": 300, "y": 670, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 255, "maskGreen": 100, "maskBlue": 100 },
+
+    { "x": 500, "y": 620, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 100, "maskGreen": 255, "maskBlue": 100 },
+    { "x": 650, "y": 620, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 100, "maskGreen": 255, "maskBlue": 100 },
+
+    { "x": 850, "y": 570, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 100, "maskGreen": 100, "maskBlue": 255 },
+    { "x": 1000, "y": 570, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 100, "maskGreen": 100, "maskBlue": 255 },
+
+    { "x": 1200, "y": 520, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 255, "maskGreen": 100, "maskBlue": 255 },
+    { "x": 1350, "y": 520, "spritePath": "assets/obstacle.png", "solid": true, "maskRed": 255, "maskGreen": 100, "maskBlue": 255 }
+  ],
+  "items": [
+    { "x": 200, "y": 620, "spritePath": "assets/player_jump.gif", "itemName": "Red Gem", "itemType": "collectible" },
+    { "x": 550, "y": 570, "spritePath": "assets/player_jump.gif", "itemName": "Green Gem", "itemType": "collectible" },
+    { "x": 900, "y": 520, "spritePath": "assets/player_jump.gif", "itemName": "Blue Gem", "itemType": "collectible" },
+    { "x": 1250, "y": 470, "spritePath": "assets/player_jump.gif", "itemName": "Purple Key", "itemType": "key" }
+  ],
+  "triggers": [
+    { "x": 1500, "y": 400, "width": 100, "height": 120, "type": "level_transition", "target": "levels/level1_tutorial.json" }
+  ]
+}
