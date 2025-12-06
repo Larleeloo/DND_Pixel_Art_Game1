@@ -38,6 +38,7 @@ class LevelData {
     public List<PlatformData> platforms;
     public List<ItemData> items;
     public List<TriggerData> triggers;
+    public List<BlockData> blocks;
 
     // Next level (for level progression)
     public String nextLevel;
@@ -46,6 +47,7 @@ class LevelData {
         platforms = new ArrayList<>();
         items = new ArrayList<>();
         triggers = new ArrayList<>();
+        blocks = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -167,6 +169,56 @@ class LevelData {
     }
 
     /**
+     * Data class for block entities (Minecraft-style blocks).
+     * Blocks are always square and can be placed using either pixel or grid coordinates.
+     */
+    public static class BlockData {
+        public int x;
+        public int y;
+        public String blockType;      // BlockType enum name (e.g., "GRASS", "STONE")
+        public boolean useGridCoords; // If true, x/y are grid positions, not pixels
+
+        // Optional color tint (RGB 0-255 each, -1 means no tint)
+        public int tintRed = -1;
+        public int tintGreen = -1;
+        public int tintBlue = -1;
+
+        public BlockData() {
+            blockType = "DIRT";
+            useGridCoords = false;
+        }
+
+        public BlockData(int x, int y, String blockType) {
+            this.x = x;
+            this.y = y;
+            this.blockType = blockType;
+            this.useGridCoords = false;
+        }
+
+        public BlockData(int x, int y, String blockType, boolean useGridCoords) {
+            this.x = x;
+            this.y = y;
+            this.blockType = blockType;
+            this.useGridCoords = useGridCoords;
+        }
+
+        public BlockData(int x, int y, String blockType, boolean useGridCoords,
+                         int tintRed, int tintGreen, int tintBlue) {
+            this.x = x;
+            this.y = y;
+            this.blockType = blockType;
+            this.useGridCoords = useGridCoords;
+            this.tintRed = tintRed;
+            this.tintGreen = tintGreen;
+            this.tintBlue = tintBlue;
+        }
+
+        public boolean hasTint() {
+            return tintRed >= 0 && tintGreen >= 0 && tintBlue >= 0;
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -281,6 +333,69 @@ class LevelData {
             return this;
         }
 
+        /**
+         * Add a block at pixel coordinates.
+         */
+        public Builder addBlock(int x, int y, String blockType) {
+            data.blocks.add(new BlockData(x, y, blockType));
+            return this;
+        }
+
+        /**
+         * Add a block with grid/pixel coordinate mode.
+         */
+        public Builder addBlock(int x, int y, String blockType, boolean useGridCoords) {
+            data.blocks.add(new BlockData(x, y, blockType, useGridCoords));
+            return this;
+        }
+
+        /**
+         * Add a tinted block.
+         */
+        public Builder addBlock(int x, int y, String blockType, boolean useGridCoords,
+                               int tintRed, int tintGreen, int tintBlue) {
+            data.blocks.add(new BlockData(x, y, blockType, useGridCoords, tintRed, tintGreen, tintBlue));
+            return this;
+        }
+
+        /**
+         * Add a row of blocks (useful for floors).
+         * @param startX Starting X coordinate
+         * @param y Y coordinate
+         * @param count Number of blocks
+         * @param blockType Type of block
+         * @param useGridCoords If true, coordinates are in grid units
+         */
+        public Builder addBlockRow(int startX, int y, int count, String blockType, boolean useGridCoords) {
+            for (int i = 0; i < count; i++) {
+                data.blocks.add(new BlockData(startX + i, y, blockType, useGridCoords));
+            }
+            return this;
+        }
+
+        /**
+         * Add a column of blocks (useful for walls).
+         */
+        public Builder addBlockColumn(int x, int startY, int count, String blockType, boolean useGridCoords) {
+            for (int i = 0; i < count; i++) {
+                data.blocks.add(new BlockData(x, startY + i, blockType, useGridCoords));
+            }
+            return this;
+        }
+
+        /**
+         * Add a filled rectangle of blocks.
+         */
+        public Builder addBlockRect(int startX, int startY, int width, int height,
+                                   String blockType, boolean useGridCoords) {
+            for (int dy = 0; dy < height; dy++) {
+                for (int dx = 0; dx < width; dx++) {
+                    data.blocks.add(new BlockData(startX + dx, startY + dy, blockType, useGridCoords));
+                }
+            }
+            return this;
+        }
+
         public LevelData build() {
             return data;
         }
@@ -293,6 +408,7 @@ class LevelData {
                 ", platforms=" + platforms.size() +
                 ", items=" + items.size() +
                 ", triggers=" + triggers.size() +
+                ", blocks=" + blocks.size() +
                 '}';
     }
 }
