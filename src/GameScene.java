@@ -355,6 +355,11 @@ class GameScene implements Scene {
             }
         }
 
+        // Draw inventory UI (in screen space, not affected by camera)
+        if (player != null) {
+            player.getInventory().draw(g2d);
+        }
+
         // Draw level name
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 20));

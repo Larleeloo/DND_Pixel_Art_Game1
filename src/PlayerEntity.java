@@ -220,8 +220,7 @@ class PlayerEntity extends SpriteEntity {
         g2d.setStroke(new BasicStroke(2));
         g.drawRect(x, y, width, height);
 
-        // Draw inventory UI
-        inventory.draw(g);
+        // Note: Inventory is now drawn in GameScene.drawUI() to stay fixed on screen
     }
 
     public Inventory getInventory() {
