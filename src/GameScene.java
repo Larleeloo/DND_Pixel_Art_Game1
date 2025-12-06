@@ -141,6 +141,7 @@ class GameScene implements Scene {
 
         // Add player
         player = new PlayerEntity(levelData.playerSpawnX, levelData.playerSpawnY, levelData.playerSpritePath);
+        player.setGroundY(levelData.groundY); // Set ground level from level data
         AudioManager audio = SceneManager.getInstance().getAudioManager();
         if (audio != null) {
             player.setAudioManager(audio);
