@@ -30,6 +30,10 @@ class LevelData {
     public boolean tileBackgroundHorizontal = false;
     public boolean tileBackgroundVertical = false;
 
+    // Vertical scrolling settings
+    public boolean verticalScrollEnabled = false;
+    public int verticalMargin = 0; // Height of black bars at top and bottom (pixels)
+
     // Lists of entities
     public List<PlatformData> platforms;
     public List<ItemData> items;
@@ -229,6 +233,16 @@ class LevelData {
         public Builder tileBackground(boolean horizontal, boolean vertical) {
             data.tileBackgroundHorizontal = horizontal;
             data.tileBackgroundVertical = vertical;
+            return this;
+        }
+
+        public Builder verticalScrollEnabled(boolean enabled) {
+            data.verticalScrollEnabled = enabled;
+            return this;
+        }
+
+        public Builder verticalMargin(int margin) {
+            data.verticalMargin = margin;
             return this;
         }
 

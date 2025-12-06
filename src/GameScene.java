@@ -100,6 +100,12 @@ class GameScene implements Scene {
         camera.setMaxCameraSpeed(6.0); // Cap camera speed above player speed (4 px/frame) for smooth following
         camera.setDeadZone(0, 0); // No dead zone - always keep player centered
 
+        // Configure vertical scrolling if enabled
+        if (levelData.verticalScrollEnabled) {
+            camera.setVerticalScrollEnabled(true);
+            camera.setVerticalMargin(levelData.verticalMargin);
+        }
+
         // Add background
         background = new BackgroundEntity(levelData.backgroundPath);
 
@@ -295,6 +301,27 @@ class GameScene implements Scene {
 
         // Restore original transform for UI
         g2d.setTransform(oldTransform);
+
+        // Draw black bars at top and bottom for vertical scrolling
+        if (camera.isVerticalScrollEnabled() && camera.getVerticalMargin() > 0) {
+            drawBlackBars(g2d);
+        }
+    }
+
+    /**
+     * Draws black bars at the top and bottom of the screen for vertical scrolling.
+     * These bars create a letterbox effect and can be used for gameplay elements.
+     */
+    private void drawBlackBars(Graphics2D g2d) {
+        int margin = camera.getVerticalMargin();
+
+        g2d.setColor(Color.BLACK);
+
+        // Top black bar
+        g2d.fillRect(0, 0, GamePanel.SCREEN_WIDTH, margin);
+
+        // Bottom black bar
+        g2d.fillRect(0, GamePanel.SCREEN_HEIGHT - margin, GamePanel.SCREEN_WIDTH, margin);
     }
 
     /**
