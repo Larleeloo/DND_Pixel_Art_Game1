@@ -38,6 +38,11 @@ public class Camera {
     private int frameCounter = 0;
     private boolean periodicRecenterEnabled = true;
 
+    // Player position tracking for velocity-matched following
+    private double lastTargetX = 0;
+    private double lastTargetY = 0;
+    private boolean hasLastPosition = false;
+
     /**
      * Creates a new camera with the specified viewport dimensions.
      *
@@ -137,16 +142,30 @@ public class Camera {
             frameCounter = 0;
         }
 
-        // Apply smoothing - always move towards the target position
-        if (forceRecenter || smoothSpeed >= 1.0 || !smoothingEnabled) {
-            // Instant snap to target (forced recenter or no smoothing)
+        // If we don't have a previous position yet, snap to target
+        if (!hasLastPosition) {
+            x = desiredX;
+            y = desiredY;
+            lastTargetX = targetCenterX;
+            lastTargetY = targetCenterY;
+            hasLastPosition = true;
+        } else if (forceRecenter) {
+            // Forced recenter - snap to target
             x = desiredX;
             y = desiredY;
         } else {
-            // Use smoothing to gradually move camera
-            x = lerp(x, desiredX, smoothSpeed);
-            y = lerp(y, desiredY, smoothSpeed);
+            // Calculate how much the player moved this frame
+            double deltaX = targetCenterX - lastTargetX;
+            double deltaY = targetCenterY - lastTargetY;
+
+            // Move camera by exactly the same amount the player moved
+            x += deltaX;
+            y += deltaY;
         }
+
+        // Update last known position
+        lastTargetX = targetCenterX;
+        lastTargetY = targetCenterY;
 
         // Clamp to level bounds
         if (boundsEnabled) {
@@ -186,6 +205,11 @@ public class Camera {
 
         x = targetCenterX - viewportWidth / 2.0;
         y = targetCenterY - viewportHeight / 2.0;
+
+        // Update position tracking
+        lastTargetX = targetCenterX;
+        lastTargetY = targetCenterY;
+        hasLastPosition = true;
 
         if (boundsEnabled) {
             clampToBounds();
