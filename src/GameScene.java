@@ -243,6 +243,11 @@ class GameScene implements Scene {
 
         entityManager.updateAll(input);
 
+        // Handle block breaking - check for broken blocks and dropped items
+        if (player != null) {
+            handleBlockBreaking();
+        }
+
         // Update camera to follow player
         if (camera != null && levelData.scrollingEnabled) {
             camera.update();
@@ -255,6 +260,24 @@ class GameScene implements Scene {
                 if (trigger.checkTrigger(playerBounds)) {
                     trigger.execute();
                 }
+            }
+        }
+    }
+
+    /**
+     * Handles block breaking - removes broken blocks and adds dropped items.
+     */
+    private void handleBlockBreaking() {
+        // Check if player broke a block
+        BlockEntity brokenBlock = player.getLastBrokenBlock();
+        if (brokenBlock != null) {
+            // Remove the broken block from the entity manager
+            entityManager.removeEntity(brokenBlock);
+
+            // Add the dropped item if any
+            ItemEntity droppedItem = player.getLastDroppedItem();
+            if (droppedItem != null) {
+                entityManager.addEntity(droppedItem);
             }
         }
     }
@@ -379,7 +402,7 @@ class GameScene implements Scene {
 
         // Draw controls hint
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        g2d.drawString("A/D: Move | SPACE: Jump | I: Inventory", 10, 30);
+        g2d.drawString("A/D: Move | SPACE: Jump | E: Break Block | I: Inventory", 10, 30);
 
         // Draw camera position debug info for scrolling levels
         if (levelData.scrollingEnabled && camera != null) {

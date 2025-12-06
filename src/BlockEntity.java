@@ -29,6 +29,9 @@ public class BlockEntity extends Entity {
     private int gridX;
     private int gridY;
 
+    // Block state
+    private boolean broken = false;
+
     /**
      * Creates a new block entity at the specified pixel position.
      *
@@ -222,6 +225,100 @@ public class BlockEntity extends Entity {
         return (pixelPos / BlockRegistry.BLOCK_SIZE) * BlockRegistry.BLOCK_SIZE;
     }
 
+    /**
+     * Gets the attributes for this block type (sounds, drops, etc.).
+     * @return BlockAttributes for this block's type
+     */
+    public BlockAttributes getAttributes() {
+        return BlockAttributes.get(blockType);
+    }
+
+    /**
+     * Checks if this block has been broken.
+     * @return true if broken
+     */
+    public boolean isBroken() {
+        return broken;
+    }
+
+    /**
+     * Breaks this block and returns the item drop (if any).
+     * Call this when the player breaks a block.
+     *
+     * @param audioManager AudioManager to play break sound (can be null)
+     * @return ItemEntity to spawn, or null if no drop
+     */
+    public ItemEntity breakBlock(AudioManager audioManager) {
+        if (broken) {
+            return null; // Already broken
+        }
+
+        broken = true;
+        BlockAttributes attrs = getAttributes();
+
+        // Play break sound
+        if (audioManager != null && attrs.getBreakSound() != null) {
+            audioManager.playSound(attrs.getBreakSound());
+        }
+
+        // Create item drop if applicable
+        if (attrs.shouldDrop()) {
+            // Drop item at block center
+            int dropX = x + size / 4;
+            int dropY = y + size / 4;
+
+            ItemEntity drop = new ItemEntity(
+                dropX, dropY,
+                attrs.getDropSpritePath(),
+                attrs.getDropItemName(),
+                attrs.getDropItemType()
+            );
+
+            System.out.println("Block " + blockType.name() + " broken at (" + gridX + "," + gridY +
+                             ") - dropped " + attrs.getDropItemName());
+            return drop;
+        }
+
+        System.out.println("Block " + blockType.name() + " broken at (" + gridX + "," + gridY + ") - no drop");
+        return null;
+    }
+
+    /**
+     * Called when this block is placed. Plays placement sound.
+     *
+     * @param audioManager AudioManager to play place sound (can be null)
+     */
+    public void onPlace(AudioManager audioManager) {
+        BlockAttributes attrs = getAttributes();
+        if (audioManager != null && attrs.getPlaceSound() != null) {
+            audioManager.playSound(attrs.getPlaceSound());
+        }
+    }
+
+    /**
+     * Gets the break sound path for this block.
+     * @return Sound file path or null
+     */
+    public String getBreakSound() {
+        return getAttributes().getBreakSound();
+    }
+
+    /**
+     * Gets the place sound path for this block.
+     * @return Sound file path or null
+     */
+    public String getPlaceSound() {
+        return getAttributes().getPlaceSound();
+    }
+
+    /**
+     * Gets the step sound path for this block.
+     * @return Sound file path or null
+     */
+    public String getStepSound() {
+        return getAttributes().getStepSound();
+    }
+
     @Override
     public String toString() {
         return "BlockEntity{" +
@@ -229,6 +326,7 @@ public class BlockEntity extends Entity {
                 ", grid=(" + gridX + "," + gridY + ")" +
                 ", pixel=(" + x + "," + y + ")" +
                 ", solid=" + isSolid() +
+                ", broken=" + broken +
                 "}";
     }
 }

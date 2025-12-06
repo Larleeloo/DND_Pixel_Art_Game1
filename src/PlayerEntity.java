@@ -23,6 +23,10 @@ class PlayerEntity extends SpriteEntity {
     // Ground height - can be set per level
     private int groundY = 720; // Default to GamePanel.GROUND_Y
 
+    // Block interaction
+    private BlockEntity lastBrokenBlock = null;
+    private ItemEntity lastDroppedItem = null;
+
     public PlayerEntity(int x, int y, String spritePath) {
         super(x, y, spritePath, false);
 
@@ -75,6 +79,11 @@ class PlayerEntity extends SpriteEntity {
         // Toggle inventory with 'I' key - use justPressed to prevent rapid toggling
         if (input.isKeyJustPressed('i')) {
             inventory.toggleOpen();
+        }
+
+        // Break block with 'E' key
+        if (input.isKeyJustPressed('e')) {
+            tryBreakBlock(entities);
         }
 
         // Horizontal movement
@@ -254,5 +263,78 @@ class PlayerEntity extends SpriteEntity {
         if (audioManager != null) {
             audioManager.playSound("drop");
         }
+    }
+
+    /**
+     * Attempts to break a block in front of the player.
+     * The broken block and dropped item can be retrieved via
+     * getLastBrokenBlock() and getLastDroppedItem().
+     */
+    private void tryBreakBlock(ArrayList<Entity> entities) {
+        lastBrokenBlock = null;
+        lastDroppedItem = null;
+
+        // Calculate the area in front of the player to check for blocks
+        int checkDistance = BlockRegistry.BLOCK_SIZE;
+        int checkX = facingRight ? (x + width) : (x - checkDistance);
+        int checkY = y + height / 2; // Check at player mid-height
+
+        Rectangle breakArea = new Rectangle(checkX, checkY - height/4, checkDistance, height/2);
+
+        // Find the nearest block in the break area
+        BlockEntity nearestBlock = null;
+        double nearestDist = Double.MAX_VALUE;
+
+        for (Entity e : entities) {
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (!block.isBroken() && breakArea.intersects(block.getBounds())) {
+                    // Calculate distance to player center
+                    double dist = Math.abs((block.x + block.getSize()/2) - (x + width/2));
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestBlock = block;
+                    }
+                }
+            }
+        }
+
+        // Break the block if found
+        if (nearestBlock != null) {
+            lastBrokenBlock = nearestBlock;
+            lastDroppedItem = nearestBlock.breakBlock(audioManager);
+
+            System.out.println("Player broke block: " + nearestBlock.getBlockType().name() +
+                             " at grid (" + nearestBlock.getGridX() + "," + nearestBlock.getGridY() + ")");
+        }
+    }
+
+    /**
+     * Gets the last block broken by the player (if any).
+     * Returns null if no block was broken since last check.
+     * Clears after being retrieved.
+     */
+    public BlockEntity getLastBrokenBlock() {
+        BlockEntity block = lastBrokenBlock;
+        lastBrokenBlock = null;
+        return block;
+    }
+
+    /**
+     * Gets the item dropped from the last broken block (if any).
+     * Returns null if no item was dropped.
+     * Clears after being retrieved.
+     */
+    public ItemEntity getLastDroppedItem() {
+        ItemEntity item = lastDroppedItem;
+        lastDroppedItem = null;
+        return item;
+    }
+
+    /**
+     * Check if the player is facing right.
+     */
+    public boolean isFacingRight() {
+        return facingRight;
     }
 }
