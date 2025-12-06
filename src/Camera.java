@@ -120,31 +120,18 @@ public class Camera {
         double targetCenterY = targetBounds.y + targetBounds.height / 2.0;
 
         // Calculate where we want the camera to be (target centered in viewport)
-        double targetX = targetCenterX - viewportWidth / 2.0;
-        double targetY = targetCenterY - viewportHeight / 2.0;
+        double desiredX = targetCenterX - viewportWidth / 2.0;
+        double desiredY = targetCenterY - viewportHeight / 2.0;
 
-        // Check dead zone - only move if target is outside dead zone
-        double currentCenterX = x + viewportWidth / 2.0;
-        double currentCenterY = y + viewportHeight / 2.0;
-
-        double deltaX = targetCenterX - currentCenterX;
-        double deltaY = targetCenterY - currentCenterY;
-
-        // Apply dead zone
-        if (Math.abs(deltaX) < deadZoneX) {
-            targetX = x; // Don't move horizontally
-        }
-        if (Math.abs(deltaY) < deadZoneY) {
-            targetY = y; // Don't move vertically
-        }
-
-        // Apply smoothing or instant snap
+        // Apply smoothing - always move towards the target position
         if (smoothingEnabled && smoothSpeed < 1.0) {
-            x = lerp(x, targetX, smoothSpeed);
-            y = lerp(y, targetY, smoothSpeed);
+            // Use smoothing to gradually move camera
+            x = lerp(x, desiredX, smoothSpeed);
+            y = lerp(y, desiredY, smoothSpeed);
         } else {
-            x = targetX;
-            y = targetY;
+            // Instant snap to target
+            x = desiredX;
+            y = desiredY;
         }
 
         // Clamp to level bounds
