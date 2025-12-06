@@ -33,14 +33,7 @@ public class Camera {
     // Camera bounds enabled
     private boolean boundsEnabled = true;
 
-    // Periodic re-centering (to correct any drift)
-    private int recenterInterval = 120; // Frames between forced recenters (120 = 2 seconds at 60fps)
-    private int frameCounter = 0;
-    private boolean periodicRecenterEnabled = true;
-
-    // Player position tracking for velocity-matched following
-    private double lastTargetX = 0;
-    private double lastTargetY = 0;
+    // Track if camera has been initialized with a position
     private boolean hasLastPosition = false;
 
     /**
@@ -125,9 +118,6 @@ public class Camera {
             return;
         }
 
-        // Increment frame counter for periodic recentering
-        frameCounter++;
-
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2.0;
         double targetCenterY = targetBounds.y + targetBounds.height / 2.0;
@@ -136,60 +126,40 @@ public class Camera {
         double desiredX = targetCenterX - viewportWidth / 2.0;
         double desiredY = targetCenterY - viewportHeight / 2.0;
 
-        // Check if it's time for a forced recenter
-        boolean forceRecenter = periodicRecenterEnabled && (frameCounter >= recenterInterval);
-        if (forceRecenter) {
-            frameCounter = 0;
+        // Clamp desired position to bounds first (prevents camera from trying to go outside level)
+        if (boundsEnabled) {
+            if (desiredX < 0) desiredX = 0;
+            if (desiredY < 0) desiredY = 0;
+            if (desiredX > levelWidth - viewportWidth) {
+                desiredX = levelWidth - viewportWidth;
+            }
+            if (desiredY > levelHeight - viewportHeight) {
+                desiredY = levelHeight - viewportHeight;
+            }
         }
 
         // If we don't have a previous position yet, snap to target
         if (!hasLastPosition) {
             x = desiredX;
             y = desiredY;
-            lastTargetX = targetCenterX;
-            lastTargetY = targetCenterY;
             hasLastPosition = true;
-        } else if (forceRecenter) {
-            // Forced recenter - snap to target
+        } else if (smoothingEnabled && smoothSpeed < 1.0) {
+            // Smooth lerp toward desired position
+            // This creates a smooth, lagging camera that always trends toward centering
+            x = lerp(x, desiredX, smoothSpeed);
+            y = lerp(y, desiredY, smoothSpeed);
+        } else {
+            // Instant follow (smoothSpeed = 1.0)
             x = desiredX;
             y = desiredY;
-        } else {
-            // Calculate how much the player moved this frame
-            double deltaX = targetCenterX - lastTargetX;
-            double deltaY = targetCenterY - lastTargetY;
-
-            // Move camera by exactly the same amount the player moved
-            x += deltaX;
-            y += deltaY;
         }
 
-        // Update last known position
-        lastTargetX = targetCenterX;
-        lastTargetY = targetCenterY;
-
-        // Clamp to level bounds
+        // Final bounds check (ensures camera never goes outside level)
         if (boundsEnabled) {
             clampToBounds();
         }
     }
 
-    /**
-     * Sets the interval for periodic re-centering.
-     *
-     * @param frames Number of frames between forced recenters (60 = 1 second at 60fps)
-     */
-    public void setRecenterInterval(int frames) {
-        this.recenterInterval = Math.max(1, frames);
-    }
-
-    /**
-     * Enables or disables periodic re-centering.
-     *
-     * @param enabled True to enable periodic recentering
-     */
-    public void setPeriodicRecenterEnabled(boolean enabled) {
-        this.periodicRecenterEnabled = enabled;
-    }
 
     /**
      * Immediately centers the camera on the target without smoothing.
@@ -206,9 +176,6 @@ public class Camera {
         x = targetCenterX - viewportWidth / 2.0;
         y = targetCenterY - viewportHeight / 2.0;
 
-        // Update position tracking
-        lastTargetX = targetCenterX;
-        lastTargetY = targetCenterY;
         hasLastPosition = true;
 
         if (boundsEnabled) {
