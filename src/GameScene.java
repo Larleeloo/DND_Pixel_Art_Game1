@@ -96,7 +96,7 @@ class GameScene implements Scene {
         // Create camera
         camera = new Camera(GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
         camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
-        camera.setSmoothSpeed(0.15); // Smooth following - keeps player centered
+        camera.setSmoothSpeed(1.0); // Instant follow - no lag, player always centered
         camera.setDeadZone(0, 0); // No dead zone - always keep player centered
 
         // Add background
