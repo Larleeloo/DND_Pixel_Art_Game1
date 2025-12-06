@@ -81,6 +81,10 @@ class LevelLoader {
                     platform.y = toInt(p.get("y"));
                     if (p.containsKey("spritePath")) platform.spritePath = (String) p.get("spritePath");
                     if (p.containsKey("solid")) platform.solid = (Boolean) p.get("solid");
+                    // Parse optional color mask
+                    if (p.containsKey("maskRed")) platform.maskRed = toInt(p.get("maskRed"));
+                    if (p.containsKey("maskGreen")) platform.maskGreen = toInt(p.get("maskGreen"));
+                    if (p.containsKey("maskBlue")) platform.maskBlue = toInt(p.get("maskBlue"));
                     data.platforms.add(platform);
                 }
             }
@@ -412,7 +416,14 @@ class LevelLoader {
             sb.append("    { \"x\": ").append(p.x);
             sb.append(", \"y\": ").append(p.y);
             sb.append(", \"spritePath\": \"").append(escape(p.spritePath)).append("\"");
-            sb.append(", \"solid\": ").append(p.solid).append(" }");
+            sb.append(", \"solid\": ").append(p.solid);
+            // Include color mask if set
+            if (p.hasColorMask()) {
+                sb.append(", \"maskRed\": ").append(p.maskRed);
+                sb.append(", \"maskGreen\": ").append(p.maskGreen);
+                sb.append(", \"maskBlue\": ").append(p.maskBlue);
+            }
+            sb.append(" }");
             if (i < data.platforms.size() - 1) sb.append(",");
             sb.append("\n");
         }

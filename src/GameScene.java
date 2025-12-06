@@ -94,7 +94,12 @@ class GameScene implements Scene {
 
         // Add platforms
         for (LevelData.PlatformData p : levelData.platforms) {
-            entityManager.addEntity(new SpriteEntity(p.x, p.y, p.spritePath, p.solid));
+            SpriteEntity platform = new SpriteEntity(p.x, p.y, p.spritePath, p.solid);
+            // Apply color mask if specified
+            if (p.hasColorMask()) {
+                platform.setColorMask(p.maskRed, p.maskGreen, p.maskBlue);
+            }
+            entityManager.addEntity(platform);
         }
 
         // Add items
