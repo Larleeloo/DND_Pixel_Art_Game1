@@ -25,6 +25,7 @@ public class Camera {
     // Smooth following settings
     private double smoothSpeed = 0.1; // 0.0 = no follow, 1.0 = instant snap
     private boolean smoothingEnabled = true;
+    private double maxCameraSpeed = 6.0; // Maximum pixels camera can move per frame
 
     // Dead zone - camera won't move if target is within this zone from center
     private int deadZoneX = 100;
@@ -110,6 +111,16 @@ public class Camera {
     }
 
     /**
+     * Sets the maximum camera speed in pixels per frame.
+     * This prevents the camera from moving too fast when catching up.
+     *
+     * @param speed Maximum pixels the camera can move per frame
+     */
+    public void setMaxCameraSpeed(double speed) {
+        this.maxCameraSpeed = Math.max(1.0, speed);
+    }
+
+    /**
      * Updates the camera position to follow the target.
      * Should be called every frame.
      */
@@ -144,10 +155,24 @@ public class Camera {
             y = desiredY;
             hasLastPosition = true;
         } else if (smoothingEnabled && smoothSpeed < 1.0) {
-            // Smooth lerp toward desired position
-            // This creates a smooth, lagging camera that always trends toward centering
-            x = lerp(x, desiredX, smoothSpeed);
-            y = lerp(y, desiredY, smoothSpeed);
+            // Calculate distance to desired position
+            double deltaX = desiredX - x;
+            double deltaY = desiredY - y;
+
+            // Apply smooth speed but cap maximum movement per frame
+            double moveX = deltaX * smoothSpeed;
+            double moveY = deltaY * smoothSpeed;
+
+            // Cap the movement speed to prevent camera from racing
+            if (Math.abs(moveX) > maxCameraSpeed) {
+                moveX = maxCameraSpeed * Math.signum(moveX);
+            }
+            if (Math.abs(moveY) > maxCameraSpeed) {
+                moveY = maxCameraSpeed * Math.signum(moveY);
+            }
+
+            x += moveX;
+            y += moveY;
         } else {
             // Instant follow (smoothSpeed = 1.0)
             x = desiredX;
