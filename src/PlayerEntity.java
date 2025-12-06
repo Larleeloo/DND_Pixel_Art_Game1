@@ -20,8 +20,8 @@ class PlayerEntity extends SpriteEntity {
     private Image jumpSpriteImage;
     private int jumpWidth, jumpHeight;
 
-    // Simple ground height - use screen height from GamePanel
-    private static final int GROUND_Y = 720; // Match GamePanel.GROUND_Y
+    // Ground height - can be set per level
+    private int groundY = 720; // Default to GamePanel.GROUND_Y
 
     public PlayerEntity(int x, int y, String spritePath) {
         super(x, y, spritePath, false);
@@ -34,7 +34,16 @@ class PlayerEntity extends SpriteEntity {
         tryLoadJumpSprite(spritePath.replace(".png", "_jump.gif"));
 
         System.out.println("Player created at: x=" + x + " y=" + y + " width=" + width + " height=" + height);
-        System.out.println("Ground level set at: " + GROUND_Y);
+        System.out.println("Ground level set at: " + groundY);
+    }
+
+    /**
+     * Sets the ground Y level for this player.
+     * @param groundY The Y coordinate of the ground
+     */
+    public void setGroundY(int groundY) {
+        this.groundY = groundY;
+        System.out.println("Player ground level updated to: " + groundY);
     }
 
     public void setAudioManager(AudioManager audioManager) {
@@ -158,8 +167,8 @@ class PlayerEntity extends SpriteEntity {
         }
 
         // Check ground collision
-        if (newY + height >= GROUND_Y) {
-            newY = GROUND_Y - height;
+        if (newY + height >= groundY) {
+            newY = groundY - height;
             velY = 0;
             onGround = true;
         } else if (!foundPlatform) {
