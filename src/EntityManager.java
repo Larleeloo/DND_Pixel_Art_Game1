@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 
 /**
@@ -61,51 +60,33 @@ class EntityManager {
     }
 
     /**
-     * Draws all entities with camera transformation applied.
-     * The camera translates the graphics context so entities are
-     * drawn relative to the viewport.
+     * Draws all entities with camera-based visibility culling.
+     * Assumes the camera transform has already been applied by the caller.
+     * Uses camera only for visibility checking.
      *
-     * @param g      Graphics context
-     * @param camera Camera for viewport transformation
+     * @param g      Graphics context (with camera transform already applied)
+     * @param camera Camera for visibility checking only
      */
     public void drawAll(Graphics g, Camera camera) {
-        Graphics2D g2d = (Graphics2D) g;
-
-        // Save the current transform
-        AffineTransform oldTransform = g2d.getTransform();
-
-        // Apply camera transformation
-        camera.applyTransform(g2d);
-
         // Draw all entities (they draw at their world positions)
         for (Entity e : entities) {
-            // Optionally skip entities that are off-screen for performance
+            // Skip entities that are off-screen for performance
             if (camera.isVisible(e.getBounds())) {
                 e.draw(g);
             }
         }
-
-        // Restore the original transform
-        g2d.setTransform(oldTransform);
     }
 
     /**
-     * Draws all entities with camera transformation, with background handling.
-     * Background entities are drawn with tiling support if configured.
+     * Draws all entities with background handling.
+     * Assumes the camera transform has already been applied by the caller.
+     * Uses camera only for visibility culling.
      *
-     * @param g           Graphics context
-     * @param camera      Camera for viewport transformation
+     * @param g           Graphics context (with camera transform already applied)
+     * @param camera      Camera for visibility checking only
      * @param background  Background entity to draw with tiling (can be null)
      */
     public void drawAllWithBackground(Graphics g, Camera camera, BackgroundEntity background) {
-        Graphics2D g2d = (Graphics2D) g;
-
-        // Save the current transform
-        AffineTransform oldTransform = g2d.getTransform();
-
-        // Apply camera transformation
-        camera.applyTransform(g2d);
-
         // Draw background first (it handles its own tiling)
         if (background != null) {
             background.draw(g, camera);
@@ -122,9 +103,6 @@ class EntityManager {
                 e.draw(g);
             }
         }
-
-        // Restore the original transform
-        g2d.setTransform(oldTransform);
     }
 
     public PlayerEntity getPlayer() {
