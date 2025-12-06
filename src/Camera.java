@@ -37,6 +37,10 @@ public class Camera {
     // Track if camera has been initialized with a position
     private boolean hasLastPosition = false;
 
+    // Vertical scrolling settings
+    private boolean verticalScrollEnabled = false;
+    private int verticalMargin = 0; // Black bar height at top and bottom
+
     /**
      * Creates a new camera with the specified viewport dimensions.
      *
@@ -121,6 +125,44 @@ public class Camera {
     }
 
     /**
+     * Enables or disables vertical scrolling.
+     * When enabled, the camera will follow the player vertically.
+     *
+     * @param enabled True to enable vertical scrolling
+     */
+    public void setVerticalScrollEnabled(boolean enabled) {
+        this.verticalScrollEnabled = enabled;
+    }
+
+    /**
+     * Sets the vertical margin (black bar height) at top and bottom of screen.
+     * This creates a letterbox effect and defines the playable viewport area.
+     *
+     * @param margin Height in pixels of each black bar (top and bottom)
+     */
+    public void setVerticalMargin(int margin) {
+        this.verticalMargin = Math.max(0, margin);
+    }
+
+    /**
+     * Gets whether vertical scrolling is enabled.
+     *
+     * @return True if vertical scrolling is enabled
+     */
+    public boolean isVerticalScrollEnabled() {
+        return verticalScrollEnabled;
+    }
+
+    /**
+     * Gets the vertical margin (black bar height).
+     *
+     * @return Height of each black bar in pixels
+     */
+    public int getVerticalMargin() {
+        return verticalMargin;
+    }
+
+    /**
      * Updates the camera position to follow the target.
      * Should be called every frame.
      */
@@ -135,7 +177,24 @@ public class Camera {
 
         // Calculate where we want the camera to be (target centered in viewport)
         double desiredX = targetCenterX - viewportWidth / 2.0;
-        double desiredY = targetCenterY - viewportHeight / 2.0;
+        double desiredY;
+
+        if (verticalScrollEnabled && verticalMargin > 0) {
+            // When vertical scrolling is enabled, center player in the visible area
+            // (the area between the top and bottom black bars)
+            // The visible gameplay area height is: viewportHeight - 2 * verticalMargin
+            int visibleAreaHeight = viewportHeight - 2 * verticalMargin;
+
+            // We want the player centered in this visible area
+            // The visible area starts at verticalMargin from the top of screen
+            // So the player should be at: screenY = verticalMargin + visibleAreaHeight/2
+            // In world coordinates: targetCenterY - cameraY = verticalMargin + visibleAreaHeight/2
+            // Therefore: cameraY = targetCenterY - verticalMargin - visibleAreaHeight/2
+            desiredY = targetCenterY - verticalMargin - visibleAreaHeight / 2.0;
+        } else {
+            // Standard centering (player in middle of full viewport)
+            desiredY = targetCenterY - viewportHeight / 2.0;
+        }
 
         // Clamp desired position to bounds first (prevents camera from trying to go outside level)
         if (boundsEnabled) {
