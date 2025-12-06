@@ -10,8 +10,12 @@ import java.awt.image.BufferedImage;
  * - Grid alignment: Blocks snap to grid positions for consistent rendering
  * - Minimal per-instance data: Only position, type, and optional tint stored
  *
- * This class is designed for Minecraft-style block placement where
- * all blocks are uniform squares arranged on a grid.
+ * Layer-based damage system:
+ * - Blocks can be mined from any direction (left, right, top, bottom)
+ * - Each layer is 2 base pixels (8 scaled pixels) wide
+ * - 8 layers per direction = 16 base pixels = 64 scaled pixels (full block)
+ * - Collision bounds shrink as layers are removed
+ * - Block fully breaks when any direction reaches 8 layers of damage
  */
 public class BlockEntity extends Entity {
 
@@ -31,6 +35,22 @@ public class BlockEntity extends Entity {
 
     // Block state
     private boolean broken = false;
+
+    // Layer-based damage system
+    // Each value represents layers removed (0-8), where each layer = 2 base pixels = 8 scaled pixels
+    public static final int MAX_LAYERS = 8;
+    public static final int LAYER_SIZE = BlockRegistry.BLOCK_SIZE / MAX_LAYERS; // 8 pixels per layer
+
+    private int damageLeft = 0;   // Layers removed from left side
+    private int damageRight = 0;  // Layers removed from right side
+    private int damageTop = 0;    // Layers removed from top
+    private int damageBottom = 0; // Layers removed from bottom
+
+    // Mining direction constants
+    public static final int MINE_LEFT = 0;
+    public static final int MINE_RIGHT = 1;
+    public static final int MINE_UP = 2;
+    public static final int MINE_DOWN = 3;
 
     /**
      * Creates a new block entity at the specified pixel position.
@@ -79,20 +99,171 @@ public class BlockEntity extends Entity {
 
     @Override
     public Rectangle getBounds() {
+        // Calculate bounds accounting for layer damage
+        int leftOffset = damageLeft * LAYER_SIZE;
+        int topOffset = damageTop * LAYER_SIZE;
+        int rightReduction = damageRight * LAYER_SIZE;
+        int bottomReduction = damageBottom * LAYER_SIZE;
+
+        int newX = x + leftOffset;
+        int newY = y + topOffset;
+        int newWidth = size - leftOffset - rightReduction;
+        int newHeight = size - topOffset - bottomReduction;
+
+        // Ensure minimum size of 1 pixel
+        newWidth = Math.max(1, newWidth);
+        newHeight = Math.max(1, newHeight);
+
+        return new Rectangle(newX, newY, newWidth, newHeight);
+    }
+
+    /**
+     * Gets the full original bounds (ignoring damage).
+     * Useful for determining block position for mining checks.
+     */
+    public Rectangle getFullBounds() {
         return new Rectangle(x, y, size, size);
     }
 
     @Override
     public void draw(Graphics g) {
+        if (broken) return; // Don't draw broken blocks
+
+        Graphics2D g2d = (Graphics2D) g;
+
+        // Calculate the visible portion of the block
+        int leftOffset = damageLeft * LAYER_SIZE;
+        int topOffset = damageTop * LAYER_SIZE;
+        int rightReduction = damageRight * LAYER_SIZE;
+        int bottomReduction = damageBottom * LAYER_SIZE;
+
+        int visibleWidth = size - leftOffset - rightReduction;
+        int visibleHeight = size - topOffset - bottomReduction;
+
+        if (visibleWidth <= 0 || visibleHeight <= 0) return;
+
+        // Draw the visible portion of the texture
         if (texture != null) {
-            g.drawImage(texture, x, y, null);
+            // Source rectangle (from texture)
+            int srcX = leftOffset;
+            int srcY = topOffset;
+            int srcWidth = visibleWidth;
+            int srcHeight = visibleHeight;
+
+            // Destination rectangle (on screen)
+            int destX = x + leftOffset;
+            int destY = y + topOffset;
+
+            g2d.drawImage(texture,
+                destX, destY, destX + visibleWidth, destY + visibleHeight,  // destination
+                srcX, srcY, srcX + srcWidth, srcY + srcHeight,              // source
+                null);
         } else {
             // Fallback rendering
             g.setColor(Color.MAGENTA);
-            g.fillRect(x, y, size, size);
+            g.fillRect(x + leftOffset, y + topOffset, visibleWidth, visibleHeight);
             g.setColor(Color.BLACK);
-            g.drawRect(x, y, size - 1, size - 1);
+            g.drawRect(x + leftOffset, y + topOffset, visibleWidth - 1, visibleHeight - 1);
         }
+
+        // Debug: draw damage indicators (optional - can be removed)
+        if (hasDamage()) {
+            g2d.setColor(new Color(255, 0, 0, 50));
+            // Show mined areas
+            if (damageLeft > 0) {
+                g2d.fillRect(x, y, damageLeft * LAYER_SIZE, size);
+            }
+            if (damageRight > 0) {
+                g2d.fillRect(x + size - damageRight * LAYER_SIZE, y, damageRight * LAYER_SIZE, size);
+            }
+            if (damageTop > 0) {
+                g2d.fillRect(x, y, size, damageTop * LAYER_SIZE);
+            }
+            if (damageBottom > 0) {
+                g2d.fillRect(x, y + size - damageBottom * LAYER_SIZE, size, damageBottom * LAYER_SIZE);
+            }
+        }
+    }
+
+    /**
+     * Mines one layer from the specified direction.
+     * Returns true if the block was fully broken by this mining action.
+     *
+     * @param direction MINE_LEFT, MINE_RIGHT, MINE_UP, or MINE_DOWN
+     * @return true if block is now fully broken
+     */
+    public boolean mineLayer(int direction) {
+        if (broken) return false;
+
+        switch (direction) {
+            case MINE_LEFT:
+                damageLeft = Math.min(MAX_LAYERS, damageLeft + 1);
+                break;
+            case MINE_RIGHT:
+                damageRight = Math.min(MAX_LAYERS, damageRight + 1);
+                break;
+            case MINE_UP:
+                damageTop = Math.min(MAX_LAYERS, damageTop + 1);
+                break;
+            case MINE_DOWN:
+                damageBottom = Math.min(MAX_LAYERS, damageBottom + 1);
+                break;
+        }
+
+        // Check if block is fully broken (any direction reached max)
+        if (damageLeft >= MAX_LAYERS || damageRight >= MAX_LAYERS ||
+            damageTop >= MAX_LAYERS || damageBottom >= MAX_LAYERS) {
+            return true;
+        }
+
+        // Also check if horizontal or vertical damage combined breaks through
+        if (damageLeft + damageRight >= MAX_LAYERS ||
+            damageTop + damageBottom >= MAX_LAYERS) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Gets the current damage for a direction.
+     */
+    public int getDamage(int direction) {
+        switch (direction) {
+            case MINE_LEFT: return damageLeft;
+            case MINE_RIGHT: return damageRight;
+            case MINE_UP: return damageTop;
+            case MINE_DOWN: return damageBottom;
+            default: return 0;
+        }
+    }
+
+    /**
+     * Checks if this block has any damage.
+     */
+    public boolean hasDamage() {
+        return damageLeft > 0 || damageRight > 0 || damageTop > 0 || damageBottom > 0;
+    }
+
+    /**
+     * Gets total damage layers (for display/debug purposes).
+     */
+    public int getTotalDamage() {
+        return damageLeft + damageRight + damageTop + damageBottom;
+    }
+
+    /**
+     * Gets the remaining width of the block after damage.
+     */
+    public int getRemainingWidth() {
+        return size - (damageLeft + damageRight) * LAYER_SIZE;
+    }
+
+    /**
+     * Gets the remaining height of the block after damage.
+     */
+    public int getRemainingHeight() {
+        return size - (damageTop + damageBottom) * LAYER_SIZE;
     }
 
     /**
@@ -327,6 +498,8 @@ public class BlockEntity extends Entity {
                 ", pixel=(" + x + "," + y + ")" +
                 ", solid=" + isSolid() +
                 ", broken=" + broken +
+                ", damage=[L:" + damageLeft + ",R:" + damageRight +
+                ",T:" + damageTop + ",B:" + damageBottom + "]" +
                 "}";
     }
 }

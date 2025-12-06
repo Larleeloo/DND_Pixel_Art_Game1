@@ -81,9 +81,19 @@ class PlayerEntity extends SpriteEntity {
             inventory.toggleOpen();
         }
 
-        // Break block with 'E' key
+        // Directional mining:
+        // E - mine horizontally (based on facing direction)
+        // Q - mine upward
+        // F - mine downward
         if (input.isKeyJustPressed('e')) {
-            tryBreakBlock(entities);
+            int direction = facingRight ? BlockEntity.MINE_RIGHT : BlockEntity.MINE_LEFT;
+            tryMineBlock(entities, direction);
+        }
+        if (input.isKeyJustPressed('q')) {
+            tryMineBlock(entities, BlockEntity.MINE_UP);
+        }
+        if (input.isKeyJustPressed('f')) {
+            tryMineBlock(entities, BlockEntity.MINE_DOWN);
         }
 
         // Horizontal movement
@@ -266,46 +276,123 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Attempts to break a block in front of the player.
-     * The broken block and dropped item can be retrieved via
-     * getLastBrokenBlock() and getLastDroppedItem().
+     * Attempts to mine one layer from a block in the specified direction.
+     * Mining removes 2 base pixels (8 scaled pixels) per action.
+     * After 8 mining actions from any direction, the block fully breaks.
+     *
+     * @param entities List of entities to check for blocks
+     * @param direction BlockEntity.MINE_LEFT, MINE_RIGHT, MINE_UP, or MINE_DOWN
      */
-    private void tryBreakBlock(ArrayList<Entity> entities) {
+    private void tryMineBlock(ArrayList<Entity> entities, int direction) {
         lastBrokenBlock = null;
         lastDroppedItem = null;
 
-        // Calculate the area in front of the player to check for blocks
-        int checkDistance = BlockRegistry.BLOCK_SIZE;
-        int checkX = facingRight ? (x + width) : (x - checkDistance);
-        int checkY = y + height / 2; // Check at player mid-height
+        // Calculate the mining area based on direction
+        Rectangle mineArea = getMiningArea(direction);
 
-        Rectangle breakArea = new Rectangle(checkX, checkY - height/4, checkDistance, height/2);
-
-        // Find the nearest block in the break area
-        BlockEntity nearestBlock = null;
+        // Find the nearest block in the mining area
+        BlockEntity targetBlock = null;
         double nearestDist = Double.MAX_VALUE;
 
         for (Entity e : entities) {
             if (e instanceof BlockEntity) {
                 BlockEntity block = (BlockEntity) e;
-                if (!block.isBroken() && breakArea.intersects(block.getBounds())) {
-                    // Calculate distance to player center
-                    double dist = Math.abs((block.x + block.getSize()/2) - (x + width/2));
-                    if (dist < nearestDist) {
-                        nearestDist = dist;
-                        nearestBlock = block;
+                if (!block.isBroken()) {
+                    // Use full bounds for mining detection (so we can mine partially damaged blocks)
+                    if (mineArea.intersects(block.getFullBounds())) {
+                        // Calculate distance to player center
+                        double dist = getDistanceToBlock(block, direction);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            targetBlock = block;
+                        }
                     }
                 }
             }
         }
 
-        // Break the block if found
-        if (nearestBlock != null) {
-            lastBrokenBlock = nearestBlock;
-            lastDroppedItem = nearestBlock.breakBlock(audioManager);
+        // Mine one layer from the block if found
+        if (targetBlock != null) {
+            boolean fullyBroken = targetBlock.mineLayer(direction);
 
-            System.out.println("Player broke block: " + nearestBlock.getBlockType().name() +
-                             " at grid (" + nearestBlock.getGridX() + "," + nearestBlock.getGridY() + ")");
+            // Play a mining sound (quieter than full break)
+            if (audioManager != null) {
+                audioManager.playSound("drop"); // Use drop as mining tick sound
+            }
+
+            System.out.println("Player mined layer from " + targetBlock.getBlockType().name() +
+                             " direction=" + getDirectionName(direction) +
+                             " damage=[L:" + targetBlock.getDamage(BlockEntity.MINE_LEFT) +
+                             ",R:" + targetBlock.getDamage(BlockEntity.MINE_RIGHT) +
+                             ",T:" + targetBlock.getDamage(BlockEntity.MINE_UP) +
+                             ",B:" + targetBlock.getDamage(BlockEntity.MINE_DOWN) + "]");
+
+            // If fully broken, trigger the full break with sound and item drop
+            if (fullyBroken) {
+                lastBrokenBlock = targetBlock;
+                lastDroppedItem = targetBlock.breakBlock(audioManager);
+
+                System.out.println("Block fully broken: " + targetBlock.getBlockType().name() +
+                                 " at grid (" + targetBlock.getGridX() + "," + targetBlock.getGridY() + ")");
+            }
+        }
+    }
+
+    /**
+     * Gets the mining area rectangle based on direction.
+     */
+    private Rectangle getMiningArea(int direction) {
+        int reach = BlockRegistry.BLOCK_SIZE;
+
+        switch (direction) {
+            case BlockEntity.MINE_LEFT:
+                // Check area to the left of player
+                return new Rectangle(x - reach, y, reach, height);
+
+            case BlockEntity.MINE_RIGHT:
+                // Check area to the right of player
+                return new Rectangle(x + width, y, reach, height);
+
+            case BlockEntity.MINE_UP:
+                // Check area above player
+                return new Rectangle(x - reach/2, y - reach, width + reach, reach);
+
+            case BlockEntity.MINE_DOWN:
+                // Check area below player
+                return new Rectangle(x - reach/2, y + height, width + reach, reach);
+
+            default:
+                return new Rectangle(x, y, width, height);
+        }
+    }
+
+    /**
+     * Calculates distance to a block for mining priority.
+     */
+    private double getDistanceToBlock(BlockEntity block, int direction) {
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 2;
+        int blockCenterX = block.x + block.getSize() / 2;
+        int blockCenterY = block.y + block.getSize() / 2;
+
+        // For horizontal mining, prioritize by X distance
+        if (direction == BlockEntity.MINE_LEFT || direction == BlockEntity.MINE_RIGHT) {
+            return Math.abs(blockCenterX - playerCenterX);
+        }
+        // For vertical mining, prioritize by Y distance
+        return Math.abs(blockCenterY - playerCenterY);
+    }
+
+    /**
+     * Gets a readable name for a mining direction.
+     */
+    private String getDirectionName(int direction) {
+        switch (direction) {
+            case BlockEntity.MINE_LEFT: return "LEFT";
+            case BlockEntity.MINE_RIGHT: return "RIGHT";
+            case BlockEntity.MINE_UP: return "UP";
+            case BlockEntity.MINE_DOWN: return "DOWN";
+            default: return "UNKNOWN";
         }
     }
 

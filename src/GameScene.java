@@ -402,7 +402,7 @@ class GameScene implements Scene {
 
         // Draw controls hint
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        g2d.drawString("A/D: Move | SPACE: Jump | E: Break Block | I: Inventory", 10, 30);
+        g2d.drawString("A/D: Move | SPACE: Jump | E/Q/F: Mine (Side/Up/Down) | I: Inventory", 10, 30);
 
         // Draw camera position debug info for scrolling levels
         if (levelData.scrollingEnabled && camera != null) {
