@@ -82,18 +82,23 @@ class PlayerEntity extends SpriteEntity {
         }
 
         // Directional mining:
-        // E - mine horizontally (based on facing direction)
-        // Q - mine upward
-        // F - mine downward
+        // E - mine horizontally (direction based on player position relative to block)
+        // Q - mine upward (from bottom of block since player is below)
+        // F - mine downward (from top of block since player is above)
+        // The mining direction is the side of the block facing the player
         if (input.isKeyJustPressed('e')) {
-            int direction = facingRight ? BlockEntity.MINE_RIGHT : BlockEntity.MINE_LEFT;
+            // If facing right, block is to our right, so we mine from its LEFT side
+            // If facing left, block is to our left, so we mine from its RIGHT side
+            int direction = facingRight ? BlockEntity.MINE_LEFT : BlockEntity.MINE_RIGHT;
             tryMineBlock(entities, direction);
         }
         if (input.isKeyJustPressed('q')) {
-            tryMineBlock(entities, BlockEntity.MINE_UP);
+            // Mining upward: block is above us, so we mine from its BOTTOM
+            tryMineBlock(entities, BlockEntity.MINE_DOWN);
         }
         if (input.isKeyJustPressed('f')) {
-            tryMineBlock(entities, BlockEntity.MINE_DOWN);
+            // Mining downward: block is below us, so we mine from its TOP
+            tryMineBlock(entities, BlockEntity.MINE_UP);
         }
 
         // Horizontal movement
