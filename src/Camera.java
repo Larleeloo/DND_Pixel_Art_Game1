@@ -198,13 +198,27 @@ public class Camera {
 
         // Clamp desired position to bounds first (prevents camera from trying to go outside level)
         if (boundsEnabled) {
+            // Horizontal bounds (always clamped normally)
             if (desiredX < 0) desiredX = 0;
-            if (desiredY < 0) desiredY = 0;
             if (desiredX > levelWidth - viewportWidth) {
                 desiredX = levelWidth - viewportWidth;
             }
-            if (desiredY > levelHeight - viewportHeight) {
-                desiredY = levelHeight - viewportHeight;
+
+            // Vertical bounds - extend range when vertical scrolling is enabled
+            // This allows the camera to scroll beyond level bounds, showing black bars
+            if (verticalScrollEnabled && verticalMargin > 0) {
+                // Allow camera to go above level by margin amount (negative Y)
+                // and below level by margin amount
+                double minY = -verticalMargin;
+                double maxY = levelHeight - viewportHeight + verticalMargin;
+                if (desiredY < minY) desiredY = minY;
+                if (desiredY > maxY) desiredY = maxY;
+            } else {
+                // Standard vertical bounds
+                if (desiredY < 0) desiredY = 0;
+                if (desiredY > levelHeight - viewportHeight) {
+                    desiredY = levelHeight - viewportHeight;
+                }
             }
         }
 
@@ -285,16 +299,24 @@ public class Camera {
      * Clamps the camera position to stay within level bounds.
      */
     private void clampToBounds() {
-        // Don't let camera go past left/top edge
+        // Don't let camera go past left/right edge
         if (x < 0) x = 0;
-        if (y < 0) y = 0;
-
-        // Don't let camera go past right/bottom edge
         if (x > levelWidth - viewportWidth) {
             x = levelWidth - viewportWidth;
         }
-        if (y > levelHeight - viewportHeight) {
-            y = levelHeight - viewportHeight;
+
+        // Vertical bounds - extend range when vertical scrolling is enabled
+        if (verticalScrollEnabled && verticalMargin > 0) {
+            double minY = -verticalMargin;
+            double maxY = levelHeight - viewportHeight + verticalMargin;
+            if (y < minY) y = minY;
+            if (y > maxY) y = maxY;
+        } else {
+            // Standard vertical bounds
+            if (y < 0) y = 0;
+            if (y > levelHeight - viewportHeight) {
+                y = levelHeight - viewportHeight;
+            }
         }
     }
 
