@@ -207,11 +207,10 @@ public class Camera {
             // Vertical bounds - extend range when vertical scrolling is enabled
             // This allows the camera to scroll beyond level bounds, showing black bars
             if (verticalScrollEnabled && verticalMargin > 0) {
-                // Calculate how far camera needs to go to center a player at the top of the level
-                // For a player at Y=0, we need cameraY = 0 - verticalMargin - visibleAreaHeight/2
-                int visibleAreaHeight = viewportHeight - 2 * verticalMargin;
-                double minY = -verticalMargin - visibleAreaHeight / 2.0;
-                double maxY = levelHeight - viewportHeight + verticalMargin;
+                // Allow camera to scroll a full viewport height above and below the level
+                // This gives maximum freedom for vertical scrolling with black bars
+                double minY = -viewportHeight;
+                double maxY = levelHeight;
                 if (desiredY < minY) desiredY = minY;
                 if (desiredY > maxY) desiredY = maxY;
             } else {
@@ -308,9 +307,8 @@ public class Camera {
 
         // Vertical bounds - extend range when vertical scrolling is enabled
         if (verticalScrollEnabled && verticalMargin > 0) {
-            int visibleAreaHeight = viewportHeight - 2 * verticalMargin;
-            double minY = -verticalMargin - visibleAreaHeight / 2.0;
-            double maxY = levelHeight - viewportHeight + verticalMargin;
+            double minY = -viewportHeight;
+            double maxY = levelHeight;
             if (y < minY) y = minY;
             if (y > maxY) y = maxY;
         } else {
