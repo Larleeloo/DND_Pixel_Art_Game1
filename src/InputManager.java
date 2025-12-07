@@ -1,10 +1,13 @@
 import java.awt.event.*;
 import java.util.HashSet;
 
-class InputManager implements KeyListener {
+class InputManager implements KeyListener, MouseWheelListener {
 
     private HashSet<Character> pressed = new HashSet<>();
     private HashSet<Character> justPressed = new HashSet<>();
+
+    // Mouse wheel state: -1 = scroll up, 0 = no scroll, 1 = scroll down
+    private int scrollDirection = 0;
 
     public boolean isKeyPressed(char c) {
         return pressed.contains(Character.toLowerCase(c));
@@ -17,6 +20,17 @@ class InputManager implements KeyListener {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Gets the scroll wheel direction since last check.
+     * Returns -1 for scroll up, 1 for scroll down, 0 for no scroll.
+     * Clears the scroll state after reading.
+     */
+    public int getScrollDirection() {
+        int dir = scrollDirection;
+        scrollDirection = 0;
+        return dir;
     }
 
     @Override
@@ -35,4 +49,10 @@ class InputManager implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        // Negative rotation = scroll up, Positive = scroll down
+        scrollDirection = e.getWheelRotation() < 0 ? -1 : 1;
+    }
 }
