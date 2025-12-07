@@ -27,9 +27,10 @@ class PlayerEntity extends SpriteEntity {
     private BlockEntity lastBrokenBlock = null;
     private ItemEntity lastDroppedItem = null;
 
-    // Mining targeting system
-    // miningDirection: 0=right, 1=down, 2=left, 3=up (clockwise cycle)
-    private int miningDirection = 0;
+    // Mining targeting system - 8 positions around player (clockwise from top)
+    // 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
+    private int miningDirection = 1; // Start facing right-upper
+    private static final int NUM_DIRECTIONS = 6;
     private BlockEntity targetedBlock = null; // Currently targeted block for crosshair
 
     public PlayerEntity(int x, int y, String spritePath) {
@@ -86,10 +87,10 @@ class PlayerEntity extends SpriteEntity {
             inventory.toggleOpen();
         }
 
-        // Scroll wheel cycles mining direction: 0=right, 1=down, 2=left, 3=up
+        // Scroll wheel cycles mining direction through all 6 positions
         int scroll = input.getScrollDirection();
         if (scroll != 0) {
-            miningDirection = (miningDirection + scroll + 4) % 4;
+            miningDirection = (miningDirection + scroll + NUM_DIRECTIONS) % NUM_DIRECTIONS;
         }
 
         // Update targeted block for crosshair display
@@ -358,34 +359,31 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Gets the mining area rectangle based on damage direction.
-     * The search area is OPPOSITE to the damage direction because:
-     * - MINE_LEFT means damage block's left side = block is to our RIGHT
-     * - MINE_RIGHT means damage block's right side = block is to our LEFT
-     * - MINE_UP means damage block's top = block is BELOW us
-     * - MINE_DOWN means damage block's bottom = block is ABOVE us
+     * Gets the mining area based on the current miningDirection (0-5).
+     * 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
      */
-    private Rectangle getMiningArea(int direction) {
+    private Rectangle getMiningArea(int damageDir) {
         int reach = BlockRegistry.BLOCK_SIZE;
         int playerCenterX = x + width / 2;
-        int playerCenterY = y + height / 2;
 
-        switch (direction) {
-            case BlockEntity.MINE_LEFT:
-                // Damage from left side = block is to our RIGHT (centered on player center)
-                return new Rectangle(x + width, playerCenterY - reach, reach, reach * 2);
+        switch (miningDirection) {
+            case 0:  // Up - block above player
+                return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
 
-            case BlockEntity.MINE_RIGHT:
-                // Damage from right side = block is to our LEFT (centered on player center)
-                return new Rectangle(x - reach, playerCenterY - reach, reach, reach * 2);
+            case 1:  // Right-upper - block to right at head level
+                return new Rectangle(x + width, y - reach/2, reach, reach);
 
-            case BlockEntity.MINE_UP:
-                // Damage from top = block is BELOW us (centered on player center)
+            case 2:  // Right-lower - block to right at feet level
+                return new Rectangle(x + width, y + height - reach/2, reach, reach);
+
+            case 3:  // Down - block below player
                 return new Rectangle(playerCenterX - reach/2, y + height, reach, reach);
 
-            case BlockEntity.MINE_DOWN:
-                // Damage from bottom = block is ABOVE us (centered on player center)
-                return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
+            case 4:  // Left-lower - block to left at feet level
+                return new Rectangle(x - reach, y + height - reach/2, reach, reach);
+
+            case 5:  // Left-upper - block to left at head level
+                return new Rectangle(x - reach, y - reach/2, reach, reach);
 
             default:
                 return new Rectangle(x, y, width, height);
@@ -393,20 +391,21 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Gets the mining direction based on current selection.
-     * miningDirection: 0=right, 1=down, 2=left, 3=up (clockwise)
-     * Returns the damage direction (side of block facing player).
+     * Gets the damage direction (which side of block to damage) based on miningDirection.
+     * 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
      */
     private int getMiningDirection() {
         switch (miningDirection) {
-            case 0:  // Target right - damage block's left side
-                return BlockEntity.MINE_LEFT;
-            case 1:  // Target down - damage block's top side
-                return BlockEntity.MINE_UP;
-            case 2:  // Target left - damage block's right side
-                return BlockEntity.MINE_RIGHT;
-            case 3:  // Target up - damage block's bottom side
+            case 0:  // Up - damage block's bottom
                 return BlockEntity.MINE_DOWN;
+            case 1:  // Right-upper - damage block's left side
+            case 2:  // Right-lower - damage block's left side
+                return BlockEntity.MINE_LEFT;
+            case 3:  // Down - damage block's top
+                return BlockEntity.MINE_UP;
+            case 4:  // Left-lower - damage block's right side
+            case 5:  // Left-upper - damage block's right side
+                return BlockEntity.MINE_RIGHT;
             default:
                 return BlockEntity.MINE_LEFT;
         }
