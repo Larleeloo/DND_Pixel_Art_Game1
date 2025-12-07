@@ -378,12 +378,12 @@ class PlayerEntity extends SpriteEntity {
                 return new Rectangle(x - reach, y, reach, height);
 
             case BlockEntity.MINE_UP:
-                // Damage from top = block is BELOW us
-                return new Rectangle(x - reach/2, y + height, width + reach, reach);
+                // Damage from top = block is BELOW us (centered on player)
+                return new Rectangle(x, y + height, width, reach);
 
             case BlockEntity.MINE_DOWN:
-                // Damage from bottom = block is ABOVE us
-                return new Rectangle(x - reach/2, y - reach, width + reach, reach);
+                // Damage from bottom = block is ABOVE us (centered on player)
+                return new Rectangle(x, y - reach, width, reach);
 
             default:
                 return new Rectangle(x, y, width, height);
