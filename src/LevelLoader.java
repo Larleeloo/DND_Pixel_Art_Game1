@@ -141,6 +141,10 @@ class LevelLoader {
             if (root.containsKey("playerSpawnY")) data.playerSpawnY = toInt(root.get("playerSpawnY"));
             if (root.containsKey("playerSpritePath")) data.playerSpritePath = (String) root.get("playerSpritePath");
 
+            // Parse bone animation settings
+            if (root.containsKey("useBoneAnimation")) data.useBoneAnimation = toBool(root.get("useBoneAnimation"));
+            if (root.containsKey("boneTextureDir")) data.boneTextureDir = (String) root.get("boneTextureDir");
+
             // Parse dimensions
             if (root.containsKey("levelWidth")) data.levelWidth = toInt(root.get("levelWidth"));
             if (root.containsKey("levelHeight")) data.levelHeight = toInt(root.get("levelHeight"));
@@ -512,6 +516,8 @@ class LevelLoader {
         sb.append("  \"playerSpawnX\": ").append(data.playerSpawnX).append(",\n");
         sb.append("  \"playerSpawnY\": ").append(data.playerSpawnY).append(",\n");
         sb.append("  \"playerSpritePath\": \"").append(escape(data.playerSpritePath)).append("\",\n");
+        sb.append("  \"useBoneAnimation\": ").append(data.useBoneAnimation).append(",\n");
+        sb.append("  \"boneTextureDir\": \"").append(escape(data.boneTextureDir)).append("\",\n");
         sb.append("  \"levelWidth\": ").append(data.levelWidth).append(",\n");
         sb.append("  \"levelHeight\": ").append(data.levelHeight).append(",\n");
         sb.append("  \"groundY\": ").append(data.groundY).append(",\n");
