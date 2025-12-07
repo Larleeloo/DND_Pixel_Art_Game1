@@ -22,6 +22,10 @@ class Inventory {
     private int dragX, dragY;
     private boolean isDragging;
 
+    // Held item (hotbar selection)
+    private int selectedSlot = 0; // Which slot is currently "held" (0-indexed)
+    private static final int HOTBAR_SIZE = 5; // Number of hotbar slots shown
+
     public Inventory(int maxSlots) {
         this.items = new ArrayList<>();
         this.maxSlots = maxSlots;
@@ -134,6 +138,65 @@ class Inventory {
         return items.remove(item);
     }
 
+    /**
+     * Gets the currently selected hotbar slot index.
+     */
+    public int getSelectedSlot() {
+        return selectedSlot;
+    }
+
+    /**
+     * Sets the selected hotbar slot (0-indexed).
+     * @param slot The slot index (0 to HOTBAR_SIZE-1)
+     */
+    public void setSelectedSlot(int slot) {
+        this.selectedSlot = Math.max(0, Math.min(HOTBAR_SIZE - 1, slot));
+    }
+
+    /**
+     * Cycles to the next hotbar slot.
+     * @param direction 1 for next, -1 for previous
+     */
+    public void cycleSelectedSlot(int direction) {
+        selectedSlot = (selectedSlot + direction + HOTBAR_SIZE) % HOTBAR_SIZE;
+    }
+
+    /**
+     * Gets the item in the currently selected slot.
+     * @return The held item, or null if slot is empty
+     */
+    public ItemEntity getHeldItem() {
+        if (selectedSlot < items.size()) {
+            return items.get(selectedSlot);
+        }
+        return null;
+    }
+
+    /**
+     * Gets the tool type of the currently held item.
+     * @return The tool type, or HAND if no tool is held
+     */
+    public ToolType getHeldToolType() {
+        ItemEntity held = getHeldItem();
+        if (held != null) {
+            return ToolType.fromItemType(held.getItemType());
+        }
+        return ToolType.HAND;
+    }
+
+    /**
+     * Handles number key input to select hotbar slots.
+     * @param key The key character ('1' through '5')
+     * @return true if the key was handled
+     */
+    public boolean handleHotbarKey(char key) {
+        if (key >= '1' && key <= '5') {
+            setSelectedSlot(key - '1');
+            return true;
+        }
+        return false;
+    }
+
     public void draw(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -159,38 +222,76 @@ class Inventory {
     }
 
     private void drawCompactInventory(Graphics2D g2d) {
-        // Small bar showing item count
-        int barWidth = 200;
-        int barHeight = 40;
-        int barX = 10;
-        int barY = 80;
+        // Draw hotbar at bottom center of screen
+        int hotbarSlotSize = 50;
+        int hotbarPadding = 5;
+        int hotbarWidth = HOTBAR_SIZE * (hotbarSlotSize + hotbarPadding) + hotbarPadding;
+        int hotbarHeight = hotbarSlotSize + hotbarPadding * 2;
+        int hotbarX = (1920 - hotbarWidth) / 2;
+        int hotbarY = 1080 - hotbarHeight - 20;
 
         // Background
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRoundRect(barX, barY, barWidth, barHeight, 10, 10);
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.fillRoundRect(hotbarX, hotbarY, hotbarWidth, hotbarHeight, 10, 10);
 
         // Border
-        g2d.setColor(new Color(255, 255, 255, 200));
+        g2d.setColor(new Color(100, 100, 100));
         g2d.setStroke(new BasicStroke(2));
-        g2d.drawRoundRect(barX, barY, barWidth, barHeight, 10, 10);
+        g2d.drawRoundRect(hotbarX, hotbarY, hotbarWidth, hotbarHeight, 10, 10);
 
-        // Text
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        String text = "Items: " + items.size() + "/" + maxSlots + " [I]";
-        g2d.drawString(text, barX + 15, barY + 26);
+        // Draw hotbar slots
+        for (int i = 0; i < HOTBAR_SIZE; i++) {
+            int slotX = hotbarX + hotbarPadding + i * (hotbarSlotSize + hotbarPadding);
+            int slotY = hotbarY + hotbarPadding;
 
-        // Draw first few items as icons
-        int iconSize = 30;
-        int iconX = barX + 10;
-        int iconY = barY + barHeight + 5;
-
-        for (int i = 0; i < Math.min(3, items.size()); i++) {
-            ItemEntity item = items.get(i);
-            if (item.getSprite() != null) {
-                g2d.drawImage(item.getSprite(), iconX + (i * (iconSize + 5)), iconY, iconSize, iconSize, null);
+            // Slot background - highlight selected slot
+            if (i == selectedSlot) {
+                g2d.setColor(new Color(255, 255, 255, 100));
+            } else {
+                g2d.setColor(new Color(60, 60, 60, 200));
             }
+            g2d.fillRoundRect(slotX, slotY, hotbarSlotSize, hotbarSlotSize, 6, 6);
+
+            // Slot border - brighter for selected
+            if (i == selectedSlot) {
+                g2d.setColor(Color.WHITE);
+                g2d.setStroke(new BasicStroke(3));
+            } else {
+                g2d.setColor(new Color(120, 120, 120));
+                g2d.setStroke(new BasicStroke(2));
+            }
+            g2d.drawRoundRect(slotX, slotY, hotbarSlotSize, hotbarSlotSize, 6, 6);
+
+            // Draw item if present
+            if (i < items.size()) {
+                ItemEntity item = items.get(i);
+                if (item.getSprite() != null) {
+                    g2d.drawImage(item.getSprite(), slotX + 5, slotY + 5,
+                            hotbarSlotSize - 10, hotbarSlotSize - 10, null);
+                }
+            }
+
+            // Draw slot number
+            g2d.setColor(new Color(200, 200, 200));
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.drawString(String.valueOf(i + 1), slotX + 3, slotY + 12);
         }
+
+        // Draw held item name and tool info above hotbar
+        ItemEntity held = getHeldItem();
+        if (held != null) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 14));
+            String heldName = held.getItemName();
+            FontMetrics fm = g2d.getFontMetrics();
+            int textX = hotbarX + (hotbarWidth - fm.stringWidth(heldName)) / 2;
+            g2d.drawString(heldName, textX, hotbarY - 8);
+        }
+
+        // Draw inventory hint in corner
+        g2d.setColor(new Color(200, 200, 200, 150));
+        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+        g2d.drawString("[I] Inventory | [1-5] Select", 10, 1080 - 10);
     }
 
     private void drawFullInventory(Graphics2D g2d) {

@@ -87,6 +87,13 @@ class PlayerEntity extends SpriteEntity {
             inventory.toggleOpen();
         }
 
+        // Number keys 1-5 to select hotbar slots
+        for (char c = '1'; c <= '5'; c++) {
+            if (input.isKeyJustPressed(c)) {
+                inventory.handleHotbarKey(c);
+            }
+        }
+
         // Scroll wheel cycles mining direction through all 6 positions
         int scroll = input.getScrollDirection();
         if (scroll != 0) {
@@ -296,9 +303,9 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Attempts to mine one layer from a block in the specified direction.
-     * Mining removes 2 base pixels (8 scaled pixels) per action.
-     * After 8 mining actions from any direction, the block fully breaks.
+     * Attempts to mine layers from a block in the specified direction.
+     * Mining speed depends on the held tool - effective tools mine multiple layers.
+     * After 8 total layers from any direction, the block fully breaks.
      *
      * @param entities List of entities to check for blocks
      * @param direction BlockEntity.MINE_LEFT, MINE_RIGHT, MINE_UP, or MINE_DOWN
@@ -331,16 +338,27 @@ class PlayerEntity extends SpriteEntity {
             }
         }
 
-        // Mine one layer from the block if found
+        // Mine layers from the block if found
         if (targetBlock != null) {
-            boolean fullyBroken = targetBlock.mineLayer(direction);
+            // Get held tool and calculate layers to mine
+            ToolType heldTool = inventory.getHeldToolType();
+            int layersToMine = heldTool.getLayersPerMine(targetBlock.getBlockType());
+
+            // Mine multiple layers based on tool effectiveness
+            boolean fullyBroken = false;
+            for (int i = 0; i < layersToMine && !fullyBroken; i++) {
+                fullyBroken = targetBlock.mineLayer(direction);
+            }
 
             // Play a mining sound (quieter than full break)
             if (audioManager != null) {
                 audioManager.playSound("drop"); // Use drop as mining tick sound
             }
 
-            System.out.println("Player mined layer from " + targetBlock.getBlockType().name() +
+            // Show tool effectiveness in debug output
+            String toolInfo = heldTool == ToolType.HAND ? "bare hands" : heldTool.getDisplayName();
+            System.out.println("Player mined " + layersToMine + " layer(s) with " + toolInfo +
+                             " from " + targetBlock.getBlockType().name() +
                              " direction=" + getDirectionName(direction) +
                              " damage=[L:" + targetBlock.getDamage(BlockEntity.MINE_LEFT) +
                              ",R:" + targetBlock.getDamage(BlockEntity.MINE_RIGHT) +
