@@ -437,6 +437,7 @@ class PlayerEntity extends SpriteEntity {
 
     /**
      * Calculates distance to a block for mining priority.
+     * For vertical mining, uses true 2D distance to find block closest to player center.
      */
     private double getDistanceToBlock(BlockEntity block, int direction) {
         int playerCenterX = x + width / 2;
@@ -448,8 +449,10 @@ class PlayerEntity extends SpriteEntity {
         if (direction == BlockEntity.MINE_LEFT || direction == BlockEntity.MINE_RIGHT) {
             return Math.abs(blockCenterX - playerCenterX);
         }
-        // For vertical mining, prioritize by Y distance
-        return Math.abs(blockCenterY - playerCenterY);
+        // For vertical mining, use 2D distance to find block closest to player center
+        double dx = blockCenterX - playerCenterX;
+        double dy = blockCenterY - playerCenterY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     /**
