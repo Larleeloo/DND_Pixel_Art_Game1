@@ -5,7 +5,7 @@ import java.util.ArrayList;
  * Player entity that uses bone-based skeletal animation.
  * Supports running, jumping, and idle animations with textured bones.
  */
-public class PlayerBoneEntity extends Entity {
+public class PlayerBoneEntity extends Entity implements PlayerBase {
 
     // Physics
     private double velX = 0;
@@ -405,5 +405,15 @@ public class PlayerBoneEntity extends Entity {
         if (audioManager != null) {
             audioManager.playSound("drop");
         }
+    }
+
+    @Override
+    public int getX() {
+        return x;
+    }
+
+    @Override
+    public int getY() {
+        return y;
     }
 }

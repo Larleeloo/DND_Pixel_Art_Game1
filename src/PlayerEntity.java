@@ -2,7 +2,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import javax.swing.*;
 
-class PlayerEntity extends SpriteEntity {
+class PlayerEntity extends SpriteEntity implements PlayerBase {
 
     private double velY = 0;
     private final double gravity = 0.5;
@@ -514,5 +514,15 @@ class PlayerEntity extends SpriteEntity {
      */
     public boolean isFacingRight() {
         return facingRight;
+    }
+
+    @Override
+    public int getX() {
+        return x;
+    }
+
+    @Override
+    public int getY() {
+        return y;
     }
 }
