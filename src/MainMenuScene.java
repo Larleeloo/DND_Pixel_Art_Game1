@@ -1,14 +1,13 @@
 import java.awt.*;
-import java.io.File;
 import java.util.ArrayList;
 
 /**
- * Main menu scene with level selection.
+ * Main menu scene - the game's title screen.
+ * Provides navigation to level selection and other options.
  */
 class MainMenuScene implements Scene {
 
     private ArrayList<UIButton> buttons;
-    private ArrayList<String> levelPaths;
     private String title;
     private boolean initialized;
     private float titleBob;
@@ -25,39 +24,13 @@ class MainMenuScene implements Scene {
         System.out.println("MainMenuScene: Initializing...");
 
         buttons = new ArrayList<>();
-        levelPaths = new ArrayList<>();
         titleBob = 0;
-
-        // Scan for level files
-        scanForLevels();
 
         // Create menu buttons
         createMenuButtons();
 
         initialized = true;
-        System.out.println("MainMenuScene: Initialized with " + levelPaths.size() + " levels");
-    }
-
-    /**
-     * Scan the levels directory for JSON files.
-     */
-    private void scanForLevels() {
-        // Check for levels directory
-        File levelsDir = new File("levels");
-        if (levelsDir.exists() && levelsDir.isDirectory()) {
-            File[] files = levelsDir.listFiles((dir, name) -> name.endsWith(".json"));
-            if (files != null) {
-                for (File file : files) {
-                    levelPaths.add(file.getPath());
-                    System.out.println("MainMenuScene: Found level " + file.getPath());
-                }
-            }
-        }
-
-        // Always add a default level option if no levels found
-        if (levelPaths.isEmpty()) {
-            System.out.println("MainMenuScene: No level files found, will use default level");
-        }
+        System.out.println("MainMenuScene: Initialized");
     }
 
     /**
@@ -65,63 +38,34 @@ class MainMenuScene implements Scene {
      */
     private void createMenuButtons() {
         int centerX = GamePanel.SCREEN_WIDTH / 2;
-        int startY = 350;
+        int startY = 400;
         int buttonWidth = 300;
         int buttonHeight = 60;
         int spacing = 80;
 
-        // If we have level files, create a button for each
-        if (!levelPaths.isEmpty()) {
-            for (int i = 0; i < levelPaths.size(); i++) {
-                final String path = levelPaths.get(i);
-                String levelName = getLevelName(path, i + 1);
+        // Play button - goes to level selection
+        UIButton playButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY,
+                buttonWidth,
+                buttonHeight,
+                "Play",
+                () -> {
+                    System.out.println("MainMenuScene: Opening level selection");
+                    SceneManager.getInstance().setScene("levelSelection", SceneManager.TRANSITION_FADE);
+                }
+        );
+        playButton.setColors(
+                new Color(70, 130, 180, 220),
+                new Color(100, 160, 210, 255),
+                Color.WHITE
+        );
+        buttons.add(playButton);
 
-                UIButton levelButton = new UIButton(
-                        centerX - buttonWidth / 2,
-                        startY + (i * spacing),
-                        buttonWidth,
-                        buttonHeight,
-                        levelName,
-                        () -> {
-                            System.out.println("Loading level: " + path);
-                            SceneManager.getInstance().loadLevel(path, SceneManager.TRANSITION_FADE);
-                        }
-                );
-                levelButton.setColors(
-                        new Color(70, 130, 180, 220),
-                        new Color(100, 160, 210, 255),
-                        Color.WHITE
-                );
-                buttons.add(levelButton);
-            }
-        } else {
-            // No level files found - create a "Start Game" button
-            UIButton startButton = new UIButton(
-                    centerX - buttonWidth / 2,
-                    startY,
-                    buttonWidth,
-                    buttonHeight,
-                    "Start Game",
-                    () -> {
-                        // Create a default GameScene
-                        GameScene defaultGame = new GameScene((LevelData) null);
-                        SceneManager.getInstance().addScene("defaultGame", defaultGame);
-                        SceneManager.getInstance().setScene("defaultGame", SceneManager.TRANSITION_FADE);
-                    }
-            );
-            startButton.setColors(
-                    new Color(70, 130, 180, 220),
-                    new Color(100, 160, 210, 255),
-                    Color.WHITE
-            );
-            buttons.add(startButton);
-        }
-
-        // Exit button (always at bottom)
-        int exitY = startY + Math.max(levelPaths.size(), 1) * spacing + 40;
+        // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                exitY,
+                startY + spacing,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",
@@ -137,42 +81,6 @@ class MainMenuScene implements Scene {
                 Color.WHITE
         );
         buttons.add(exitButton);
-    }
-
-    /**
-     * Try to get a nice name for the level from its file path or content.
-     */
-    private String getLevelName(String path, int fallbackNumber) {
-        // Try to load just the name from the file
-        LevelData data = LevelLoader.load(path);
-        if (data != null && data.name != null && !data.name.equals("Untitled Level")) {
-            return data.name;
-        }
-
-        // Fall back to filename without extension
-        File file = new File(path);
-        String name = file.getName();
-        if (name.endsWith(".json")) {
-            name = name.substring(0, name.length() - 5);
-        }
-        // Convert underscores/hyphens to spaces and capitalize
-        name = name.replace("_", " ").replace("-", " ");
-        return capitalizeWords(name);
-    }
-
-    private String capitalizeWords(String str) {
-        StringBuilder result = new StringBuilder();
-        String[] words = str.split(" ");
-        for (String word : words) {
-            if (word.length() > 0) {
-                result.append(Character.toUpperCase(word.charAt(0)));
-                if (word.length() > 1) {
-                    result.append(word.substring(1).toLowerCase());
-                }
-                result.append(" ");
-            }
-        }
-        return result.toString().trim();
     }
 
     @Override
@@ -235,7 +143,7 @@ class MainMenuScene implements Scene {
         // Draw instructions at bottom
         g2d.setFont(new Font("SansSerif", Font.PLAIN, 16));
         g2d.setColor(new Color(150, 150, 170));
-        String instructions = "Select a level to begin your adventure";
+        String instructions = "Press Play to begin your adventure";
         fm = g2d.getFontMetrics();
         int instrX = (GamePanel.SCREEN_WIDTH - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, instrX, GamePanel.SCREEN_HEIGHT - 50);
@@ -270,7 +178,6 @@ class MainMenuScene implements Scene {
         System.out.println("MainMenuScene: Disposing...");
         initialized = false;
         buttons = null;
-        levelPaths = null;
     }
 
     @Override
