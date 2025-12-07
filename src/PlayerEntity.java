@@ -368,15 +368,16 @@ class PlayerEntity extends SpriteEntity {
     private Rectangle getMiningArea(int direction) {
         int reach = BlockRegistry.BLOCK_SIZE;
         int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 2;
 
         switch (direction) {
             case BlockEntity.MINE_LEFT:
-                // Damage from left side = block is to our RIGHT
-                return new Rectangle(x + width, y, reach, height);
+                // Damage from left side = block is to our RIGHT (centered on player center)
+                return new Rectangle(x + width, playerCenterY - reach, reach, reach * 2);
 
             case BlockEntity.MINE_RIGHT:
-                // Damage from right side = block is to our LEFT
-                return new Rectangle(x - reach, y, reach, height);
+                // Damage from right side = block is to our LEFT (centered on player center)
+                return new Rectangle(x - reach, playerCenterY - reach, reach, reach * 2);
 
             case BlockEntity.MINE_UP:
                 // Damage from top = block is BELOW us (centered on player center)
@@ -442,7 +443,7 @@ class PlayerEntity extends SpriteEntity {
 
     /**
      * Calculates distance to a block for mining priority.
-     * For vertical mining, uses true 2D distance to find block closest to player center.
+     * Uses true 2D distance to find block closest to player center.
      */
     private double getDistanceToBlock(BlockEntity block, int direction) {
         int playerCenterX = x + width / 2;
@@ -450,11 +451,7 @@ class PlayerEntity extends SpriteEntity {
         int blockCenterX = block.x + block.getSize() / 2;
         int blockCenterY = block.y + block.getSize() / 2;
 
-        // For horizontal mining, prioritize by X distance
-        if (direction == BlockEntity.MINE_LEFT || direction == BlockEntity.MINE_RIGHT) {
-            return Math.abs(blockCenterX - playerCenterX);
-        }
-        // For vertical mining, use 2D distance to find block closest to player center
+        // Use 2D distance for all directions to find block closest to player center
         double dx = blockCenterX - playerCenterX;
         double dy = blockCenterY - playerCenterY;
         return Math.sqrt(dx * dx + dy * dy);
