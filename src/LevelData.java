@@ -18,6 +18,10 @@ class LevelData {
     public int playerSpawnY;
     public String playerSpritePath;
 
+    // Bone animation settings
+    public boolean useBoneAnimation = false;       // If true, use PlayerBoneEntity instead of PlayerEntity
+    public String boneTextureDir = "assets/bones"; // Directory containing bone textures
+
     // Level dimensions (for camera bounds)
     public int levelWidth;
     public int levelHeight;
@@ -263,6 +267,26 @@ class LevelData {
 
         public Builder playerSprite(String path) {
             data.playerSpritePath = path;
+            return this;
+        }
+
+        /**
+         * Enable bone-based skeletal animation for the player.
+         * @param enabled True to use bone animation
+         * @return This builder
+         */
+        public Builder useBoneAnimation(boolean enabled) {
+            data.useBoneAnimation = enabled;
+            return this;
+        }
+
+        /**
+         * Set the directory containing bone texture PNGs.
+         * @param dir Directory path (e.g., "assets/bones")
+         * @return This builder
+         */
+        public Builder boneTextureDir(String dir) {
+            data.boneTextureDir = dir;
             return this;
         }
 

@@ -26,12 +26,12 @@ class EntityManager {
     }
 
     public void updateAll(InputManager input) {
-        PlayerEntity player = null;
+        PlayerBase player = null;
 
-        // Find the player
+        // Find the player (supports both PlayerEntity and PlayerBoneEntity)
         for (Entity e : entities) {
-            if (e instanceof PlayerEntity) {
-                player = (PlayerEntity) e;
+            if (e instanceof PlayerBase) {
+                player = (PlayerBase) e;
                 break;
             }
         }
@@ -43,7 +43,7 @@ class EntityManager {
 
         // Update all other entities (items, obstacles, etc.)
         for (Entity e : entities) {
-            if (!(e instanceof PlayerEntity)) {
+            if (!(e instanceof PlayerBase)) {
                 e.update(input);
             }
         }
@@ -105,10 +105,14 @@ class EntityManager {
         }
     }
 
-    public PlayerEntity getPlayer() {
+    /**
+     * Gets the player entity (supports both PlayerEntity and PlayerBoneEntity).
+     * @return The player as PlayerBase, or null if not found
+     */
+    public PlayerBase getPlayer() {
         for (Entity e : entities) {
-            if (e instanceof PlayerEntity) {
-                return (PlayerEntity) e;
+            if (e instanceof PlayerBase) {
+                return (PlayerBase) e;
             }
         }
         return null;

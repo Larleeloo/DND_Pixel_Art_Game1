@@ -12,7 +12,7 @@ class GameScene implements Scene {
     private EntityManager entityManager;
     private ArrayList<UIButton> buttons;
     private ArrayList<TriggerEntity> triggers;
-    private PlayerEntity player;
+    private PlayerBase player;
     private boolean initialized;
 
     // Camera for scrolling levels
@@ -150,17 +150,31 @@ class GameScene implements Scene {
             entityManager.addEntity(trigger);
         }
 
-        // Add player
-        player = new PlayerEntity(levelData.playerSpawnX, levelData.playerSpawnY, levelData.playerSpritePath);
-        player.setGroundY(levelData.groundY); // Set ground level from level data
-        AudioManager audio = SceneManager.getInstance().getAudioManager();
-        if (audio != null) {
-            player.setAudioManager(audio);
+        // Add player - use bone animation if enabled
+        if (levelData.useBoneAnimation) {
+            PlayerBoneEntity bonePlayer = new PlayerBoneEntity(
+                levelData.playerSpawnX, levelData.playerSpawnY, levelData.boneTextureDir);
+            bonePlayer.setGroundY(levelData.groundY);
+            AudioManager audio = SceneManager.getInstance().getAudioManager();
+            if (audio != null) {
+                bonePlayer.setAudioManager(audio);
+            }
+            player = bonePlayer;
+            System.out.println("GameScene: Using bone-animated player from " + levelData.boneTextureDir);
+        } else {
+            PlayerEntity spritePlayer = new PlayerEntity(
+                levelData.playerSpawnX, levelData.playerSpawnY, levelData.playerSpritePath);
+            spritePlayer.setGroundY(levelData.groundY);
+            AudioManager audio = SceneManager.getInstance().getAudioManager();
+            if (audio != null) {
+                spritePlayer.setAudioManager(audio);
+            }
+            player = spritePlayer;
         }
-        entityManager.addEntity(player);
+        entityManager.addEntity((Entity) player);
 
         // Set camera to follow player and snap to initial position
-        camera.setTarget(player);
+        camera.setTarget((Entity) player);
         camera.snapToTarget();
     }
 
@@ -266,16 +280,24 @@ class GameScene implements Scene {
 
     /**
      * Handles block breaking - removes broken blocks and adds dropped items.
+     * Only works with PlayerEntity (not PlayerBoneEntity).
      */
     private void handleBlockBreaking() {
+        // Block breaking is only available for PlayerEntity
+        if (!(player instanceof PlayerEntity)) {
+            return;
+        }
+
+        PlayerEntity spritePlayer = (PlayerEntity) player;
+
         // Check if player broke a block
-        BlockEntity brokenBlock = player.getLastBrokenBlock();
+        BlockEntity brokenBlock = spritePlayer.getLastBrokenBlock();
         if (brokenBlock != null) {
             // Remove the broken block from the entity manager
             entityManager.removeEntity(brokenBlock);
 
             // Add the dropped item if any
-            ItemEntity droppedItem = player.getLastDroppedItem();
+            ItemEntity droppedItem = spritePlayer.getLastDroppedItem();
             if (droppedItem != null) {
                 entityManager.addEntity(droppedItem);
             }
@@ -476,7 +498,7 @@ class GameScene implements Scene {
         return levelData;
     }
 
-    public PlayerEntity getPlayer() {
+    public PlayerBase getPlayer() {
         return player;
     }
 
