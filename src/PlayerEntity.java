@@ -367,6 +367,7 @@ class PlayerEntity extends SpriteEntity {
      */
     private Rectangle getMiningArea(int direction) {
         int reach = BlockRegistry.BLOCK_SIZE;
+        int playerCenterX = x + width / 2;
 
         switch (direction) {
             case BlockEntity.MINE_LEFT:
@@ -378,12 +379,12 @@ class PlayerEntity extends SpriteEntity {
                 return new Rectangle(x - reach, y, reach, height);
 
             case BlockEntity.MINE_UP:
-                // Damage from top = block is BELOW us (centered on player)
-                return new Rectangle(x, y + height, width, reach);
+                // Damage from top = block is BELOW us (centered on player center)
+                return new Rectangle(playerCenterX - reach/2, y + height, reach, reach);
 
             case BlockEntity.MINE_DOWN:
-                // Damage from bottom = block is ABOVE us (centered on player)
-                return new Rectangle(x, y - reach, width, reach);
+                // Damage from bottom = block is ABOVE us (centered on player center)
+                return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
 
             default:
                 return new Rectangle(x, y, width, height);
