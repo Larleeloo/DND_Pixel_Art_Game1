@@ -27,6 +27,11 @@ class PlayerEntity extends SpriteEntity {
     private BlockEntity lastBrokenBlock = null;
     private ItemEntity lastDroppedItem = null;
 
+    // Mining targeting system
+    // miningLevel: -1 = above, 0 = horizontal (same level), 1 = below
+    private int miningLevel = 0;
+    private BlockEntity targetedBlock = null; // Currently targeted block for crosshair
+
     public PlayerEntity(int x, int y, String spritePath) {
         super(x, y, spritePath, false);
 
@@ -81,24 +86,19 @@ class PlayerEntity extends SpriteEntity {
             inventory.toggleOpen();
         }
 
-        // Directional mining:
-        // E - mine horizontally (direction based on player position relative to block)
-        // Q - mine upward (from bottom of block since player is below)
-        // F - mine downward (from top of block since player is above)
-        // The mining direction is the side of the block facing the player
+        // Scroll wheel changes mining level: -1 = above, 0 = horizontal, 1 = below
+        int scroll = input.getScrollDirection();
+        if (scroll != 0) {
+            miningLevel = Math.max(-1, Math.min(1, miningLevel + scroll));
+        }
+
+        // Update targeted block for crosshair display
+        updateTargetedBlock(entities);
+
+        // E - mine the currently targeted block
         if (input.isKeyJustPressed('e')) {
-            // If facing right, block is to our right, so we mine from its LEFT side
-            // If facing left, block is to our left, so we mine from its RIGHT side
-            int direction = facingRight ? BlockEntity.MINE_LEFT : BlockEntity.MINE_RIGHT;
+            int direction = getMiningDirection();
             tryMineBlock(entities, direction);
-        }
-        if (input.isKeyJustPressed('q')) {
-            // Mining upward: block is above us, so we mine from its BOTTOM
-            tryMineBlock(entities, BlockEntity.MINE_DOWN);
-        }
-        if (input.isKeyJustPressed('f')) {
-            // Mining downward: block is below us, so we mine from its TOP
-            tryMineBlock(entities, BlockEntity.MINE_UP);
         }
 
         // Horizontal movement
@@ -260,6 +260,20 @@ class PlayerEntity extends SpriteEntity {
         g2d.setStroke(new BasicStroke(2));
         g.drawRect(x, y, width, height);
 
+        // Draw crosshair on targeted block
+        if (targetedBlock != null && !targetedBlock.isBroken()) {
+            Rectangle blockBounds = targetedBlock.getFullBounds();
+            int crosshairX = blockBounds.x + blockBounds.width / 2;
+            int crosshairY = blockBounds.y + blockBounds.height / 2;
+            int dotSize = 6;
+
+            // Draw white dot with black outline for visibility
+            g.setColor(Color.BLACK);
+            g.fillOval(crosshairX - dotSize/2 - 1, crosshairY - dotSize/2 - 1, dotSize + 2, dotSize + 2);
+            g.setColor(Color.WHITE);
+            g.fillOval(crosshairX - dotSize/2, crosshairY - dotSize/2, dotSize, dotSize);
+        }
+
         // Note: Inventory is now drawn in GameScene.drawUI() to stay fixed on screen
     }
 
@@ -374,6 +388,50 @@ class PlayerEntity extends SpriteEntity {
             default:
                 return new Rectangle(x, y, width, height);
         }
+    }
+
+    /**
+     * Gets the mining direction based on current facing direction and mining level.
+     * Mining level: -1 = above, 0 = horizontal, 1 = below
+     */
+    private int getMiningDirection() {
+        switch (miningLevel) {
+            case -1: // Above - damage from bottom
+                return BlockEntity.MINE_DOWN;
+            case 1:  // Below - damage from top
+                return BlockEntity.MINE_UP;
+            default: // Horizontal - damage from facing side
+                return facingRight ? BlockEntity.MINE_LEFT : BlockEntity.MINE_RIGHT;
+        }
+    }
+
+    /**
+     * Updates the currently targeted block based on mining direction.
+     * This is used for crosshair display.
+     */
+    private void updateTargetedBlock(ArrayList<Entity> entities) {
+        int direction = getMiningDirection();
+        Rectangle mineArea = getMiningArea(direction);
+
+        BlockEntity nearest = null;
+        double nearestDist = Double.MAX_VALUE;
+
+        for (Entity e : entities) {
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (!block.isBroken()) {
+                    if (mineArea.intersects(block.getFullBounds())) {
+                        double dist = getDistanceToBlock(block, direction);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearest = block;
+                        }
+                    }
+                }
+            }
+        }
+
+        targetedBlock = nearest;
     }
 
     /**

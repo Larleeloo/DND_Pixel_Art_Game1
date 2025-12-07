@@ -37,6 +37,7 @@ class GamePanel extends JPanel implements Runnable {
         sceneManager.setAudioManager(audioManager);
 
         addKeyListener(inputManager);
+        addMouseWheelListener(inputManager);
 
         // Load audio files
         audioManager.loadMusic("assets/music.wav");
