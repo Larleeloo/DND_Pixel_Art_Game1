@@ -25,6 +25,81 @@ class LevelLoader {
     }
 
     /**
+     * Load only metadata (name, description) from a level file.
+     * This is much faster than full loading since it doesn't parse
+     * platforms, items, triggers, or blocks.
+     * @param path Path to the JSON file
+     * @return LevelMetadata object with name and description, or null if loading fails
+     */
+    public static LevelMetadata loadMetadataOnly(String path) {
+        try {
+            String json = new String(Files.readAllBytes(Paths.get(path)));
+            return parseMetadataOnly(json);
+        } catch (IOException e) {
+            System.err.println("LevelLoader: Failed to load metadata from " + path);
+            return null;
+        }
+    }
+
+    /**
+     * Parse only metadata fields from JSON (name, description).
+     * This is a lightweight parse that stops early.
+     */
+    private static LevelMetadata parseMetadataOnly(String json) {
+        LevelMetadata metadata = new LevelMetadata();
+
+        try {
+            // Simple extraction - just find the name and description fields
+            metadata.name = extractStringField(json, "name");
+            metadata.description = extractStringField(json, "description");
+        } catch (Exception e) {
+            System.err.println("LevelLoader: Failed to parse metadata");
+            return null;
+        }
+
+        return metadata;
+    }
+
+    /**
+     * Extract a string field value from JSON without full parsing.
+     */
+    private static String extractStringField(String json, String fieldName) {
+        String searchKey = "\"" + fieldName + "\"";
+        int keyIndex = json.indexOf(searchKey);
+        if (keyIndex == -1) return null;
+
+        // Find the colon after the key
+        int colonIndex = json.indexOf(':', keyIndex + searchKey.length());
+        if (colonIndex == -1) return null;
+
+        // Find the opening quote of the value
+        int openQuote = json.indexOf('"', colonIndex + 1);
+        if (openQuote == -1) return null;
+
+        // Find the closing quote (handling escapes)
+        int closeQuote = findStringEnd(json, openQuote + 1);
+        if (closeQuote == -1) return null;
+
+        return json.substring(openQuote + 1, closeQuote);
+    }
+
+    /**
+     * Simple metadata container for level preview.
+     */
+    public static class LevelMetadata {
+        public String name;
+        public String description;
+
+        public String getName() {
+            return name != null ? name : "Untitled Level";
+        }
+
+        public String getDescription() {
+            return description != null ? description : "";
+        }
+    }
+
+    /**
      * Load a level from an input stream.
      * @param stream Input stream to read from
      * @return LevelData object, or null if loading fails
