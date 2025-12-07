@@ -344,27 +344,32 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Gets the mining area rectangle based on direction.
+     * Gets the mining area rectangle based on damage direction.
+     * The search area is OPPOSITE to the damage direction because:
+     * - MINE_LEFT means damage block's left side = block is to our RIGHT
+     * - MINE_RIGHT means damage block's right side = block is to our LEFT
+     * - MINE_UP means damage block's top = block is BELOW us
+     * - MINE_DOWN means damage block's bottom = block is ABOVE us
      */
     private Rectangle getMiningArea(int direction) {
         int reach = BlockRegistry.BLOCK_SIZE;
 
         switch (direction) {
             case BlockEntity.MINE_LEFT:
-                // Check area to the left of player
-                return new Rectangle(x - reach, y, reach, height);
-
-            case BlockEntity.MINE_RIGHT:
-                // Check area to the right of player
+                // Damage from left side = block is to our RIGHT
                 return new Rectangle(x + width, y, reach, height);
 
+            case BlockEntity.MINE_RIGHT:
+                // Damage from right side = block is to our LEFT
+                return new Rectangle(x - reach, y, reach, height);
+
             case BlockEntity.MINE_UP:
-                // Check area above player
-                return new Rectangle(x - reach/2, y - reach, width + reach, reach);
+                // Damage from top = block is BELOW us
+                return new Rectangle(x - reach/2, y + height, width + reach, reach);
 
             case BlockEntity.MINE_DOWN:
-                // Check area below player
-                return new Rectangle(x - reach/2, y + height, width + reach, reach);
+                // Damage from bottom = block is ABOVE us
+                return new Rectangle(x - reach/2, y - reach, width + reach, reach);
 
             default:
                 return new Rectangle(x, y, width, height);
