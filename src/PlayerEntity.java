@@ -28,8 +28,8 @@ class PlayerEntity extends SpriteEntity {
     private ItemEntity lastDroppedItem = null;
 
     // Mining targeting system
-    // miningLevel: -1 = above, 0 = horizontal (same level), 1 = below
-    private int miningLevel = 0;
+    // miningDirection: 0=right, 1=down, 2=left, 3=up (clockwise cycle)
+    private int miningDirection = 0;
     private BlockEntity targetedBlock = null; // Currently targeted block for crosshair
 
     public PlayerEntity(int x, int y, String spritePath) {
@@ -86,10 +86,10 @@ class PlayerEntity extends SpriteEntity {
             inventory.toggleOpen();
         }
 
-        // Scroll wheel changes mining level: -1 = above, 0 = horizontal, 1 = below
+        // Scroll wheel cycles mining direction: 0=right, 1=down, 2=left, 3=up
         int scroll = input.getScrollDirection();
         if (scroll != 0) {
-            miningLevel = Math.max(-1, Math.min(1, miningLevel + scroll));
+            miningDirection = (miningDirection + scroll + 4) % 4;
         }
 
         // Update targeted block for crosshair display
@@ -392,17 +392,22 @@ class PlayerEntity extends SpriteEntity {
     }
 
     /**
-     * Gets the mining direction based on current facing direction and mining level.
-     * Mining level: -1 = above, 0 = horizontal, 1 = below
+     * Gets the mining direction based on current selection.
+     * miningDirection: 0=right, 1=down, 2=left, 3=up (clockwise)
+     * Returns the damage direction (side of block facing player).
      */
     private int getMiningDirection() {
-        switch (miningLevel) {
-            case -1: // Above - damage from bottom
-                return BlockEntity.MINE_DOWN;
-            case 1:  // Below - damage from top
+        switch (miningDirection) {
+            case 0:  // Target right - damage block's left side
+                return BlockEntity.MINE_LEFT;
+            case 1:  // Target down - damage block's top side
                 return BlockEntity.MINE_UP;
-            default: // Horizontal - damage from facing side
-                return facingRight ? BlockEntity.MINE_LEFT : BlockEntity.MINE_RIGHT;
+            case 2:  // Target left - damage block's right side
+                return BlockEntity.MINE_RIGHT;
+            case 3:  // Target up - damage block's bottom side
+                return BlockEntity.MINE_DOWN;
+            default:
+                return BlockEntity.MINE_LEFT;
         }
     }
 
