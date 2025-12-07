@@ -268,10 +268,11 @@ public class BlockEntity extends Entity {
 
     /**
      * Checks if this block is solid (blocks player movement).
-     * @return true if the block is solid
+     * A broken block is never solid, even if its type normally is.
+     * @return true if the block is solid and not broken
      */
     public boolean isSolid() {
-        return blockType.isSolid();
+        return !broken && blockType.isSolid();
     }
 
     /**
