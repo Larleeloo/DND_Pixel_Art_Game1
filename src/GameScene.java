@@ -280,24 +280,33 @@ class GameScene implements Scene {
 
     /**
      * Handles block breaking - removes broken blocks and adds dropped items.
-     * Only works with PlayerEntity (not PlayerBoneEntity).
+     * Works with both PlayerEntity and PlayerBoneEntity.
      */
     private void handleBlockBreaking() {
-        // Block breaking is only available for PlayerEntity
-        if (!(player instanceof PlayerEntity)) {
-            return;
+        BlockEntity brokenBlock = null;
+        ItemEntity droppedItem = null;
+
+        // Get broken block from whichever player type we have
+        if (player instanceof PlayerEntity) {
+            PlayerEntity spritePlayer = (PlayerEntity) player;
+            brokenBlock = spritePlayer.getLastBrokenBlock();
+            if (brokenBlock != null) {
+                droppedItem = spritePlayer.getLastDroppedItem();
+            }
+        } else if (player instanceof PlayerBoneEntity) {
+            PlayerBoneEntity bonePlayer = (PlayerBoneEntity) player;
+            brokenBlock = bonePlayer.getLastBrokenBlock();
+            if (brokenBlock != null) {
+                droppedItem = bonePlayer.getLastDroppedItem();
+            }
         }
 
-        PlayerEntity spritePlayer = (PlayerEntity) player;
-
-        // Check if player broke a block
-        BlockEntity brokenBlock = spritePlayer.getLastBrokenBlock();
+        // Handle the broken block
         if (brokenBlock != null) {
             // Remove the broken block from the entity manager
             entityManager.removeEntity(brokenBlock);
 
             // Add the dropped item if any
-            ItemEntity droppedItem = spritePlayer.getLastDroppedItem();
             if (droppedItem != null) {
                 entityManager.addEntity(droppedItem);
             }

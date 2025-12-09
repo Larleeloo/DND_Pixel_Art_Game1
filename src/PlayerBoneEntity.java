@@ -27,6 +27,16 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     // Ground level
     private int groundY = 720;
 
+    // Mining targeting system - 6 positions around player (clockwise from top)
+    // 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
+    private int miningDirection = 1; // Start facing right-upper
+    private static final int NUM_DIRECTIONS = 6;
+    private BlockEntity targetedBlock = null; // Currently targeted block for crosshair
+
+    // Block interaction
+    private BlockEntity lastBrokenBlock = null;
+    private ItemEntity lastDroppedItem = null;
+
     // Skeleton animation system
     private Skeleton skeleton;
 
@@ -180,6 +190,21 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
             if (input.isKeyJustPressed(c)) {
                 inventory.handleHotbarKey(c);
             }
+        }
+
+        // Scroll wheel cycles mining direction through all 6 positions
+        int scroll = input.getScrollDirection();
+        if (scroll != 0) {
+            miningDirection = (miningDirection + scroll + NUM_DIRECTIONS) % NUM_DIRECTIONS;
+        }
+
+        // Update targeted block for crosshair display
+        updateTargetedBlock(entities);
+
+        // E - mine the currently targeted block
+        if (input.isKeyJustPressed('e')) {
+            int direction = getMiningDirection();
+            tryMineBlock(entities, direction);
         }
 
         // Horizontal movement
@@ -352,6 +377,20 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
             g.setColor(Color.RED);
         }
         g.drawRect(x, y, width, height);
+
+        // Draw crosshair on targeted block
+        if (targetedBlock != null && !targetedBlock.isBroken()) {
+            Rectangle blockBounds = targetedBlock.getFullBounds();
+            int crosshairX = blockBounds.x + blockBounds.width / 2;
+            int crosshairY = blockBounds.y + blockBounds.height / 2;
+            int dotSize = 6;
+
+            // Draw white dot with black outline for visibility
+            g.setColor(Color.BLACK);
+            g.fillOval(crosshairX - dotSize/2 - 1, crosshairY - dotSize/2 - 1, dotSize + 2, dotSize + 2);
+            g.setColor(Color.WHITE);
+            g.fillOval(crosshairX - dotSize/2, crosshairY - dotSize/2, dotSize, dotSize);
+        }
     }
 
     @Override
@@ -405,6 +444,215 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         if (audioManager != null) {
             audioManager.playSound("drop");
         }
+    }
+
+    // ==================== Mining Methods ====================
+
+    /**
+     * Attempts to mine layers from a block in the specified direction.
+     * Mining speed depends on the held tool - effective tools mine multiple layers.
+     * After 8 total layers from any direction, the block fully breaks.
+     *
+     * @param entities List of entities to check for blocks
+     * @param direction BlockEntity.MINE_LEFT, MINE_RIGHT, MINE_UP, or MINE_DOWN
+     */
+    private void tryMineBlock(ArrayList<Entity> entities, int direction) {
+        lastBrokenBlock = null;
+        lastDroppedItem = null;
+
+        // Calculate the mining area based on direction
+        Rectangle mineArea = getMiningArea(direction);
+
+        // Find the nearest block in the mining area
+        BlockEntity targetBlock = null;
+        double nearestDist = Double.MAX_VALUE;
+
+        for (Entity e : entities) {
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (!block.isBroken()) {
+                    // Use full bounds for mining detection (so we can mine partially damaged blocks)
+                    if (mineArea.intersects(block.getFullBounds())) {
+                        // Calculate distance to player center
+                        double dist = getDistanceToBlock(block, direction);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            targetBlock = block;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Mine layers from the block if found
+        if (targetBlock != null) {
+            // Get held tool and calculate layers to mine
+            ToolType heldTool = inventory.getHeldToolType();
+            int layersToMine = heldTool.getLayersPerMine(targetBlock.getBlockType());
+
+            // Mine multiple layers based on tool effectiveness
+            boolean fullyBroken = false;
+            for (int i = 0; i < layersToMine && !fullyBroken; i++) {
+                fullyBroken = targetBlock.mineLayer(direction);
+            }
+
+            // Play a mining sound (quieter than full break)
+            if (audioManager != null) {
+                audioManager.playSound("drop"); // Use drop as mining tick sound
+            }
+
+            // Show tool effectiveness in debug output
+            String toolInfo = heldTool == ToolType.HAND ? "bare hands" : heldTool.getDisplayName();
+            System.out.println("Player mined " + layersToMine + " layer(s) with " + toolInfo +
+                             " from " + targetBlock.getBlockType().name() +
+                             " direction=" + getDirectionName(direction) +
+                             " damage=[L:" + targetBlock.getDamage(BlockEntity.MINE_LEFT) +
+                             ",R:" + targetBlock.getDamage(BlockEntity.MINE_RIGHT) +
+                             ",T:" + targetBlock.getDamage(BlockEntity.MINE_UP) +
+                             ",B:" + targetBlock.getDamage(BlockEntity.MINE_DOWN) + "]");
+
+            // If fully broken, trigger the full break with sound and item drop
+            if (fullyBroken) {
+                lastBrokenBlock = targetBlock;
+                lastDroppedItem = targetBlock.breakBlock(audioManager);
+
+                System.out.println("Block fully broken: " + targetBlock.getBlockType().name() +
+                                 " at grid (" + targetBlock.getGridX() + "," + targetBlock.getGridY() + ")");
+            }
+        }
+    }
+
+    /**
+     * Gets the mining area based on the current miningDirection (0-5).
+     * 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
+     */
+    private Rectangle getMiningArea(int damageDir) {
+        int reach = BlockRegistry.BLOCK_SIZE;
+        int playerCenterX = x + width / 2;
+
+        switch (miningDirection) {
+            case 0:  // Up - block above player
+                return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
+
+            case 1:  // Right-upper - block to right at head level
+                return new Rectangle(x + width, y - reach/2, reach, reach);
+
+            case 2:  // Right-lower - block to right at feet level
+                return new Rectangle(x + width, y + height - reach/2, reach, reach);
+
+            case 3:  // Down - block below player
+                return new Rectangle(playerCenterX - reach/2, y + height, reach, reach);
+
+            case 4:  // Left-lower - block to left at feet level
+                return new Rectangle(x - reach, y + height - reach/2, reach, reach);
+
+            case 5:  // Left-upper - block to left at head level
+                return new Rectangle(x - reach, y - reach/2, reach, reach);
+
+            default:
+                return new Rectangle(x, y, width, height);
+        }
+    }
+
+    /**
+     * Gets the damage direction (which side of block to damage) based on miningDirection.
+     * 0=up, 1=right-upper, 2=right-lower, 3=down, 4=left-lower, 5=left-upper
+     */
+    private int getMiningDirection() {
+        switch (miningDirection) {
+            case 0:  // Up - damage block's bottom
+                return BlockEntity.MINE_DOWN;
+            case 1:  // Right-upper - damage block's left side
+            case 2:  // Right-lower - damage block's left side
+                return BlockEntity.MINE_LEFT;
+            case 3:  // Down - damage block's top
+                return BlockEntity.MINE_UP;
+            case 4:  // Left-lower - damage block's right side
+            case 5:  // Left-upper - damage block's right side
+                return BlockEntity.MINE_RIGHT;
+            default:
+                return BlockEntity.MINE_LEFT;
+        }
+    }
+
+    /**
+     * Updates the currently targeted block based on mining direction.
+     * This is used for crosshair display.
+     */
+    private void updateTargetedBlock(ArrayList<Entity> entities) {
+        int direction = getMiningDirection();
+        Rectangle mineArea = getMiningArea(direction);
+
+        BlockEntity nearest = null;
+        double nearestDist = Double.MAX_VALUE;
+
+        for (Entity e : entities) {
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (!block.isBroken()) {
+                    if (mineArea.intersects(block.getFullBounds())) {
+                        double dist = getDistanceToBlock(block, direction);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearest = block;
+                        }
+                    }
+                }
+            }
+        }
+
+        targetedBlock = nearest;
+    }
+
+    /**
+     * Calculates distance to a block for mining priority.
+     * Uses true 2D distance to find block closest to player center.
+     */
+    private double getDistanceToBlock(BlockEntity block, int direction) {
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 2;
+        int blockCenterX = block.x + block.getSize() / 2;
+        int blockCenterY = block.y + block.getSize() / 2;
+
+        // Use 2D distance for all directions to find block closest to player center
+        double dx = blockCenterX - playerCenterX;
+        double dy = blockCenterY - playerCenterY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /**
+     * Gets a readable name for a mining direction.
+     */
+    private String getDirectionName(int direction) {
+        switch (direction) {
+            case BlockEntity.MINE_LEFT: return "LEFT";
+            case BlockEntity.MINE_RIGHT: return "RIGHT";
+            case BlockEntity.MINE_UP: return "UP";
+            case BlockEntity.MINE_DOWN: return "DOWN";
+            default: return "UNKNOWN";
+        }
+    }
+
+    /**
+     * Gets the last block broken by the player (if any).
+     * Returns null if no block was broken since last check.
+     * Clears after being retrieved.
+     */
+    public BlockEntity getLastBrokenBlock() {
+        BlockEntity block = lastBrokenBlock;
+        lastBrokenBlock = null;
+        return block;
+    }
+
+    /**
+     * Gets the item dropped from the last broken block (if any).
+     * Returns null if no item was dropped.
+     * Clears after being retrieved.
+     */
+    public ItemEntity getLastDroppedItem() {
+        ItemEntity item = lastDroppedItem;
+        lastDroppedItem = null;
+        return item;
     }
 
     @Override
