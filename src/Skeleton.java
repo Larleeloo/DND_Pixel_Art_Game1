@@ -425,7 +425,7 @@ public class Skeleton {
 
     /**
      * Creates a simple humanoid skeleton with basic bones.
-     * Bones: root, torso, head, arm_left, arm_right, leg_left, leg_right
+     * Bones: root, torso, head, and 2-part arms and legs
      * @return A new humanoid skeleton
      */
     public static Skeleton createHumanoid() {
@@ -435,41 +435,77 @@ public class Skeleton {
         Bone root = new Bone("root");
         Bone torso = new Bone("torso");
         Bone head = new Bone("head");
-        Bone armLeft = new Bone("arm_left");
-        Bone armRight = new Bone("arm_right");
-        Bone legLeft = new Bone("leg_left");
-        Bone legRight = new Bone("leg_right");
+
+        // 2-part arms
+        Bone armUpperLeft = new Bone("arm_upper_left");
+        Bone armLowerLeft = new Bone("arm_lower_left");
+        Bone armUpperRight = new Bone("arm_upper_right");
+        Bone armLowerRight = new Bone("arm_lower_right");
+
+        // 2-part legs
+        Bone legUpperLeft = new Bone("leg_upper_left");
+        Bone legLowerLeft = new Bone("leg_lower_left");
+        Bone legUpperRight = new Bone("leg_upper_right");
+        Bone legLowerRight = new Bone("leg_lower_right");
 
         // Set up hierarchy
         root.addChild(torso);
         torso.addChild(head);
-        torso.addChild(armLeft);
-        torso.addChild(armRight);
-        torso.addChild(legLeft);
-        torso.addChild(legRight);
+
+        // Arms: upper attaches to torso, lower attaches to upper
+        torso.addChild(armUpperLeft);
+        armUpperLeft.addChild(armLowerLeft);
+        torso.addChild(armUpperRight);
+        armUpperRight.addChild(armLowerRight);
+
+        // Legs: upper attaches to torso, lower attaches to upper
+        torso.addChild(legUpperLeft);
+        legUpperLeft.addChild(legLowerLeft);
+        torso.addChild(legUpperRight);
+        legUpperRight.addChild(legLowerRight);
 
         // Set default positions (relative to parent)
         torso.setLocalPosition(0, 0);
-        head.setLocalPosition(0, -16);      // Above torso
-        armLeft.setLocalPosition(-8, 0);    // Left side
-        armRight.setLocalPosition(8, 0);    // Right side
-        legLeft.setLocalPosition(-4, 16);   // Below torso, left
-        legRight.setLocalPosition(4, 16);   // Below torso, right
+        head.setLocalPosition(0, -16);           // Above torso
+
+        // Arms - upper at shoulder, lower below upper
+        armUpperLeft.setLocalPosition(-8, -2);   // Left shoulder
+        armLowerLeft.setLocalPosition(0, 8);     // Below upper arm
+        armUpperRight.setLocalPosition(8, -2);   // Right shoulder
+        armLowerRight.setLocalPosition(0, 8);    // Below upper arm
+
+        // Legs - upper at hip, lower below upper
+        legUpperLeft.setLocalPosition(-4, 14);   // Left hip
+        legLowerLeft.setLocalPosition(0, 10);    // Below upper leg
+        legUpperRight.setLocalPosition(4, 14);   // Right hip
+        legLowerRight.setLocalPosition(0, 10);   // Below upper leg
 
         // Set pivot points (rotation origins)
-        head.setPivot(0.5, 1.0);            // Rotate from bottom (neck)
-        armLeft.setPivot(1.0, 0.2);         // Rotate from shoulder
-        armRight.setPivot(0.0, 0.2);        // Rotate from shoulder
-        legLeft.setPivot(0.5, 0.0);         // Rotate from hip
-        legRight.setPivot(0.5, 0.0);        // Rotate from hip
+        head.setPivot(0.5, 1.0);                 // Rotate from bottom (neck)
+
+        // Arms - upper rotates from shoulder, lower from elbow
+        armUpperLeft.setPivot(1.0, 0.1);         // Shoulder joint
+        armLowerLeft.setPivot(0.5, 0.0);         // Elbow joint
+        armUpperRight.setPivot(0.0, 0.1);        // Shoulder joint
+        armLowerRight.setPivot(0.5, 0.0);        // Elbow joint
+
+        // Legs - upper rotates from hip, lower from knee
+        legUpperLeft.setPivot(0.5, 0.0);         // Hip joint
+        legLowerLeft.setPivot(0.5, 0.0);         // Knee joint
+        legUpperRight.setPivot(0.5, 0.0);        // Hip joint
+        legLowerRight.setPivot(0.5, 0.0);        // Knee joint
 
         // Set z-order (drawing order)
-        armLeft.setZOrder(-1);              // Behind torso
-        armRight.setZOrder(-1);
-        legLeft.setZOrder(-2);              // Behind everything
-        legRight.setZOrder(-2);
+        armUpperLeft.setZOrder(-1);              // Behind torso
+        armLowerLeft.setZOrder(-1);
+        armUpperRight.setZOrder(-1);
+        armLowerRight.setZOrder(-1);
+        legUpperLeft.setZOrder(-2);              // Behind everything
+        legLowerLeft.setZOrder(-2);
+        legUpperRight.setZOrder(-2);
+        legLowerRight.setZOrder(-2);
         torso.setZOrder(0);
-        head.setZOrder(1);                  // In front
+        head.setZOrder(1);                       // In front
 
         skeleton.setRootBone(root);
         return skeleton;
@@ -477,7 +513,10 @@ public class Skeleton {
 
     /**
      * Creates a humanoid skeleton with textures loaded from a directory.
-     * Expects files: torso.png, head.png, arm_left.png, arm_right.png, leg_left.png, leg_right.png
+     * Expects files for 2-part limbs:
+     * torso.png, head.png,
+     * arm_upper_left.png, arm_lower_left.png, arm_upper_right.png, arm_lower_right.png,
+     * leg_upper_left.png, leg_lower_left.png, leg_upper_right.png, leg_lower_right.png
      * @param textureDir Directory containing the texture files
      * @return A textured humanoid skeleton
      */
@@ -485,7 +524,11 @@ public class Skeleton {
         Skeleton skeleton = createHumanoid();
 
         // Load textures for each bone
-        String[] boneNames = {"torso", "head", "arm_left", "arm_right", "leg_left", "leg_right"};
+        String[] boneNames = {
+            "torso", "head",
+            "arm_upper_left", "arm_lower_left", "arm_upper_right", "arm_lower_right",
+            "leg_upper_left", "leg_lower_left", "leg_upper_right", "leg_lower_right"
+        };
         for (String name : boneNames) {
             Bone bone = skeleton.findBone(name);
             if (bone != null) {
