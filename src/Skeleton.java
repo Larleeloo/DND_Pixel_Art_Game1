@@ -466,35 +466,37 @@ public class Skeleton {
         legUpperRight.addChild(legLowerRight);
 
         // Set default positions (relative to parent)
+        // Note: positions are in unscaled pixels, textures get scaled by RENDER_SCALE (4x)
         torso.setLocalPosition(0, 0);
-        head.setLocalPosition(0, -16);           // Above torso
+        head.setLocalPosition(0, -10);           // Above torso
 
-        // Arms - upper at shoulder, lower below upper
-        armUpperLeft.setLocalPosition(-8, -2);   // Left shoulder
-        armLowerLeft.setLocalPosition(0, 8);     // Below upper arm
-        armUpperRight.setLocalPosition(8, -2);   // Right shoulder
-        armLowerRight.setLocalPosition(0, 8);    // Below upper arm
+        // Arms - position at shoulder, pivot at top-center for natural rotation
+        // Upper arms attach to torso sides
+        armUpperLeft.setLocalPosition(-12, -4);   // Left shoulder
+        armLowerLeft.setLocalPosition(0, 6);      // Below upper arm (at elbow)
+        armUpperRight.setLocalPosition(12, -4);   // Right shoulder
+        armLowerRight.setLocalPosition(0, 6);     // Below upper arm (at elbow)
 
-        // Legs - upper at hip, lower below upper
-        legUpperLeft.setLocalPosition(-4, 14);   // Left hip
-        legLowerLeft.setLocalPosition(0, 10);    // Below upper leg
-        legUpperRight.setLocalPosition(4, 14);   // Right hip
-        legLowerRight.setLocalPosition(0, 10);   // Below upper leg
+        // Legs - position at hips, pivot at top-center
+        legUpperLeft.setLocalPosition(-6, 16);    // Left hip
+        legLowerLeft.setLocalPosition(0, 8);      // Below upper leg (at knee)
+        legUpperRight.setLocalPosition(6, 16);    // Right hip
+        legLowerRight.setLocalPosition(0, 8);     // Below upper leg (at knee)
 
-        // Set pivot points (rotation origins)
-        head.setPivot(0.5, 1.0);                 // Rotate from bottom (neck)
+        // Set pivot points (rotation origins) - use top-center for limbs
+        head.setPivot(0.5, 1.0);                  // Rotate from bottom (neck)
 
-        // Arms - upper rotates from shoulder, lower from elbow
-        armUpperLeft.setPivot(1.0, 0.1);         // Shoulder joint
-        armLowerLeft.setPivot(0.5, 0.0);         // Elbow joint
-        armUpperRight.setPivot(0.0, 0.1);        // Shoulder joint
-        armLowerRight.setPivot(0.5, 0.0);        // Elbow joint
+        // Arms - pivot at top-center for shoulder/elbow rotation
+        armUpperLeft.setPivot(0.5, 0.0);          // Top center (shoulder)
+        armLowerLeft.setPivot(0.5, 0.0);          // Top center (elbow)
+        armUpperRight.setPivot(0.5, 0.0);         // Top center (shoulder)
+        armLowerRight.setPivot(0.5, 0.0);         // Top center (elbow)
 
-        // Legs - upper rotates from hip, lower from knee
-        legUpperLeft.setPivot(0.5, 0.0);         // Hip joint
-        legLowerLeft.setPivot(0.5, 0.0);         // Knee joint
-        legUpperRight.setPivot(0.5, 0.0);        // Hip joint
-        legLowerRight.setPivot(0.5, 0.0);        // Knee joint
+        // Legs - pivot at top-center for hip/knee rotation
+        legUpperLeft.setPivot(0.5, 0.0);          // Top center (hip)
+        legLowerLeft.setPivot(0.5, 0.0);          // Top center (knee)
+        legUpperRight.setPivot(0.5, 0.0);         // Top center (hip)
+        legLowerRight.setPivot(0.5, 0.0);         // Top center (knee)
 
         // Set z-order (drawing order)
         armUpperLeft.setZOrder(-1);              // Behind torso
