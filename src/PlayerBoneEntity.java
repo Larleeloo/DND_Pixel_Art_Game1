@@ -22,7 +22,7 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
 
     // Dimensions (collision box)
     private int width = 48;   // Smaller than sprite for tighter collisions
-    private int height = 120; // Just under 2 blocks tall (2 blocks = 128 pixels)
+    private int height = 109; // Just under 2 blocks tall
 
     // Ground level
     private int groundY = 720;
@@ -360,8 +360,8 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     public void draw(Graphics g) {
         // Update skeleton position to match player
         // Position skeleton root offset from top of collision box
-        // +16 pixels down to align skeleton with hitbox properly
-        skeleton.setPosition(x + width / 2.0, y + 16);
+        // +56 pixels down to align skeleton feet with bottom of hitbox
+        skeleton.setPosition(x + width / 2.0, y + 56);
 
         // Draw the skeleton
         skeleton.draw(g);
