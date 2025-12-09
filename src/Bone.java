@@ -301,12 +301,23 @@ public class Bone {
         List<Bone> allBones = new ArrayList<>();
         collectBones(allBones);
 
+        // Debug: show collected bones count
+        if (debugRendering && debugCounter < 3) {
+            System.out.println("=== Drawing skeleton at (" + (int)rootX + "," + (int)rootY +
+                             ") scale=" + rootScale + " bones=" + allBones.size() + " ===");
+        }
+
         // Sort by z-order
         allBones.sort((a, b) -> Integer.compare(a.zOrder, b.zOrder));
 
         // Draw in z-order
         for (Bone bone : allBones) {
             bone.drawSingle(g, rootX, rootY, rootScale);
+        }
+
+        // Increment debug counter after full skeleton draw
+        if (debugRendering) {
+            debugCounter++;
         }
     }
 
@@ -320,6 +331,10 @@ public class Bone {
         }
     }
 
+    // Debug flag - set to true to see bone rendering info
+    private static boolean debugRendering = true;
+    private static int debugCounter = 0;
+
     /**
      * Draws just this bone (without children).
      */
@@ -329,6 +344,13 @@ public class Bone {
         // Use default size if no texture
         int texW = textureWidth > 0 ? textureWidth : defaultWidth;
         int texH = textureHeight > 0 ? textureHeight : defaultHeight;
+
+        // Debug output (only first few frames to avoid spam)
+        if (debugRendering && debugCounter < 3) {
+            System.out.println("Drawing bone '" + name + "' at world(" + (int)worldX + "," + (int)worldY +
+                             ") size=" + texW + "x" + texH + " scale=" + rootScale +
+                             " hasTexture=" + (texture != null));
+        }
 
         // Save the current transform (includes camera transform in scrolling levels)
         AffineTransform oldTransform = g.getTransform();
