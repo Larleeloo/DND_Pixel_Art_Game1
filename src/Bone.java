@@ -38,6 +38,11 @@ public class Bone {
     private int zOrder = 0;  // Higher = drawn on top
     private boolean visible = true;
 
+    // Default size for bones without textures
+    private int defaultWidth = 8;
+    private int defaultHeight = 12;
+    private Color placeholderColor = new Color(180, 140, 100);  // Skin tone
+
     // Cached world transform
     private double worldX;
     private double worldY;
@@ -159,6 +164,24 @@ public class Bone {
      */
     public double getLocalY() {
         return localY;
+    }
+
+    /**
+     * Sets the default size for this bone when no texture is loaded.
+     * @param width Default width in pixels
+     * @param height Default height in pixels
+     */
+    public void setDefaultSize(int width, int height) {
+        this.defaultWidth = width;
+        this.defaultHeight = height;
+    }
+
+    /**
+     * Sets the placeholder color when no texture is loaded.
+     * @param color The color to use
+     */
+    public void setPlaceholderColor(Color color) {
+        this.placeholderColor = color;
     }
 
     // ==================== Hierarchy Methods ====================
@@ -301,14 +324,18 @@ public class Bone {
      * Draws just this bone (without children).
      */
     private void drawSingle(Graphics2D g, double rootX, double rootY, double rootScale) {
-        if (!visible || texture == null) return;
+        if (!visible) return;
+
+        // Use default size if no texture
+        int texW = textureWidth > 0 ? textureWidth : defaultWidth;
+        int texH = textureHeight > 0 ? textureHeight : defaultHeight;
 
         // Save the current transform (includes camera transform in scrolling levels)
         AffineTransform oldTransform = g.getTransform();
 
         // Calculate the scaled dimensions
-        int drawWidth = (int)(textureWidth * rootScale * scaleX);
-        int drawHeight = (int)(textureHeight * rootScale * scaleY);
+        int drawWidth = (int)(texW * rootScale * scaleX);
+        int drawHeight = (int)(texH * rootScale * scaleY);
 
         // Calculate pivot in pixels
         double pivotPixelX = drawWidth * pivotX;
@@ -326,8 +353,16 @@ public class Bone {
         combined.concatenate(boneTransform);
         g.setTransform(combined);
 
-        // Draw the texture at origin (transform handles positioning)
-        g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
+        // Draw the texture or a placeholder
+        if (texture != null) {
+            g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
+        } else {
+            // Draw placeholder rectangle for bones without textures
+            g.setColor(placeholderColor);
+            g.fillRect(0, 0, texW, texH);
+            g.setColor(Color.BLACK);
+            g.drawRect(0, 0, texW - 1, texH - 1);
+        }
 
         // Restore transform
         g.setTransform(oldTransform);

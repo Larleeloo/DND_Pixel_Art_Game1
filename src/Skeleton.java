@@ -507,6 +507,22 @@ public class Skeleton {
         torso.setZOrder(0);
         head.setZOrder(1);                       // In front
 
+        // Set default sizes for bones without textures
+        torso.setDefaultSize(12, 16);
+        head.setDefaultSize(10, 10);
+
+        // Arm segments
+        armUpperLeft.setDefaultSize(4, 8);
+        armLowerLeft.setDefaultSize(4, 8);
+        armUpperRight.setDefaultSize(4, 8);
+        armLowerRight.setDefaultSize(4, 8);
+
+        // Leg segments
+        legUpperLeft.setDefaultSize(5, 10);
+        legLowerLeft.setDefaultSize(4, 10);
+        legUpperRight.setDefaultSize(5, 10);
+        legLowerRight.setDefaultSize(4, 10);
+
         skeleton.setRootBone(root);
         return skeleton;
     }
