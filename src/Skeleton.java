@@ -512,19 +512,40 @@ public class Skeleton {
         torso.setDefaultSize(12, 16);
         head.setDefaultSize(10, 10);
 
-        // Arm segments
+        // Arm segments - make them bigger and use distinct color
         armUpperLeft.setDefaultSize(4, 8);
         armLowerLeft.setDefaultSize(4, 8);
         armUpperRight.setDefaultSize(4, 8);
         armLowerRight.setDefaultSize(4, 8);
 
-        // Leg segments
+        // Leg segments - make them bigger and use distinct color
         legUpperLeft.setDefaultSize(5, 10);
         legLowerLeft.setDefaultSize(4, 10);
         legUpperRight.setDefaultSize(5, 10);
         legLowerRight.setDefaultSize(4, 10);
 
+        // Set distinct placeholder colors for debugging
+        torso.setPlaceholderColor(new Color(180, 140, 100));  // Skin tone
+        head.setPlaceholderColor(new Color(200, 160, 120));   // Lighter skin
+        armUpperLeft.setPlaceholderColor(Color.RED);
+        armLowerLeft.setPlaceholderColor(Color.ORANGE);
+        armUpperRight.setPlaceholderColor(Color.RED);
+        armLowerRight.setPlaceholderColor(Color.ORANGE);
+        legUpperLeft.setPlaceholderColor(Color.BLUE);
+        legLowerLeft.setPlaceholderColor(Color.CYAN);
+        legUpperRight.setPlaceholderColor(Color.BLUE);
+        legLowerRight.setPlaceholderColor(Color.CYAN);
+
         skeleton.setRootBone(root);
+
+        // Debug: print bone hierarchy
+        System.out.println("Skeleton created with bones:");
+        for (String boneName : skeleton.getBoneNames()) {
+            Bone b = skeleton.findBone(boneName);
+            System.out.println("  - " + boneName + " visible=" + b.isVisible() +
+                             " size=" + b.getTextureWidth() + "x" + b.getTextureHeight());
+        }
+
         return skeleton;
     }
 
