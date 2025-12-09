@@ -99,22 +99,19 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
 
     /**
      * Sets up the default animations for the player.
+     * Uses 2-part limbs (upper/lower arms and legs).
      */
     private void setupAnimations() {
         // Idle animation - subtle breathing
         BoneAnimation idle = BoneAnimation.createIdleAnimation("torso");
         skeleton.addAnimation(idle);
 
-        // Running animation
-        BoneAnimation run = BoneAnimation.createRunAnimation(
-            "leg_left", "leg_right", "arm_left", "arm_right"
-        );
+        // Running animation with 2-part limbs
+        BoneAnimation run = BoneAnimation.createRunAnimation();
         skeleton.addAnimation(run);
 
-        // Jump animation
-        BoneAnimation jump = BoneAnimation.createJumpAnimation(
-            "torso", "leg_left", "leg_right", "arm_left", "arm_right"
-        );
+        // Jump animation with 2-part limbs
+        BoneAnimation jump = BoneAnimation.createJumpAnimation();
         skeleton.addAnimation(jump);
 
         // Start with idle
@@ -149,6 +146,43 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
      */
     public void addAnimation(BoneAnimation animation) {
         skeleton.addAnimation(animation);
+    }
+
+    /**
+     * Loads animations from a Blockbench JSON file.
+     * All animations in the file will be added to this player.
+     * @param filePath Path to the Blockbench animation JSON file
+     * @return Number of animations loaded
+     */
+    public int loadAnimationsFromBlockbench(String filePath) {
+        BlockbenchAnimationImporter importer = new BlockbenchAnimationImporter();
+        java.util.List<BoneAnimation> animations = importer.importFile(filePath);
+        for (BoneAnimation anim : animations) {
+            skeleton.addAnimation(anim);
+        }
+        System.out.println("PlayerBoneEntity: Loaded " + animations.size() +
+                         " animations from Blockbench file: " + filePath);
+        return animations.size();
+    }
+
+    /**
+     * Loads animations from a Blockbench JSON file with custom bone name mappings.
+     * @param filePath Path to the Blockbench animation JSON file
+     * @param boneMappings Map of Blockbench bone names to skeleton bone names
+     * @return Number of animations loaded
+     */
+    public int loadAnimationsFromBlockbench(String filePath, java.util.Map<String, String> boneMappings) {
+        BlockbenchAnimationImporter importer = new BlockbenchAnimationImporter();
+        for (java.util.Map.Entry<String, String> entry : boneMappings.entrySet()) {
+            importer.addBoneMapping(entry.getKey(), entry.getValue());
+        }
+        java.util.List<BoneAnimation> animations = importer.importFile(filePath);
+        for (BoneAnimation anim : animations) {
+            skeleton.addAnimation(anim);
+        }
+        System.out.println("PlayerBoneEntity: Loaded " + animations.size() +
+                         " animations from Blockbench file: " + filePath);
+        return animations.size();
     }
 
     /**

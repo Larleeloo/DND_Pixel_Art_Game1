@@ -328,7 +328,50 @@ public class BoneAnimation {
     }
 
     /**
-     * Creates a basic running animation.
+     * Creates a basic running animation for 2-part limbs.
+     * Uses the default bone names: arm_upper_left, arm_lower_left, etc.
+     * @return Running animation for 2-part skeleton
+     */
+    public static BoneAnimation createRunAnimation() {
+        BoneAnimation anim = new BoneAnimation("run", 0.4, true);
+
+        // Left leg - upper swings, lower bends at knee
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, -25);   // Forward
+        anim.addKeyframe("leg_upper_left", 0.2, 0, 0, 25);    // Back
+        anim.addKeyframe("leg_upper_left", 0.4, 0, 0, -25);   // Forward again
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 30);    // Bent back
+        anim.addKeyframe("leg_lower_left", 0.2, 0, 0, 0);     // Straight
+        anim.addKeyframe("leg_lower_left", 0.4, 0, 0, 30);    // Bent back
+
+        // Right leg - opposite phase
+        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 25);   // Back
+        anim.addKeyframe("leg_upper_right", 0.2, 0, 0, -25);  // Forward
+        anim.addKeyframe("leg_upper_right", 0.4, 0, 0, 25);   // Back again
+        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);    // Straight
+        anim.addKeyframe("leg_lower_right", 0.2, 0, 0, 30);   // Bent back
+        anim.addKeyframe("leg_lower_right", 0.4, 0, 0, 0);    // Straight
+
+        // Left arm - swings opposite to left leg
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, 25);    // Back
+        anim.addKeyframe("arm_upper_left", 0.2, 0, 0, -25);   // Forward
+        anim.addKeyframe("arm_upper_left", 0.4, 0, 0, 25);    // Back again
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -20);   // Slight bend
+        anim.addKeyframe("arm_lower_left", 0.2, 0, 0, -30);   // More bend forward
+        anim.addKeyframe("arm_lower_left", 0.4, 0, 0, -20);   // Slight bend
+
+        // Right arm - swings opposite to right leg
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, -25);  // Forward
+        anim.addKeyframe("arm_upper_right", 0.2, 0, 0, 25);   // Back
+        anim.addKeyframe("arm_upper_right", 0.4, 0, 0, -25);  // Forward again
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -30);  // More bend forward
+        anim.addKeyframe("arm_lower_right", 0.2, 0, 0, -20);  // Slight bend
+        anim.addKeyframe("arm_lower_right", 0.4, 0, 0, -30);  // More bend forward
+
+        return anim;
+    }
+
+    /**
+     * Creates a basic running animation (legacy version for single-part limbs).
      * @param legLeftName Left leg bone name
      * @param legRightName Right leg bone name
      * @param armLeftName Left arm bone name
@@ -361,7 +404,64 @@ public class BoneAnimation {
     }
 
     /**
-     * Creates a jump animation.
+     * Creates a jump animation for 2-part limbs.
+     * Uses the default bone names.
+     * @return Jump animation for 2-part skeleton
+     */
+    public static BoneAnimation createJumpAnimation() {
+        BoneAnimation anim = new BoneAnimation("jump", 0.6, false);
+
+        // Crouch, then extend
+        anim.addKeyframe("torso", 0.0, 0, 0, 0);
+        anim.addKeyframe("torso", 0.1, 0, 4, 0);       // Crouch
+        anim.addKeyframe("torso", 0.3, 0, -8, -5);     // Jump up, slight lean
+        anim.addKeyframe("torso", 0.6, 0, 0, 0);       // Return
+
+        // Left leg - crouch then extend
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_upper_left", 0.1, 0, 0, -20);  // Crouch - thigh forward
+        anim.addKeyframe("leg_upper_left", 0.3, 0, 0, 15);   // Extended back
+        anim.addKeyframe("leg_upper_left", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.1, 0, 0, 40);   // Knee bent for crouch
+        anim.addKeyframe("leg_lower_left", 0.3, 0, 0, -10);  // Leg extended
+        anim.addKeyframe("leg_lower_left", 0.6, 0, 0, 0);
+
+        // Right leg - same as left
+        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_upper_right", 0.1, 0, 0, -20);
+        anim.addKeyframe("leg_upper_right", 0.3, 0, 0, 15);
+        anim.addKeyframe("leg_upper_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 0.1, 0, 0, 40);
+        anim.addKeyframe("leg_lower_right", 0.3, 0, 0, -10);
+        anim.addKeyframe("leg_lower_right", 0.6, 0, 0, 0);
+
+        // Left arm - goes up during jump
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("arm_upper_left", 0.1, 0, 0, -15);
+        anim.addKeyframe("arm_upper_left", 0.3, 0, 0, -50);  // Arm up
+        anim.addKeyframe("arm_upper_left", 0.6, 0, 0, 0);
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("arm_lower_left", 0.1, 0, 0, -20);
+        anim.addKeyframe("arm_lower_left", 0.3, 0, 0, -30);  // Bent at elbow
+        anim.addKeyframe("arm_lower_left", 0.6, 0, 0, 0);
+
+        // Right arm - goes up during jump
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("arm_upper_right", 0.1, 0, 0, 15);
+        anim.addKeyframe("arm_upper_right", 0.3, 0, 0, 50);   // Arm up
+        anim.addKeyframe("arm_upper_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("arm_lower_right", 0.1, 0, 0, 20);
+        anim.addKeyframe("arm_lower_right", 0.3, 0, 0, 30);   // Bent at elbow
+        anim.addKeyframe("arm_lower_right", 0.6, 0, 0, 0);
+
+        return anim;
+    }
+
+    /**
+     * Creates a jump animation (legacy version for single-part limbs).
      * @param torsoName Torso bone name
      * @param legLeftName Left leg bone name
      * @param legRightName Right leg bone name
