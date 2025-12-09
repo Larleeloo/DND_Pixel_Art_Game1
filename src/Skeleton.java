@@ -433,6 +433,7 @@ public class Skeleton {
 
         // Create bones
         Bone root = new Bone("root");
+        root.setVisible(false);  // Root is just a container, don't draw it
         Bone torso = new Bone("torso");
         Bone head = new Bone("head");
 
