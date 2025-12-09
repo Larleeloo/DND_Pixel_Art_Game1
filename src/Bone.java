@@ -303,7 +303,7 @@ public class Bone {
     private void drawSingle(Graphics2D g, double rootX, double rootY, double rootScale) {
         if (!visible || texture == null) return;
 
-        // Save the current transform
+        // Save the current transform (includes camera transform in scrolling levels)
         AffineTransform oldTransform = g.getTransform();
 
         // Calculate the scaled dimensions
@@ -315,13 +315,16 @@ public class Bone {
         double pivotPixelY = drawHeight * pivotY;
 
         // Create transform: translate to world position, rotate around pivot
-        AffineTransform transform = new AffineTransform();
-        transform.translate(worldX, worldY);
-        transform.rotate(Math.toRadians(worldRotation));
-        transform.translate(-pivotPixelX, -pivotPixelY);
-        transform.scale(rootScale * scaleX, rootScale * scaleY);
+        AffineTransform boneTransform = new AffineTransform();
+        boneTransform.translate(worldX, worldY);
+        boneTransform.rotate(Math.toRadians(worldRotation));
+        boneTransform.translate(-pivotPixelX, -pivotPixelY);
+        boneTransform.scale(rootScale * scaleX, rootScale * scaleY);
 
-        g.setTransform(transform);
+        // Concatenate with existing transform (preserves camera transform)
+        AffineTransform combined = new AffineTransform(oldTransform);
+        combined.concatenate(boneTransform);
+        g.setTransform(combined);
 
         // Draw the texture at origin (transform handles positioning)
         g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
