@@ -293,8 +293,8 @@ public class Bone {
      * @param rootScale Scale factor for rendering
      */
     public void draw(Graphics2D g, double rootX, double rootY, double rootScale) {
-        if (!visible) return;
-
+        // Always update transforms for all bones (even invisible ones)
+        // Individual bone visibility is handled in drawSingle()
         updateWorldTransform(rootX, rootY, 0);
 
         // Collect all bones for z-order sorting
