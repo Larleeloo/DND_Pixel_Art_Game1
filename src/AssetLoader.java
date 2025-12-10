@@ -55,8 +55,8 @@ public class AssetLoader {
             System.out.println("Failed to load: " + path + " - " + e.getMessage());
         }
 
-        // fallback placeholder
-        BufferedImage placeholder = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
-        return new ImageAsset(placeholder, null);
+        // File not found - return null so bones use placeholder colors
+        System.out.println("Asset not found: " + path);
+        return new ImageAsset(null, null);
     }
 }
