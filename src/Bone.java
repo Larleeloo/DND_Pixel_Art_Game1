@@ -79,10 +79,18 @@ public class Bone {
     public void loadTexture(String path) {
         AssetLoader.ImageAsset asset = AssetLoader.load(path);
         this.texture = asset.staticImage;
-        this.textureWidth = asset.width;
-        this.textureHeight = asset.height;
-        System.out.println("Bone '" + name + "' loaded texture: " + path +
-                          " (" + textureWidth + "x" + textureHeight + ")");
+        if (this.texture != null) {
+            this.textureWidth = asset.width;
+            this.textureHeight = asset.height;
+            System.out.println("Bone '" + name + "' loaded texture: " + path +
+                              " (" + textureWidth + "x" + textureHeight + ")");
+        } else {
+            // Texture not found - will use placeholder color
+            this.textureWidth = 0;
+            this.textureHeight = 0;
+            System.out.println("Bone '" + name + "' texture not found: " + path +
+                              " (using placeholder color)");
+        }
     }
 
     /**

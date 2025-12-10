@@ -139,6 +139,7 @@ public class BoneTextureGenerator {
 
     /**
      * Generates placeholder bone textures with a pixel art style.
+     * Uses 2-part limbs (upper/lower arms and legs) for better animation.
      * @param outputDir Directory to save textures
      * @param primaryColor Main body color
      * @param secondaryColor Detail/shading color
@@ -150,21 +151,41 @@ public class BoneTextureGenerator {
                 dir.mkdirs();
             }
 
+            // Skin color for limbs
+            Color skinColor = new Color(255, 200, 150);
+            Color skinShade = new Color(220, 170, 120);
+
             // Torso - 8x10 pixel art
             BufferedImage torso = createPixelArtTorso(8, 10, primaryColor, secondaryColor);
             ImageIO.write(torso, "PNG", new File(outputDir + "/torso.png"));
 
             // Head - 6x6 pixel art
-            BufferedImage head = createPixelArtHead(6, 6, primaryColor, secondaryColor);
+            BufferedImage head = createPixelArtHead(6, 6, skinColor, skinShade);
             ImageIO.write(head, "PNG", new File(outputDir + "/head.png"));
 
-            // Arms - 3x8 pixel art
-            BufferedImage armLeft = createPixelArtLimb(3, 8, primaryColor, secondaryColor);
+            // 2-part arms - upper (4x6) and lower (3x6) with skin color
+            BufferedImage armUpper = createPixelArtLimb(4, 6, skinColor, skinShade);
+            BufferedImage armLower = createPixelArtLimb(3, 6, skinColor, skinShade);
+            ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_left.png"));
+            ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_right.png"));
+            ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_left.png"));
+            ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_right.png"));
+
+            // 2-part legs - upper (5x8) and lower (4x8) with pants color
+            Color pantsColor = new Color(80, 80, 120);
+            Color pantsShade = new Color(60, 60, 100);
+            BufferedImage legUpper = createPixelArtLimb(5, 8, pantsColor, pantsShade);
+            BufferedImage legLower = createPixelArtLimb(4, 8, pantsColor, pantsShade);
+            ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_left.png"));
+            ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_right.png"));
+            ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_left.png"));
+            ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_right.png"));
+
+            // Also keep legacy single-part limbs for backwards compatibility
+            BufferedImage armLeft = createPixelArtLimb(3, 8, skinColor, skinShade);
             ImageIO.write(armLeft, "PNG", new File(outputDir + "/arm_left.png"));
             ImageIO.write(armLeft, "PNG", new File(outputDir + "/arm_right.png"));
-
-            // Legs - 4x10 pixel art
-            BufferedImage legLeft = createPixelArtLimb(4, 10, primaryColor, secondaryColor);
+            BufferedImage legLeft = createPixelArtLimb(4, 10, pantsColor, pantsShade);
             ImageIO.write(legLeft, "PNG", new File(outputDir + "/leg_left.png"));
             ImageIO.write(legLeft, "PNG", new File(outputDir + "/leg_right.png"));
 
