@@ -303,7 +303,8 @@ public class Bone {
     public void draw(Graphics2D g, double rootX, double rootY, double rootScale) {
         // Always update transforms for all bones (even invisible ones)
         // Individual bone visibility is handled in drawSingle()
-        updateWorldTransform(rootX, rootY, 0);
+        // Pass scale so local positions are properly scaled for screen coordinates
+        updateWorldTransform(rootX, rootY, 0, rootScale);
 
         // Collect all bones for z-order sorting
         List<Bone> allBones = new ArrayList<>();
@@ -412,30 +413,33 @@ public class Bone {
 
     /**
      * Updates the world transform based on parent transforms.
+     * Local positions are scaled by rootScale to match screen coordinates.
+     * @param rootX World X position of skeleton root
+     * @param rootY World Y position of skeleton root
+     * @param parentRotation Parent's world rotation in degrees
+     * @param scale Scale factor for converting local to screen coordinates
      */
-    private void updateWorldTransform(double rootX, double rootY, double parentRotation) {
+    private void updateWorldTransform(double rootX, double rootY, double parentRotation, double scale) {
         if (parent == null) {
-            // Root bone: use root position + local offset
+            // Root bone: use root position + scaled local offset
             worldRotation = rotation;
 
-            // Apply rotation to local offset
-            double rad = Math.toRadians(worldRotation);
-            double cos = Math.cos(rad);
-            double sin = Math.sin(rad);
-
-            worldX = rootX + localX;
-            worldY = rootY + localY;
+            worldX = rootX + localX * scale;
+            worldY = rootY + localY * scale;
         } else {
             // Child bone: inherit parent transform
             worldRotation = parentRotation + rotation;
 
-            // Rotate local offset by parent's world rotation
+            // Scale local offset and rotate by parent's world rotation
+            double scaledLocalX = localX * scale;
+            double scaledLocalY = localY * scale;
+
             double rad = Math.toRadians(parentRotation);
             double cos = Math.cos(rad);
             double sin = Math.sin(rad);
 
-            double rotatedX = localX * cos - localY * sin;
-            double rotatedY = localX * sin + localY * cos;
+            double rotatedX = scaledLocalX * cos - scaledLocalY * sin;
+            double rotatedY = scaledLocalX * sin + scaledLocalY * cos;
 
             worldX = parent.worldX + rotatedX;
             worldY = parent.worldY + rotatedY;
@@ -445,7 +449,7 @@ public class Bone {
 
         // Update children
         for (Bone child : children) {
-            child.updateWorldTransform(rootX, rootY, worldRotation);
+            child.updateWorldTransform(rootX, rootY, worldRotation, scale);
         }
     }
 
