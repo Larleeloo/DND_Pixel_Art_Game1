@@ -314,58 +314,142 @@ public class BoneAnimation {
     // ==================== Static Factory Methods for Common Animations ====================
 
     /**
-     * Creates a simple idle breathing animation.
+     * Creates a natural idle breathing animation for profile view.
+     * Includes subtle torso bob, arm relaxation, and weight shifting.
      * @param torsoName Name of the torso/body bone to animate
      * @return Idle animation
      */
     public static BoneAnimation createIdleAnimation(String torsoName) {
-        BoneAnimation anim = new BoneAnimation("idle", 2.0, true);
-        // Subtle up/down bob
-        anim.addKeyframe(torsoName, 0.0, 0, 0, 0);
-        anim.addKeyframe(torsoName, 1.0, 0, -2, 0);  // Slight rise
-        anim.addKeyframe(torsoName, 2.0, 0, 0, 0);
+        BoneAnimation anim = new BoneAnimation("idle", 2.5, true);
+
+        // === TORSO - subtle breathing bob ===
+        anim.addKeyframe("torso", 0.0, 0, 0, 0);
+        anim.addKeyframe("torso", 1.25, 0, -1, 0);   // Slight rise (inhale)
+        anim.addKeyframe("torso", 2.5, 0, 0, 0);    // Return (exhale)
+
+        // === HEAD - very subtle movement ===
+        anim.addKeyframe("head", 0.0, 0, 0, 0);
+        anim.addKeyframe("head", 1.25, 0, 0, 0);
+        anim.addKeyframe("head", 2.5, 0, 0, 0);
+
+        // === ARMS - relaxed at sides, slight natural bend ===
+        // Right arm (front in profile) - relaxed position
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 5);
+        anim.addKeyframe("arm_upper_right", 1.25, 0, 0, 5);
+        anim.addKeyframe("arm_upper_right", 2.5, 0, 0, 5);
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -15);
+        anim.addKeyframe("arm_lower_right", 1.25, 0, 0, -15);
+        anim.addKeyframe("arm_lower_right", 2.5, 0, 0, -15);
+
+        // Left arm (back in profile) - relaxed position
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, -5);
+        anim.addKeyframe("arm_upper_left", 1.25, 0, 0, -5);
+        anim.addKeyframe("arm_upper_left", 2.5, 0, 0, -5);
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -15);
+        anim.addKeyframe("arm_lower_left", 1.25, 0, 0, -15);
+        anim.addKeyframe("arm_lower_left", 2.5, 0, 0, -15);
+
+        // === LEGS - standing position ===
+        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_upper_right", 1.25, 0, 0, 0);
+        anim.addKeyframe("leg_upper_right", 2.5, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 1.25, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 2.5, 0, 0, 0);
+
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_upper_left", 1.25, 0, 0, 0);
+        anim.addKeyframe("leg_upper_left", 2.5, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 1.25, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 2.5, 0, 0, 0);
+
         return anim;
     }
 
     /**
-     * Creates a basic running animation for 2-part limbs.
+     * Creates a natural human running animation for 2-part limbs in profile view.
      * Uses the default bone names: arm_upper_left, arm_lower_left, etc.
+     * Implements a proper running gait cycle with contact, push-off, swing phases.
      * @return Running animation for 2-part skeleton
      */
     public static BoneAnimation createRunAnimation() {
-        BoneAnimation anim = new BoneAnimation("run", 0.4, true);
+        BoneAnimation anim = new BoneAnimation("run", 0.5, true);
 
-        // Left leg - upper swings, lower bends at knee
-        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, -25);   // Forward
-        anim.addKeyframe("leg_upper_left", 0.2, 0, 0, 25);    // Back
-        anim.addKeyframe("leg_upper_left", 0.4, 0, 0, -25);   // Forward again
-        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 30);    // Bent back
-        anim.addKeyframe("leg_lower_left", 0.2, 0, 0, 0);     // Straight
-        anim.addKeyframe("leg_lower_left", 0.4, 0, 0, 30);    // Bent back
+        // Human running gait cycle (0.5s per full cycle = 2 steps)
+        // Phase timing: 0.0 = right foot contact, 0.25 = left foot contact, 0.5 = cycle repeats
 
-        // Right leg - opposite phase
-        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 25);   // Back
-        anim.addKeyframe("leg_upper_right", 0.2, 0, 0, -25);  // Forward
-        anim.addKeyframe("leg_upper_right", 0.4, 0, 0, 25);   // Back again
-        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);    // Straight
-        anim.addKeyframe("leg_lower_right", 0.2, 0, 0, 30);   // Bent back
-        anim.addKeyframe("leg_lower_right", 0.4, 0, 0, 0);    // Straight
+        // === TORSO - slight forward lean with vertical bob ===
+        // Body drops at contact, rises during push-off
+        anim.addKeyframe("torso", 0.0, 0, 2, 8);      // Right contact - body low, slight lean
+        anim.addKeyframe("torso", 0.125, 0, -2, 8);   // Push-off - body rises
+        anim.addKeyframe("torso", 0.25, 0, 2, 8);     // Left contact - body low
+        anim.addKeyframe("torso", 0.375, 0, -2, 8);   // Push-off - body rises
+        anim.addKeyframe("torso", 0.5, 0, 2, 8);      // Cycle complete
 
-        // Left arm - swings opposite to left leg
-        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, 25);    // Back
-        anim.addKeyframe("arm_upper_left", 0.2, 0, 0, -25);   // Forward
-        anim.addKeyframe("arm_upper_left", 0.4, 0, 0, 25);    // Back again
-        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -20);   // Slight bend
-        anim.addKeyframe("arm_lower_left", 0.2, 0, 0, -30);   // More bend forward
-        anim.addKeyframe("arm_lower_left", 0.4, 0, 0, -20);   // Slight bend
+        // === HEAD - stabilizes, slight counter-rotation to torso ===
+        anim.addKeyframe("head", 0.0, 0, -1, -3);     // Counter-tilt
+        anim.addKeyframe("head", 0.125, 0, 0, -3);
+        anim.addKeyframe("head", 0.25, 0, -1, -3);
+        anim.addKeyframe("head", 0.375, 0, 0, -3);
+        anim.addKeyframe("head", 0.5, 0, -1, -3);
 
-        // Right arm - swings opposite to right leg
-        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, -25);  // Forward
-        anim.addKeyframe("arm_upper_right", 0.2, 0, 0, 25);   // Back
-        anim.addKeyframe("arm_upper_right", 0.4, 0, 0, -25);  // Forward again
-        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -30);  // More bend forward
-        anim.addKeyframe("arm_lower_right", 0.2, 0, 0, -20);  // Slight bend
-        anim.addKeyframe("arm_lower_right", 0.4, 0, 0, -30);  // More bend forward
+        // === RIGHT LEG (front leg in profile) ===
+        // At 0.0: contact phase - leg extended forward
+        // At 0.125: mid-stance - leg vertical, supporting weight
+        // At 0.25: push-off - leg extends back
+        // At 0.375: swing phase - leg swings forward with bent knee
+        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, -35);   // Extended forward (contact)
+        anim.addKeyframe("leg_upper_right", 0.125, 0, 0, -10); // Vertical (mid-stance)
+        anim.addKeyframe("leg_upper_right", 0.25, 0, 0, 30);   // Extended back (push-off)
+        anim.addKeyframe("leg_upper_right", 0.375, 0, 0, -15); // Swinging forward
+        anim.addKeyframe("leg_upper_right", 0.5, 0, 0, -35);   // Cycle complete
+
+        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 5);     // Nearly straight at contact
+        anim.addKeyframe("leg_lower_right", 0.125, 0, 0, 0);   // Straight at mid-stance
+        anim.addKeyframe("leg_lower_right", 0.25, 0, 0, 10);   // Slight bend at push-off
+        anim.addKeyframe("leg_lower_right", 0.375, 0, 0, 45);  // Knee bent during swing
+        anim.addKeyframe("leg_lower_right", 0.5, 0, 0, 5);     // Extending for contact
+
+        // === LEFT LEG (back leg in profile) - opposite phase ===
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 30);     // Extended back (push-off)
+        anim.addKeyframe("leg_upper_left", 0.125, 0, 0, -15);  // Swinging forward
+        anim.addKeyframe("leg_upper_left", 0.25, 0, 0, -35);   // Extended forward (contact)
+        anim.addKeyframe("leg_upper_left", 0.375, 0, 0, -10);  // Vertical (mid-stance)
+        anim.addKeyframe("leg_upper_left", 0.5, 0, 0, 30);     // Cycle complete
+
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 10);     // Slight bend at push-off
+        anim.addKeyframe("leg_lower_left", 0.125, 0, 0, 45);   // Knee bent during swing
+        anim.addKeyframe("leg_lower_left", 0.25, 0, 0, 5);     // Nearly straight at contact
+        anim.addKeyframe("leg_lower_left", 0.375, 0, 0, 0);    // Straight at mid-stance
+        anim.addKeyframe("leg_lower_left", 0.5, 0, 0, 10);     // Cycle complete
+
+        // === RIGHT ARM (front arm in profile) - swings opposite to right leg ===
+        // When right leg is forward, right arm is back
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 40);    // Arm back
+        anim.addKeyframe("arm_upper_right", 0.125, 0, 0, 15);  // Swinging forward
+        anim.addKeyframe("arm_upper_right", 0.25, 0, 0, -35);  // Arm forward
+        anim.addKeyframe("arm_upper_right", 0.375, 0, 0, 5);   // Swinging back
+        anim.addKeyframe("arm_upper_right", 0.5, 0, 0, 40);    // Cycle complete
+
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -50);   // Elbow bent, arm back
+        anim.addKeyframe("arm_lower_right", 0.125, 0, 0, -40); // Transitioning
+        anim.addKeyframe("arm_lower_right", 0.25, 0, 0, -30);  // Less bent, arm forward
+        anim.addKeyframe("arm_lower_right", 0.375, 0, 0, -45); // Transitioning
+        anim.addKeyframe("arm_lower_right", 0.5, 0, 0, -50);   // Cycle complete
+
+        // === LEFT ARM (back arm in profile) - opposite phase ===
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, -35);    // Arm forward
+        anim.addKeyframe("arm_upper_left", 0.125, 0, 0, 5);    // Swinging back
+        anim.addKeyframe("arm_upper_left", 0.25, 0, 0, 40);    // Arm back
+        anim.addKeyframe("arm_upper_left", 0.375, 0, 0, 15);   // Swinging forward
+        anim.addKeyframe("arm_upper_left", 0.5, 0, 0, -35);    // Cycle complete
+
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -30);    // Less bent, arm forward
+        anim.addKeyframe("arm_lower_left", 0.125, 0, 0, -45);  // Transitioning
+        anim.addKeyframe("arm_lower_left", 0.25, 0, 0, -50);   // Elbow bent, arm back
+        anim.addKeyframe("arm_lower_left", 0.375, 0, 0, -40);  // Transitioning
+        anim.addKeyframe("arm_lower_left", 0.5, 0, 0, -30);    // Cycle complete
 
         return anim;
     }
@@ -404,58 +488,96 @@ public class BoneAnimation {
     }
 
     /**
-     * Creates a jump animation for 2-part limbs.
+     * Creates a natural jump animation for 2-part limbs in profile view.
      * Uses the default bone names.
+     * Phases: crouch, launch, peak, descent, land
      * @return Jump animation for 2-part skeleton
      */
     public static BoneAnimation createJumpAnimation() {
-        BoneAnimation anim = new BoneAnimation("jump", 0.6, false);
+        BoneAnimation anim = new BoneAnimation("jump", 0.8, false);
 
-        // Crouch, then extend
-        anim.addKeyframe("torso", 0.0, 0, 0, 0);
-        anim.addKeyframe("torso", 0.1, 0, 4, 0);       // Crouch
-        anim.addKeyframe("torso", 0.3, 0, -8, -5);     // Jump up, slight lean
-        anim.addKeyframe("torso", 0.6, 0, 0, 0);       // Return
+        // Jump phases:
+        // 0.0-0.15: Crouch preparation
+        // 0.15-0.3: Launch (explosive extension)
+        // 0.3-0.5: Airborne (peak)
+        // 0.5-0.7: Descent
+        // 0.7-0.8: Landing
 
-        // Left leg - crouch then extend
-        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("leg_upper_left", 0.1, 0, 0, -20);  // Crouch - thigh forward
-        anim.addKeyframe("leg_upper_left", 0.3, 0, 0, 15);   // Extended back
-        anim.addKeyframe("leg_upper_left", 0.6, 0, 0, 0);
-        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("leg_lower_left", 0.1, 0, 0, 40);   // Knee bent for crouch
-        anim.addKeyframe("leg_lower_left", 0.3, 0, 0, -10);  // Leg extended
-        anim.addKeyframe("leg_lower_left", 0.6, 0, 0, 0);
+        // === TORSO - crouch, extend, lean slightly forward in air ===
+        anim.addKeyframe("torso", 0.0, 0, 0, 0);       // Start
+        anim.addKeyframe("torso", 0.15, 0, 6, 5);     // Crouch - body low, slight lean back
+        anim.addKeyframe("torso", 0.3, 0, -4, 10);    // Launch - body extends, lean forward
+        anim.addKeyframe("torso", 0.5, 0, -6, 12);    // Peak - full extension, forward lean
+        anim.addKeyframe("torso", 0.7, 0, -2, 8);     // Descent
+        anim.addKeyframe("torso", 0.8, 0, 2, 0);      // Landing
 
-        // Right leg - same as left
+        // === HEAD - stabilizes, counters torso motion ===
+        anim.addKeyframe("head", 0.0, 0, 0, 0);
+        anim.addKeyframe("head", 0.15, 0, -1, -5);    // Look up during crouch
+        anim.addKeyframe("head", 0.3, 0, 0, -8);      // Counter lean
+        anim.addKeyframe("head", 0.5, 0, 0, -10);     // Look ahead
+        anim.addKeyframe("head", 0.7, 0, 0, -6);      // Descending
+        anim.addKeyframe("head", 0.8, 0, 0, 0);       // Landing
+
+        // === RIGHT LEG (front) - crouch, extend, tuck, extend for landing ===
         anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("leg_upper_right", 0.1, 0, 0, -20);
-        anim.addKeyframe("leg_upper_right", 0.3, 0, 0, 15);
-        anim.addKeyframe("leg_upper_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_upper_right", 0.15, 0, 0, -30);  // Crouch - knee forward
+        anim.addKeyframe("leg_upper_right", 0.3, 0, 0, 20);    // Launch - leg extends back
+        anim.addKeyframe("leg_upper_right", 0.5, 0, 0, -20);   // Airborne - leg forward
+        anim.addKeyframe("leg_upper_right", 0.7, 0, 0, -10);   // Preparing to land
+        anim.addKeyframe("leg_upper_right", 0.8, 0, 0, 0);     // Landing
+
         anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("leg_lower_right", 0.1, 0, 0, 40);
-        anim.addKeyframe("leg_lower_right", 0.3, 0, 0, -10);
-        anim.addKeyframe("leg_lower_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 0.15, 0, 0, 50);   // Deep knee bend
+        anim.addKeyframe("leg_lower_right", 0.3, 0, 0, 10);    // Extending
+        anim.addKeyframe("leg_lower_right", 0.5, 0, 0, 25);    // Slightly bent in air
+        anim.addKeyframe("leg_lower_right", 0.7, 0, 0, 15);    // Extending for landing
+        anim.addKeyframe("leg_lower_right", 0.8, 0, 0, 0);     // Landing
 
-        // Left arm - goes up during jump
-        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("arm_upper_left", 0.1, 0, 0, -15);
-        anim.addKeyframe("arm_upper_left", 0.3, 0, 0, -50);  // Arm up
-        anim.addKeyframe("arm_upper_left", 0.6, 0, 0, 0);
-        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("arm_lower_left", 0.1, 0, 0, -20);
-        anim.addKeyframe("arm_lower_left", 0.3, 0, 0, -30);  // Bent at elbow
-        anim.addKeyframe("arm_lower_left", 0.6, 0, 0, 0);
+        // === LEFT LEG (back) - mirrors right but slightly offset ===
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_upper_left", 0.15, 0, 0, -25);   // Crouch
+        anim.addKeyframe("leg_upper_left", 0.3, 0, 0, 25);     // Launch - extends back
+        anim.addKeyframe("leg_upper_left", 0.5, 0, 0, 15);     // Airborne - trails behind
+        anim.addKeyframe("leg_upper_left", 0.7, 0, 0, 5);      // Coming forward
+        anim.addKeyframe("leg_upper_left", 0.8, 0, 0, 0);      // Landing
 
-        // Right arm - goes up during jump
-        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("arm_upper_right", 0.1, 0, 0, 15);
-        anim.addKeyframe("arm_upper_right", 0.3, 0, 0, 50);   // Arm up
-        anim.addKeyframe("arm_upper_right", 0.6, 0, 0, 0);
-        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("arm_lower_right", 0.1, 0, 0, 20);
-        anim.addKeyframe("arm_lower_right", 0.3, 0, 0, 30);   // Bent at elbow
-        anim.addKeyframe("arm_lower_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.15, 0, 0, 45);    // Crouch bend
+        anim.addKeyframe("leg_lower_left", 0.3, 0, 0, 15);     // Extending
+        anim.addKeyframe("leg_lower_left", 0.5, 0, 0, 30);     // Bent in air
+        anim.addKeyframe("leg_lower_left", 0.7, 0, 0, 10);     // Extending
+        anim.addKeyframe("leg_lower_left", 0.8, 0, 0, 0);      // Landing
+
+        // === RIGHT ARM (front) - swings back, then forward ===
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 5);
+        anim.addKeyframe("arm_upper_right", 0.15, 0, 0, 30);   // Arm back during crouch
+        anim.addKeyframe("arm_upper_right", 0.3, 0, 0, -40);   // Swing forward for launch
+        anim.addKeyframe("arm_upper_right", 0.5, 0, 0, -30);   // Forward in air
+        anim.addKeyframe("arm_upper_right", 0.7, 0, 0, -10);   // Coming down
+        anim.addKeyframe("arm_upper_right", 0.8, 0, 0, 5);     // Landing
+
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -15);
+        anim.addKeyframe("arm_lower_right", 0.15, 0, 0, -40);  // Bent back
+        anim.addKeyframe("arm_lower_right", 0.3, 0, 0, -60);   // Bent forward
+        anim.addKeyframe("arm_lower_right", 0.5, 0, 0, -50);   // In air
+        anim.addKeyframe("arm_lower_right", 0.7, 0, 0, -30);   // Descending
+        anim.addKeyframe("arm_lower_right", 0.8, 0, 0, -15);   // Landing
+
+        // === LEFT ARM (back) - opposite swing ===
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, -5);
+        anim.addKeyframe("arm_upper_left", 0.15, 0, 0, -35);   // Arm forward during crouch
+        anim.addKeyframe("arm_upper_left", 0.3, 0, 0, 35);     // Swing back for launch
+        anim.addKeyframe("arm_upper_left", 0.5, 0, 0, 25);     // Back in air
+        anim.addKeyframe("arm_upper_left", 0.7, 0, 0, 10);     // Coming forward
+        anim.addKeyframe("arm_upper_left", 0.8, 0, 0, -5);     // Landing
+
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -15);
+        anim.addKeyframe("arm_lower_left", 0.15, 0, 0, -50);   // Bent forward
+        anim.addKeyframe("arm_lower_left", 0.3, 0, 0, -30);    // Less bent back
+        anim.addKeyframe("arm_lower_left", 0.5, 0, 0, -35);    // In air
+        anim.addKeyframe("arm_lower_left", 0.7, 0, 0, -25);    // Descending
+        anim.addKeyframe("arm_lower_left", 0.8, 0, 0, -15);    // Landing
 
         return anim;
     }
