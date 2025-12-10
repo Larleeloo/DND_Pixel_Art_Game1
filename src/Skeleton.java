@@ -467,20 +467,22 @@ public class Skeleton {
 
         // Set default positions (relative to parent)
         // Note: positions are in unscaled pixels, textures get scaled by RENDER_SCALE (4x)
+        // Profile view: limbs positioned at center for side-view appearance
         torso.setLocalPosition(0, 0);
         head.setLocalPosition(0, -10);           // Above torso
 
-        // Arms - position at shoulder, pivot at top-center for natural rotation
-        // Upper arms attach to torso sides
-        armUpperLeft.setLocalPosition(-12, -4);   // Left shoulder
+        // Arms - positioned at shoulder center for profile view
+        // "Left" arm is the back arm, "Right" arm is the front arm
+        armUpperLeft.setLocalPosition(0, -4);     // Back arm at shoulder
         armLowerLeft.setLocalPosition(0, 6);      // Below upper arm (at elbow)
-        armUpperRight.setLocalPosition(12, -4);   // Right shoulder
+        armUpperRight.setLocalPosition(0, -4);    // Front arm at shoulder
         armLowerRight.setLocalPosition(0, 6);     // Below upper arm (at elbow)
 
-        // Legs - position at hips, pivot at top-center
-        legUpperLeft.setLocalPosition(-6, 16);    // Left hip
+        // Legs - positioned at hip center for profile view
+        // "Left" leg is the back leg, "Right" leg is the front leg
+        legUpperLeft.setLocalPosition(0, 16);     // Back leg at hip
         legLowerLeft.setLocalPosition(0, 8);      // Below upper leg (at knee)
-        legUpperRight.setLocalPosition(6, 16);    // Right hip
+        legUpperRight.setLocalPosition(0, 16);    // Front leg at hip
         legLowerRight.setLocalPosition(0, 8);     // Below upper leg (at knee)
 
         // Set pivot points (rotation origins) - use top-center for limbs
@@ -498,17 +500,18 @@ public class Skeleton {
         legUpperRight.setPivot(0.5, 0.0);         // Top center (hip)
         legLowerRight.setPivot(0.5, 0.0);         // Top center (knee)
 
-        // Set z-order (drawing order)
-        armUpperLeft.setZOrder(-1);              // Behind torso
-        armLowerLeft.setZOrder(-1);
-        armUpperRight.setZOrder(-1);
-        armLowerRight.setZOrder(-1);
-        legUpperLeft.setZOrder(-2);              // Behind everything
-        legLowerLeft.setZOrder(-2);
-        legUpperRight.setZOrder(-2);
-        legLowerRight.setZOrder(-2);
-        torso.setZOrder(0);
-        head.setZOrder(1);                       // In front
+        // Set z-order (drawing order) for profile view
+        // Back limbs (left) behind torso, front limbs (right) in front
+        armUpperLeft.setZOrder(-2);              // Back arm - behind everything
+        armLowerLeft.setZOrder(-2);
+        legUpperLeft.setZOrder(-3);              // Back leg - furthest back
+        legLowerLeft.setZOrder(-3);
+        torso.setZOrder(0);                      // Body in middle
+        head.setZOrder(1);                       // Head in front of torso
+        armUpperRight.setZOrder(2);              // Front arm - in front
+        armLowerRight.setZOrder(2);
+        legUpperRight.setZOrder(-1);             // Front leg - behind torso but in front of back leg
+        legLowerRight.setZOrder(-1);
 
         // Set default sizes for bones without textures
         torso.setDefaultSize(12, 16);
