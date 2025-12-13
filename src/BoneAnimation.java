@@ -340,6 +340,9 @@ public class BoneAnimation {
         anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -15);
         anim.addKeyframe("arm_lower_right", 1.25, 0, 0, -15);
         anim.addKeyframe("arm_lower_right", 2.5, 0, 0, -15);
+        anim.addKeyframe("hand_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("hand_right", 1.25, 0, 0, 0);
+        anim.addKeyframe("hand_right", 2.5, 0, 0, 0);
 
         // Left arm (back in profile) - relaxed position
         anim.addKeyframe("arm_upper_left", 0.0, 0, 0, -5);
@@ -348,6 +351,9 @@ public class BoneAnimation {
         anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -15);
         anim.addKeyframe("arm_lower_left", 1.25, 0, 0, -15);
         anim.addKeyframe("arm_lower_left", 2.5, 0, 0, -15);
+        anim.addKeyframe("hand_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("hand_left", 1.25, 0, 0, 0);
+        anim.addKeyframe("hand_left", 2.5, 0, 0, 0);
 
         // === LEGS - standing position ===
         anim.addKeyframe("leg_upper_right", 0.0, 0, 0, 0);
@@ -356,6 +362,9 @@ public class BoneAnimation {
         anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 0);
         anim.addKeyframe("leg_lower_right", 1.25, 0, 0, 0);
         anim.addKeyframe("leg_lower_right", 2.5, 0, 0, 0);
+        anim.addKeyframe("foot_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("foot_right", 1.25, 0, 0, 0);
+        anim.addKeyframe("foot_right", 2.5, 0, 0, 0);
 
         anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 0);
         anim.addKeyframe("leg_upper_left", 1.25, 0, 0, 0);
@@ -363,6 +372,9 @@ public class BoneAnimation {
         anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 0);
         anim.addKeyframe("leg_lower_left", 1.25, 0, 0, 0);
         anim.addKeyframe("leg_lower_left", 2.5, 0, 0, 0);
+        anim.addKeyframe("foot_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("foot_left", 1.25, 0, 0, 0);
+        anim.addKeyframe("foot_left", 2.5, 0, 0, 0);
 
         return anim;
     }
@@ -450,6 +462,34 @@ public class BoneAnimation {
         anim.addKeyframe("arm_lower_left", 0.25, 0, 0, -50);   // Elbow bent, arm back
         anim.addKeyframe("arm_lower_left", 0.375, 0, 0, -40);  // Transitioning
         anim.addKeyframe("arm_lower_left", 0.5, 0, 0, -30);    // Cycle complete
+
+        // === HANDS - follow arm movement with slight wrist rotation ===
+        anim.addKeyframe("hand_right", 0.0, 0, 0, 10);         // Wrist bent back
+        anim.addKeyframe("hand_right", 0.125, 0, 0, 5);
+        anim.addKeyframe("hand_right", 0.25, 0, 0, -5);        // Wrist straight/forward
+        anim.addKeyframe("hand_right", 0.375, 0, 0, 0);
+        anim.addKeyframe("hand_right", 0.5, 0, 0, 10);
+
+        anim.addKeyframe("hand_left", 0.0, 0, 0, -5);          // Opposite phase
+        anim.addKeyframe("hand_left", 0.125, 0, 0, 0);
+        anim.addKeyframe("hand_left", 0.25, 0, 0, 10);
+        anim.addKeyframe("hand_left", 0.375, 0, 0, 5);
+        anim.addKeyframe("hand_left", 0.5, 0, 0, -5);
+
+        // === FEET - ankle rotation for natural foot strike ===
+        // Right foot: dorsiflexed during swing, plantarflexed at push-off
+        anim.addKeyframe("foot_right", 0.0, 0, 0, 30);         // Heel strike - toes up
+        anim.addKeyframe("foot_right", 0.125, 0, 0, 0);        // Flat on ground
+        anim.addKeyframe("foot_right", 0.25, 0, 0, -25);       // Push-off - toes down
+        anim.addKeyframe("foot_right", 0.375, 0, 0, 20);       // Swing - toes up (dorsiflexed)
+        anim.addKeyframe("foot_right", 0.5, 0, 0, 30);         // Cycle complete
+
+        // Left foot: opposite phase
+        anim.addKeyframe("foot_left", 0.0, 0, 0, -25);         // Push-off
+        anim.addKeyframe("foot_left", 0.125, 0, 0, 20);        // Swing
+        anim.addKeyframe("foot_left", 0.25, 0, 0, 30);         // Heel strike
+        anim.addKeyframe("foot_left", 0.375, 0, 0, 0);         // Flat
+        anim.addKeyframe("foot_left", 0.5, 0, 0, -25);         // Cycle complete
 
         return anim;
     }
@@ -578,6 +618,36 @@ public class BoneAnimation {
         anim.addKeyframe("arm_lower_left", 0.5, 0, 0, -35);    // In air
         anim.addKeyframe("arm_lower_left", 0.7, 0, 0, -25);    // Descending
         anim.addKeyframe("arm_lower_left", 0.8, 0, 0, -15);    // Landing
+
+        // === HANDS - follow arm movement ===
+        anim.addKeyframe("hand_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("hand_right", 0.15, 0, 0, 10);        // Wrist back during crouch
+        anim.addKeyframe("hand_right", 0.3, 0, 0, -10);        // Wrist forward at launch
+        anim.addKeyframe("hand_right", 0.5, 0, 0, -5);         // In air
+        anim.addKeyframe("hand_right", 0.7, 0, 0, 0);          // Descending
+        anim.addKeyframe("hand_right", 0.8, 0, 0, 0);          // Landing
+
+        anim.addKeyframe("hand_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("hand_left", 0.15, 0, 0, -10);        // Opposite wrist
+        anim.addKeyframe("hand_left", 0.3, 0, 0, 10);          // Wrist back at launch
+        anim.addKeyframe("hand_left", 0.5, 0, 0, 5);           // In air
+        anim.addKeyframe("hand_left", 0.7, 0, 0, 0);           // Descending
+        anim.addKeyframe("hand_left", 0.8, 0, 0, 0);           // Landing
+
+        // === FEET - ankle movement for jump ===
+        anim.addKeyframe("foot_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("foot_right", 0.15, 0, 0, 20);        // Heels up during crouch
+        anim.addKeyframe("foot_right", 0.3, 0, 0, -30);        // Toes point down at launch
+        anim.addKeyframe("foot_right", 0.5, 0, 0, -20);        // Toes down in air
+        anim.addKeyframe("foot_right", 0.7, 0, 0, 10);         // Preparing to land
+        anim.addKeyframe("foot_right", 0.8, 0, 0, 0);          // Landing
+
+        anim.addKeyframe("foot_left", 0.0, 0, 0, 0);
+        anim.addKeyframe("foot_left", 0.15, 0, 0, 20);         // Heels up during crouch
+        anim.addKeyframe("foot_left", 0.3, 0, 0, -35);         // Toes point down at launch
+        anim.addKeyframe("foot_left", 0.5, 0, 0, -25);         // Toes down in air
+        anim.addKeyframe("foot_left", 0.7, 0, 0, 5);           // Preparing to land
+        anim.addKeyframe("foot_left", 0.8, 0, 0, 0);           // Landing
 
         return anim;
     }
