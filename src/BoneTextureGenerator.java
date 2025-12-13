@@ -139,7 +139,7 @@ public class BoneTextureGenerator {
 
     /**
      * Generates placeholder bone textures with a pixel art style.
-     * Uses 2-part limbs (upper/lower arms and legs) for better animation.
+     * Uses 2-part limbs (upper/lower arms and legs) with hands and feet.
      * @param outputDir Directory to save textures
      * @param primaryColor Main body color
      * @param secondaryColor Detail/shading color
@@ -151,41 +151,55 @@ public class BoneTextureGenerator {
                 dir.mkdirs();
             }
 
-            // Skin color for limbs
+            // Skin color for limbs and head
             Color skinColor = new Color(255, 200, 150);
             Color skinShade = new Color(220, 170, 120);
 
-            // Torso - 8x10 pixel art
-            BufferedImage torso = createPixelArtTorso(8, 10, primaryColor, secondaryColor);
+            // Torso - 6x8 pixel art (sized to fit smaller skeleton)
+            BufferedImage torso = createPixelArtTorso(6, 8, primaryColor, secondaryColor);
             ImageIO.write(torso, "PNG", new File(outputDir + "/torso.png"));
 
-            // Head - 6x6 pixel art
-            BufferedImage head = createPixelArtHead(6, 6, skinColor, skinShade);
+            // Head - 5x5 pixel art
+            BufferedImage head = createPixelArtHead(5, 5, skinColor, skinShade);
             ImageIO.write(head, "PNG", new File(outputDir + "/head.png"));
 
-            // 2-part arms - upper (4x6) and lower (3x6) with skin color
-            BufferedImage armUpper = createPixelArtLimb(4, 6, skinColor, skinShade);
-            BufferedImage armLower = createPixelArtLimb(3, 6, skinColor, skinShade);
+            // 2-part arms - upper (2x3) and lower (2x3) with skin color
+            BufferedImage armUpper = createPixelArtLimb(2, 3, skinColor, skinShade);
+            BufferedImage armLower = createPixelArtLimb(2, 3, skinColor, skinShade);
             ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_left.png"));
             ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_right.png"));
             ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_left.png"));
             ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_right.png"));
 
-            // 2-part legs - upper (5x8) and lower (4x8) with pants color
+            // Hands - 2x2 pixel art (slightly darker skin)
+            Color handColor = new Color(255, 180, 130);
+            Color handShade = new Color(200, 150, 100);
+            BufferedImage hand = createPixelArtHand(2, 2, handColor, handShade);
+            ImageIO.write(hand, "PNG", new File(outputDir + "/hand_left.png"));
+            ImageIO.write(hand, "PNG", new File(outputDir + "/hand_right.png"));
+
+            // 2-part legs - upper (3x5) and lower (3x5) with pants color
             Color pantsColor = new Color(80, 80, 120);
             Color pantsShade = new Color(60, 60, 100);
-            BufferedImage legUpper = createPixelArtLimb(5, 8, pantsColor, pantsShade);
-            BufferedImage legLower = createPixelArtLimb(4, 8, pantsColor, pantsShade);
+            BufferedImage legUpper = createPixelArtLimb(3, 5, pantsColor, pantsShade);
+            BufferedImage legLower = createPixelArtLimb(3, 5, pantsColor, pantsShade);
             ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_left.png"));
             ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_right.png"));
             ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_left.png"));
             ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_right.png"));
 
+            // Feet - 4x2 pixel art (brown shoes, wider than tall)
+            Color shoeColor = new Color(60, 40, 20);
+            Color shoeShade = new Color(40, 25, 10);
+            BufferedImage foot = createPixelArtFoot(4, 2, shoeColor, shoeShade);
+            ImageIO.write(foot, "PNG", new File(outputDir + "/foot_left.png"));
+            ImageIO.write(foot, "PNG", new File(outputDir + "/foot_right.png"));
+
             // Also keep legacy single-part limbs for backwards compatibility
-            BufferedImage armLeft = createPixelArtLimb(3, 8, skinColor, skinShade);
+            BufferedImage armLeft = createPixelArtLimb(2, 5, skinColor, skinShade);
             ImageIO.write(armLeft, "PNG", new File(outputDir + "/arm_left.png"));
             ImageIO.write(armLeft, "PNG", new File(outputDir + "/arm_right.png"));
-            BufferedImage legLeft = createPixelArtLimb(4, 10, pantsColor, pantsShade);
+            BufferedImage legLeft = createPixelArtLimb(3, 8, pantsColor, pantsShade);
             ImageIO.write(legLeft, "PNG", new File(outputDir + "/leg_left.png"));
             ImageIO.write(legLeft, "PNG", new File(outputDir + "/leg_right.png"));
 
@@ -193,6 +207,46 @@ public class BoneTextureGenerator {
         } catch (IOException e) {
             System.err.println("Failed to generate bone textures: " + e.getMessage());
         }
+    }
+
+    private static BufferedImage createPixelArtHand(int w, int h, Color primary, Color secondary) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        // Main hand shape
+        g.setColor(primary);
+        g.fillRect(0, 0, w, h);
+
+        // Side shading
+        g.setColor(secondary);
+        g.fillRect(0, 0, 1, h);
+
+        // Highlight
+        g.setColor(primary.brighter());
+        g.fillRect(w - 1, 0, 1, h);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage createPixelArtFoot(int w, int h, Color primary, Color secondary) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        // Main foot/shoe shape (wider at front)
+        g.setColor(primary);
+        g.fillRect(0, 0, w, h);
+
+        // Top shading
+        g.setColor(secondary);
+        g.fillRect(0, 0, w, 1);
+
+        // Toe highlight
+        g.setColor(primary.brighter());
+        g.fillRect(w - 2, 1, 2, h - 1);
+
+        g.dispose();
+        return img;
     }
 
     private static BufferedImage createPixelArtTorso(int w, int h, Color primary, Color secondary) {

@@ -393,9 +393,9 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     @Override
     public void draw(Graphics g) {
         // Update skeleton position to match player
-        // Position skeleton root offset from top of collision box
-        // +56 pixels down to align skeleton feet with bottom of hitbox
-        skeleton.setPosition(x + width / 2.0, y + 66);
+        // Position skeleton root at center of hitbox
+        // With smaller skeleton (108 pixels at 4x scale), center it in 109px hitbox
+        skeleton.setPosition(x + width / 2.0, y + height / 2.0 - 14);
 
         // Draw the skeleton
         skeleton.draw(g);
