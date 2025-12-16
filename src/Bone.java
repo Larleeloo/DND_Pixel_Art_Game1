@@ -22,8 +22,10 @@ public class Bone {
     private double localX;       // X offset from parent's pivot
     private double localY;       // Y offset from parent's pivot
     private double rotation;     // Rotation in degrees (clockwise)
-    private double scaleX = 1.0;
+    private double scaleX = 1.0;      // Animation scale (set by animations)
     private double scaleY = 1.0;
+    private double baseScaleX = 1.0;  // Customization scale (persists through animations)
+    private double baseScaleY = 1.0;
 
     // Pivot point (origin for rotation, relative to texture)
     // Values from 0.0 to 1.0 (0.5, 0.5 = center)
@@ -136,7 +138,7 @@ public class Bone {
     }
 
     /**
-     * Sets the scale factors.
+     * Sets the animation scale factors (set by animations each frame).
      * @param scaleX Horizontal scale (1.0 = normal)
      * @param scaleY Vertical scale (1.0 = normal)
      */
@@ -144,6 +146,34 @@ public class Bone {
         this.scaleX = scaleX;
         this.scaleY = scaleY;
         markTransformDirty();
+    }
+
+    /**
+     * Sets the base/customization scale factors.
+     * This scale persists through animation changes and is multiplied with animation scale.
+     * @param scaleX Horizontal base scale (1.0 = normal)
+     * @param scaleY Vertical base scale (1.0 = normal)
+     */
+    public void setBaseScale(double scaleX, double scaleY) {
+        this.baseScaleX = scaleX;
+        this.baseScaleY = scaleY;
+        markTransformDirty();
+    }
+
+    /**
+     * Gets the base scale X value.
+     * @return Base scale X
+     */
+    public double getBaseScaleX() {
+        return baseScaleX;
+    }
+
+    /**
+     * Gets the base scale Y value.
+     * @return Base scale Y
+     */
+    public double getBaseScaleY() {
+        return baseScaleY;
     }
 
     /**
@@ -364,9 +394,11 @@ public class Bone {
         // Save the current transform (includes camera transform in scrolling levels)
         AffineTransform oldTransform = g.getTransform();
 
-        // Calculate the scaled dimensions
-        int drawWidth = (int)(texW * rootScale * scaleX);
-        int drawHeight = (int)(texH * rootScale * scaleY);
+        // Calculate the scaled dimensions (baseScale * animationScale)
+        double totalScaleX = baseScaleX * scaleX;
+        double totalScaleY = baseScaleY * scaleY;
+        int drawWidth = (int)(texW * rootScale * totalScaleX);
+        int drawHeight = (int)(texH * rootScale * totalScaleY);
 
         // Calculate pivot in pixels
         double pivotPixelX = drawWidth * pivotX;
@@ -377,7 +409,7 @@ public class Bone {
         boneTransform.translate(worldX, worldY);
         boneTransform.rotate(Math.toRadians(worldRotation));
         boneTransform.translate(-pivotPixelX, -pivotPixelY);
-        boneTransform.scale(rootScale * scaleX, rootScale * scaleY);
+        boneTransform.scale(rootScale * totalScaleX, rootScale * totalScaleY);
 
         // Concatenate with existing transform (preserves camera transform)
         AffineTransform combined = new AffineTransform(oldTransform);

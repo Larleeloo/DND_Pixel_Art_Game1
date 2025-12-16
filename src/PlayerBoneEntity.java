@@ -20,9 +20,9 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     private int airTime = 0;
     private boolean isMoving = false;
 
-    // Dimensions (collision box) - doubled for 8x scale
-    private int width = 96;    // Doubled from 48 for higher resolution
-    private int height = 218;  // Doubled from 109 for higher resolution
+    // Dimensions (collision box) - original size
+    private int width = 48;    // Original collision width
+    private int height = 109;  // Original collision height
 
     // Ground level
     private int groundY = 720;
@@ -45,8 +45,8 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     public static final String ANIM_RUN = "run";
     public static final String ANIM_JUMP = "jump";
 
-    // Rendering - doubled from 4.0 to 8.0 for higher resolution
-    private static final double RENDER_SCALE = 8.0;  // Scale factor for bones
+    // Rendering
+    private static final double RENDER_SCALE = 4.0;  // Scale factor for bones
 
     // Audio
     private AudioManager audioManager;
