@@ -13,7 +13,7 @@ class CharacterCustomizationScene implements Scene {
 
     // Preview skeleton
     private Skeleton previewSkeleton;
-    private static final double PREVIEW_SCALE = 8.0;  // Double the normal 4x scale
+    private static final double PREVIEW_SCALE = 4.0;  // Same as game scale
     private float animationTime = 0;
 
     // UI Components
@@ -268,7 +268,7 @@ class CharacterCustomizationScene implements Scene {
                 Bone bone = previewSkeleton.findBone(boneName);
                 if (bone != null) {
                     bone.setPlaceholderColor(color);
-                    bone.setScale(size, size);
+                    bone.setBaseScale(size, size);  // Use baseScale so animations don't override
                 }
             }
         }
@@ -317,9 +317,11 @@ class CharacterCustomizationScene implements Scene {
      */
     public static void applyToPlayer(Skeleton skeleton) {
         if (savedColors.isEmpty() && savedSizes.isEmpty()) {
+            System.out.println("CharacterCustomizationScene: No customization saved, using defaults");
             return; // No customization saved
         }
 
+        System.out.println("CharacterCustomizationScene: Applying customization to player");
         for (String partName : BODY_PARTS) {
             Color color = savedColors.getOrDefault(partName, DEFAULT_COLORS.get(partName));
             double size = savedSizes.getOrDefault(partName, 1.0);
@@ -331,7 +333,7 @@ class CharacterCustomizationScene implements Scene {
                 Bone bone = skeleton.findBone(boneName);
                 if (bone != null) {
                     bone.setPlaceholderColor(color);
-                    bone.setScale(size, size);
+                    bone.setBaseScale(size, size);  // Use baseScale so animations don't override
                 }
             }
         }
