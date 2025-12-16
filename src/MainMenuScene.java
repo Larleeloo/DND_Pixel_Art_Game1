@@ -62,10 +62,29 @@ class MainMenuScene implements Scene {
         );
         buttons.add(playButton);
 
+        // Customize button - opens character customization
+        UIButton customizeButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY + spacing,
+                buttonWidth,
+                buttonHeight,
+                "Customize Character",
+                () -> {
+                    System.out.println("MainMenuScene: Opening character customization");
+                    SceneManager.getInstance().setScene("characterCustomization", SceneManager.TRANSITION_FADE);
+                }
+        );
+        customizeButton.setColors(
+                new Color(150, 100, 180, 220),
+                new Color(180, 130, 210, 255),
+                Color.WHITE
+        );
+        buttons.add(customizeButton);
+
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing,
+                startY + spacing * 2,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",

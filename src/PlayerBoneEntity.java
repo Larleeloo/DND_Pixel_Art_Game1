@@ -20,9 +20,9 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     private int airTime = 0;
     private boolean isMoving = false;
 
-    // Dimensions (collision box)
-    private int width = 48;   // Smaller than sprite for tighter collisions
-    private int height = 109; // Just under 2 blocks tall
+    // Dimensions (collision box) - doubled for 8x scale
+    private int width = 96;    // Doubled from 48 for higher resolution
+    private int height = 218;  // Doubled from 109 for higher resolution
 
     // Ground level
     private int groundY = 720;
@@ -45,8 +45,8 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     public static final String ANIM_RUN = "run";
     public static final String ANIM_JUMP = "jump";
 
-    // Rendering
-    private static final double RENDER_SCALE = 4.0;  // Scale factor for bones
+    // Rendering - doubled from 4.0 to 8.0 for higher resolution
+    private static final double RENDER_SCALE = 8.0;  // Scale factor for bones
 
     // Audio
     private AudioManager audioManager;
@@ -65,6 +65,9 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         // Create the skeleton with default humanoid structure
         skeleton = Skeleton.createHumanoid();
         skeleton.setScale(RENDER_SCALE);
+
+        // Apply any saved character customization (colors, sizes)
+        CharacterCustomizationScene.applyToPlayer(skeleton);
 
         // Set up default animations
         setupAnimations();
@@ -87,6 +90,9 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         // Create skeleton with textures
         skeleton = Skeleton.createHumanoidWithTextures(textureDir);
         skeleton.setScale(RENDER_SCALE);
+
+        // Apply any saved character customization (colors, sizes)
+        CharacterCustomizationScene.applyToPlayer(skeleton);
 
         // Set up animations
         setupAnimations();
