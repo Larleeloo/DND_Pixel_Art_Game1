@@ -10,6 +10,10 @@ public class Skeleton {
     private Bone rootBone;
     private Map<String, Bone> boneMap;  // Quick lookup by name
 
+    // Rest positions - the default pose without any animation
+    // Animation keyframes are applied as OFFSETS to these positions
+    private Map<String, double[]> restPositions;  // boneName -> [x, y, rotation]
+
     // Animation management
     private Map<String, BoneAnimation> animations;
     private BoneAnimation currentAnimation;
@@ -31,6 +35,7 @@ public class Skeleton {
      */
     public Skeleton() {
         this.boneMap = new HashMap<>();
+        this.restPositions = new HashMap<>();
         this.animations = new HashMap<>();
     }
 
@@ -108,6 +113,44 @@ public class Skeleton {
      */
     public Set<String> getBoneNames() {
         return new HashSet<>(boneMap.keySet());
+    }
+
+    // ==================== Rest Position Management ====================
+
+    /**
+     * Stores the current bone positions as rest positions.
+     * Call this AFTER setting up the bone hierarchy and initial positions.
+     * Animation keyframes will be applied as OFFSETS to these rest positions.
+     */
+    public void storeRestPositions() {
+        restPositions.clear();
+        for (Map.Entry<String, Bone> entry : boneMap.entrySet()) {
+            String name = entry.getKey();
+            Bone bone = entry.getValue();
+            restPositions.put(name, new double[] {
+                bone.getLocalX(),
+                bone.getLocalY(),
+                bone.getRotation()
+            });
+        }
+        System.out.println("Stored rest positions for " + restPositions.size() + " bones");
+    }
+
+    /**
+     * Gets the rest position for a bone.
+     * @param boneName Name of the bone
+     * @return Array of [x, y, rotation] or null if not found
+     */
+    public double[] getRestPosition(String boneName) {
+        return restPositions.get(boneName);
+    }
+
+    /**
+     * Checks if rest positions have been stored.
+     * @return True if rest positions are available
+     */
+    public boolean hasRestPositions() {
+        return !restPositions.isEmpty();
     }
 
     // ==================== Position and Transform ====================
@@ -267,7 +310,7 @@ public class Skeleton {
         // Update current animation
         if (currentAnimation != null) {
             currentAnimation.update(deltaTime);
-            currentAnimation.applyToSkeleton(this);
+            applyAnimation(currentAnimation);
         }
 
         // Handle animation blending
@@ -292,7 +335,34 @@ public class Skeleton {
     }
 
     /**
+     * Applies an animation to the skeleton, using rest positions as the base.
+     * Animation keyframe values are treated as OFFSETS from rest positions.
+     * @param animation The animation to apply
+     */
+    private void applyAnimation(BoneAnimation animation) {
+        for (String boneName : animation.getAnimatedBoneNames()) {
+            Bone bone = findBone(boneName);
+            if (bone == null) continue;
+
+            BoneAnimation.Keyframe kf = animation.getInterpolatedKeyframe(boneName);
+            if (kf == null) continue;
+
+            // Get rest position (base pose)
+            double[] rest = restPositions.get(boneName);
+            double restX = rest != null ? rest[0] : 0;
+            double restY = rest != null ? rest[1] : 0;
+            double restRotation = rest != null ? rest[2] : 0;
+
+            // Apply keyframe as OFFSET to rest position
+            bone.setLocalPosition(restX + kf.localX, restY + kf.localY);
+            bone.setRotation(restRotation + kf.rotation);
+            bone.setScale(kf.scaleX, kf.scaleY);
+        }
+    }
+
+    /**
      * Blends between two animations.
+     * Animation keyframe values are treated as OFFSETS from rest positions.
      * @param from Source animation
      * @param to Target animation
      * @param t Blend factor (0 = from, 1 = to)
@@ -307,28 +377,35 @@ public class Skeleton {
             Bone bone = findBone(boneName);
             if (bone == null) continue;
 
+            // Get rest position (base pose)
+            double[] rest = restPositions.get(boneName);
+            double restX = rest != null ? rest[0] : 0;
+            double restY = rest != null ? rest[1] : 0;
+            double restRotation = rest != null ? rest[2] : 0;
+
             BoneAnimation.Keyframe fromKf = from.getInterpolatedKeyframe(boneName);
             BoneAnimation.Keyframe toKf = to.getInterpolatedKeyframe(boneName);
 
             if (fromKf != null && toKf != null) {
-                // Blend the keyframes
-                double x = lerp(fromKf.localX, toKf.localX, t);
-                double y = lerp(fromKf.localY, toKf.localY, t);
-                double rotation = lerpAngle(fromKf.rotation, toKf.rotation, t);
+                // Blend the keyframe offsets
+                double offsetX = lerp(fromKf.localX, toKf.localX, t);
+                double offsetY = lerp(fromKf.localY, toKf.localY, t);
+                double offsetRotation = lerpAngle(fromKf.rotation, toKf.rotation, t);
                 double scaleX = lerp(fromKf.scaleX, toKf.scaleX, t);
                 double scaleY = lerp(fromKf.scaleY, toKf.scaleY, t);
 
-                bone.setLocalPosition(x, y);
-                bone.setRotation(rotation);
+                // Apply as offset to rest position
+                bone.setLocalPosition(restX + offsetX, restY + offsetY);
+                bone.setRotation(restRotation + offsetRotation);
                 bone.setScale(scaleX, scaleY);
             } else if (toKf != null) {
-                // Only target has keyframe, lerp from current
-                double x = lerp(bone.getLocalX(), toKf.localX, t);
-                double y = lerp(bone.getLocalY(), toKf.localY, t);
-                double rotation = lerpAngle(bone.getRotation(), toKf.rotation, t);
+                // Only target has keyframe, lerp from rest to target
+                double offsetX = lerp(0, toKf.localX, t);
+                double offsetY = lerp(0, toKf.localY, t);
+                double offsetRotation = lerpAngle(0, toKf.rotation, t);
 
-                bone.setLocalPosition(x, y);
-                bone.setRotation(rotation);
+                bone.setLocalPosition(restX + offsetX, restY + offsetY);
+                bone.setRotation(restRotation + offsetRotation);
             }
         }
     }
@@ -753,6 +830,10 @@ public class Skeleton {
         footRight.setPlaceholderColor(new Color(60, 40, 20));
 
         skeleton.setRootBone(root);
+
+        // CRITICAL: Store rest positions BEFORE any animations are applied
+        // Animation keyframes will be applied as offsets to these positions
+        skeleton.storeRestPositions();
 
         // Debug: print bone hierarchy
         System.out.println("Skeleton created with 15 bones:");
