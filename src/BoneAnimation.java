@@ -313,11 +313,52 @@ public class BoneAnimation {
 
     // ==================== Static Factory Methods for Common Animations ====================
 
+    /*
+     * ============================================================================
+     * ANIMATION FACTORY METHODS FOR 15-BONE SKELETON
+     * ============================================================================
+     *
+     * These factory methods create animations for the standard 15-bone humanoid:
+     *
+     * BONE LIST (for Blockbench animation):
+     *   1.  torso           - Main body/chest
+     *   2.  neck            - Neck connector (NEW)
+     *   3.  head            - Character's head
+     *   4.  arm_upper_left  - Left upper arm (back arm in profile)
+     *   5.  arm_lower_left  - Left forearm
+     *   6.  hand_left       - Left hand
+     *   7.  arm_upper_right - Right upper arm (front arm in profile)
+     *   8.  arm_lower_right - Right forearm
+     *   9.  hand_right      - Right hand
+     *   10. leg_upper_left  - Left thigh (back leg in profile)
+     *   11. leg_lower_left  - Left calf/shin
+     *   12. foot_left       - Left foot
+     *   13. leg_upper_right - Right thigh (front leg in profile)
+     *   14. leg_lower_right - Right calf/shin
+     *   15. foot_right      - Right foot
+     *
+     * KEYFRAME FORMAT:
+     *   addKeyframe(boneName, time, localX, localY, rotation)
+     *   - time: seconds into animation
+     *   - localX/localY: position offset from bone's rest position
+     *   - rotation: degrees (clockwise positive)
+     *
+     * IMPORTING FROM BLOCKBENCH:
+     *   Use BlockbenchAnimationImporter.importFile("path/to/animation.json")
+     *   Blockbench Z-rotation maps to our 2D rotation.
+     *   Blockbench Y-position is inverted (-Y) for our coordinate system.
+     *
+     * ============================================================================
+     */
+
     /**
      * Creates a natural idle breathing animation for profile view.
-     * Includes subtle torso bob, arm relaxation, and weight shifting.
-     * @param torsoName Name of the torso/body bone to animate
-     * @return Idle animation
+     * Animates all 15 bones with subtle breathing movement.
+     *
+     * Duration: 2.5 seconds (looping)
+     *
+     * @param torsoName Name of the torso/body bone (ignored, uses standard names)
+     * @return Idle animation for 15-bone skeleton
      */
     public static BoneAnimation createIdleAnimation(String torsoName) {
         BoneAnimation anim = new BoneAnimation("idle", 2.5, true);
@@ -327,9 +368,14 @@ public class BoneAnimation {
         anim.addKeyframe("torso", 1.25, 0, -1, 0);   // Slight rise (inhale)
         anim.addKeyframe("torso", 2.5, 0, 0, 0);    // Return (exhale)
 
+        // === NECK - follows torso with slight independent movement ===
+        anim.addKeyframe("neck", 0.0, 0, 0, 0);
+        anim.addKeyframe("neck", 1.25, 0, 0, 1);    // Tiny tilt during inhale
+        anim.addKeyframe("neck", 2.5, 0, 0, 0);
+
         // === HEAD - very subtle movement ===
         anim.addKeyframe("head", 0.0, 0, 0, 0);
-        anim.addKeyframe("head", 1.25, 0, 0, 0);
+        anim.addKeyframe("head", 1.25, 0, 0, -1);   // Counter-tilt to neck
         anim.addKeyframe("head", 2.5, 0, 0, 0);
 
         // === ARMS - relaxed at sides, slight natural bend ===
@@ -380,10 +426,20 @@ public class BoneAnimation {
     }
 
     /**
-     * Creates a natural human running animation for 2-part limbs in profile view.
-     * Uses the default bone names: arm_upper_left, arm_lower_left, etc.
+     * Creates a natural human running animation for 15-bone skeleton in profile view.
      * Implements a proper running gait cycle with contact, push-off, swing phases.
-     * @return Running animation for 2-part skeleton
+     *
+     * Duration: 0.5 seconds per cycle (looping)
+     *
+     * All 15 bones are animated:
+     *   - torso: Forward lean + vertical bob
+     *   - neck: Slight stabilization
+     *   - head: Counter-rotation for stability
+     *   - arms: Opposite swing to legs
+     *   - legs: Full gait cycle
+     *   - hands/feet: Natural follow-through
+     *
+     * @return Running animation for 15-bone skeleton
      */
     public static BoneAnimation createRunAnimation() {
         BoneAnimation anim = new BoneAnimation("run", 0.5, true);
@@ -398,6 +454,13 @@ public class BoneAnimation {
         anim.addKeyframe("torso", 0.25, 0, 2, 8);     // Left contact - body low
         anim.addKeyframe("torso", 0.375, 0, -2, 8);   // Push-off - body rises
         anim.addKeyframe("torso", 0.5, 0, 2, 8);      // Cycle complete
+
+        // === NECK - stabilizes head, slight counter to torso bob ===
+        anim.addKeyframe("neck", 0.0, 0, 0, -2);      // Counter lean
+        anim.addKeyframe("neck", 0.125, 0, 0, -2);
+        anim.addKeyframe("neck", 0.25, 0, 0, -2);
+        anim.addKeyframe("neck", 0.375, 0, 0, -2);
+        anim.addKeyframe("neck", 0.5, 0, 0, -2);
 
         // === HEAD - stabilizes, slight counter-rotation to torso ===
         anim.addKeyframe("head", 0.0, 0, -1, -3);     // Counter-tilt
@@ -528,10 +591,20 @@ public class BoneAnimation {
     }
 
     /**
-     * Creates a natural jump animation for 2-part limbs in profile view.
-     * Uses the default bone names.
+     * Creates a natural jump animation for 15-bone skeleton in profile view.
      * Phases: crouch, launch, peak, descent, land
-     * @return Jump animation for 2-part skeleton
+     *
+     * Duration: 0.8 seconds (non-looping)
+     *
+     * All 15 bones are animated:
+     *   - torso: Crouch, extend, forward lean
+     *   - neck: Stabilization during motion
+     *   - head: Counter-rotation, look direction
+     *   - arms: Swing for momentum
+     *   - legs: Crouch, extend, tuck, land
+     *   - hands/feet: Follow-through
+     *
+     * @return Jump animation for 15-bone skeleton
      */
     public static BoneAnimation createJumpAnimation() {
         BoneAnimation anim = new BoneAnimation("jump", 0.8, false);
@@ -551,12 +624,20 @@ public class BoneAnimation {
         anim.addKeyframe("torso", 0.7, 0, -2, 8);     // Descent
         anim.addKeyframe("torso", 0.8, 0, 2, 0);      // Landing
 
+        // === NECK - stabilizes during jump, slight counter-movement ===
+        anim.addKeyframe("neck", 0.0, 0, 0, 0);
+        anim.addKeyframe("neck", 0.15, 0, 0, -3);     // Counter crouch lean
+        anim.addKeyframe("neck", 0.3, 0, 0, -5);      // Counter launch lean
+        anim.addKeyframe("neck", 0.5, 0, 0, -6);      // Maximum counter
+        anim.addKeyframe("neck", 0.7, 0, 0, -4);      // Relaxing during descent
+        anim.addKeyframe("neck", 0.8, 0, 0, 0);       // Landing
+
         // === HEAD - stabilizes, counters torso motion ===
         anim.addKeyframe("head", 0.0, 0, 0, 0);
-        anim.addKeyframe("head", 0.15, 0, -1, -5);    // Look up during crouch
-        anim.addKeyframe("head", 0.3, 0, 0, -8);      // Counter lean
-        anim.addKeyframe("head", 0.5, 0, 0, -10);     // Look ahead
-        anim.addKeyframe("head", 0.7, 0, 0, -6);      // Descending
+        anim.addKeyframe("head", 0.15, 0, -1, -2);    // Look up during crouch
+        anim.addKeyframe("head", 0.3, 0, 0, -3);      // Counter lean
+        anim.addKeyframe("head", 0.5, 0, 0, -4);      // Look ahead
+        anim.addKeyframe("head", 0.7, 0, 0, -2);      // Descending
         anim.addKeyframe("head", 0.8, 0, 0, 0);       // Landing
 
         // === RIGHT LEG (front) - crouch, extend, tuck, extend for landing ===

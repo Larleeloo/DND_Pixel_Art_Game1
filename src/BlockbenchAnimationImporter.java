@@ -35,83 +35,172 @@ public class BlockbenchAnimationImporter {
 
     /**
      * Sets up default bone name mappings from common Blockbench naming conventions
-     * to our skeleton bone names.
+     * to our 15-bone skeleton.
+     *
+     * ============================================================================
+     * BLOCKBENCH TO SKELETON BONE NAME MAPPINGS
+     * ============================================================================
+     *
+     * Our skeleton has 15 bones. In Blockbench, you can use any of the mapped
+     * names below. The importer will automatically convert them.
+     *
+     * SKELETON BONE      ACCEPTED BLOCKBENCH NAMES
+     * ============       ========================
+     * torso              body, Body, chest, Chest, torso, Torso, spine, Spine
+     * neck               neck, Neck, neck_bone
+     * head               head, Head
+     *
+     * arm_upper_left     leftArm, LeftArm, left_arm, arm_left, ArmLeft, leftUpperArm
+     * arm_lower_left     leftForearm, LeftForearm, left_forearm, leftLowerArm
+     * hand_left          leftHand, LeftHand, left_hand, handLeft
+     *
+     * arm_upper_right    rightArm, RightArm, right_arm, arm_right, ArmRight, rightUpperArm
+     * arm_lower_right    rightForearm, RightForearm, right_forearm, rightLowerArm
+     * hand_right         rightHand, RightHand, right_hand, handRight
+     *
+     * leg_upper_left     leftLeg, LeftLeg, left_leg, leg_left, leftThigh, leftUpperLeg
+     * leg_lower_left     leftCalf, LeftCalf, left_calf, leftLowerLeg, leftShin
+     * foot_left          leftFoot, LeftFoot, left_foot, footLeft
+     *
+     * leg_upper_right    rightLeg, RightLeg, right_leg, leg_right, rightThigh, rightUpperLeg
+     * leg_lower_right    rightCalf, RightCalf, right_calf, rightLowerLeg, rightShin
+     * foot_right         rightFoot, RightFoot, right_foot, footRight
+     *
+     * ============================================================================
      */
     private void setupDefaultMappings() {
-        // Common mappings - Blockbench uses various naming conventions
-        // Torso/Body
+        // ====== TORSO / BODY ======
         boneNameMapping.put("body", "torso");
         boneNameMapping.put("Body", "torso");
         boneNameMapping.put("chest", "torso");
         boneNameMapping.put("Chest", "torso");
         boneNameMapping.put("torso", "torso");
         boneNameMapping.put("Torso", "torso");
+        boneNameMapping.put("spine", "torso");
+        boneNameMapping.put("Spine", "torso");
 
-        // Head
+        // ====== NECK ======
+        boneNameMapping.put("neck", "neck");
+        boneNameMapping.put("Neck", "neck");
+        boneNameMapping.put("neck_bone", "neck");
+
+        // ====== HEAD ======
         boneNameMapping.put("head", "head");
         boneNameMapping.put("Head", "head");
 
-        // Left arm (2-part)
+        // ====== LEFT ARM (3-part: upper -> lower -> hand) ======
+        // Upper arm
         boneNameMapping.put("leftArm", "arm_upper_left");
         boneNameMapping.put("LeftArm", "arm_upper_left");
         boneNameMapping.put("left_arm", "arm_upper_left");
         boneNameMapping.put("arm_left", "arm_upper_left");
         boneNameMapping.put("ArmLeft", "arm_upper_left");
+        boneNameMapping.put("leftUpperArm", "arm_upper_left");
+        boneNameMapping.put("LeftUpperArm", "arm_upper_left");
+        // Lower arm / forearm
         boneNameMapping.put("leftForearm", "arm_lower_left");
         boneNameMapping.put("LeftForearm", "arm_lower_left");
         boneNameMapping.put("left_forearm", "arm_lower_left");
         boneNameMapping.put("forearm_left", "arm_lower_left");
         boneNameMapping.put("leftLowerArm", "arm_lower_left");
+        boneNameMapping.put("LeftLowerArm", "arm_lower_left");
+        // Hand
+        boneNameMapping.put("leftHand", "hand_left");
+        boneNameMapping.put("LeftHand", "hand_left");
+        boneNameMapping.put("left_hand", "hand_left");
+        boneNameMapping.put("handLeft", "hand_left");
+        boneNameMapping.put("HandLeft", "hand_left");
 
-        // Right arm (2-part)
+        // ====== RIGHT ARM (3-part: upper -> lower -> hand) ======
+        // Upper arm
         boneNameMapping.put("rightArm", "arm_upper_right");
         boneNameMapping.put("RightArm", "arm_upper_right");
         boneNameMapping.put("right_arm", "arm_upper_right");
         boneNameMapping.put("arm_right", "arm_upper_right");
         boneNameMapping.put("ArmRight", "arm_upper_right");
+        boneNameMapping.put("rightUpperArm", "arm_upper_right");
+        boneNameMapping.put("RightUpperArm", "arm_upper_right");
+        // Lower arm / forearm
         boneNameMapping.put("rightForearm", "arm_lower_right");
         boneNameMapping.put("RightForearm", "arm_lower_right");
         boneNameMapping.put("right_forearm", "arm_lower_right");
         boneNameMapping.put("forearm_right", "arm_lower_right");
         boneNameMapping.put("rightLowerArm", "arm_lower_right");
+        boneNameMapping.put("RightLowerArm", "arm_lower_right");
+        // Hand
+        boneNameMapping.put("rightHand", "hand_right");
+        boneNameMapping.put("RightHand", "hand_right");
+        boneNameMapping.put("right_hand", "hand_right");
+        boneNameMapping.put("handRight", "hand_right");
+        boneNameMapping.put("HandRight", "hand_right");
 
-        // Left leg (2-part)
+        // ====== LEFT LEG (3-part: upper -> lower -> foot) ======
+        // Upper leg / thigh
         boneNameMapping.put("leftLeg", "leg_upper_left");
         boneNameMapping.put("LeftLeg", "leg_upper_left");
         boneNameMapping.put("left_leg", "leg_upper_left");
         boneNameMapping.put("leg_left", "leg_upper_left");
         boneNameMapping.put("LegLeft", "leg_upper_left");
         boneNameMapping.put("leftThigh", "leg_upper_left");
+        boneNameMapping.put("LeftThigh", "leg_upper_left");
+        boneNameMapping.put("leftUpperLeg", "leg_upper_left");
+        boneNameMapping.put("LeftUpperLeg", "leg_upper_left");
+        // Lower leg / calf / shin
         boneNameMapping.put("leftCalf", "leg_lower_left");
         boneNameMapping.put("LeftCalf", "leg_lower_left");
         boneNameMapping.put("left_calf", "leg_lower_left");
         boneNameMapping.put("calf_left", "leg_lower_left");
         boneNameMapping.put("leftLowerLeg", "leg_lower_left");
+        boneNameMapping.put("LeftLowerLeg", "leg_lower_left");
         boneNameMapping.put("leftShin", "leg_lower_left");
+        boneNameMapping.put("LeftShin", "leg_lower_left");
+        // Foot
+        boneNameMapping.put("leftFoot", "foot_left");
+        boneNameMapping.put("LeftFoot", "foot_left");
+        boneNameMapping.put("left_foot", "foot_left");
+        boneNameMapping.put("footLeft", "foot_left");
+        boneNameMapping.put("FootLeft", "foot_left");
 
-        // Right leg (2-part)
+        // ====== RIGHT LEG (3-part: upper -> lower -> foot) ======
+        // Upper leg / thigh
         boneNameMapping.put("rightLeg", "leg_upper_right");
         boneNameMapping.put("RightLeg", "leg_upper_right");
         boneNameMapping.put("right_leg", "leg_upper_right");
         boneNameMapping.put("leg_right", "leg_upper_right");
         boneNameMapping.put("LegRight", "leg_upper_right");
         boneNameMapping.put("rightThigh", "leg_upper_right");
+        boneNameMapping.put("RightThigh", "leg_upper_right");
+        boneNameMapping.put("rightUpperLeg", "leg_upper_right");
+        boneNameMapping.put("RightUpperLeg", "leg_upper_right");
+        // Lower leg / calf / shin
         boneNameMapping.put("rightCalf", "leg_lower_right");
         boneNameMapping.put("RightCalf", "leg_lower_right");
         boneNameMapping.put("right_calf", "leg_lower_right");
         boneNameMapping.put("calf_right", "leg_lower_right");
         boneNameMapping.put("rightLowerLeg", "leg_lower_right");
+        boneNameMapping.put("RightLowerLeg", "leg_lower_right");
         boneNameMapping.put("rightShin", "leg_lower_right");
+        boneNameMapping.put("RightShin", "leg_lower_right");
+        // Foot
+        boneNameMapping.put("rightFoot", "foot_right");
+        boneNameMapping.put("RightFoot", "foot_right");
+        boneNameMapping.put("right_foot", "foot_right");
+        boneNameMapping.put("footRight", "foot_right");
+        boneNameMapping.put("FootRight", "foot_right");
 
-        // Direct mappings for our bone names
+        // ====== DIRECT MAPPINGS (our exact bone names) ======
         boneNameMapping.put("arm_upper_left", "arm_upper_left");
         boneNameMapping.put("arm_lower_left", "arm_lower_left");
+        boneNameMapping.put("hand_left", "hand_left");
         boneNameMapping.put("arm_upper_right", "arm_upper_right");
         boneNameMapping.put("arm_lower_right", "arm_lower_right");
+        boneNameMapping.put("hand_right", "hand_right");
         boneNameMapping.put("leg_upper_left", "leg_upper_left");
         boneNameMapping.put("leg_lower_left", "leg_lower_left");
+        boneNameMapping.put("foot_left", "foot_left");
         boneNameMapping.put("leg_upper_right", "leg_upper_right");
         boneNameMapping.put("leg_lower_right", "leg_lower_right");
+        boneNameMapping.put("foot_right", "foot_right");
     }
 
     /**
@@ -493,7 +582,41 @@ public class BlockbenchAnimationImporter {
 
     /**
      * Creates a sample Blockbench animation JSON string for testing.
-     * @return Sample JSON string
+     * Demonstrates the expected format for all 15 bones.
+     *
+     * ============================================================================
+     * BLOCKBENCH ANIMATION JSON FORMAT FOR 15-BONE SKELETON
+     * ============================================================================
+     *
+     * Place your exported Blockbench animations in the assets/animations/ directory.
+     * Load them using:
+     *   playerBoneEntity.loadAnimationsFromBlockbench("assets/animations/player.animation.json");
+     *
+     * COORDINATE SYSTEM:
+     *   - Blockbench Z rotation -> Our 2D rotation (degrees)
+     *   - Blockbench Y position -> Our localY (inverted: -Y)
+     *   - Blockbench X position -> Our localX
+     *
+     * BONE HIERARCHY TO MATCH:
+     *   torso
+     *   ├── neck
+     *   │   └── head
+     *   ├── leftArm (arm_upper_left)
+     *   │   └── leftForearm (arm_lower_left)
+     *   │       └── leftHand (hand_left)
+     *   ├── rightArm (arm_upper_right)
+     *   │   └── rightForearm (arm_lower_right)
+     *   │       └── rightHand (hand_right)
+     *   ├── leftLeg (leg_upper_left)
+     *   │   └── leftCalf (leg_lower_left)
+     *   │       └── leftFoot (foot_left)
+     *   └── rightLeg (leg_upper_right)
+     *       └── rightCalf (leg_lower_right)
+     *           └── rightFoot (foot_right)
+     *
+     * ============================================================================
+     *
+     * @return Sample JSON string demonstrating 15-bone animation format
      */
     public static String createSampleAnimationJson() {
         return "{\n" +
@@ -503,61 +626,66 @@ public class BlockbenchAnimationImporter {
                "      \"loop\": true,\n" +
                "      \"animation_length\": 0.5,\n" +
                "      \"bones\": {\n" +
+               "        \"torso\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 5], \"0.25\": [0, 0, -5], \"0.5\": [0, 0, 5] },\n" +
+               "          \"position\": { \"0.0\": [0, 2, 0], \"0.125\": [0, -2, 0], \"0.25\": [0, 2, 0], \"0.375\": [0, -2, 0], \"0.5\": [0, 2, 0] }\n" +
+               "        },\n" +
+               "        \"neck\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -2], \"0.5\": [0, 0, -2] }\n" +
+               "        },\n" +
+               "        \"head\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -3], \"0.5\": [0, 0, -3] }\n" +
+               "        },\n" +
                "        \"leftLeg\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [30, 0, 0],\n" +
-               "            \"0.25\": [-30, 0, 0],\n" +
-               "            \"0.5\": [30, 0, 0]\n" +
-               "          }\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 30], \"0.25\": [0, 0, -35], \"0.5\": [0, 0, 30] }\n" +
+               "        },\n" +
+               "        \"leftCalf\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 10], \"0.125\": [0, 0, 45], \"0.25\": [0, 0, 5], \"0.5\": [0, 0, 10] }\n" +
+               "        },\n" +
+               "        \"leftFoot\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -25], \"0.25\": [0, 0, 30], \"0.5\": [0, 0, -25] }\n" +
                "        },\n" +
                "        \"rightLeg\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [-30, 0, 0],\n" +
-               "            \"0.25\": [30, 0, 0],\n" +
-               "            \"0.5\": [-30, 0, 0]\n" +
-               "          }\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -35], \"0.25\": [0, 0, 30], \"0.5\": [0, 0, -35] }\n" +
+               "        },\n" +
+               "        \"rightCalf\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 5], \"0.125\": [0, 0, 0], \"0.25\": [0, 0, 10], \"0.375\": [0, 0, 45], \"0.5\": [0, 0, 5] }\n" +
+               "        },\n" +
+               "        \"rightFoot\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 30], \"0.25\": [0, 0, -25], \"0.5\": [0, 0, 30] }\n" +
                "        },\n" +
                "        \"leftArm\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [-20, 0, 0],\n" +
-               "            \"0.25\": [20, 0, 0],\n" +
-               "            \"0.5\": [-20, 0, 0]\n" +
-               "          }\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -35], \"0.25\": [0, 0, 40], \"0.5\": [0, 0, -35] }\n" +
+               "        },\n" +
+               "        \"leftForearm\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -30], \"0.25\": [0, 0, -50], \"0.5\": [0, 0, -30] }\n" +
+               "        },\n" +
+               "        \"leftHand\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -5], \"0.25\": [0, 0, 10], \"0.5\": [0, 0, -5] }\n" +
                "        },\n" +
                "        \"rightArm\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [20, 0, 0],\n" +
-               "            \"0.25\": [-20, 0, 0],\n" +
-               "            \"0.5\": [20, 0, 0]\n" +
-               "          }\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 40], \"0.25\": [0, 0, -35], \"0.5\": [0, 0, 40] }\n" +
+               "        },\n" +
+               "        \"rightForearm\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, -50], \"0.25\": [0, 0, -30], \"0.5\": [0, 0, -50] }\n" +
+               "        },\n" +
+               "        \"rightHand\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 10], \"0.25\": [0, 0, -5], \"0.5\": [0, 0, 10] }\n" +
                "        }\n" +
                "      }\n" +
                "    },\n" +
-               "    \"animation.player.jump\": {\n" +
-               "      \"loop\": false,\n" +
-               "      \"animation_length\": 0.6,\n" +
+               "    \"animation.player.idle\": {\n" +
+               "      \"loop\": true,\n" +
+               "      \"animation_length\": 2.5,\n" +
                "      \"bones\": {\n" +
-               "        \"body\": {\n" +
-               "          \"position\": {\n" +
-               "            \"0.0\": [0, 0, 0],\n" +
-               "            \"0.2\": [0, -4, 0],\n" +
-               "            \"0.4\": [0, 8, 0],\n" +
-               "            \"0.6\": [0, 0, 0]\n" +
-               "          }\n" +
+               "        \"torso\": {\n" +
+               "          \"position\": { \"0.0\": [0, 0, 0], \"1.25\": [0, 1, 0], \"2.5\": [0, 0, 0] }\n" +
                "        },\n" +
-               "        \"leftArm\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [0, 0, 0],\n" +
-               "            \"0.3\": [-60, 0, 0],\n" +
-               "            \"0.6\": [0, 0, 0]\n" +
-               "          }\n" +
+               "        \"neck\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 0], \"1.25\": [0, 0, 1], \"2.5\": [0, 0, 0] }\n" +
                "        },\n" +
-               "        \"rightArm\": {\n" +
-               "          \"rotation\": {\n" +
-               "            \"0.0\": [0, 0, 0],\n" +
-               "            \"0.3\": [-60, 0, 0],\n" +
-               "            \"0.6\": [0, 0, 0]\n" +
-               "          }\n" +
+               "        \"head\": {\n" +
+               "          \"rotation\": { \"0.0\": [0, 0, 0], \"1.25\": [0, 0, -1], \"2.5\": [0, 0, 0] }\n" +
                "        }\n" +
                "      }\n" +
                "    }\n" +

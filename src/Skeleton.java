@@ -424,120 +424,245 @@ public class Skeleton {
     // ==================== Factory Methods ====================
 
     /**
-     * Creates a simple humanoid skeleton with basic bones.
-     * Bones: root, torso, head, 2-part arms with hands, and 2-part legs with feet
-     * @return A new humanoid skeleton
+     * Creates a 15-bone humanoid skeleton optimized for 2D side-view animation.
+     *
+     * ============================================================================
+     * BONE HIERARCHY (15 visible bones + 1 invisible root):
+     * ============================================================================
+     *
+     * root (invisible container)
+     * └── torso              [1]  - Main body/chest
+     *     ├── neck           [2]  - Connects head to torso
+     *     │   └── head       [3]  - Character's head
+     *     ├── arm_upper_left [4]  - Left upper arm (back arm in profile)
+     *     │   └── arm_lower_left [5]  - Left forearm
+     *     │       └── hand_left  [6]  - Left hand
+     *     ├── arm_upper_right [7] - Right upper arm (front arm in profile)
+     *     │   └── arm_lower_right [8] - Right forearm
+     *     │       └── hand_right [9]  - Right hand
+     *     ├── leg_upper_left [10] - Left thigh (back leg in profile)
+     *     │   └── leg_lower_left [11] - Left calf/shin
+     *     │       └── foot_left [12]  - Left foot
+     *     └── leg_upper_right [13] - Right thigh (front leg in profile)
+     *         └── leg_lower_right [14] - Right calf/shin
+     *             └── foot_right [15]  - Right foot
+     *
+     * ============================================================================
+     * BLOCKBENCH ANIMATION IMPORT - BONE NAME MAPPINGS:
+     * ============================================================================
+     *
+     * When creating animations in Blockbench, use these bone names (or the mapped
+     * alternatives listed in BlockbenchAnimationImporter):
+     *
+     * CORE BONES:
+     *   - torso     (or: body, Body, chest, Chest, Torso)
+     *   - neck      (or: Neck, neck_bone)
+     *   - head      (or: Head)
+     *
+     * LEFT ARM (back arm in 2D profile view):
+     *   - arm_upper_left  (or: leftArm, LeftArm, left_arm, arm_left)
+     *   - arm_lower_left  (or: leftForearm, LeftForearm, left_forearm)
+     *   - hand_left       (or: leftHand, LeftHand, left_hand)
+     *
+     * RIGHT ARM (front arm in 2D profile view):
+     *   - arm_upper_right (or: rightArm, RightArm, right_arm, arm_right)
+     *   - arm_lower_right (or: rightForearm, RightForearm, right_forearm)
+     *   - hand_right      (or: rightHand, RightHand, right_hand)
+     *
+     * LEFT LEG (back leg in 2D profile view):
+     *   - leg_upper_left  (or: leftLeg, LeftLeg, left_leg, leftThigh)
+     *   - leg_lower_left  (or: leftCalf, LeftCalf, left_calf, leftShin)
+     *   - foot_left       (or: leftFoot, LeftFoot, left_foot)
+     *
+     * RIGHT LEG (front leg in 2D profile view):
+     *   - leg_upper_right (or: rightLeg, RightLeg, right_leg, rightThigh)
+     *   - leg_lower_right (or: rightCalf, RightCalf, right_calf, rightShin)
+     *   - foot_right      (or: rightFoot, RightFoot, right_foot)
+     *
+     * ============================================================================
+     * BLOCKBENCH KEYFRAME FORMAT:
+     * ============================================================================
+     *
+     * Blockbench exports animations in this JSON format:
+     *
+     * {
+     *   "animations": {
+     *     "animation.player.walk": {
+     *       "loop": true,
+     *       "animation_length": 0.5,
+     *       "bones": {
+     *         "torso": {
+     *           "rotation": { "0.0": [0, 0, 5], "0.25": [0, 0, -5] },
+     *           "position": { "0.0": [0, 0, 0], "0.25": [0, 2, 0] }
+     *         },
+     *         "neck": {
+     *           "rotation": { "0.0": [0, 0, 0] }
+     *         },
+     *         ...
+     *       }
+     *     }
+     *   }
+     * }
+     *
+     * COORDINATE MAPPING (Blockbench 3D -> Game 2D):
+     *   - Blockbench X position -> Game localX
+     *   - Blockbench Y position -> Game localY (inverted: -Y)
+     *   - Blockbench Z rotation -> Game 2D rotation
+     *
+     * PIVOT POINTS (normalized 0.0 to 1.0):
+     *   - (0.5, 0.0) = top-center (used for limbs - rotate from joint)
+     *   - (0.5, 0.5) = center
+     *   - (0.5, 1.0) = bottom-center (used for head - rotate from neck base)
+     *
+     * ============================================================================
+     *
+     * @return A new 15-bone humanoid skeleton
      */
     public static Skeleton createHumanoid() {
         Skeleton skeleton = new Skeleton();
 
-        // Create bones
+        // ====== CREATE ALL 15 BONES + ROOT ======
+
+        // Root container (invisible)
         Bone root = new Bone("root");
-        root.setVisible(false);  // Root is just a container, don't draw it
+        root.setVisible(false);
+
+        // Core bones
         Bone torso = new Bone("torso");
+        Bone neck = new Bone("neck");
         Bone head = new Bone("head");
 
-        // 2-part arms with hands
+        // Left arm (back arm in profile view) - 3 segments
         Bone armUpperLeft = new Bone("arm_upper_left");
         Bone armLowerLeft = new Bone("arm_lower_left");
         Bone handLeft = new Bone("hand_left");
+
+        // Right arm (front arm in profile view) - 3 segments
         Bone armUpperRight = new Bone("arm_upper_right");
         Bone armLowerRight = new Bone("arm_lower_right");
         Bone handRight = new Bone("hand_right");
 
-        // 2-part legs with feet
+        // Left leg (back leg in profile view) - 3 segments
         Bone legUpperLeft = new Bone("leg_upper_left");
         Bone legLowerLeft = new Bone("leg_lower_left");
         Bone footLeft = new Bone("foot_left");
+
+        // Right leg (front leg in profile view) - 3 segments
         Bone legUpperRight = new Bone("leg_upper_right");
         Bone legLowerRight = new Bone("leg_lower_right");
         Bone footRight = new Bone("foot_right");
 
-        // Set up hierarchy
-        root.addChild(torso);
-        torso.addChild(head);
+        // ====== SET UP BONE HIERARCHY ======
 
-        // Arms: upper -> lower -> hand
+        root.addChild(torso);
+
+        // Head chain: torso -> neck -> head
+        torso.addChild(neck);
+        neck.addChild(head);
+
+        // Arms: torso -> upper -> lower -> hand
         torso.addChild(armUpperLeft);
         armUpperLeft.addChild(armLowerLeft);
         armLowerLeft.addChild(handLeft);
+
         torso.addChild(armUpperRight);
         armUpperRight.addChild(armLowerRight);
         armLowerRight.addChild(handRight);
 
-        // Legs: upper -> lower -> foot
+        // Legs: torso -> upper -> lower -> foot
         torso.addChild(legUpperLeft);
         legUpperLeft.addChild(legLowerLeft);
         legLowerLeft.addChild(footLeft);
+
         torso.addChild(legUpperRight);
         legUpperRight.addChild(legLowerRight);
         legLowerRight.addChild(footRight);
 
-        // Set default positions (relative to parent)
-        // Note: positions are in unscaled pixels, textures get scaled by RENDER_SCALE (4x)
-        // Profile view: limbs positioned at center for side-view appearance
+        // ====== SET LOCAL POSITIONS (relative to parent) ======
+        // Note: positions are in unscaled pixels, scaled by RENDER_SCALE (4x) at draw time
         // Skeleton sized to fit in ~27 unscaled pixels (109 / 4 = 27 at 4x scale)
+
         torso.setLocalPosition(0, 0);
-        head.setLocalPosition(0, -5);            // Above torso (reduced)
 
-        // Arms - positioned at shoulder center for profile view
-        // "Left" arm is the back arm, "Right" arm is the front arm
-        armUpperLeft.setLocalPosition(0, -2);     // Back arm at shoulder
-        armLowerLeft.setLocalPosition(0, 3);      // Below upper arm (at elbow)
-        handLeft.setLocalPosition(0, 3);          // Below lower arm (at wrist)
-        armUpperRight.setLocalPosition(0, -2);    // Front arm at shoulder
-        armLowerRight.setLocalPosition(0, 3);     // Below upper arm (at elbow)
-        handRight.setLocalPosition(0, 3);         // Below lower arm (at wrist)
+        // Neck and head - stacked above torso
+        neck.setLocalPosition(0, -4);             // Top of torso
+        head.setLocalPosition(0, -2);             // Above neck
 
-        // Legs - positioned at hip center for profile view
-        // "Left" leg is the back leg, "Right" leg is the front leg
-        legUpperLeft.setLocalPosition(0, 5);      // Back leg at hip
-        legLowerLeft.setLocalPosition(0, 5);      // Below upper leg (at knee)
-        footLeft.setLocalPosition(0, 5);          // Below lower leg (at ankle)
-        legUpperRight.setLocalPosition(0, 5);     // Front leg at hip
-        legLowerRight.setLocalPosition(0, 5);     // Below upper leg (at knee)
-        footRight.setLocalPosition(0, 5);         // Below lower leg (at ankle)
+        // Arms - positioned at shoulder (top of torso)
+        // "Left" = back arm, "Right" = front arm in profile view
+        armUpperLeft.setLocalPosition(0, -2);     // Shoulder position
+        armLowerLeft.setLocalPosition(0, 3);      // Elbow (end of upper arm)
+        handLeft.setLocalPosition(0, 3);          // Wrist (end of lower arm)
 
-        // Set pivot points (rotation origins) - use top-center for limbs
-        head.setPivot(0.5, 1.0);                  // Rotate from bottom (neck)
+        armUpperRight.setLocalPosition(0, -2);    // Shoulder position
+        armLowerRight.setLocalPosition(0, 3);     // Elbow
+        handRight.setLocalPosition(0, 3);         // Wrist
 
-        // Arms - pivot at top-center for shoulder/elbow/wrist rotation
-        armUpperLeft.setPivot(0.5, 0.0);          // Top center (shoulder)
-        armLowerLeft.setPivot(0.5, 0.0);          // Top center (elbow)
-        handLeft.setPivot(0.5, 0.0);              // Top center (wrist)
-        armUpperRight.setPivot(0.5, 0.0);         // Top center (shoulder)
-        armLowerRight.setPivot(0.5, 0.0);         // Top center (elbow)
-        handRight.setPivot(0.5, 0.0);             // Top center (wrist)
+        // Legs - positioned at hip (bottom of torso)
+        // "Left" = back leg, "Right" = front leg in profile view
+        legUpperLeft.setLocalPosition(0, 5);      // Hip position
+        legLowerLeft.setLocalPosition(0, 5);      // Knee (end of thigh)
+        footLeft.setLocalPosition(0, 5);          // Ankle (end of calf)
 
-        // Legs - pivot at top-center for hip/knee/ankle rotation
-        legUpperLeft.setPivot(0.5, 0.0);          // Top center (hip)
-        legLowerLeft.setPivot(0.5, 0.0);          // Top center (knee)
-        footLeft.setPivot(0.5, 0.0);              // Top center (ankle)
-        legUpperRight.setPivot(0.5, 0.0);         // Top center (hip)
-        legLowerRight.setPivot(0.5, 0.0);         // Top center (knee)
-        footRight.setPivot(0.5, 0.0);             // Top center (ankle)
+        legUpperRight.setLocalPosition(0, 5);     // Hip position
+        legLowerRight.setLocalPosition(0, 5);     // Knee
+        footRight.setLocalPosition(0, 5);         // Ankle
 
-        // Set z-order (drawing order) for profile view
-        // Back limbs (left) behind torso, front limbs (right) in front
-        armUpperLeft.setZOrder(-2);              // Back arm - behind torso
-        armLowerLeft.setZOrder(-2);
-        handLeft.setZOrder(-2);
-        legUpperLeft.setZOrder(-3);              // Back leg - furthest back
+        // ====== SET PIVOT POINTS (rotation origins) ======
+        // Format: (x, y) where 0.0-1.0 represents position within bone bounds
+        // (0.5, 0.0) = top-center - good for limbs that rotate from their attachment point
+        // (0.5, 1.0) = bottom-center - good for head rotating from base of skull
+
+        torso.setPivot(0.5, 0.5);                 // Center (body core)
+        neck.setPivot(0.5, 1.0);                  // Bottom (rotates from base)
+        head.setPivot(0.5, 1.0);                  // Bottom (rotates from neck joint)
+
+        // Arms - pivot at top (shoulder/elbow/wrist joints)
+        armUpperLeft.setPivot(0.5, 0.0);
+        armLowerLeft.setPivot(0.5, 0.0);
+        handLeft.setPivot(0.5, 0.0);
+        armUpperRight.setPivot(0.5, 0.0);
+        armLowerRight.setPivot(0.5, 0.0);
+        handRight.setPivot(0.5, 0.0);
+
+        // Legs - pivot at top (hip/knee/ankle joints)
+        legUpperLeft.setPivot(0.5, 0.0);
+        legLowerLeft.setPivot(0.5, 0.0);
+        footLeft.setPivot(0.5, 0.0);
+        legUpperRight.setPivot(0.5, 0.0);
+        legLowerRight.setPivot(0.5, 0.0);
+        footRight.setPivot(0.5, 0.0);
+
+        // ====== SET Z-ORDER (drawing order for 2D profile view) ======
+        // Lower values = drawn first (behind), higher values = drawn last (in front)
+        // This creates proper layering for side-view character
+
+        legUpperLeft.setZOrder(-3);               // Back leg - furthest back
         legLowerLeft.setZOrder(-3);
         footLeft.setZOrder(-3);
-        torso.setZOrder(0);                      // Body in middle
-        head.setZOrder(1);                       // Head in front of torso
-        armUpperRight.setZOrder(2);              // Front arm - in front
-        armLowerRight.setZOrder(2);
-        handRight.setZOrder(2);
-        legUpperRight.setZOrder(-1);             // Front leg - behind torso but in front of back leg
+
+        armUpperLeft.setZOrder(-2);               // Back arm - behind torso
+        armLowerLeft.setZOrder(-2);
+        handLeft.setZOrder(-2);
+
+        legUpperRight.setZOrder(-1);              // Front leg - behind torso but in front of back leg
         legLowerRight.setZOrder(-1);
         footRight.setZOrder(-1);
 
-        // Set default sizes for bones without textures
-        // Reduced sizes to fit hitbox better at 4x scale
-        torso.setDefaultSize(6, 8);
-        head.setDefaultSize(5, 5);
+        torso.setZOrder(0);                       // Body in middle
+        neck.setZOrder(0);                        // Neck same layer as torso
+        head.setZOrder(1);                        // Head in front of torso
+
+        armUpperRight.setZOrder(2);               // Front arm - in front of everything
+        armLowerRight.setZOrder(2);
+        handRight.setZOrder(2);
+
+        // ====== SET DEFAULT SIZES (for placeholder rendering) ======
+        // These are unscaled pixel dimensions - actual display is scaled by RENDER_SCALE (4x)
+
+        torso.setDefaultSize(6, 8);               // Main body
+        neck.setDefaultSize(3, 2);                // Small neck connector
+        head.setDefaultSize(5, 5);                // Square-ish head
 
         // Arm segments
         armUpperLeft.setDefaultSize(2, 3);
@@ -550,23 +675,27 @@ public class Skeleton {
         // Leg segments
         legUpperLeft.setDefaultSize(3, 5);
         legLowerLeft.setDefaultSize(3, 5);
-        footLeft.setDefaultSize(4, 2);           // Feet are wider than tall
+        footLeft.setDefaultSize(4, 2);            // Feet are wider than tall
         legUpperRight.setDefaultSize(3, 5);
         legLowerRight.setDefaultSize(3, 5);
         footRight.setDefaultSize(4, 2);
 
-        // Set distinct placeholder colors for debugging
-        torso.setPlaceholderColor(new Color(100, 150, 200));   // Blue shirt
-        head.setPlaceholderColor(new Color(255, 200, 150));    // Skin tone
-        armUpperLeft.setPlaceholderColor(new Color(255, 200, 150));
+        // ====== SET PLACEHOLDER COLORS (for debugging without textures) ======
+
+        torso.setPlaceholderColor(new Color(100, 150, 200));    // Blue shirt
+        neck.setPlaceholderColor(new Color(255, 200, 150));     // Skin tone
+        head.setPlaceholderColor(new Color(255, 200, 150));     // Skin tone
+
+        armUpperLeft.setPlaceholderColor(new Color(255, 200, 150));   // Skin
         armLowerLeft.setPlaceholderColor(new Color(255, 200, 150));
-        handLeft.setPlaceholderColor(new Color(255, 180, 130));
+        handLeft.setPlaceholderColor(new Color(255, 180, 130));       // Slightly darker
         armUpperRight.setPlaceholderColor(new Color(255, 200, 150));
         armLowerRight.setPlaceholderColor(new Color(255, 200, 150));
         handRight.setPlaceholderColor(new Color(255, 180, 130));
-        legUpperLeft.setPlaceholderColor(new Color(80, 80, 120));   // Dark pants
+
+        legUpperLeft.setPlaceholderColor(new Color(80, 80, 120));     // Dark pants
         legLowerLeft.setPlaceholderColor(new Color(80, 80, 120));
-        footLeft.setPlaceholderColor(new Color(60, 40, 20));        // Brown shoes
+        footLeft.setPlaceholderColor(new Color(60, 40, 20));          // Brown shoes
         legUpperRight.setPlaceholderColor(new Color(80, 80, 120));
         legLowerRight.setPlaceholderColor(new Color(80, 80, 120));
         footRight.setPlaceholderColor(new Color(60, 40, 20));
@@ -574,7 +703,7 @@ public class Skeleton {
         skeleton.setRootBone(root);
 
         // Debug: print bone hierarchy
-        System.out.println("Skeleton created with bones:");
+        System.out.println("Skeleton created with 15 bones:");
         for (String boneName : skeleton.getBoneNames()) {
             Bone b = skeleton.findBone(boneName);
             System.out.println("  - " + boneName + " visible=" + b.isVisible() +
@@ -586,24 +715,39 @@ public class Skeleton {
 
     /**
      * Creates a humanoid skeleton with textures loaded from a directory.
-     * Expects files for 2-part limbs with hands and feet:
-     * torso.png, head.png,
-     * arm_upper_left.png, arm_lower_left.png, hand_left.png, etc.
-     * leg_upper_left.png, leg_lower_left.png, foot_left.png, etc.
+     *
+     * Expected texture files (15 bones):
+     *   - torso.png           - Main body/chest
+     *   - neck.png            - Neck connector
+     *   - head.png            - Character's head
+     *   - arm_upper_left.png  - Left upper arm
+     *   - arm_lower_left.png  - Left forearm
+     *   - hand_left.png       - Left hand
+     *   - arm_upper_right.png - Right upper arm
+     *   - arm_lower_right.png - Right forearm
+     *   - hand_right.png      - Right hand
+     *   - leg_upper_left.png  - Left thigh
+     *   - leg_lower_left.png  - Left calf
+     *   - foot_left.png       - Left foot
+     *   - leg_upper_right.png - Right thigh
+     *   - leg_lower_right.png - Right calf
+     *   - foot_right.png      - Right foot
+     *
      * @param textureDir Directory containing the texture files
      * @return A textured humanoid skeleton
      */
     public static Skeleton createHumanoidWithTextures(String textureDir) {
         Skeleton skeleton = createHumanoid();
 
-        // Load textures for each bone
+        // Load textures for all 15 bones
         String[] boneNames = {
-            "torso", "head",
+            "torso", "neck", "head",
             "arm_upper_left", "arm_lower_left", "hand_left",
             "arm_upper_right", "arm_lower_right", "hand_right",
             "leg_upper_left", "leg_lower_left", "foot_left",
             "leg_upper_right", "leg_lower_right", "foot_right"
         };
+
         for (String name : boneNames) {
             Bone bone = skeleton.findBone(name);
             if (bone != null) {
@@ -613,5 +757,21 @@ public class Skeleton {
         }
 
         return skeleton;
+    }
+
+    /**
+     * Gets the list of all 15 bone names in this skeleton.
+     * Useful for iterating over bones or validating Blockbench imports.
+     *
+     * @return Array of the 15 bone names
+     */
+    public static String[] getBoneNameList() {
+        return new String[] {
+            "torso", "neck", "head",
+            "arm_upper_left", "arm_lower_left", "hand_left",
+            "arm_upper_right", "arm_lower_right", "hand_right",
+            "leg_upper_left", "leg_lower_left", "foot_left",
+            "leg_upper_right", "leg_lower_right", "foot_right"
+        };
     }
 }
