@@ -44,6 +44,7 @@ public class Bone {
     private int defaultWidth = 8;
     private int defaultHeight = 12;
     private Color placeholderColor = new Color(180, 140, 100);  // Skin tone
+    private Color tintColor = null;  // Color tint applied to textures (null = no tint)
 
     // Cached world transform
     private double worldX;
@@ -216,10 +217,28 @@ public class Bone {
 
     /**
      * Sets the placeholder color when no texture is loaded.
+     * Also sets the tint color for textured bones.
      * @param color The color to use
      */
     public void setPlaceholderColor(Color color) {
         this.placeholderColor = color;
+        this.tintColor = color;  // Also apply as tint for textured bones
+    }
+
+    /**
+     * Sets the tint color applied to textured bones.
+     * @param color Tint color (null for no tint)
+     */
+    public void setTintColor(Color color) {
+        this.tintColor = color;
+    }
+
+    /**
+     * Gets the tint color.
+     * @return Tint color or null
+     */
+    public Color getTintColor() {
+        return tintColor;
     }
 
     // ==================== Hierarchy Methods ====================
@@ -418,10 +437,23 @@ public class Bone {
 
         // Draw the texture or a placeholder
         if (texture != null) {
+            // Draw texture
             g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
+
+            // Apply tint color overlay if set
+            if (tintColor != null) {
+                Composite oldComposite = g.getComposite();
+                // Use SRC_ATOP to only tint the visible pixels of the texture
+                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 0.6f));
+                g.setColor(tintColor);
+                g.fillRect(0, 0, textureWidth, textureHeight);
+                g.setComposite(oldComposite);
+            }
         } else {
             // Draw placeholder rectangle for bones without textures
-            g.setColor(placeholderColor);
+            // Use tintColor if set, otherwise use placeholderColor
+            Color displayColor = (tintColor != null) ? tintColor : placeholderColor;
+            g.setColor(displayColor);
             g.fillRect(0, 0, texW, texH);
             g.setColor(Color.BLACK);
             g.drawRect(0, 0, texW - 1, texH - 1);
