@@ -12,27 +12,24 @@ import java.io.IOException;
  * 15-BONE SKELETON TEXTURE GENERATION
  * ============================================================================
  *
- * This class generates placeholder textures for the 15-bone humanoid skeleton:
+ * This class generates placeholder textures for the 15-bone humanoid skeleton.
+ * Sizes are in UNSCALED pixels - multiply by 4 (RENDER_SCALE) for display size.
  *
- *   BONE               SIZE      COLOR
- *   ----               ----      -----
- *   torso              6x8 px    Blue shirt (#6496C8)
- *   neck               3x2 px    Skin tone (#FFC896)
- *   head               5x5 px    Skin tone (#FFC896)
- *   arm_upper_left     2x3 px    Skin tone (#FFC896)
- *   arm_lower_left     2x3 px    Skin tone (#FFC896)
- *   hand_left          2x2 px    Darker skin (#FFB482)
- *   arm_upper_right    2x3 px    Skin tone (#FFC896)
- *   arm_lower_right    2x3 px    Skin tone (#FFC896)
- *   hand_right         2x2 px    Darker skin (#FFB482)
- *   leg_upper_left     3x5 px    Dark pants (#505078)
- *   leg_lower_left     3x5 px    Dark pants (#505078)
- *   foot_left          4x2 px    Brown shoes (#3C2814)
- *   leg_upper_right    3x5 px    Dark pants (#505078)
- *   leg_lower_right    3x5 px    Dark pants (#505078)
- *   foot_right         4x2 px    Brown shoes (#3C2814)
+ *   BONE               UNSCALED    DISPLAY     COLOR
+ *   ----               --------    -------     -----
+ *   torso              8x8 px      32x32 px    Blue shirt (#6496C8)
+ *   neck               4x2 px      16x8 px     Skin tone (#FFC896)
+ *   head               6x5 px      24x20 px    Skin tone (#FFC896)
+ *   arm_upper_*        3x4 px      12x16 px    Skin tone (#FFC896)
+ *   arm_lower_*        3x4 px      12x16 px    Skin tone (#FFC896)
+ *   hand_*             3x2 px      12x8 px     Darker skin (#FFB482)
+ *   leg_upper_*        4x5 px      16x20 px    Dark pants (#505078)
+ *   leg_lower_*        3x5 px      12x20 px    Dark pants (#505078)
+ *   foot_*             5x2 px      20x8 px     Brown shoes (#3C2814)
  *
- * These textures are scaled by RENDER_SCALE (4x) when displayed.
+ * BLOCKBENCH SETUP:
+ * Use the DISPLAY sizes above when creating cubes in Blockbench.
+ * Position bones according to the hierarchy in Skeleton.java.
  *
  * ============================================================================
  */
@@ -191,40 +188,41 @@ public class BoneTextureGenerator {
             Color shoeShade = new Color(40, 25, 10);       // #28190A - shoe shadow
 
             // ====== CORE BONES ======
+            // Sizes match Skeleton.java bone dimensions
 
-            // Torso - 6x8 pixel art (main body)
-            BufferedImage torso = createPixelArtTorso(6, 8, primaryColor, secondaryColor);
+            // Torso - 8x8 pixel art (main body - wider for side view)
+            BufferedImage torso = createPixelArtTorso(8, 8, primaryColor, secondaryColor);
             ImageIO.write(torso, "PNG", new File(outputDir + "/torso.png"));
 
-            // Neck - 3x2 pixel art (skin tone connector)
-            BufferedImage neck = createPixelArtNeck(3, 2, skinColor, skinShade);
+            // Neck - 4x2 pixel art (skin tone connector)
+            BufferedImage neck = createPixelArtNeck(4, 2, skinColor, skinShade);
             ImageIO.write(neck, "PNG", new File(outputDir + "/neck.png"));
 
-            // Head - 5x5 pixel art
-            BufferedImage head = createPixelArtHead(5, 5, skinColor, skinShade);
+            // Head - 6x5 pixel art (slightly wider than tall)
+            BufferedImage head = createPixelArtHead(6, 5, skinColor, skinShade);
             ImageIO.write(head, "PNG", new File(outputDir + "/head.png"));
 
             // ====== ARM BONES (6 total) ======
 
-            // Upper arms - 2x3 pixel art (skin color)
-            BufferedImage armUpper = createPixelArtLimb(2, 3, skinColor, skinShade);
+            // Upper arms - 3x4 pixel art (skin color)
+            BufferedImage armUpper = createPixelArtLimb(3, 4, skinColor, skinShade);
             ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_left.png"));
             ImageIO.write(armUpper, "PNG", new File(outputDir + "/arm_upper_right.png"));
 
-            // Lower arms/forearms - 2x3 pixel art (skin color)
-            BufferedImage armLower = createPixelArtLimb(2, 3, skinColor, skinShade);
+            // Lower arms/forearms - 3x4 pixel art (skin color)
+            BufferedImage armLower = createPixelArtLimb(3, 4, skinColor, skinShade);
             ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_left.png"));
             ImageIO.write(armLower, "PNG", new File(outputDir + "/arm_lower_right.png"));
 
-            // Hands - 2x2 pixel art (slightly darker skin)
-            BufferedImage hand = createPixelArtHand(2, 2, handColor, handShade);
+            // Hands - 3x2 pixel art (slightly darker skin)
+            BufferedImage hand = createPixelArtHand(3, 2, handColor, handShade);
             ImageIO.write(hand, "PNG", new File(outputDir + "/hand_left.png"));
             ImageIO.write(hand, "PNG", new File(outputDir + "/hand_right.png"));
 
             // ====== LEG BONES (6 total) ======
 
-            // Upper legs/thighs - 3x5 pixel art (pants color)
-            BufferedImage legUpper = createPixelArtLimb(3, 5, pantsColor, pantsShade);
+            // Upper legs/thighs - 4x5 pixel art (pants color)
+            BufferedImage legUpper = createPixelArtLimb(4, 5, pantsColor, pantsShade);
             ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_left.png"));
             ImageIO.write(legUpper, "PNG", new File(outputDir + "/leg_upper_right.png"));
 
@@ -233,8 +231,8 @@ public class BoneTextureGenerator {
             ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_left.png"));
             ImageIO.write(legLower, "PNG", new File(outputDir + "/leg_lower_right.png"));
 
-            // Feet - 4x2 pixel art (brown shoes, wider than tall)
-            BufferedImage foot = createPixelArtFoot(4, 2, shoeColor, shoeShade);
+            // Feet - 5x2 pixel art (brown shoes, wider than tall)
+            BufferedImage foot = createPixelArtFoot(5, 2, shoeColor, shoeShade);
             ImageIO.write(foot, "PNG", new File(outputDir + "/foot_left.png"));
             ImageIO.write(foot, "PNG", new File(outputDir + "/foot_right.png"));
 
