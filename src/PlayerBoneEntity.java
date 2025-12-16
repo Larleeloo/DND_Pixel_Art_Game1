@@ -392,10 +392,28 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
 
     @Override
     public void draw(Graphics g) {
-        // Update skeleton position to match player
-        // Position skeleton root at center of hitbox
-        // With smaller skeleton (108 pixels at 4x scale), center it in 109px hitbox
-        skeleton.setPosition(x + width / 2.0, y + height / 2.0 - 14);
+        // ====== SKELETON POSITIONING ======
+        //
+        // The skeleton is designed with torso center at (0,0).
+        // At 4x RENDER_SCALE, the skeleton spans:
+        //   - Head top:    y = -13 unscaled = -52 display pixels (above torso)
+        //   - Foot bottom: y = +16 unscaled = +64 display pixels (below torso)
+        //   - Total height: 29 unscaled = 116 display pixels
+        //
+        // Hitbox: 48w x 109h display pixels
+        //
+        // To align feet with hitbox bottom:
+        //   footBottom = skeletonY + (16 * RENDER_SCALE) = skeletonY + 64
+        //   hitboxBottom = y + height = y + 109
+        //   skeletonY = hitboxBottom - 64 = y + 109 - 64 = y + 45
+        //
+        // Horizontally: center skeleton in hitbox
+        //   skeletonX = x + width/2 = x + 24
+        //
+        double skeletonX = x + width / 2.0;
+        double skeletonY = y + height - (16 * RENDER_SCALE);  // Align feet with bottom
+
+        skeleton.setPosition(skeletonX, skeletonY);
 
         // Draw the skeleton
         skeleton.draw(g);
