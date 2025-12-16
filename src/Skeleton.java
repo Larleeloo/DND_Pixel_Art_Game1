@@ -263,6 +263,10 @@ public class Skeleton {
     public void transitionTo(String name, double blendDuration) {
         BoneAnimation anim = animations.get(name);
         if (anim != null && anim != currentAnimation) {
+            // Don't restart if we're already transitioning to this animation
+            if (nextAnimation != null && nextAnimation.getName().equals(name)) {
+                return; // Already blending to this animation
+            }
             if (currentAnimation == null) {
                 playAnimation(name);
             } else {
@@ -291,12 +295,20 @@ public class Skeleton {
     }
 
     /**
-     * Checks if a specific animation is currently playing.
+     * Checks if a specific animation is currently playing or being transitioned to.
      * @param name Animation name
-     * @return True if that animation is playing
+     * @return True if that animation is playing or we're transitioning to it
      */
     public boolean isPlayingAnimation(String name) {
-        return currentAnimation != null && currentAnimation.getName().equals(name);
+        // Check if it's the current animation
+        if (currentAnimation != null && currentAnimation.getName().equals(name)) {
+            return true;
+        }
+        // Also return true if we're transitioning TO this animation
+        if (nextAnimation != null && nextAnimation.getName().equals(name)) {
+            return true;
+        }
+        return false;
     }
 
     // ==================== Update and Render ====================
