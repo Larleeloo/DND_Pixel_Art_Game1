@@ -166,6 +166,23 @@ class GameScene implements Scene {
             entityManager.addEntity(trigger);
         }
 
+        // Add mobs (AI-controlled creatures/enemies)
+        for (LevelData.MobData m : levelData.mobs) {
+            MobEntity mob = createMobFromData(m);
+            if (mob != null) {
+                // Set wander bounds if specified
+                if (m.wanderMinX != 0 || m.wanderMaxX != 0) {
+                    mob.setWanderBounds(m.wanderMinX, m.wanderMaxX);
+                }
+                // Enable debug drawing if specified
+                if (m.debugDraw) {
+                    mob.setDebugDraw(true);
+                }
+                entityManager.addEntity(mob);
+            }
+        }
+        System.out.println("GameScene: Added " + levelData.mobs.size() + " mobs to level");
+
         // Add player - use bone animation if enabled
         if (levelData.useBoneAnimation) {
             PlayerBoneEntity bonePlayer = new PlayerBoneEntity(
@@ -720,5 +737,73 @@ class GameScene implements Scene {
      */
     public Camera getCamera() {
         return camera;
+    }
+
+    /**
+     * Creates a mob entity from level data.
+     *
+     * @param m The mob data from level JSON
+     * @return A MobEntity instance, or null if type is unknown
+     */
+    private MobEntity createMobFromData(LevelData.MobData m) {
+        if (m.mobType == null) return null;
+
+        String type = m.mobType.toLowerCase();
+        String subType = m.subType != null ? m.subType.toLowerCase() : "";
+
+        if (type.equals("quadruped")) {
+            // Parse animal type
+            QuadrupedSkeleton.AnimalType animalType;
+            try {
+                animalType = QuadrupedSkeleton.AnimalType.valueOf(subType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.err.println("GameScene: Unknown quadruped subType: " + subType);
+                return null;
+            }
+
+            // Parse behavior type
+            QuadrupedMobEntity.BehaviorType behavior = QuadrupedMobEntity.BehaviorType.PASSIVE;
+            if (m.behavior != null) {
+                switch (m.behavior.toLowerCase()) {
+                    case "hostile":
+                        behavior = QuadrupedMobEntity.BehaviorType.HOSTILE;
+                        break;
+                    case "neutral":
+                        behavior = QuadrupedMobEntity.BehaviorType.NEUTRAL;
+                        break;
+                    case "passive":
+                    default:
+                        behavior = QuadrupedMobEntity.BehaviorType.PASSIVE;
+                        break;
+                }
+            }
+
+            // Create quadruped with or without textures
+            if (m.textureDir != null && !m.textureDir.isEmpty()) {
+                return new QuadrupedMobEntity(m.x, m.y, animalType, behavior, m.textureDir);
+            } else {
+                return new QuadrupedMobEntity(m.x, m.y, animalType, behavior);
+            }
+
+        } else if (type.equals("humanoid")) {
+            // Parse humanoid variant type
+            HumanoidVariants.VariantType variantType;
+            try {
+                variantType = HumanoidVariants.VariantType.valueOf(subType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.err.println("GameScene: Unknown humanoid subType: " + subType);
+                return null;
+            }
+
+            // Create humanoid with or without textures
+            if (m.textureDir != null && !m.textureDir.isEmpty()) {
+                return new HumanoidMobEntity(m.x, m.y, variantType, m.textureDir);
+            } else {
+                return new HumanoidMobEntity(m.x, m.y, variantType);
+            }
+        }
+
+        System.err.println("GameScene: Unknown mobType: " + type);
+        return null;
     }
 }
