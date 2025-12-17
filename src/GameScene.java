@@ -19,6 +19,9 @@ class GameScene implements Scene {
     private Camera camera;
     private BackgroundEntity background;
 
+    // Parallax background system
+    private ParallaxBackground parallaxBackground;
+
     // Lighting system
     private LightingSystem lightingSystem;
     private LightSource playerLight;
@@ -114,16 +117,21 @@ class GameScene implements Scene {
             camera.setVerticalMargin(levelData.verticalMargin);
         }
 
-        // Add background
-        background = new BackgroundEntity(levelData.backgroundPath);
+        // Set up parallax background if enabled
+        if (levelData.parallaxEnabled && levelData.parallaxLayers.size() > 0) {
+            setupParallaxBackground();
+        } else {
+            // Use the simple background entity (legacy mode)
+            background = new BackgroundEntity(levelData.backgroundPath);
 
-        // Configure background tiling for scrolling levels
-        if (levelData.scrollingEnabled) {
-            background.setTiling(levelData.tileBackgroundHorizontal, levelData.tileBackgroundVertical);
-            background.setCamera(camera);
+            // Configure background tiling for scrolling levels
+            if (levelData.scrollingEnabled) {
+                background.setTiling(levelData.tileBackgroundHorizontal, levelData.tileBackgroundVertical);
+                background.setCamera(camera);
+            }
+
+            entityManager.addEntity(background);
         }
-
-        entityManager.addEntity(background);
 
         // Add blocks (new block-based terrain system)
         for (LevelData.BlockData b : levelData.blocks) {
@@ -236,6 +244,33 @@ class GameScene implements Scene {
     }
 
     /**
+     * Set up the parallax background system from level data.
+     */
+    private void setupParallaxBackground() {
+        parallaxBackground = new ParallaxBackground();
+
+        for (LevelData.ParallaxLayerData pld : levelData.parallaxLayers) {
+            ParallaxLayer layer = new ParallaxLayer(
+                    pld.name,
+                    pld.imagePath,
+                    pld.scrollSpeedX,
+                    pld.scrollSpeedY,
+                    pld.zOrder
+            );
+
+            layer.setScale(pld.scale);
+            layer.setOpacity((float) pld.opacity);
+            layer.setTiling(pld.tileHorizontal, pld.tileVertical);
+            layer.setOffset(pld.offsetX, pld.offsetY);
+
+            parallaxBackground.addLayer(layer);
+        }
+
+        System.out.println("GameScene: Parallax background enabled with " +
+                parallaxBackground.getLayerCount() + " layers");
+    }
+
+    /**
      * Create UI elements.
      */
     private void createUI() {
@@ -274,6 +309,21 @@ class GameScene implements Scene {
                 Color.WHITE
         );
         buttons.add(menuButton);
+
+        // Day/Night toggle button (for debugging)
+        UIButton dayNightButton = new UIButton(GamePanel.SCREEN_WIDTH - 570, 20, 120, 50, "Day/Night", () -> {
+            if (lightingSystem != null) {
+                lightingSystem.toggleDayNight();
+                String mode = lightingSystem.isNight() ? "Night" : "Day";
+                System.out.println("GameScene: Toggled to " + mode + " mode");
+            }
+        });
+        dayNightButton.setColors(
+                new Color(100, 50, 150, 200),
+                new Color(140, 80, 200, 230),
+                Color.WHITE
+        );
+        buttons.add(dayNightButton);
     }
 
     /**
@@ -458,8 +508,22 @@ class GameScene implements Scene {
         // Save original transform
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
 
+        // Draw parallax background layers (behind everything)
+        // These are drawn with camera transform applied since they handle parallax internally
+        if (parallaxBackground != null) {
+            camera.applyTransform(g2d);
+            parallaxBackground.drawBackground(g2d, camera);  // z < 0
+            parallaxBackground.drawMiddleground(g2d, camera); // z = 0
+            g2d.setTransform(oldTransform);
+        }
+
         // Apply camera transformation
         camera.applyTransform(g2d);
+
+        // Draw legacy background if using old system
+        if (background != null && parallaxBackground == null) {
+            background.draw(g2d, camera);
+        }
 
         // Draw ground area (extends across the level width)
         g2d.setColor(new Color(34, 139, 34, 100));
@@ -472,14 +536,24 @@ class GameScene implements Scene {
 
         // Draw all entities with camera (handles background tiling)
         if (entityManager != null) {
-            entityManager.drawAllWithBackground(g2d, camera, background);
+            if (parallaxBackground != null) {
+                // Don't draw background again if using parallax
+                entityManager.drawAll(g2d, camera);
+            } else {
+                entityManager.drawAllWithBackground(g2d, camera, background);
+            }
+        }
+
+        // Draw parallax foreground layers (in front of game entities)
+        if (parallaxBackground != null) {
+            parallaxBackground.drawForeground(g2d, camera);  // z > 0
         }
 
         // Restore original transform for UI
         g2d.setTransform(oldTransform);
 
         // Apply lighting overlay (after world, before UI)
-        if (lightingSystem != null && levelData.nightMode) {
+        if (lightingSystem != null && lightingSystem.isNight()) {
             lightingSystem.render(g2d, camera.getX(), camera.getY());
         }
 
@@ -524,7 +598,7 @@ class GameScene implements Scene {
         }
 
         // Apply lighting overlay (after world, before UI)
-        if (lightingSystem != null && levelData.nightMode) {
+        if (lightingSystem != null && lightingSystem.isNight()) {
             lightingSystem.render(g2d);
         }
     }
@@ -576,6 +650,7 @@ class GameScene implements Scene {
         levelData = null;
         camera = null;
         background = null;
+        parallaxBackground = null;
         lightingSystem = null;
         playerLight = null;
         playerHasLantern = false;

@@ -165,6 +165,35 @@ class LevelLoader {
             if (root.containsKey("playerLightRadius")) data.playerLightRadius = toDouble(root.get("playerLightRadius"));
             if (root.containsKey("playerLightFalloff")) data.playerLightFalloff = toDouble(root.get("playerLightFalloff"));
 
+            // Parse parallax settings
+            if (root.containsKey("parallaxEnabled")) data.parallaxEnabled = toBool(root.get("parallaxEnabled"));
+
+            // Parse parallax layers
+            if (root.containsKey("parallaxLayers")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> layerList = (List<Map<String, Object>>) root.get("parallaxLayers");
+                for (Map<String, Object> pl : layerList) {
+                    LevelData.ParallaxLayerData layer = new LevelData.ParallaxLayerData();
+                    if (pl.containsKey("name")) layer.name = (String) pl.get("name");
+                    if (pl.containsKey("imagePath")) layer.imagePath = (String) pl.get("imagePath");
+                    if (pl.containsKey("depthLevel")) {
+                        layer.depthLevel = (String) pl.get("depthLevel");
+                        layer.applyDepthDefaults();
+                    }
+                    // Override defaults if explicitly specified
+                    if (pl.containsKey("scrollSpeedX")) layer.scrollSpeedX = toDouble(pl.get("scrollSpeedX"));
+                    if (pl.containsKey("scrollSpeedY")) layer.scrollSpeedY = toDouble(pl.get("scrollSpeedY"));
+                    if (pl.containsKey("zOrder")) layer.zOrder = toInt(pl.get("zOrder"));
+                    if (pl.containsKey("scale")) layer.scale = toDouble(pl.get("scale"));
+                    if (pl.containsKey("opacity")) layer.opacity = toDouble(pl.get("opacity"));
+                    if (pl.containsKey("tileHorizontal")) layer.tileHorizontal = toBool(pl.get("tileHorizontal"));
+                    if (pl.containsKey("tileVertical")) layer.tileVertical = toBool(pl.get("tileVertical"));
+                    if (pl.containsKey("offsetX")) layer.offsetX = toInt(pl.get("offsetX"));
+                    if (pl.containsKey("offsetY")) layer.offsetY = toInt(pl.get("offsetY"));
+                    data.parallaxLayers.add(layer);
+                }
+            }
+
             // Parse light sources
             if (root.containsKey("lightSources")) {
                 @SuppressWarnings("unchecked")
@@ -262,7 +291,8 @@ class LevelLoader {
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
                     data.triggers.size() + " triggers, " +
-                    data.blocks.size() + " blocks");
+                    data.blocks.size() + " blocks, " +
+                    data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {
             System.err.println("LevelLoader: Failed to parse JSON");
@@ -576,6 +606,33 @@ class LevelLoader {
         if (data.nextLevel != null) {
             sb.append("  \"nextLevel\": \"").append(escape(data.nextLevel)).append("\",\n");
         }
+
+        // Parallax settings
+        sb.append("  \"parallaxEnabled\": ").append(data.parallaxEnabled).append(",\n");
+
+        // Parallax layers
+        sb.append("  \"parallaxLayers\": [\n");
+        for (int i = 0; i < data.parallaxLayers.size(); i++) {
+            LevelData.ParallaxLayerData pl = data.parallaxLayers.get(i);
+            sb.append("    { \"name\": \"").append(escape(pl.name)).append("\"");
+            sb.append(", \"imagePath\": \"").append(escape(pl.imagePath)).append("\"");
+            if (pl.depthLevel != null) {
+                sb.append(", \"depthLevel\": \"").append(escape(pl.depthLevel)).append("\"");
+            }
+            sb.append(", \"scrollSpeedX\": ").append(pl.scrollSpeedX);
+            sb.append(", \"scrollSpeedY\": ").append(pl.scrollSpeedY);
+            sb.append(", \"zOrder\": ").append(pl.zOrder);
+            sb.append(", \"scale\": ").append(pl.scale);
+            sb.append(", \"opacity\": ").append(pl.opacity);
+            sb.append(", \"tileHorizontal\": ").append(pl.tileHorizontal);
+            sb.append(", \"tileVertical\": ").append(pl.tileVertical);
+            sb.append(", \"offsetX\": ").append(pl.offsetX);
+            sb.append(", \"offsetY\": ").append(pl.offsetY);
+            sb.append(" }");
+            if (i < data.parallaxLayers.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
 
         // Platforms
         sb.append("  \"platforms\": [\n");
