@@ -675,62 +675,67 @@ public class Skeleton {
         // - Each bone's localPosition is relative to its PARENT'S position
         // - DOUBLED for 2x resolution (was RENDER_SCALE=4, now RENDER_SCALE=2)
         //
-        // PIVOT POINTS affect how bones extend from their position:
-        // - Pivot (0.5, 0.0) = top-center: bone extends DOWNWARD from position
-        // - Pivot (0.5, 1.0) = bottom-center: bone extends UPWARD from position
-        // - Pivot (0.5, 0.5) = center: bone centered on position
+        // PIVOT POINTS determine where the bone's position represents:
+        // - Pivot (0.5, 0.0) = top-center: position = TOP of bone, extends DOWN
+        // - Pivot (0.5, 1.0) = bottom-center: position = BOTTOM of bone, extends UP
+        // - Pivot (0.5, 0.5) = center: position = CENTER of bone
         //
-        // TARGET DIMENSIONS (unscaled at 2x):
-        // - Hitbox: 48x109 display pixels = 24x54 unscaled
-        // - Skeleton height: ~54 unscaled units to fill hitbox
+        // BONE CONNECTION RULES:
+        // - Child bone position should match parent bone's edge
+        // - For pivot-top bones: next bone at position + height
+        // - For pivot-bottom bones: next bone at position - height
+        // - For pivot-center bones: edges at position ± height/2
         //
-        // BONE LAYOUT (from torso center at y=0) - DOUBLED:
-        //     y=-26 -------- HEAD TOP
-        //     y=-16 -------- head bottom / neck top
-        //     y=-12 -------- NECK BOTTOM (at torso top)
-        //     y=-8  -------- torso top
+        // BONE SIZES (unscaled):
+        //   torso: 16x16, neck: 8x4, head: 12x10
+        //   arm_upper: 6x8, arm_lower: 6x8, hand: 6x4
+        //   leg_upper: 8x10, leg_lower: 6x10, foot: 10x4
+        //
+        // BONE LAYOUT (calculated from connections):
+        //     y=-22 -------- HEAD TOP (head: -12 - 10)
+        //     y=-12 -------- head bottom / neck top
+        //     y=-8  -------- NECK BOTTOM / TORSO TOP
         //     y=0   -------- TORSO CENTER (anchor point)
-        //     y=+8  -------- torso bottom / hip
-        //     y=+8  -------- UPPER LEG TOP (at hip)
-        //     y=+18 -------- upper leg bottom / knee
-        //     y=+18 -------- LOWER LEG TOP (at knee)
-        //     y=+28 -------- lower leg bottom / ankle
-        //     y=+28 -------- FOOT TOP (at ankle)
+        //     y=+8  -------- torso bottom / hip / leg top
+        //     y=+18 -------- leg_upper bottom / knee
+        //     y=+28 -------- leg_lower bottom / ankle
         //     y=+32 -------- FOOT BOTTOM
         //
-        // Total span: -26 to +32 = 58 unscaled * 2 = 116 display pixels
-        // Fits in 109px hitbox with feet at bottom
+        // Total span: -22 to +32 = 54 unscaled * 2 = 108 display pixels
+        // Fits in 109px hitbox
         //
         // ====================================================================
 
         torso.setLocalPosition(0, 0);  // Anchor point - torso center
 
         // === HEAD CHAIN (above torso) ===
-        // Neck: positioned at torso top, extends upward (pivot at bottom)
-        neck.setLocalPosition(0, -12);            // At torso top (doubled from -6)
+        // Torso: size 16x16, pivot center → top at y=-8
+        // Neck: size 8x4, pivot bottom → position = neck bottom, extends up
+        neck.setLocalPosition(0, -8);             // Neck bottom at torso top
 
-        // Head: positioned above neck, extends upward (pivot at bottom)
-        head.setLocalPosition(0, -4);             // 4 units above neck position (doubled from -2)
+        // Head: size 12x10, pivot bottom → position = head bottom
+        // Neck top = neck_pos - neck_height = -8 - 4 = -12
+        head.setLocalPosition(0, -4);             // Relative to neck: -12 - (-8) = -4
 
         // === ARMS (at shoulder level) ===
-        // Arms attach at shoulders (near torso top)
-        // "Left" = back arm, "Right" = front arm in profile view
-        armUpperLeft.setLocalPosition(0, -6);     // Shoulder position (doubled from -3)
-        armLowerLeft.setLocalPosition(0, 8);      // Below upper arm (doubled from 4)
-        handLeft.setLocalPosition(0, 8);          // Below lower arm (doubled from 4)
+        // Arms: pivot top → position = arm top, extends down
+        // Upper arm at shoulder (inside torso top area)
+        armUpperLeft.setLocalPosition(0, -6);     // Shoulder position
+        armLowerLeft.setLocalPosition(0, 8);      // arm_upper height = 8
+        handLeft.setLocalPosition(0, 8);          // arm_lower height = 8
 
-        armUpperRight.setLocalPosition(0, -6);    // Same as left
+        armUpperRight.setLocalPosition(0, -6);
         armLowerRight.setLocalPosition(0, 8);
         handRight.setLocalPosition(0, 8);
 
         // === LEGS (below torso) ===
-        // Legs attach at hips (torso bottom)
-        // "Left" = back leg, "Right" = front leg in profile view
-        legUpperLeft.setLocalPosition(0, 8);      // Hip position (doubled from 4)
-        legLowerLeft.setLocalPosition(0, 10);     // Knee (doubled from 5)
-        footLeft.setLocalPosition(0, 10);         // Ankle (doubled from 5)
+        // Legs: pivot top → position = leg top, extends down
+        // Torso bottom at y=+8
+        legUpperLeft.setLocalPosition(0, 8);      // Hip at torso bottom
+        legLowerLeft.setLocalPosition(0, 10);     // leg_upper height = 10
+        footLeft.setLocalPosition(0, 10);         // leg_lower height = 10
 
-        legUpperRight.setLocalPosition(0, 8);     // Same as left
+        legUpperRight.setLocalPosition(0, 8);
         legLowerRight.setLocalPosition(0, 10);
         footRight.setLocalPosition(0, 10);
 
