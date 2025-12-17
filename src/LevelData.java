@@ -20,7 +20,7 @@ class LevelData {
 
     // Bone animation settings
     public boolean useBoneAnimation = false;       // If true, use PlayerBoneEntity instead of PlayerEntity
-    public String boneTextureDir = "assets/bones"; // Directory containing bone textures
+    public String boneTextureDir = "assets/textures/player"; // Directory containing bone textures
 
     // Level dimensions (for camera bounds)
     public int levelWidth;

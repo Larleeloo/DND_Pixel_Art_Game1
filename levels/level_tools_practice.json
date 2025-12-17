@@ -1,7 +1,7 @@
 {
   "name": "Tools Practice - Learn Mining",
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/bones",
+  "boneTextureDir": "assets/textures/player",
   "description": "Pick up tools and discover how they speed up mining! Each tool works best on specific blocks.",
   "backgroundPath": "assets/background.png",
   "musicPath": "assets/music.wav",
