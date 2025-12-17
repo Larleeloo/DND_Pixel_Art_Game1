@@ -396,28 +396,62 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         }
     }
 
+    /**
+     * Calculates the foot bottom position relative to torso center based on current bone scales.
+     * This accounts for the connected scaling of the leg chain.
+     *
+     * Formula: footBottom = leg_start + leg_upper_height + leg_lower_height + foot_height
+     * Where each segment is scaled by the appropriate bone's baseScale.
+     *
+     * @return The Y offset from torso center to foot bottom in pixels
+     */
+    private double calculateFootBottomOffset() {
+        // Get bone scales (use right leg, left should be the same)
+        Bone torso = skeleton.findBone("torso");
+        Bone legUpper = skeleton.findBone("leg_upper_right");
+        Bone legLower = skeleton.findBone("leg_lower_right");
+        Bone foot = skeleton.findBone("foot_right");
+
+        // Default scales if bones not found
+        double torsoScale = (torso != null) ? torso.getBaseScaleY() : 1.0;
+        double legUpperScale = (legUpper != null) ? legUpper.getBaseScaleY() : 1.0;
+        double legLowerScale = (legLower != null) ? legLower.getBaseScaleY() : 1.0;
+        double footScale = (foot != null) ? foot.getBaseScaleY() : 1.0;
+
+        // Base values from Skeleton.java (32x32 quality):
+        // - leg_upper.localY = 16 (starts at torso bottom)
+        // - leg_lower.localY = 20 (= leg_upper height)
+        // - foot.localY = 20 (= leg_lower height)
+        // - foot height = 8
+
+        // Calculate foot bottom with connected scaling:
+        // Each position is scaled by its parent's baseScale
+        double legStart = 16 * torsoScale;                    // Where legs attach to torso
+        double kneePos = legStart + 20 * legUpperScale;       // leg_upper bottom
+        double anklePos = kneePos + 20 * legLowerScale;       // leg_lower bottom
+        double footBottom = anklePos + 8 * footScale;         // foot bottom
+
+        return footBottom;
+    }
+
     @Override
     public void draw(Graphics g) {
         // ====== SKELETON POSITIONING ======
         //
         // The skeleton is designed with torso center at (0,0).
-        // At RENDER_SCALE=1 (32x32 base quality), the skeleton spans:
-        //   - Head top:    y = -44 pixels (above torso)
-        //   - Foot bottom: y = +64 pixels (below torso)
-        //   - Total height: 108 display pixels
+        // Foot bottom position varies based on bone scaling.
         //
-        // Hitbox: 48w x 109h display pixels
+        // To align feet with hitbox bottom regardless of scale:
+        //   footBottom = skeletonY + footBottomOffset
+        //   hitboxBottom = y + height
+        //   skeletonY = hitboxBottom - footBottomOffset
         //
-        // To align feet with hitbox bottom:
-        //   footBottom = skeletonY + 64
-        //   hitboxBottom = y + height = y + 109
-        //   skeletonY = hitboxBottom - 64 = y + 109 - 64 = y + 45
-        //
-        // Horizontally: center skeleton in hitbox
-        //   skeletonX = x + width/2 = x + 24
+        // This ensures the player's feet always touch the ground,
+        // even when scaled smaller (player appears shorter but grounded).
         //
         double skeletonX = x + width / 2.0;
-        double skeletonY = y + height - 64;  // Align feet with bottom (64 = foot bottom position)
+        double footBottomOffset = calculateFootBottomOffset();
+        double skeletonY = y + height - footBottomOffset;  // Align feet with hitbox bottom
 
         skeleton.setPosition(skeletonX, skeletonY);
 
