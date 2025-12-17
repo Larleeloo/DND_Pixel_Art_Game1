@@ -19,6 +19,14 @@ class GameScene implements Scene {
     private Camera camera;
     private BackgroundEntity background;
 
+    // Lighting system
+    private LightingSystem lightingSystem;
+    private LightSource playerLight;
+    private boolean playerHasLantern = false;
+
+    // Timing for lighting updates
+    private long lastUpdateTime;
+
     public GameScene(String levelPath) {
         this.levelPath = levelPath;
         this.initialized = false;
@@ -176,6 +184,55 @@ class GameScene implements Scene {
         // Set camera to follow player and snap to initial position
         camera.setTarget((Entity) player);
         camera.snapToTarget();
+
+        // Initialize lighting system
+        setupLighting();
+    }
+
+    /**
+     * Set up the lighting system based on level data.
+     */
+    private void setupLighting() {
+        lightingSystem = new LightingSystem(GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
+
+        // Configure lighting from level data
+        lightingSystem.setNight(levelData.nightMode);
+        lightingSystem.setNightDarkness(levelData.nightDarkness);
+        lightingSystem.setAmbientLevel(levelData.ambientLight);
+
+        // Create player light (initially disabled unless level specifies otherwise)
+        Rectangle playerBounds = player.getBounds();
+        double playerCenterX = playerBounds.getCenterX();
+        double playerCenterY = playerBounds.getCenterY();
+
+        playerLight = new LightSource(playerCenterX, playerCenterY - 20,
+                levelData.playerLightRadius, new Color(255, 220, 150));
+        playerLight.setFalloffRadius(levelData.playerLightFalloff);
+        playerLight.enableFlicker(0.08, 5.0);
+        playerLight.setEnabled(levelData.playerLightEnabled);
+        playerHasLantern = levelData.playerLightEnabled;
+        lightingSystem.addLightSource(playerLight);
+
+        // Add light sources from level data
+        if (levelData.lightSources != null) {
+            for (LevelData.LightSourceData lsd : levelData.lightSources) {
+                LightSource light = new LightSource(lsd.x, lsd.y, lsd.radius,
+                        new Color(lsd.colorRed, lsd.colorGreen, lsd.colorBlue));
+                light.setFalloffRadius(lsd.falloffRadius);
+                light.setIntensity(lsd.intensity);
+                if (lsd.flicker) {
+                    light.enableFlicker(lsd.flickerAmount, lsd.flickerSpeed);
+                }
+                lightingSystem.addLightSource(light);
+            }
+        }
+
+        lastUpdateTime = System.nanoTime();
+
+        if (levelData.nightMode) {
+            System.out.println("GameScene: Lighting system enabled - Night mode with " +
+                    lightingSystem.getLightSources().size() + " light sources");
+        }
     }
 
     /**
@@ -255,6 +312,11 @@ class GameScene implements Scene {
     public void update(InputManager input) {
         if (!initialized) return;
 
+        // Calculate delta time for lighting updates
+        long currentTime = System.nanoTime();
+        double deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0;
+        lastUpdateTime = currentTime;
+
         entityManager.updateAll(input);
 
         // Handle block breaking - check for broken blocks and dropped items
@@ -276,6 +338,54 @@ class GameScene implements Scene {
                 }
             }
         }
+
+        // Update lighting system
+        if (lightingSystem != null) {
+            lightingSystem.update(deltaTime);
+
+            // Update player light position to follow player
+            if (playerLight != null && player != null) {
+                Rectangle bounds = player.getBounds();
+                playerLight.setPosition(bounds.getCenterX(), bounds.getCenterY() - 20);
+            }
+
+            // Check if player collected a lantern
+            checkLanternCollection();
+        }
+    }
+
+    /**
+     * Check if the player has collected a lantern item and enable their light.
+     */
+    private void checkLanternCollection() {
+        if (playerHasLantern || player == null) return;
+
+        // Check player's inventory for a lantern
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getItemCount(); i++) {
+            ItemEntity item = inventory.getHeldItem();
+            if (item != null && item.getItemName().toLowerCase().contains("lantern")) {
+                playerHasLantern = true;
+                playerLight.setEnabled(true);
+                System.out.println("GameScene: Player found a lantern! Light enabled.");
+                break;
+            }
+        }
+
+        // Also check all items in inventory (not just held)
+        // We need to iterate through the items - check via held item cycling
+        int originalSlot = inventory.getSelectedSlot();
+        for (int i = 0; i < 5; i++) { // Check first 5 slots (hotbar)
+            inventory.setSelectedSlot(i);
+            ItemEntity item = inventory.getHeldItem();
+            if (item != null && item.getItemName().toLowerCase().contains("lantern")) {
+                playerHasLantern = true;
+                playerLight.setEnabled(true);
+                System.out.println("GameScene: Player found a lantern! Light enabled.");
+                break;
+            }
+        }
+        inventory.setSelectedSlot(originalSlot);
     }
 
     /**
@@ -368,6 +478,11 @@ class GameScene implements Scene {
         // Restore original transform for UI
         g2d.setTransform(oldTransform);
 
+        // Apply lighting overlay (after world, before UI)
+        if (lightingSystem != null && levelData.nightMode) {
+            lightingSystem.render(g2d, camera.getX(), camera.getY());
+        }
+
         // Draw black bars at top and bottom for vertical scrolling
         if (camera.isVerticalScrollEnabled() && camera.getVerticalMargin() > 0) {
             drawBlackBars(g2d);
@@ -406,6 +521,11 @@ class GameScene implements Scene {
         // Draw entities
         if (entityManager != null) {
             entityManager.drawAll(g2d);
+        }
+
+        // Apply lighting overlay (after world, before UI)
+        if (lightingSystem != null && levelData.nightMode) {
+            lightingSystem.render(g2d);
         }
     }
 
@@ -456,6 +576,9 @@ class GameScene implements Scene {
         levelData = null;
         camera = null;
         background = null;
+        lightingSystem = null;
+        playerLight = null;
+        playerHasLantern = false;
     }
 
     @Override

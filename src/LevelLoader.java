@@ -154,6 +154,42 @@ class LevelLoader {
             if (root.containsKey("scrollingEnabled")) data.scrollingEnabled = toBool(root.get("scrollingEnabled"));
             if (root.containsKey("tileBackgroundHorizontal")) data.tileBackgroundHorizontal = toBool(root.get("tileBackgroundHorizontal"));
             if (root.containsKey("tileBackgroundVertical")) data.tileBackgroundVertical = toBool(root.get("tileBackgroundVertical"));
+            if (root.containsKey("verticalScrollEnabled")) data.verticalScrollEnabled = toBool(root.get("verticalScrollEnabled"));
+            if (root.containsKey("verticalMargin")) data.verticalMargin = toInt(root.get("verticalMargin"));
+
+            // Parse lighting settings
+            if (root.containsKey("nightMode")) data.nightMode = toBool(root.get("nightMode"));
+            if (root.containsKey("nightDarkness")) data.nightDarkness = toDouble(root.get("nightDarkness"));
+            if (root.containsKey("ambientLight")) data.ambientLight = toDouble(root.get("ambientLight"));
+            if (root.containsKey("playerLightEnabled")) data.playerLightEnabled = toBool(root.get("playerLightEnabled"));
+            if (root.containsKey("playerLightRadius")) data.playerLightRadius = toDouble(root.get("playerLightRadius"));
+            if (root.containsKey("playerLightFalloff")) data.playerLightFalloff = toDouble(root.get("playerLightFalloff"));
+
+            // Parse light sources
+            if (root.containsKey("lightSources")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> lightList = (List<Map<String, Object>>) root.get("lightSources");
+                for (Map<String, Object> l : lightList) {
+                    LevelData.LightSourceData light = new LevelData.LightSourceData();
+                    light.x = toInt(l.get("x"));
+                    light.y = toInt(l.get("y"));
+                    if (l.containsKey("lightType")) {
+                        light.lightType = (String) l.get("lightType");
+                        light.applyTypeDefaults();
+                    }
+                    // Override defaults if specified
+                    if (l.containsKey("radius")) light.radius = toDouble(l.get("radius"));
+                    if (l.containsKey("falloffRadius")) light.falloffRadius = toDouble(l.get("falloffRadius"));
+                    if (l.containsKey("colorRed")) light.colorRed = toInt(l.get("colorRed"));
+                    if (l.containsKey("colorGreen")) light.colorGreen = toInt(l.get("colorGreen"));
+                    if (l.containsKey("colorBlue")) light.colorBlue = toInt(l.get("colorBlue"));
+                    if (l.containsKey("intensity")) light.intensity = toDouble(l.get("intensity"));
+                    if (l.containsKey("flicker")) light.flicker = toBool(l.get("flicker"));
+                    if (l.containsKey("flickerAmount")) light.flickerAmount = toDouble(l.get("flickerAmount"));
+                    if (l.containsKey("flickerSpeed")) light.flickerSpeed = toDouble(l.get("flickerSpeed"));
+                    data.lightSources.add(light);
+                }
+            }
 
             // Parse platforms
             if (root.containsKey("platforms")) {
@@ -247,6 +283,18 @@ class LevelLoader {
             return Integer.parseInt((String) obj);
         }
         return 0;
+    }
+
+    /**
+     * Convert Number or String to double.
+     */
+    private static double toDouble(Object obj) {
+        if (obj instanceof Number) {
+            return ((Number) obj).doubleValue();
+        } else if (obj instanceof String) {
+            return Double.parseDouble((String) obj);
+        }
+        return 0.0;
     }
 
     /**
