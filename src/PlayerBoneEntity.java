@@ -45,8 +45,8 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     public static final String ANIM_RUN = "run";
     public static final String ANIM_JUMP = "jump";
 
-    // Rendering - halved to 2.0 for 2x resolution (bone sizes doubled to compensate)
-    private static final double RENDER_SCALE = 2.0;  // Scale factor for bones
+    // Rendering - 1.0 for 32x32 base quality (bone sizes at final display size)
+    private static final double RENDER_SCALE = 1.0;  // Scale factor for bones
 
     // Audio
     private AudioManager audioManager;
@@ -401,15 +401,15 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         // ====== SKELETON POSITIONING ======
         //
         // The skeleton is designed with torso center at (0,0).
-        // At 2x RENDER_SCALE (2x resolution mode), the skeleton spans:
-        //   - Head top:    y = -26 unscaled = -52 display pixels (above torso)
-        //   - Foot bottom: y = +32 unscaled = +64 display pixels (below torso)
-        //   - Total height: 58 unscaled = 116 display pixels
+        // At RENDER_SCALE=1 (32x32 base quality), the skeleton spans:
+        //   - Head top:    y = -44 pixels (above torso)
+        //   - Foot bottom: y = +64 pixels (below torso)
+        //   - Total height: 108 display pixels
         //
         // Hitbox: 48w x 109h display pixels
         //
         // To align feet with hitbox bottom:
-        //   footBottom = skeletonY + (32 * RENDER_SCALE) = skeletonY + 64
+        //   footBottom = skeletonY + 64
         //   hitboxBottom = y + height = y + 109
         //   skeletonY = hitboxBottom - 64 = y + 109 - 64 = y + 45
         //
@@ -417,7 +417,7 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         //   skeletonX = x + width/2 = x + 24
         //
         double skeletonX = x + width / 2.0;
-        double skeletonY = y + height - (32 * RENDER_SCALE);  // Align feet with bottom (32 = doubled foot position)
+        double skeletonY = y + height - 64;  // Align feet with bottom (64 = foot bottom position)
 
         skeleton.setPosition(skeletonX, skeletonY);
 

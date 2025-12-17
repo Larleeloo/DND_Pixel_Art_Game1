@@ -13,7 +13,7 @@ class CharacterCustomizationScene implements Scene {
 
     // Preview skeleton
     private Skeleton previewSkeleton;
-    private static final double PREVIEW_SCALE = 2.0;  // Same as game scale (2x resolution)
+    private static final double PREVIEW_SCALE = 1.0;  // Same as game scale (32x32 base quality)
     private float animationTime = 0;
 
     // UI Components
