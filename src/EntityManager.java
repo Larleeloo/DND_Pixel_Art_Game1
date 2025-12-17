@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Manages all entities in a scene, handling updates and rendering.
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 class EntityManager {
 
     private ArrayList<Entity> entities = new ArrayList<>();
+    private long lastUpdateTime = System.nanoTime();
 
     public void addEntity(Entity e) {
         entities.add(e);
@@ -26,6 +28,14 @@ class EntityManager {
     }
 
     public void updateAll(InputManager input) {
+        // Calculate delta time
+        long currentTime = System.nanoTime();
+        double deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0;
+        lastUpdateTime = currentTime;
+
+        // Cap delta time to avoid physics issues on lag spikes
+        if (deltaTime > 0.1) deltaTime = 0.1;
+
         PlayerBase player = null;
 
         // Find the player (supports both PlayerEntity and PlayerBoneEntity)
@@ -41,11 +51,33 @@ class EntityManager {
             player.update(input, entities);
         }
 
-        // Update all other entities (items, obstacles, etc.)
+        // Collect dead mobs for removal
+        ArrayList<Entity> toRemove = new ArrayList<>();
+
+        // Update all other entities (items, obstacles, mobs, etc.)
         for (Entity e : entities) {
-            if (!(e instanceof PlayerBase)) {
+            if (e instanceof PlayerBase) {
+                continue; // Already updated
+            }
+
+            // Special handling for mob entities - they need deltaTime and entity list
+            if (e instanceof MobEntity) {
+                MobEntity mob = (MobEntity) e;
+                mob.update(deltaTime, entities);
+
+                // Mark dead mobs for removal after their death animation
+                if (mob.isDead()) {
+                    toRemove.add(e);
+                }
+            } else {
+                // Regular entity update
                 e.update(input);
             }
+        }
+
+        // Remove dead mobs
+        for (Entity e : toRemove) {
+            entities.remove(e);
         }
     }
 
