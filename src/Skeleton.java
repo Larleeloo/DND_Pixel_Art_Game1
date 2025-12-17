@@ -670,10 +670,10 @@ public class Skeleton {
         // ====== SET LOCAL POSITIONS (relative to parent) ======
         //
         // COORDINATE SYSTEM:
-        // - Positions are in UNSCALED pixels (multiply by RENDER_SCALE=2 for display)
+        // - Positions are in UNSCALED pixels (multiply by RENDER_SCALE=1 for display)
         // - Y-axis: negative = up, positive = down
         // - Each bone's localPosition is relative to its PARENT'S position
-        // - DOUBLED for 2x resolution (was RENDER_SCALE=4, now RENDER_SCALE=2)
+        // - 32x32 BASE QUALITY (was RENDER_SCALE=2, now RENDER_SCALE=1 with 2x sizes)
         //
         // PIVOT POINTS determine where the bone's position represents:
         // - Pivot (0.5, 0.0) = top-center: position = TOP of bone, extends DOWN
@@ -686,22 +686,22 @@ public class Skeleton {
         // - For pivot-bottom bones: next bone at position - height
         // - For pivot-center bones: edges at position ± height/2
         //
-        // BONE SIZES (unscaled):
-        //   torso: 16x16, neck: 8x4, head: 12x10
-        //   arm_upper: 6x8, arm_lower: 6x8, hand: 6x4
-        //   leg_upper: 8x10, leg_lower: 6x10, foot: 10x4
+        // BONE SIZES (32x32 base quality):
+        //   torso: 32x32, neck: 16x8, head: 24x20
+        //   arm_upper: 12x16, arm_lower: 12x16, hand: 12x8
+        //   leg_upper: 16x20, leg_lower: 12x20, foot: 20x8
         //
         // BONE LAYOUT (calculated from connections):
-        //     y=-22 -------- HEAD TOP (head: -12 - 10)
-        //     y=-12 -------- head bottom / neck top
-        //     y=-8  -------- NECK BOTTOM / TORSO TOP
+        //     y=-44 -------- HEAD TOP (head: -24 - 20)
+        //     y=-24 -------- head bottom / neck top
+        //     y=-16 -------- NECK BOTTOM / TORSO TOP
         //     y=0   -------- TORSO CENTER (anchor point)
-        //     y=+8  -------- torso bottom / hip / leg top
-        //     y=+18 -------- leg_upper bottom / knee
-        //     y=+28 -------- leg_lower bottom / ankle
-        //     y=+32 -------- FOOT BOTTOM
+        //     y=+16 -------- torso bottom / hip / leg top
+        //     y=+36 -------- leg_upper bottom / knee
+        //     y=+56 -------- leg_lower bottom / ankle
+        //     y=+64 -------- FOOT BOTTOM
         //
-        // Total span: -22 to +32 = 54 unscaled * 2 = 108 display pixels
+        // Total span: -44 to +64 = 108 unscaled = 108 display pixels
         // Fits in 109px hitbox
         //
         // ====================================================================
@@ -709,35 +709,35 @@ public class Skeleton {
         torso.setLocalPosition(0, 0);  // Anchor point - torso center
 
         // === HEAD CHAIN (above torso) ===
-        // Torso: size 16x16, pivot center → top at y=-8
-        // Neck: size 8x4, pivot bottom → position = neck bottom, extends up
-        neck.setLocalPosition(0, -8);             // Neck bottom at torso top
+        // Torso: size 32x32, pivot center → top at y=-16
+        // Neck: size 16x8, pivot bottom → position = neck bottom, extends up
+        neck.setLocalPosition(0, -16);            // Neck bottom at torso top
 
-        // Head: size 12x10, pivot bottom → position = head bottom
-        // Neck top = neck_pos - neck_height = -8 - 4 = -12
-        head.setLocalPosition(0, -4);             // Relative to neck: -12 - (-8) = -4
+        // Head: size 24x20, pivot bottom → position = head bottom
+        // Neck top = neck_pos - neck_height = -16 - 8 = -24
+        head.setLocalPosition(0, -8);             // Relative to neck: -24 - (-16) = -8
 
         // === ARMS (at shoulder level) ===
         // Arms: pivot top → position = arm top, extends down
         // Upper arm at shoulder (inside torso top area)
-        armUpperLeft.setLocalPosition(0, -6);     // Shoulder position
-        armLowerLeft.setLocalPosition(0, 8);      // arm_upper height = 8
-        handLeft.setLocalPosition(0, 8);          // arm_lower height = 8
+        armUpperLeft.setLocalPosition(0, -12);    // Shoulder position
+        armLowerLeft.setLocalPosition(0, 16);     // arm_upper height = 16
+        handLeft.setLocalPosition(0, 16);         // arm_lower height = 16
 
-        armUpperRight.setLocalPosition(0, -6);
-        armLowerRight.setLocalPosition(0, 8);
-        handRight.setLocalPosition(0, 8);
+        armUpperRight.setLocalPosition(0, -12);
+        armLowerRight.setLocalPosition(0, 16);
+        handRight.setLocalPosition(0, 16);
 
         // === LEGS (below torso) ===
         // Legs: pivot top → position = leg top, extends down
-        // Torso bottom at y=+8
-        legUpperLeft.setLocalPosition(0, 8);      // Hip at torso bottom
-        legLowerLeft.setLocalPosition(0, 10);     // leg_upper height = 10
-        footLeft.setLocalPosition(0, 10);         // leg_lower height = 10
+        // Torso bottom at y=+16
+        legUpperLeft.setLocalPosition(0, 16);     // Hip at torso bottom
+        legLowerLeft.setLocalPosition(0, 20);     // leg_upper height = 20
+        footLeft.setLocalPosition(0, 20);         // leg_lower height = 20
 
-        legUpperRight.setLocalPosition(0, 8);
-        legLowerRight.setLocalPosition(0, 10);
-        footRight.setLocalPosition(0, 10);
+        legUpperRight.setLocalPosition(0, 16);
+        legLowerRight.setLocalPosition(0, 20);
+        footRight.setLocalPosition(0, 20);
 
         // ====== SET PIVOT POINTS (rotation origins) ======
         // Format: (x, y) where 0.0-1.0 represents position within bone bounds
@@ -789,44 +789,44 @@ public class Skeleton {
         handRight.setZOrder(2);
 
         // ====== SET DEFAULT SIZES (for placeholder rendering) ======
-        // These are UNSCALED pixel dimensions - display is scaled by RENDER_SCALE (2x)
+        // These are pixel dimensions at 32x32 BASE QUALITY (RENDER_SCALE=1)
         // Sizes should match the local position offsets for proper bone connections
-        // DOUBLED for 2x resolution (same display size, more detail)
+        // 4x the original resolution for maximum detail
         //
         // BLOCKBENCH CUBE SIZES (use these when creating your model):
-        // At 2x scale, multiply these by 2 for display pixel sizes
+        // These are the actual display pixel sizes
         //
-        //   BONE              UNSCALED    DISPLAY (2x)
-        //   ----              --------    ------------
-        //   torso             16w x 16h   32 x 32 px
-        //   neck              8w x 4h     16 x 8 px
-        //   head              12w x 10h   24 x 20 px
-        //   arm_upper_*       6w x 8h     12 x 16 px
-        //   arm_lower_*       6w x 8h     12 x 16 px
-        //   hand_*            6w x 4h     12 x 8 px
-        //   leg_upper_*       8w x 10h    16 x 20 px
-        //   leg_lower_*       6w x 10h    12 x 20 px
-        //   foot_*            10w x 4h    20 x 8 px
+        //   BONE              SIZE        NOTES
+        //   ----              ----        -----
+        //   torso             32 x 32     Main body
+        //   neck              16 x 8      Neck connector
+        //   head              24 x 20     Character's head
+        //   arm_upper_*       12 x 16     Upper arm
+        //   arm_lower_*       12 x 16     Forearm
+        //   hand_*            12 x 8      Hand
+        //   leg_upper_*       16 x 20     Thigh
+        //   leg_lower_*       12 x 20     Calf/shin
+        //   foot_*            20 x 8      Foot
 
-        torso.setDefaultSize(16, 16);             // Main body (doubled from 8x8)
-        neck.setDefaultSize(8, 4);                // Neck connector (doubled from 4x2)
-        head.setDefaultSize(12, 10);              // Head (doubled from 6x5)
+        torso.setDefaultSize(32, 32);             // Main body (32x32 base quality)
+        neck.setDefaultSize(16, 8);               // Neck connector
+        head.setDefaultSize(24, 20);              // Head
 
-        // Arm segments - sized to connect properly (doubled)
-        armUpperLeft.setDefaultSize(6, 8);        // Upper arm (doubled from 3x4)
-        armLowerLeft.setDefaultSize(6, 8);        // Forearm (doubled from 3x4)
-        handLeft.setDefaultSize(6, 4);            // Hand (doubled from 3x2)
-        armUpperRight.setDefaultSize(6, 8);
-        armLowerRight.setDefaultSize(6, 8);
-        handRight.setDefaultSize(6, 4);
+        // Arm segments - sized to connect properly
+        armUpperLeft.setDefaultSize(12, 16);      // Upper arm
+        armLowerLeft.setDefaultSize(12, 16);      // Forearm
+        handLeft.setDefaultSize(12, 8);           // Hand
+        armUpperRight.setDefaultSize(12, 16);
+        armLowerRight.setDefaultSize(12, 16);
+        handRight.setDefaultSize(12, 8);
 
-        // Leg segments - larger than arms (doubled)
-        legUpperLeft.setDefaultSize(8, 10);       // Thigh (doubled from 4x5)
-        legLowerLeft.setDefaultSize(6, 10);       // Calf (doubled from 3x5)
-        footLeft.setDefaultSize(10, 4);           // Foot (doubled from 5x2)
-        legUpperRight.setDefaultSize(8, 10);
-        legLowerRight.setDefaultSize(6, 10);
-        footRight.setDefaultSize(10, 4);
+        // Leg segments - larger than arms
+        legUpperLeft.setDefaultSize(16, 20);      // Thigh
+        legLowerLeft.setDefaultSize(12, 20);      // Calf
+        footLeft.setDefaultSize(20, 8);           // Foot
+        legUpperRight.setDefaultSize(16, 20);
+        legLowerRight.setDefaultSize(12, 20);
+        footRight.setDefaultSize(20, 8);
 
         // ====== SET PLACEHOLDER COLORS (for debugging without textures) ======
 
