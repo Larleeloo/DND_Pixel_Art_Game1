@@ -52,6 +52,10 @@ class LevelData {
     public List<TriggerData> triggers;
     public List<BlockData> blocks;
     public List<LightSourceData> lightSources;  // Static light sources in the level
+    public List<ParallaxLayerData> parallaxLayers; // Parallax background layers
+
+    // Parallax settings
+    public boolean parallaxEnabled = false;  // If true, use parallax background system
 
     // Next level (for level progression)
     public String nextLevel;
@@ -62,6 +66,7 @@ class LevelData {
         triggers = new ArrayList<>();
         blocks = new ArrayList<>();
         lightSources = new ArrayList<>();
+        parallaxLayers = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -306,6 +311,75 @@ class LevelData {
     }
 
     /**
+     * Data class for parallax background layers.
+     * Layers are sorted by zOrder (lower = further back).
+     */
+    public static class ParallaxLayerData {
+        public String name;              // Layer identifier
+        public String imagePath;         // Path to layer image
+        public double scrollSpeedX = 0.5; // Horizontal scroll speed (0.0 = static, 1.0 = world speed)
+        public double scrollSpeedY = 0.0; // Vertical scroll speed
+        public int zOrder = 0;           // Z-order for depth sorting (lower = further back)
+        public double scale = 10.0;      // Image scale factor
+        public double opacity = 1.0;     // Opacity (0.0 - 1.0)
+        public boolean tileHorizontal = true;  // Whether to tile horizontally
+        public boolean tileVertical = false;   // Whether to tile vertically
+        public int offsetX = 0;          // Base X offset
+        public int offsetY = 0;          // Base Y offset
+
+        // Depth level presets (for convenience)
+        public String depthLevel = null; // "background", "middleground_3", "middleground_2", "middleground_1", "foreground"
+
+        public ParallaxLayerData() {}
+
+        public ParallaxLayerData(String name, String imagePath, double scrollSpeedX, int zOrder) {
+            this.name = name;
+            this.imagePath = imagePath;
+            this.scrollSpeedX = scrollSpeedX;
+            this.zOrder = zOrder;
+        }
+
+        /**
+         * Apply default values based on depth level preset.
+         */
+        public void applyDepthDefaults() {
+            if (depthLevel == null) return;
+
+            switch (depthLevel.toLowerCase()) {
+                case "background":
+                case "sky":
+                    zOrder = -2;
+                    scrollSpeedX = 0.1;
+                    opacity = 1.0;
+                    break;
+                case "middleground_3":
+                case "distant":
+                    zOrder = -1;
+                    scrollSpeedX = 0.3;
+                    opacity = 0.8;
+                    break;
+                case "middleground_2":
+                case "mid":
+                    zOrder = 0;
+                    scrollSpeedX = 0.5;
+                    opacity = 0.9;
+                    break;
+                case "middleground_1":
+                case "near":
+                    zOrder = 1;
+                    scrollSpeedX = 0.7;
+                    opacity = 1.0;
+                    break;
+                case "foreground":
+                    zOrder = 2;
+                    scrollSpeedX = 1.2;
+                    opacity = 0.7;
+                    break;
+            }
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -500,6 +574,53 @@ class LevelData {
                     data.blocks.add(new BlockData(startX + dx, startY + dy, blockType, useGridCoords));
                 }
             }
+            return this;
+        }
+
+        /**
+         * Enable the parallax background system.
+         */
+        public Builder parallaxEnabled(boolean enabled) {
+            data.parallaxEnabled = enabled;
+            return this;
+        }
+
+        /**
+         * Add a parallax layer with full configuration.
+         */
+        public Builder addParallaxLayer(String name, String imagePath, double scrollSpeedX,
+                                       int zOrder, double scale, double opacity) {
+            ParallaxLayerData layer = new ParallaxLayerData();
+            layer.name = name;
+            layer.imagePath = imagePath;
+            layer.scrollSpeedX = scrollSpeedX;
+            layer.zOrder = zOrder;
+            layer.scale = scale;
+            layer.opacity = opacity;
+            data.parallaxLayers.add(layer);
+            return this;
+        }
+
+        /**
+         * Add a parallax layer using a depth preset.
+         * Presets: "background", "middleground_3", "middleground_2", "middleground_1", "foreground"
+         */
+        public Builder addParallaxLayer(String name, String imagePath, String depthLevel) {
+            ParallaxLayerData layer = new ParallaxLayerData();
+            layer.name = name;
+            layer.imagePath = imagePath;
+            layer.depthLevel = depthLevel;
+            layer.applyDepthDefaults();
+            data.parallaxLayers.add(layer);
+            return this;
+        }
+
+        /**
+         * Add a simple parallax layer with default settings.
+         */
+        public Builder addParallaxLayer(String name, String imagePath, double scrollSpeedX, int zOrder) {
+            ParallaxLayerData layer = new ParallaxLayerData(name, imagePath, scrollSpeedX, zOrder);
+            data.parallaxLayers.add(layer);
             return this;
         }
 
