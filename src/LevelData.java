@@ -38,11 +38,20 @@ class LevelData {
     public boolean verticalScrollEnabled = false;
     public int verticalMargin = 0; // Height of black bars at top and bottom (pixels)
 
+    // Lighting settings
+    public boolean nightMode = false;           // If true, level starts in night/darkness mode
+    public double nightDarkness = 0.80;         // How dark the night is (0.0 - 1.0)
+    public double ambientLight = 0.12;          // Minimum ambient light level (0.0 - 1.0)
+    public boolean playerLightEnabled = false;  // Whether player starts with a light
+    public double playerLightRadius = 100;      // Player light inner radius
+    public double playerLightFalloff = 200;     // Player light falloff radius
+
     // Lists of entities
     public List<PlatformData> platforms;
     public List<ItemData> items;
     public List<TriggerData> triggers;
     public List<BlockData> blocks;
+    public List<LightSourceData> lightSources;  // Static light sources in the level
 
     // Next level (for level progression)
     public String nextLevel;
@@ -52,6 +61,7 @@ class LevelData {
         items = new ArrayList<>();
         triggers = new ArrayList<>();
         blocks = new ArrayList<>();
+        lightSources = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -219,6 +229,79 @@ class LevelData {
 
         public boolean hasTint() {
             return tintRed >= 0 && tintGreen >= 0 && tintBlue >= 0;
+        }
+    }
+
+    /**
+     * Data class for light source entities in a level.
+     */
+    public static class LightSourceData {
+        public int x;
+        public int y;
+        public double radius = 80;           // Inner radius of full brightness
+        public double falloffRadius = 180;   // Outer radius where light fades to zero
+        public int colorRed = 255;           // Light color RGB
+        public int colorGreen = 200;
+        public int colorBlue = 100;
+        public double intensity = 1.0;       // Light intensity (0.0-1.0)
+        public String lightType = "torch";   // Type: torch, campfire, lantern, magic
+        public boolean flicker = false;      // Whether light flickers
+        public double flickerAmount = 0.15;  // How much intensity varies when flickering
+        public double flickerSpeed = 8.0;    // Speed of flicker effect
+
+        public LightSourceData() {}
+
+        public LightSourceData(int x, int y, String lightType) {
+            this.x = x;
+            this.y = y;
+            this.lightType = lightType;
+            applyTypeDefaults();
+        }
+
+        /**
+         * Apply default values based on light type.
+         */
+        public void applyTypeDefaults() {
+            switch (lightType.toLowerCase()) {
+                case "torch":
+                    radius = 80;
+                    falloffRadius = 180;
+                    colorRed = 255; colorGreen = 200; colorBlue = 100;
+                    flicker = true;
+                    flickerAmount = 0.15;
+                    flickerSpeed = 8.0;
+                    break;
+                case "campfire":
+                    radius = 120;
+                    falloffRadius = 280;
+                    colorRed = 255; colorGreen = 150; colorBlue = 50;
+                    flicker = true;
+                    flickerAmount = 0.25;
+                    flickerSpeed = 6.0;
+                    break;
+                case "lantern":
+                    radius = 100;
+                    falloffRadius = 200;
+                    colorRed = 255; colorGreen = 240; colorBlue = 180;
+                    flicker = false;
+                    break;
+                case "magic":
+                    radius = 90;
+                    falloffRadius = 180;
+                    colorRed = 150; colorGreen = 150; colorBlue = 255;
+                    flicker = true;
+                    flickerAmount = 0.1;
+                    flickerSpeed = 3.0;
+                    break;
+                case "crystal":
+                    radius = 60;
+                    falloffRadius = 120;
+                    colorRed = 100; colorGreen = 255; colorBlue = 200;
+                    flicker = true;
+                    flickerAmount = 0.08;
+                    flickerSpeed = 2.0;
+                    break;
+            }
         }
     }
 
