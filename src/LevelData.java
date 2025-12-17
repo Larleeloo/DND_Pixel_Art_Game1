@@ -53,6 +53,7 @@ class LevelData {
     public List<BlockData> blocks;
     public List<LightSourceData> lightSources;  // Static light sources in the level
     public List<ParallaxLayerData> parallaxLayers; // Parallax background layers
+    public List<MobData> mobs;  // AI-controlled mobs (creatures/enemies)
 
     // Parallax settings
     public boolean parallaxEnabled = false;  // If true, use parallax background system
@@ -67,6 +68,7 @@ class LevelData {
         blocks = new ArrayList<>();
         lightSources = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
+        mobs = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -380,6 +382,36 @@ class LevelData {
     }
 
     /**
+     * Data class for mob entities (AI-controlled creatures/enemies).
+     * Supports both quadruped (4-legged) and humanoid mob types.
+     */
+    public static class MobData {
+        public int x;
+        public int y;
+        public String mobType;           // "quadruped" or "humanoid"
+        public String subType;           // Animal type (wolf, horse, etc.) or variant (zombie, skeleton, etc.)
+        public String behavior = "hostile"; // "passive", "neutral", "hostile"
+        public String textureDir;        // Optional texture directory
+        public double wanderMinX = -1;   // Wander bounds (-1 = use default)
+        public double wanderMaxX = -1;
+        public boolean debugDraw = false;
+
+        public MobData() {}
+
+        public MobData(int x, int y, String mobType, String subType) {
+            this.x = x;
+            this.y = y;
+            this.mobType = mobType;
+            this.subType = subType;
+        }
+
+        public MobData(int x, int y, String mobType, String subType, String behavior) {
+            this(x, y, mobType, subType);
+            this.behavior = behavior;
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -624,6 +656,40 @@ class LevelData {
             return this;
         }
 
+        /**
+         * Add a quadruped (4-legged animal) mob.
+         * @param x X position
+         * @param y Y position
+         * @param animalType Animal type: wolf, dog, cat, horse, pig, cow, sheep, deer, bear, fox
+         * @param behavior Behavior type: passive, neutral, hostile
+         */
+        public Builder addQuadrupedMob(int x, int y, String animalType, String behavior) {
+            MobData mob = new MobData(x, y, "quadruped", animalType, behavior);
+            data.mobs.add(mob);
+            return this;
+        }
+
+        /**
+         * Add a humanoid mob.
+         * @param x X position
+         * @param y Y position
+         * @param variantType Variant type: zombie, skeleton, goblin, orc, bandit, knight, mage
+         */
+        public Builder addHumanoidMob(int x, int y, String variantType) {
+            MobData mob = new MobData(x, y, "humanoid", variantType, "hostile");
+            data.mobs.add(mob);
+            return this;
+        }
+
+        /**
+         * Add a mob with full configuration.
+         */
+        public Builder addMob(int x, int y, String mobType, String subType, String behavior) {
+            MobData mob = new MobData(x, y, mobType, subType, behavior);
+            data.mobs.add(mob);
+            return this;
+        }
+
         public LevelData build() {
             return data;
         }
@@ -637,6 +703,7 @@ class LevelData {
                 ", items=" + items.size() +
                 ", triggers=" + triggers.size() +
                 ", blocks=" + blocks.size() +
+                ", mobs=" + mobs.size() +
                 '}';
     }
 }

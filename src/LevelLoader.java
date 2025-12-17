@@ -287,11 +287,31 @@ class LevelLoader {
                 }
             }
 
+            // Parse mobs (AI-controlled creatures/enemies)
+            if (root.containsKey("mobs")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> mobList = (List<Map<String, Object>>) root.get("mobs");
+                for (Map<String, Object> m : mobList) {
+                    LevelData.MobData mob = new LevelData.MobData();
+                    mob.x = toInt(m.get("x"));
+                    mob.y = toInt(m.get("y"));
+                    if (m.containsKey("mobType")) mob.mobType = (String) m.get("mobType");
+                    if (m.containsKey("subType")) mob.subType = (String) m.get("subType");
+                    if (m.containsKey("behavior")) mob.behavior = (String) m.get("behavior");
+                    if (m.containsKey("textureDir")) mob.textureDir = (String) m.get("textureDir");
+                    if (m.containsKey("wanderMinX")) mob.wanderMinX = toDouble(m.get("wanderMinX"));
+                    if (m.containsKey("wanderMaxX")) mob.wanderMaxX = toDouble(m.get("wanderMaxX"));
+                    if (m.containsKey("debugDraw")) mob.debugDraw = toBool(m.get("debugDraw"));
+                    data.mobs.add(mob);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
                     data.triggers.size() + " triggers, " +
                     data.blocks.size() + " blocks, " +
+                    data.mobs.size() + " mobs, " +
                     data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {
