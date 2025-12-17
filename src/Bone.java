@@ -494,9 +494,15 @@ public class Bone {
             // Child bone: inherit parent transform
             worldRotation = parentRotation + rotation;
 
-            // Scale local offset by root scale for screen coordinates
-            double scaledLocalX = localX * scale;
-            double scaledLocalY = localY * scale;
+            // Scale local offset by:
+            // 1. Root scale (for screen coordinates)
+            // 2. Parent's baseScale (so children stay connected when parent scales)
+            //
+            // Example: arm_lower.localY = 16 (arm_upper's height)
+            // When arm_upper.baseScaleY = 2.0, arm_upper is now 32 pixels tall
+            // So arm_lower needs to be at 16 * 2.0 = 32 pixels from arm_upper's position
+            double scaledLocalX = localX * scale * parent.baseScaleX;
+            double scaledLocalY = localY * scale * parent.baseScaleY;
 
             double rad = Math.toRadians(parentRotation);
             double cos = Math.cos(rad);
