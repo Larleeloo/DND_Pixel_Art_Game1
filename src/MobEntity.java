@@ -112,6 +112,7 @@ public abstract class MobEntity extends Entity {
      * @param y Initial Y position
      */
     public MobEntity(int x, int y) {
+        super(x, y);
         this.posX = x;
         this.posY = y;
         this.x = x;
@@ -596,9 +597,7 @@ public abstract class MobEntity extends Entity {
         return skeleton;
     }
 
-    @Override
     public int getX() { return (int)posX; }
 
-    @Override
     public int getY() { return (int)posY; }
 }
