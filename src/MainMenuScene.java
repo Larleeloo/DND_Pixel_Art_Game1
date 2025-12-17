@@ -81,10 +81,29 @@ class MainMenuScene implements Scene {
         );
         buttons.add(customizeButton);
 
+        // Lighting Demo button - opens lighting demonstration
+        UIButton lightingDemoButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY + spacing * 2,
+                buttonWidth,
+                buttonHeight,
+                "Lighting Demo",
+                () -> {
+                    System.out.println("MainMenuScene: Opening lighting demo");
+                    SceneManager.getInstance().setScene("lightingDemo", SceneManager.TRANSITION_FADE);
+                }
+        );
+        lightingDemoButton.setColors(
+                new Color(50, 50, 100, 220),
+                new Color(80, 80, 150, 255),
+                Color.WHITE
+        );
+        buttons.add(lightingDemoButton);
+
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing * 2,
+                startY + spacing * 3,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",
