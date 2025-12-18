@@ -189,12 +189,13 @@ public abstract class MobEntity extends Entity {
     public Rectangle getVisualBounds() {
         // Visual bounds include the skeleton which extends above the position
         // and may be wider than the hitbox
-        int visualWidth = Math.max(hitboxWidth, (int)(hitboxWidth * animationScale)) + visualPaddingX * 2;
-        int visualHeight = (int)(skeletonOffsetY * animationScale) + hitboxHeight + visualPaddingY;
+        double scaledOffsetY = skeletonOffsetY * animationScale;
+        int visualWidth = (int)(Math.max(hitboxWidth, hitboxWidth * animationScale) + visualPaddingX * 2);
+        int visualHeight = (int)(scaledOffsetY + hitboxHeight * animationScale + visualPaddingY);
 
         return new Rectangle(
             (int)posX - visualWidth / 2,
-            (int)posY - (int)(skeletonOffsetY * animationScale) - visualPaddingY / 2,
+            (int)(posY - scaledOffsetY - visualPaddingY / 2),
             visualWidth,
             visualHeight
         );
@@ -252,7 +253,9 @@ public abstract class MobEntity extends Entity {
 
         // Position skeleton with feet at ground level
         // skeletonOffsetY accounts for the distance from body center (anchor) to feet
-        skeleton.setPosition(posX, posY - skeletonOffsetY);
+        // Must scale the offset to match the animation scale
+        double scaledOffsetY = skeletonOffsetY * animationScale;
+        skeleton.setPosition(posX, posY - scaledOffsetY);
         skeleton.setScale(animationScale);
         skeleton.setFlipX(!facingRight);
 
