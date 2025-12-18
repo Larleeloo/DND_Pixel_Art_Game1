@@ -106,7 +106,8 @@ public class HumanoidMobEntity extends MobEntity {
         // Humanoid skeleton: torso at y=0, legs extend below
         // legUpperY=16, legLowerOffset=20, footOffset=20, footHeight=8
         // Total offset from torso center to feet: 16 + 20 + 20 + 8 = 64
-        skeletonOffsetY = (int)(64 * config.scaleY);
+        // Add small buffer (4 pixels) to prevent feet clipping during walk animation
+        skeletonOffsetY = (int)(64 * config.scaleY) + 4;
 
         // Variant-specific abilities
         switch (variantType) {

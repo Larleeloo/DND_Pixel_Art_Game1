@@ -239,7 +239,9 @@ public class QuadrupedMobEntity extends MobEntity {
         int legLength = (int)(16 * animalConfig.legLengthMultiplier);
         int pawHeight = 6;
         // Total offset from body center to paw bottom
-        skeletonOffsetY = (bodyHeight / 2) + legLength + legLength + pawHeight;
+        // Add extra buffer (8 pixels) to prevent legs clipping into ground during animation
+        // (leg rotation during walk can extend paws beyond rest position)
+        skeletonOffsetY = (bodyHeight / 2) + legLength + legLength + pawHeight + 8;
     }
 
     @Override

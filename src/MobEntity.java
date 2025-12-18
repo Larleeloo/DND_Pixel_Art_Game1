@@ -392,6 +392,12 @@ public abstract class MobEntity extends Entity {
                 wanderMinX = posX - wanderRadius;
                 wanderMaxX = posX + wanderRadius;
                 pickWanderTarget();
+                // Set initial velocity toward target
+                double dxToTarget = wanderTargetX - posX;
+                if (Math.abs(dxToTarget) >= 10) {
+                    facingRight = dxToTarget > 0;
+                    velocityX = facingRight ? wanderSpeed : -wanderSpeed;
+                }
                 if (skeleton != null) skeleton.transitionTo("walk", 0.2);
                 break;
             case CHASE:
@@ -429,13 +435,19 @@ public abstract class MobEntity extends Entity {
         double dx = wanderTargetX - posX;
 
         if (Math.abs(dx) < 10) {
-            // Reached target
-            changeState(AIState.IDLE);
-        } else {
-            // Move toward target
-            facingRight = dx > 0;
-            velocityX = facingRight ? wanderSpeed : -wanderSpeed;
+            // Reached target, pick a new one or go idle
+            pickWanderTarget();
+            dx = wanderTargetX - posX;
+            if (Math.abs(dx) < 10) {
+                // Still too close, go idle
+                changeState(AIState.IDLE);
+                return;
+            }
         }
+
+        // Move toward target
+        facingRight = dx > 0;
+        velocityX = facingRight ? wanderSpeed : -wanderSpeed;
 
         if (stateTimer > wanderDuration) {
             changeState(AIState.IDLE);
