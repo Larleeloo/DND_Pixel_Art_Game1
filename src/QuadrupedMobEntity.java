@@ -238,6 +238,8 @@ public class QuadrupedMobEntity extends MobEntity {
             this.skeleton = QuadrupedSkeleton.createQuadrupedWithTextures(animalType, textureDir);
         } else {
             this.skeleton = QuadrupedSkeleton.createQuadruped(animalType);
+            // Apply generated textures for better visuals
+            QuadrupedTextureGenerator.applyTexturesToSkeleton(skeleton, animalType);
         }
     }
 
