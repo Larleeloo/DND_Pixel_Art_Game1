@@ -307,47 +307,54 @@ public class QuadrupedSkeleton {
 
         body.setLocalPosition(0, 0);  // Anchor point
 
-        // Neck and head - at front of body
-        neck.setLocalPosition(-bodyWidth/2 + 4, -bodyHeight/3);
-        head.setLocalPosition(-12, -8);
+        // Neck and head - at front of body, positioned for profile view
+        // Neck attaches at front-top of body
+        neck.setLocalPosition(-bodyWidth/2 - 2, -bodyHeight/4);
+        // Head extends forward (left in profile) from neck - horizontal orientation
+        // Negative X makes it extend forward, small Y offset for natural look
+        head.setLocalPosition(-14, -4);
 
-        // Ears on head
-        earLeft.setLocalPosition(-4, -10);
-        earRight.setLocalPosition(4, -10);
+        // Ears on top of head (adjusted for horizontal head)
+        earLeft.setLocalPosition(2, -12);
+        earRight.setLocalPosition(6, -12);
 
         // Tail - at back of body
         tailBase.setLocalPosition(bodyWidth/2 - 2, -2);
         tailTip.setLocalPosition(tailLen/2, 0);
 
         // Leg offset for visual separation (right legs slightly forward in side view)
-        int legSeparation = 6;
+        int legSeparation = 8;
 
-        // Front legs - at front of body
+        // Front legs - moved outward toward front edge of body
+        int frontLegX = -bodyWidth/2 + 8;  // Closer to front edge
+        int backLegX = bodyWidth/2 - 8;    // Closer to back edge
+        int legAttachY = bodyHeight/2;     // Bottom of body
+
         // Left leg (far side, behind)
-        legFrontLeftUpper.setLocalPosition(-bodyWidth/3 + legSeparation/2, bodyHeight/2 - 2);
+        legFrontLeftUpper.setLocalPosition(frontLegX + legSeparation/2, legAttachY);
         legFrontLeftLower.setLocalPosition(0, legLength);
         pawFrontLeft.setLocalPosition(0, legLength);
 
         // Right leg (near side, in front) - offset slightly toward viewer
-        legFrontRightUpper.setLocalPosition(-bodyWidth/3 - legSeparation/2, bodyHeight/2 - 2);
+        legFrontRightUpper.setLocalPosition(frontLegX - legSeparation/2, legAttachY);
         legFrontRightLower.setLocalPosition(0, legLength);
         pawFrontRight.setLocalPosition(0, legLength);
 
-        // Back legs - at back of body
+        // Back legs - moved outward toward back edge of body
         // Left leg (far side, behind)
-        legBackLeftUpper.setLocalPosition(bodyWidth/3 + legSeparation/2, bodyHeight/2 - 2);
+        legBackLeftUpper.setLocalPosition(backLegX + legSeparation/2, legAttachY);
         legBackLeftLower.setLocalPosition(0, legLength);
         pawBackLeft.setLocalPosition(0, legLength);
 
         // Right leg (near side, in front) - offset slightly toward viewer
-        legBackRightUpper.setLocalPosition(bodyWidth/3 - legSeparation/2, bodyHeight/2 - 2);
+        legBackRightUpper.setLocalPosition(backLegX - legSeparation/2, legAttachY);
         legBackRightLower.setLocalPosition(0, legLength);
         pawBackRight.setLocalPosition(0, legLength);
 
         // ====== SET PIVOT POINTS ======
         body.setPivot(0.5, 0.5);
         neck.setPivot(0.5, 1.0);    // Pivot at base
-        head.setPivot(0.5, 1.0);    // Pivot at neck connection
+        head.setPivot(1.0, 0.5);    // Pivot at right side (neck connection) - head extends left
 
         earLeft.setPivot(0.5, 1.0);
         earRight.setPivot(0.5, 1.0);
@@ -403,8 +410,10 @@ public class QuadrupedSkeleton {
 
         // ====== SET DEFAULT SIZES ======
         body.setDefaultSize(bodyWidth, bodyHeight);
-        neck.setDefaultSize(12, 14);
-        head.setDefaultSize((int)(20 * config.headScaleX), (int)(16 * config.headScaleY));
+        neck.setDefaultSize(10, 12);
+        // Head is horizontal in profile view - width > height
+        // Dimensions swapped so face extends forward
+        head.setDefaultSize((int)(24 * config.headScaleX), (int)(18 * config.headScaleY));
         earLeft.setDefaultSize(6, 10);
         earRight.setDefaultSize(6, 10);
 

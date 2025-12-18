@@ -43,10 +43,11 @@ public class QuadrupedTextureGenerator {
 
         // Core bones
         generateBody(outputDir + "/body.png", bodyWidth * TEXTURE_SCALE, bodyHeight * TEXTURE_SCALE, config);
-        generateNeck(outputDir + "/neck.png", 12 * TEXTURE_SCALE, 14 * TEXTURE_SCALE, config);
+        generateNeck(outputDir + "/neck.png", 10 * TEXTURE_SCALE, 12 * TEXTURE_SCALE, config);
+        // Head is horizontal in profile - width > height
         generateHead(outputDir + "/head.png",
-                    (int)(20 * config.headScaleX) * TEXTURE_SCALE,
-                    (int)(16 * config.headScaleY) * TEXTURE_SCALE, config, type);
+                    (int)(24 * config.headScaleX) * TEXTURE_SCALE,
+                    (int)(18 * config.headScaleY) * TEXTURE_SCALE, config, type);
         generateEar(outputDir + "/ear_left.png", 6 * TEXTURE_SCALE, 10 * TEXTURE_SCALE, config, true);
         generateEar(outputDir + "/ear_right.png", 6 * TEXTURE_SCALE, 10 * TEXTURE_SCALE, config, false);
 
@@ -162,38 +163,62 @@ public class QuadrupedTextureGenerator {
         Color shadow = darken(base, 0.7);
         Color highlight = brighten(base, 1.2);
 
-        // Main head shape
+        // Profile view head - horizontal orientation
+        // Skull area (back/top of head) - rounder
         g.setColor(base);
-        g.fillRoundRect(1, 1, w - 2, h - 2, 4, 4);
+        g.fillRoundRect(w/3, 1, w*2/3 - 1, h - 2, 6, 6);
 
-        // Snout/muzzle area (front of head)
-        g.setColor(config.secondaryColor);
-        g.fillOval(0, h/3, w/2, h/2);
+        // Snout/muzzle (front of head) - tapered
+        g.setColor(base);
+        int[] snoutX = {0, w/3 + 2, w/3 + 2, 0};
+        int[] snoutY = {h/3, 1, h - 2, h*2/3};
+        g.fillPolygon(snoutX, snoutY, 4);
 
-        // Top highlight
+        // Snout bridge highlight
         g.setColor(highlight);
-        g.fillRect(3, 1, w - 6, 2);
+        g.fillRect(2, h/3, w/3, 2);
 
-        // Side shadow
+        // Top of head highlight
+        g.setColor(highlight);
+        g.fillRect(w/2, 1, w/3, 2);
+
+        // Snout underside (lighter muzzle)
+        g.setColor(config.secondaryColor);
+        g.fillRect(2, h/2, w/4, h/3);
+
+        // Cheek/jaw shadow
         g.setColor(shadow);
-        g.fillRect(1, 3, 2, h - 6);
+        g.fillRect(w/3, h*2/3, w/4, h/4);
 
-        // Eyes
+        // Eye (positioned on side of head, visible in profile)
+        g.setColor(Color.WHITE);
+        int eyeSize = Math.max(3, h / 4);
+        int eyeX = w/2;
+        int eyeY = h/4;
+        g.fillOval(eyeX, eyeY, eyeSize + 1, eyeSize);
+
+        // Pupil
         g.setColor(Color.BLACK);
-        int eyeSize = Math.max(2, w / 8);
-        g.fillOval(w/2 - 1, h/4, eyeSize, eyeSize);
+        g.fillOval(eyeX + 1, eyeY + 1, eyeSize - 1, eyeSize - 2);
 
         // Eye shine
         g.setColor(Color.WHITE);
-        g.fillRect(w/2, h/4, 1, 1);
+        g.fillRect(eyeX + eyeSize/2, eyeY + 1, 2, 2);
 
-        // Nose
+        // Nose at tip of snout
         g.setColor(config.accentColor);
-        g.fillOval(1, h/2 - 1, 3, 3);
+        g.fillOval(0, h/2 - 2, 4, 5);
+        g.setColor(darken(config.accentColor, 0.6));
+        g.fillOval(1, h/2 - 1, 2, 3);
+
+        // Mouth line
+        g.setColor(shadow);
+        g.drawLine(4, h*2/3 - 1, w/4, h*2/3 - 1);
 
         // Outline
         g.setColor(OUTLINE);
-        g.drawRoundRect(0, 0, w - 1, h - 1, 4, 4);
+        g.drawRoundRect(w/3, 0, w*2/3 - 1, h - 1, 6, 6);
+        g.drawPolygon(snoutX, snoutY, 4);
 
         g.dispose();
         saveImage(img, path);
@@ -411,8 +436,9 @@ public class QuadrupedTextureGenerator {
 
         // Apply textures to each bone
         applyTexture(skeleton, "body", generateBodyImage(bodyWidth * TEXTURE_SCALE, bodyHeight * TEXTURE_SCALE, config));
-        applyTexture(skeleton, "neck", generateNeckImage(12 * TEXTURE_SCALE, 14 * TEXTURE_SCALE, config));
-        applyTexture(skeleton, "head", generateHeadImage((int)(20 * config.headScaleX) * TEXTURE_SCALE, (int)(16 * config.headScaleY) * TEXTURE_SCALE, config, type));
+        applyTexture(skeleton, "neck", generateNeckImage(10 * TEXTURE_SCALE, 12 * TEXTURE_SCALE, config));
+        // Head is horizontal in profile - width > height
+        applyTexture(skeleton, "head", generateHeadImage((int)(24 * config.headScaleX) * TEXTURE_SCALE, (int)(18 * config.headScaleY) * TEXTURE_SCALE, config, type));
         applyTexture(skeleton, "ear_left", generateEarImage(6 * TEXTURE_SCALE, 10 * TEXTURE_SCALE, config, true));
         applyTexture(skeleton, "ear_right", generateEarImage(6 * TEXTURE_SCALE, 10 * TEXTURE_SCALE, config, false));
 
@@ -497,23 +523,63 @@ public class QuadrupedTextureGenerator {
         Color shadow = darken(base, 0.7);
         Color highlight = brighten(base, 1.2);
 
+        // Profile view head - horizontal orientation
+        // Skull area (back/top of head) - rounder
         g.setColor(base);
-        g.fillRoundRect(1, 1, w - 2, h - 2, 4, 4);
-        g.setColor(config.secondaryColor);
-        g.fillOval(0, h/3, w/2, h/2);
+        g.fillRoundRect(w/3, 1, w*2/3 - 1, h - 2, 6, 6);
+
+        // Snout/muzzle (front of head) - tapered
+        g.setColor(base);
+        int[] snoutX = {0, w/3 + 2, w/3 + 2, 0};
+        int[] snoutY = {h/3, 1, h - 2, h*2/3};
+        g.fillPolygon(snoutX, snoutY, 4);
+
+        // Snout bridge highlight
         g.setColor(highlight);
-        g.fillRect(3, 1, w - 6, 2);
+        g.fillRect(2, h/3, w/3, 2);
+
+        // Top of head highlight
+        g.setColor(highlight);
+        g.fillRect(w/2, 1, w/3, 2);
+
+        // Snout underside (lighter muzzle)
+        g.setColor(config.secondaryColor);
+        g.fillRect(2, h/2, w/4, h/3);
+
+        // Cheek/jaw shadow
         g.setColor(shadow);
-        g.fillRect(1, 3, 2, h - 6);
-        g.setColor(Color.BLACK);
-        int eyeSize = Math.max(2, w / 8);
-        g.fillOval(w/2 - 1, h/4, eyeSize, eyeSize);
+        g.fillRect(w/3, h*2/3, w/4, h/4);
+
+        // Eye (positioned on side of head, visible in profile)
         g.setColor(Color.WHITE);
-        g.fillRect(w/2, h/4, 1, 1);
+        int eyeSize = Math.max(3, h / 4);
+        int eyeX = w/2;
+        int eyeY = h/4;
+        g.fillOval(eyeX, eyeY, eyeSize + 1, eyeSize);
+
+        // Pupil
+        g.setColor(Color.BLACK);
+        g.fillOval(eyeX + 1, eyeY + 1, eyeSize - 1, eyeSize - 2);
+
+        // Eye shine
+        g.setColor(Color.WHITE);
+        g.fillRect(eyeX + eyeSize/2, eyeY + 1, 2, 2);
+
+        // Nose at tip of snout
         g.setColor(config.accentColor);
-        g.fillOval(1, h/2 - 1, 3, 3);
+        g.fillOval(0, h/2 - 2, 4, 5);
+        g.setColor(darken(config.accentColor, 0.6));
+        g.fillOval(1, h/2 - 1, 2, 3);
+
+        // Mouth line
+        g.setColor(shadow);
+        g.drawLine(4, h*2/3 - 1, w/4, h*2/3 - 1);
+
+        // Outline
         g.setColor(OUTLINE);
-        g.drawRoundRect(0, 0, w - 1, h - 1, 4, 4);
+        g.drawRoundRect(w/3, 0, w*2/3 - 1, h - 1, 6, 6);
+        g.drawPolygon(snoutX, snoutY, 4);
+
         g.dispose();
         return img;
     }

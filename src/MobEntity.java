@@ -383,6 +383,11 @@ public abstract class MobEntity extends Entity {
                 if (skeleton != null) skeleton.transitionTo("idle", 0.2);
                 break;
             case WANDER:
+                // Update wander bounds to center around current position
+                // This prevents mobs from walking huge distances after losing a target
+                double wanderRadius = (wanderMaxX - wanderMinX) / 2;
+                wanderMinX = posX - wanderRadius;
+                wanderMaxX = posX + wanderRadius;
                 pickWanderTarget();
                 if (skeleton != null) skeleton.transitionTo("walk", 0.2);
                 break;
@@ -500,9 +505,18 @@ public abstract class MobEntity extends Entity {
         posX += velocityX * deltaTime;
         posY += velocityY * deltaTime;
 
-        // Constrain to wander bounds when wandering
-        if (currentState == AIState.WANDER) {
-            posX = Math.max(wanderMinX, Math.min(wanderMaxX, posX));
+        // Soft constraint to wander bounds when wandering (no teleporting)
+        // Only gently push back if far outside bounds
+        if (currentState == AIState.WANDER || currentState == AIState.IDLE) {
+            if (posX < wanderMinX - 50) {
+                // Too far left, pick a target back in bounds
+                wanderTargetX = wanderMinX + 50;
+                facingRight = true;
+            } else if (posX > wanderMaxX + 50) {
+                // Too far right, pick a target back in bounds
+                wanderTargetX = wanderMaxX - 50;
+                facingRight = false;
+            }
         }
 
         // Ground collision
