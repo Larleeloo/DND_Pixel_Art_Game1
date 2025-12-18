@@ -102,6 +102,12 @@ public class HumanoidMobEntity extends MobEntity {
 
         animationScale = config.scaleX;
 
+        // Calculate skeleton offset for proper vertical positioning
+        // Humanoid skeleton: torso at y=0, legs extend below
+        // legUpperY=16, legLowerOffset=20, footOffset=20, footHeight=8
+        // Total offset from torso center to feet: 16 + 20 + 20 + 8 = 64
+        skeletonOffsetY = (int)(64 * config.scaleY);
+
         // Variant-specific abilities
         switch (variantType) {
             case SKELETON:

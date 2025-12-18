@@ -102,8 +102,16 @@ class EntityManager {
     public void drawAll(Graphics g, Camera camera) {
         // Draw all entities (they draw at their world positions)
         for (Entity e : entities) {
+            // Use visual bounds for mobs (skeletons are larger than hitboxes)
+            Rectangle bounds;
+            if (e instanceof MobEntity) {
+                bounds = ((MobEntity) e).getVisualBounds();
+            } else {
+                bounds = e.getBounds();
+            }
+
             // Skip entities that are off-screen for performance
-            if (camera.isVisible(e.getBounds())) {
+            if (camera.isVisible(bounds)) {
                 e.draw(g);
             }
         }
@@ -130,8 +138,16 @@ class EntityManager {
                 continue; // Skip background, already drawn
             }
 
+            // Use visual bounds for mobs (skeletons are larger than hitboxes)
+            Rectangle bounds;
+            if (e instanceof MobEntity) {
+                bounds = ((MobEntity) e).getVisualBounds();
+            } else {
+                bounds = e.getBounds();
+            }
+
             // Skip entities that are off-screen for performance
-            if (camera.isVisible(e.getBounds())) {
+            if (camera.isVisible(bounds)) {
                 e.draw(g);
             }
         }
