@@ -127,6 +127,8 @@ public class HumanoidMobEntity extends MobEntity {
             this.skeleton = HumanoidVariants.createVariantWithTextures(variantType, textureDir);
         } else {
             this.skeleton = HumanoidVariants.createVariant(variantType);
+            // Apply generated textures for better visuals
+            HumanoidVariants.applyTexturesToSkeleton(skeleton, variantType);
         }
     }
 

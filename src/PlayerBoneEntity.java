@@ -20,6 +20,14 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     private int airTime = 0;
     private boolean isMoving = false;
 
+    // Health system
+    private int maxHealth = 100;
+    private int currentHealth = 100;
+    private double invincibilityTime = 1.0;  // Seconds of invincibility after damage
+    private double invincibilityTimer = 0;
+    private double damageKnockbackX = 0;
+    private double damageKnockbackY = 0;
+
     // Dimensions (collision box) - original size
     private int width = 48;    // Original collision width
     private int height = 109;  // Original collision height
@@ -220,6 +228,11 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         boolean wasMoving = isMoving;
         isMoving = false;
 
+        // Update invincibility timer
+        if (invincibilityTimer > 0) {
+            invincibilityTimer -= 1.0 / 60.0;  // Assuming 60 FPS
+        }
+
         // Toggle inventory
         if (input.isKeyJustPressed('i')) {
             inventory.toggleOpen();
@@ -294,6 +307,25 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
                     inventory.addItem(item);
                     if (audioManager != null) {
                         audioManager.playSound("collect");
+                    }
+                }
+            }
+        }
+
+        // Check for mob collisions (damage from hostile mobs)
+        if (!isInvincible()) {
+            for (Entity e : entities) {
+                if (e instanceof MobEntity) {
+                    MobEntity mob = (MobEntity) e;
+                    // Only take damage from hostile mobs that are in chase/attack state
+                    if (mob.getState() == MobEntity.AIState.CHASE ||
+                        mob.getState() == MobEntity.AIState.ATTACK) {
+                        if (playerBounds.intersects(mob.getBounds())) {
+                            // Calculate knockback direction (away from mob)
+                            double knockbackDir = (x > mob.getX()) ? 8 : -8;
+                            takeDamage(mob.getAttackDamage(), knockbackDir, -5);
+                            break;  // Only take damage from one mob per frame
+                        }
                     }
                 }
             }
@@ -756,5 +788,48 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     @Override
     public int getY() {
         return y;
+    }
+
+    // ==================== Health System ====================
+
+    @Override
+    public int getHealth() {
+        return currentHealth;
+    }
+
+    @Override
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    @Override
+    public boolean isInvincible() {
+        return invincibilityTimer > 0;
+    }
+
+    @Override
+    public void takeDamage(int damage, double knockbackX, double knockbackY) {
+        if (invincibilityTimer > 0) {
+            return; // Still invincible
+        }
+
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+
+        // Apply knockback
+        damageKnockbackX = knockbackX;
+        damageKnockbackY = knockbackY;
+        velX += knockbackX;
+        velY += knockbackY;
+
+        // Start invincibility frames
+        invincibilityTimer = invincibilityTime;
+
+        // Play hurt sound
+        if (audioManager != null) {
+            audioManager.playSound("hurt");
+        }
+
+        System.out.println("Player took " + damage + " damage! Health: " + currentHealth + "/" + maxHealth);
     }
 }

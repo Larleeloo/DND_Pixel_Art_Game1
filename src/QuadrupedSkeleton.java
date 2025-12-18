@@ -319,21 +319,28 @@ public class QuadrupedSkeleton {
         tailBase.setLocalPosition(bodyWidth/2 - 2, -2);
         tailTip.setLocalPosition(tailLen/2, 0);
 
+        // Leg offset for visual separation (right legs slightly forward in side view)
+        int legSeparation = 6;
+
         // Front legs - at front of body
-        legFrontLeftUpper.setLocalPosition(-bodyWidth/3, bodyHeight/2 - 2);
+        // Left leg (far side, behind)
+        legFrontLeftUpper.setLocalPosition(-bodyWidth/3 + legSeparation/2, bodyHeight/2 - 2);
         legFrontLeftLower.setLocalPosition(0, legLength);
         pawFrontLeft.setLocalPosition(0, legLength);
 
-        legFrontRightUpper.setLocalPosition(-bodyWidth/3, bodyHeight/2 - 2);
+        // Right leg (near side, in front) - offset slightly toward viewer
+        legFrontRightUpper.setLocalPosition(-bodyWidth/3 - legSeparation/2, bodyHeight/2 - 2);
         legFrontRightLower.setLocalPosition(0, legLength);
         pawFrontRight.setLocalPosition(0, legLength);
 
         // Back legs - at back of body
-        legBackLeftUpper.setLocalPosition(bodyWidth/3, bodyHeight/2 - 2);
+        // Left leg (far side, behind)
+        legBackLeftUpper.setLocalPosition(bodyWidth/3 + legSeparation/2, bodyHeight/2 - 2);
         legBackLeftLower.setLocalPosition(0, legLength);
         pawBackLeft.setLocalPosition(0, legLength);
 
-        legBackRightUpper.setLocalPosition(bodyWidth/3, bodyHeight/2 - 2);
+        // Right leg (near side, in front) - offset slightly toward viewer
+        legBackRightUpper.setLocalPosition(bodyWidth/3 - legSeparation/2, bodyHeight/2 - 2);
         legBackRightLower.setLocalPosition(0, legLength);
         pawBackRight.setLocalPosition(0, legLength);
 

@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /**
  * Factory class for creating humanoid skeleton variants.
@@ -256,5 +257,271 @@ public class HumanoidVariants {
                 bone.setTintColor(config.accentColor);
             }
         }
+    }
+
+    // ==================== In-Memory Texture Generation ====================
+
+    private static final int TEXTURE_SCALE = 2;
+    private static final Color OUTLINE = new Color(40, 30, 30);
+
+    /**
+     * Applies generated textures directly to skeleton bones (no file I/O).
+     * This creates proper pixel art textures at runtime.
+     *
+     * @param skeleton The skeleton to apply textures to
+     * @param type The variant type for coloring
+     */
+    public static void applyTexturesToSkeleton(Skeleton skeleton, VariantType type) {
+        VariantConfig config = getConfig(type);
+
+        // Core body parts
+        applyTexture(skeleton, "torso", generateTorsoImage(32, 32, config));
+        applyTexture(skeleton, "neck", generateNeckImage(16, 8, config));
+        applyTexture(skeleton, "head", generateHeadImage(24, 24, config, type));
+
+        // Arms
+        applyTexture(skeleton, "arm_upper_left", generateArmImage(12, 20, config.clothesColor, true));
+        applyTexture(skeleton, "arm_upper_right", generateArmImage(12, 20, config.clothesColor, false));
+        applyTexture(skeleton, "arm_lower_left", generateArmImage(10, 18, config.skinColor, true));
+        applyTexture(skeleton, "arm_lower_right", generateArmImage(10, 18, config.skinColor, false));
+        applyTexture(skeleton, "hand_left", generateHandImage(10, 10, config.skinColor));
+        applyTexture(skeleton, "hand_right", generateHandImage(10, 10, config.skinColor));
+
+        // Legs
+        applyTexture(skeleton, "leg_upper_left", generateLegImage(14, 24, config.accentColor, true));
+        applyTexture(skeleton, "leg_upper_right", generateLegImage(14, 24, config.accentColor, false));
+        applyTexture(skeleton, "leg_lower_left", generateLegImage(12, 22, config.accentColor, true));
+        applyTexture(skeleton, "leg_lower_right", generateLegImage(12, 22, config.accentColor, false));
+        applyTexture(skeleton, "foot_left", generateFootImage(16, 8, config.accentColor));
+        applyTexture(skeleton, "foot_right", generateFootImage(16, 8, config.accentColor));
+    }
+
+    private static void applyTexture(Skeleton skeleton, String boneName, BufferedImage texture) {
+        Bone bone = skeleton.findBone(boneName);
+        if (bone != null && texture != null) {
+            bone.setTexture(texture);
+        }
+    }
+
+    private static BufferedImage generateTorsoImage(int w, int h, VariantConfig config) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color base = config.clothesColor;
+        Color shadow = darken(base, 0.7);
+        Color highlight = brighten(base, 1.2);
+
+        // Main body fill
+        g.setColor(base);
+        g.fillRoundRect(1, 1, w - 2, h - 2, 4, 4);
+
+        // Highlight on top/front
+        g.setColor(highlight);
+        g.fillRect(w/4, 1, w/2, 3);
+
+        // Shadow on sides
+        g.setColor(shadow);
+        g.fillRect(1, 3, 3, h - 6);
+        g.fillRect(w - 4, 3, 3, h - 6);
+
+        // Belt/waist detail
+        g.setColor(darken(base, 0.5));
+        g.fillRect(2, h - 5, w - 4, 3);
+
+        // Outline
+        g.setColor(OUTLINE);
+        g.drawRoundRect(0, 0, w - 1, h - 1, 4, 4);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateNeckImage(int w, int h, VariantConfig config) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color base = config.skinColor;
+        Color shadow = darken(base, 0.8);
+
+        g.setColor(base);
+        g.fillRect(1, 0, w - 2, h);
+
+        g.setColor(shadow);
+        g.fillRect(1, 0, 2, h);
+
+        g.setColor(OUTLINE);
+        g.drawLine(0, 0, 0, h - 1);
+        g.drawLine(w - 1, 0, w - 1, h - 1);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateHeadImage(int w, int h, VariantConfig config, VariantType type) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color base = config.skinColor;
+        Color shadow = darken(base, 0.7);
+        Color highlight = brighten(base, 1.2);
+
+        // Head shape
+        g.setColor(base);
+        g.fillRoundRect(1, 1, w - 2, h - 2, 6, 6);
+
+        // Highlight
+        g.setColor(highlight);
+        g.fillRect(w/4, 1, w/2, 3);
+
+        // Shadow
+        g.setColor(shadow);
+        g.fillRect(1, h/3, 3, h/2);
+
+        // Eyes
+        g.setColor(type == VariantType.SKELETON ? new Color(200, 50, 50) : Color.BLACK);
+        int eyeSize = Math.max(3, w / 6);
+        g.fillOval(w/3 - eyeSize/2, h/3, eyeSize, eyeSize);
+        g.fillOval(w*2/3 - eyeSize/2, h/3, eyeSize, eyeSize);
+
+        // Eye shine (except skeleton)
+        if (type != VariantType.SKELETON) {
+            g.setColor(Color.WHITE);
+            g.fillRect(w/3, h/3, 1, 1);
+            g.fillRect(w*2/3, h/3, 1, 1);
+        }
+
+        // Mouth/expression based on type
+        g.setColor(type == VariantType.SKELETON ? shadow : darken(base, 0.5));
+        if (type == VariantType.SKELETON) {
+            // Skeleton teeth
+            for (int i = 0; i < 4; i++) {
+                g.fillRect(w/4 + i * (w/8), h*2/3, w/10, h/6);
+            }
+        } else if (type == VariantType.ZOMBIE) {
+            // Zombie grimace
+            g.drawLine(w/3, h*2/3, w*2/3, h*2/3 + 2);
+        }
+
+        // Outline
+        g.setColor(OUTLINE);
+        g.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateArmImage(int w, int h, Color color, boolean isLeft) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color shadow = darken(color, 0.7);
+        Color highlight = brighten(color, 1.2);
+
+        g.setColor(color);
+        g.fillRect(1, 0, w - 2, h - 1);
+
+        g.setColor(shadow);
+        if (isLeft) g.fillRect(w - 3, 0, 2, h - 1);
+        else g.fillRect(1, 0, 2, h - 1);
+
+        g.setColor(highlight);
+        if (isLeft) g.fillRect(1, 0, 2, h - 1);
+        else g.fillRect(w - 3, 0, 2, h - 1);
+
+        g.setColor(OUTLINE);
+        g.drawLine(0, 0, 0, h - 1);
+        g.drawLine(w - 1, 0, w - 1, h - 1);
+        g.drawLine(0, h - 1, w - 1, h - 1);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateHandImage(int w, int h, Color skinColor) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color shadow = darken(skinColor, 0.8);
+
+        g.setColor(skinColor);
+        g.fillRoundRect(1, 1, w - 2, h - 2, 3, 3);
+
+        // Finger lines
+        g.setColor(shadow);
+        for (int i = 1; i < 4; i++) {
+            g.drawLine(i * w/4, h - 3, i * w/4, h - 1);
+        }
+
+        g.setColor(OUTLINE);
+        g.drawRoundRect(0, 0, w - 1, h - 1, 3, 3);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateLegImage(int w, int h, Color color, boolean isLeft) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color shadow = darken(color, 0.7);
+        Color highlight = brighten(color, 1.2);
+
+        g.setColor(color);
+        g.fillRect(1, 0, w - 2, h - 1);
+
+        g.setColor(shadow);
+        if (isLeft) g.fillRect(w - 3, 0, 2, h - 1);
+        else g.fillRect(1, 0, 2, h - 1);
+
+        g.setColor(highlight);
+        if (isLeft) g.fillRect(1, 0, 2, h - 1);
+        else g.fillRect(w - 3, 0, 2, h - 1);
+
+        g.setColor(OUTLINE);
+        g.drawLine(0, 0, 0, h - 1);
+        g.drawLine(w - 1, 0, w - 1, h - 1);
+        g.drawLine(0, h - 1, w - 1, h - 1);
+
+        g.dispose();
+        return img;
+    }
+
+    private static BufferedImage generateFootImage(int w, int h, Color color) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        Color shadow = darken(color, 0.6);
+        Color highlight = brighten(color, 1.1);
+
+        g.setColor(color);
+        g.fillRoundRect(1, 1, w - 2, h - 2, 3, 2);
+
+        g.setColor(highlight);
+        g.fillRect(2, 1, w - 4, 2);
+
+        g.setColor(shadow);
+        g.fillRect(2, h - 3, w - 4, 2);
+
+        g.setColor(OUTLINE);
+        g.drawRoundRect(0, 0, w - 1, h - 1, 3, 2);
+
+        g.dispose();
+        return img;
+    }
+
+    private static Color darken(Color c, double factor) {
+        return new Color(
+            Math.max(0, (int)(c.getRed() * factor)),
+            Math.max(0, (int)(c.getGreen() * factor)),
+            Math.max(0, (int)(c.getBlue() * factor))
+        );
+    }
+
+    private static Color brighten(Color c, double factor) {
+        return new Color(
+            Math.min(255, (int)(c.getRed() * factor)),
+            Math.min(255, (int)(c.getGreen() * factor)),
+            Math.min(255, (int)(c.getBlue() * factor))
+        );
     }
 }

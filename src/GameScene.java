@@ -167,21 +167,30 @@ class GameScene implements Scene {
         }
 
         // Add mobs (AI-controlled creatures/enemies)
+        int mobsAdded = 0;
         for (LevelData.MobData m : levelData.mobs) {
             MobEntity mob = createMobFromData(m);
             if (mob != null) {
-                // Set wander bounds if specified
+                // Set ground level from level data
+                mob.setGroundY(levelData.groundY);
+
+                // Set wander bounds - default to spawn position +/- 200 if not specified
                 if (m.wanderMinX != 0 || m.wanderMaxX != 0) {
                     mob.setWanderBounds(m.wanderMinX, m.wanderMaxX);
+                } else {
+                    // Keep mobs near their spawn point
+                    mob.setWanderBounds(m.x - 200, m.x + 200);
                 }
+
                 // Enable debug drawing if specified
                 if (m.debugDraw) {
                     mob.setDebugDraw(true);
                 }
                 entityManager.addEntity(mob);
+                mobsAdded++;
             }
         }
-        System.out.println("GameScene: Added " + levelData.mobs.size() + " mobs to level");
+        System.out.println("GameScene: Added " + mobsAdded + " mobs to level");
 
         // Add player - use bone animation if enabled
         if (levelData.useBoneAnimation) {

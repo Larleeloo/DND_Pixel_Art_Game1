@@ -98,7 +98,7 @@ public abstract class MobEntity extends Entity {
 
     // Physics constants
     protected static final double GRAVITY = 0.5;
-    protected static final double GROUND_Y = 720;  // Will be set from level
+    protected double groundY = 920;  // Ground level from level data
 
     // Debug
     protected boolean debugDraw = false;
@@ -481,7 +481,7 @@ public abstract class MobEntity extends Entity {
     }
 
     protected void checkGroundCollision(List<Entity> entities) {
-        double groundLevel = GROUND_Y;
+        double groundLevel = groundY;
 
         // Check for block collisions
         if (entities != null) {
@@ -574,6 +574,7 @@ public abstract class MobEntity extends Entity {
 
     public int getCurrentHealth() { return currentHealth; }
     public int getMaxHealth() { return maxHealth; }
+    public int getAttackDamage() { return attackDamage; }
     public AIState getState() { return currentState; }
     public boolean isFacingRight() { return facingRight; }
 
@@ -590,7 +591,7 @@ public abstract class MobEntity extends Entity {
     }
 
     public void setGroundY(double groundY) {
-        // Allow setting ground level from level data
+        this.groundY = groundY;
     }
 
     public Skeleton getSkeleton() {
