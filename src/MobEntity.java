@@ -95,10 +95,15 @@ public abstract class MobEntity extends Entity {
     // Animation
     protected Skeleton skeleton;
     protected double animationScale = 1.0;
+    protected double skeletonOffsetY = 0;  // Offset from position to skeleton anchor (for feet on ground)
 
     // Physics constants
     protected static final double GRAVITY = 0.5;
     protected double groundY = 920;  // Ground level from level data
+
+    // Visual bounds padding for camera culling (skeleton may be larger than hitbox)
+    protected int visualPaddingX = 50;
+    protected int visualPaddingY = 50;
 
     // Debug
     protected boolean debugDraw = false;
@@ -138,6 +143,9 @@ public abstract class MobEntity extends Entity {
 
         this.wanderMinX = x - 200;
         this.wanderMaxX = x + 200;
+
+        // Start with wander target at spawn position to prevent immediate movement
+        this.wanderTargetX = x;
     }
 
     // ==================== Abstract Methods ====================
@@ -169,6 +177,26 @@ public abstract class MobEntity extends Entity {
             (int)posY + hitboxOffsetY,
             hitboxWidth,
             hitboxHeight
+        );
+    }
+
+    /**
+     * Gets the visual bounds of the mob for camera culling.
+     * This is larger than the hitbox to account for the skeleton/animation.
+     *
+     * @return Rectangle representing the visual bounds
+     */
+    public Rectangle getVisualBounds() {
+        // Visual bounds include the skeleton which extends above the position
+        // and may be wider than the hitbox
+        int visualWidth = Math.max(hitboxWidth, (int)(hitboxWidth * animationScale)) + visualPaddingX * 2;
+        int visualHeight = (int)(skeletonOffsetY * animationScale) + hitboxHeight + visualPaddingY;
+
+        return new Rectangle(
+            (int)posX - visualWidth / 2,
+            (int)posY - (int)(skeletonOffsetY * animationScale) - visualPaddingY / 2,
+            visualWidth,
+            visualHeight
         );
     }
 
@@ -222,8 +250,9 @@ public abstract class MobEntity extends Entity {
 
         Graphics2D g2d = (Graphics2D) g;
 
-        // Position skeleton at mob's feet
-        skeleton.setPosition(posX, posY);
+        // Position skeleton with feet at ground level
+        // skeletonOffsetY accounts for the distance from body center (anchor) to feet
+        skeleton.setPosition(posX, posY - skeletonOffsetY);
         skeleton.setScale(animationScale);
         skeleton.setFlipX(!facingRight);
 

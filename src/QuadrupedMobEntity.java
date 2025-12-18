@@ -230,6 +230,16 @@ public class QuadrupedMobEntity extends MobEntity {
         // Adjust hitbox offsets
         hitboxOffsetX = -hitboxWidth / 2;
         hitboxOffsetY = -hitboxHeight;
+
+        // Calculate skeleton offset for proper vertical positioning
+        // The skeleton anchor is at body center, but feet need to be on ground
+        // Offset = bodyHeight/2 + upperLegLength + lowerLegLength + pawHeight
+        QuadrupedSkeleton.AnimalConfig animalConfig = QuadrupedSkeleton.getConfig(animalType);
+        int bodyHeight = (int)(24 * animalConfig.bodyScaleY);
+        int legLength = (int)(16 * animalConfig.legLengthMultiplier);
+        int pawHeight = 6;
+        // Total offset from body center to feet
+        skeletonOffsetY = (bodyHeight / 2 - 2) + legLength + legLength + pawHeight;
     }
 
     @Override
