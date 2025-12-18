@@ -574,6 +574,7 @@ public abstract class MobEntity extends Entity {
 
     public int getCurrentHealth() { return currentHealth; }
     public int getMaxHealth() { return maxHealth; }
+    public int getAttackDamage() { return attackDamage; }
     public AIState getState() { return currentState; }
     public boolean isFacingRight() { return facingRight; }
 

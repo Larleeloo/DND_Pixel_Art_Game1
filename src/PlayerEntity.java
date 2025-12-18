@@ -12,6 +12,12 @@ class PlayerEntity extends SpriteEntity implements PlayerBase {
     private boolean facingRight = true; // Track direction player is facing
     private int airTime = 0; // Track how long we've been in the air
 
+    // Health system
+    private int maxHealth = 100;
+    private int currentHealth = 100;
+    private double invincibilityTime = 1.0;
+    private double invincibilityTimer = 0;
+
     private Inventory inventory;
     private AudioManager audioManager; // Reference to audio manager
 
@@ -524,5 +530,42 @@ class PlayerEntity extends SpriteEntity implements PlayerBase {
     @Override
     public int getY() {
         return y;
+    }
+
+    // ==================== Health System ====================
+
+    @Override
+    public int getHealth() {
+        return currentHealth;
+    }
+
+    @Override
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    @Override
+    public boolean isInvincible() {
+        return invincibilityTimer > 0;
+    }
+
+    @Override
+    public void takeDamage(int damage, double knockbackX, double knockbackY) {
+        if (invincibilityTimer > 0) {
+            return;
+        }
+
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+
+        velY += knockbackY;
+
+        invincibilityTimer = invincibilityTime;
+
+        if (audioManager != null) {
+            audioManager.playSound("hurt");
+        }
+
+        System.out.println("Player took " + damage + " damage! Health: " + currentHealth + "/" + maxHealth);
     }
 }

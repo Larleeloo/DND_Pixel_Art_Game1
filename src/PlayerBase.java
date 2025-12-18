@@ -67,4 +67,30 @@ public interface PlayerBase {
      * @return Y coordinate
      */
     int getY();
+
+    /**
+     * Gets the player's current health.
+     * @return Current health
+     */
+    int getHealth();
+
+    /**
+     * Gets the player's maximum health.
+     * @return Maximum health
+     */
+    int getMaxHealth();
+
+    /**
+     * Applies damage to the player.
+     * @param damage Amount of damage
+     * @param knockbackX Horizontal knockback force
+     * @param knockbackY Vertical knockback force
+     */
+    void takeDamage(int damage, double knockbackX, double knockbackY);
+
+    /**
+     * Checks if the player is invincible (damage immunity frames).
+     * @return true if currently invincible
+     */
+    boolean isInvincible();
 }
