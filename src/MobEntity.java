@@ -434,6 +434,12 @@ public abstract class MobEntity extends Entity {
         // Move toward wander target
         double dx = wanderTargetX - posX;
 
+        // Debug output - remove after fixing
+        if (debugDraw) {
+            System.out.println("WANDER: pos=" + (int)posX + " target=" + (int)wanderTargetX +
+                               " dx=" + (int)dx + " vX=" + (int)velocityX + " speed=" + (int)wanderSpeed);
+        }
+
         if (Math.abs(dx) < 10) {
             // Reached target, pick a new one or go idle
             pickWanderTarget();
@@ -514,6 +520,13 @@ public abstract class MobEntity extends Entity {
         // Apply gravity
         if (!onGround) {
             velocityY += GRAVITY;
+        }
+
+        // Debug: log movement when in WANDER state
+        if (debugDraw && currentState == AIState.WANDER && velocityX != 0) {
+            double movement = velocityX * deltaTime;
+            System.out.println("PHYSICS: vX=" + (int)velocityX + " dt=" + deltaTime +
+                               " movement=" + movement + " oldX=" + (int)posX);
         }
 
         // Apply velocity
@@ -625,7 +638,29 @@ public abstract class MobEntity extends Entity {
 
     protected void pickWanderTarget() {
         // Pick a random point within wander bounds
-        wanderTargetX = wanderMinX + Math.random() * (wanderMaxX - wanderMinX);
+        // Ensure target is at least minDistance away from current position
+        double minDistance = 50;
+        double range = wanderMaxX - wanderMinX;
+
+        // If wander bounds are too small, just pick a direction
+        if (range < minDistance * 2) {
+            // Pick a random direction and go that way
+            wanderTargetX = posX + (Math.random() > 0.5 ? 100 : -100);
+            return;
+        }
+
+        // Try to find a target at least minDistance away
+        for (int attempts = 0; attempts < 10; attempts++) {
+            wanderTargetX = wanderMinX + Math.random() * range;
+            if (Math.abs(wanderTargetX - posX) >= minDistance) {
+                return;  // Found a good target
+            }
+        }
+
+        // If all attempts failed, pick the far edge of bounds
+        double distToMin = Math.abs(posX - wanderMinX);
+        double distToMax = Math.abs(wanderMaxX - posX);
+        wanderTargetX = (distToMin > distToMax) ? wanderMinX + 20 : wanderMaxX - 20;
     }
 
     // ==================== Getters and Setters ====================
