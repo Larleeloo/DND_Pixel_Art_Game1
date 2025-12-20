@@ -107,7 +107,9 @@ public class HumanoidMobEntity extends MobEntity {
         // legUpperY=16, legLowerOffset=20, footOffset=20, footHeight=8
         // Total offset from torso center to feet: 16 + 20 + 20 + 8 = 64
         // Add small buffer (4 pixels) to prevent feet clipping during walk animation
-        skeletonOffsetY = (int)(64 * config.scaleY) + 4;
+        // Note: skeleton uses uniform scaling (scaleX), so don't pre-scale with scaleY
+        // The draw() method will scale this by animationScale (which is scaleX)
+        skeletonOffsetY = 64 + 4;
 
         // Variant-specific abilities
         switch (variantType) {
@@ -131,11 +133,24 @@ public class HumanoidMobEntity extends MobEntity {
     @Override
     protected void createSkeleton() {
         if (useTextures && textureDir != null) {
+            // Use custom texture directory
             this.skeleton = HumanoidVariants.createVariantWithTextures(variantType, textureDir);
         } else {
+            // Use TextureManager to ensure PNG textures exist (generates defaults if missing)
+            // Then load them from files so users can edit them
+            String texDir = TextureManager.ensureHumanoidTextures(variantType.name().toLowerCase());
             this.skeleton = HumanoidVariants.createVariant(variantType);
-            // Apply generated textures for better visuals
-            HumanoidVariants.applyTexturesToSkeleton(skeleton, variantType);
+
+            String[] humanoidBones = {
+                "torso", "neck", "head",
+                "arm_upper_left", "arm_upper_right",
+                "arm_lower_left", "arm_lower_right",
+                "hand_left", "hand_right",
+                "leg_upper_left", "leg_upper_right",
+                "leg_lower_left", "leg_lower_right",
+                "foot_left", "foot_right"
+            };
+            TextureManager.applyTexturesFromDir(skeleton, texDir, humanoidBones);
         }
     }
 

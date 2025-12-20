@@ -70,9 +70,24 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     public PlayerBoneEntity(int x, int y) {
         super(x, y);
 
+        // Use TextureManager to ensure player PNG textures exist (generates defaults if missing)
+        String texDir = TextureManager.ensureHumanoidTextures("player");
+
         // Create the skeleton with default humanoid structure
         skeleton = Skeleton.createHumanoid();
         skeleton.setScale(RENDER_SCALE);
+
+        // Load textures from PNG files so users can customize them
+        String[] humanoidBones = {
+            "torso", "neck", "head",
+            "arm_upper_left", "arm_upper_right",
+            "arm_lower_left", "arm_lower_right",
+            "hand_left", "hand_right",
+            "leg_upper_left", "leg_upper_right",
+            "leg_lower_left", "leg_lower_right",
+            "foot_left", "foot_right"
+        };
+        TextureManager.applyTexturesFromDir(skeleton, texDir, humanoidBones);
 
         // Apply any saved character customization (colors, sizes)
         CharacterCustomizationScene.applyToPlayer(skeleton);
@@ -295,6 +310,30 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
 
         if (!xCollision) {
             x = newX;
+        }
+
+        // Soft push collision with mobs (gentle push, doesn't block movement)
+        Rectangle currentBounds = new Rectangle(x, y, width, height);
+        for (Entity e : entities) {
+            if (e instanceof MobEntity) {
+                MobEntity mob = (MobEntity) e;
+                Rectangle mobBounds = mob.getBounds();
+                if (currentBounds.intersects(mobBounds)) {
+                    // Calculate overlap and push direction
+                    int playerCenterX = x + width / 2;
+                    int mobCenterX = mobBounds.x + mobBounds.width / 2;
+
+                    // Gentle push away from mob (2-3 pixels per frame)
+                    int pushStrength = 2;
+                    if (playerCenterX > mobCenterX) {
+                        // Player is to the right of mob, push right
+                        x += pushStrength;
+                    } else {
+                        // Player is to the left of mob, push left
+                        x -= pushStrength;
+                    }
+                }
+            }
         }
 
         // Collect items
