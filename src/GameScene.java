@@ -182,8 +182,8 @@ class GameScene implements Scene {
                     mob.setWanderBounds(m.x - 200, m.x + 200);
                 }
 
-                // Enable debug drawing if specified
-                if (m.debugDraw) {
+                // Enable debug drawing if specified (or for first mob for testing)
+                if (m.debugDraw || mobsAdded == 0) {
                     mob.setDebugDraw(true);
                 }
                 entityManager.addEntity(mob);
