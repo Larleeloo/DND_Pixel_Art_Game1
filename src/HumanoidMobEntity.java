@@ -144,7 +144,8 @@ public class HumanoidMobEntity extends MobEntity {
         if (skeleton != null) {
             // Add standard humanoid animations
             skeleton.addAnimation(BoneAnimation.createIdleAnimation("torso"));
-            skeleton.addAnimation(BoneAnimation.createRunAnimation());
+            skeleton.addAnimation(BoneAnimation.createWalkAnimation());  // For wandering
+            skeleton.addAnimation(BoneAnimation.createRunAnimation());   // For chasing
             skeleton.addAnimation(BoneAnimation.createJumpAnimation());
 
             // Create variant-specific animations

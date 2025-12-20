@@ -591,6 +591,105 @@ public class BoneAnimation {
     }
 
     /**
+     * Creates a natural walking animation for 15-bone skeleton in profile view.
+     * Slower and more subtle than running.
+     *
+     * Duration: 0.8 seconds per cycle (looping)
+     *
+     * @return Walk animation for 15-bone skeleton
+     */
+    public static BoneAnimation createWalkAnimation() {
+        BoneAnimation anim = new BoneAnimation("walk", 0.8, true);
+
+        // Walking gait - slower, more upright, smaller movements than run
+        // Phase timing: 0.0 = right foot contact, 0.4 = left foot contact
+
+        // === TORSO - minimal lean, subtle bob ===
+        anim.addKeyframe("torso", 0.0, 0, 1, 3);
+        anim.addKeyframe("torso", 0.2, 0, -1, 3);
+        anim.addKeyframe("torso", 0.4, 0, 1, 3);
+        anim.addKeyframe("torso", 0.6, 0, -1, 3);
+        anim.addKeyframe("torso", 0.8, 0, 1, 3);
+
+        // === NECK - subtle stabilization ===
+        anim.addKeyframe("neck", 0.0, 0, 0, 0);
+        anim.addKeyframe("neck", 0.8, 0, 0, 0);
+
+        // === HEAD - stable ===
+        anim.addKeyframe("head", 0.0, 0, 0, 0);
+        anim.addKeyframe("head", 0.8, 0, 0, 0);
+
+        // === RIGHT LEG ===
+        anim.addKeyframe("leg_upper_right", 0.0, 0, 0, -20);   // Forward contact
+        anim.addKeyframe("leg_upper_right", 0.2, 0, 0, 0);     // Vertical
+        anim.addKeyframe("leg_upper_right", 0.4, 0, 0, 20);    // Back push-off
+        anim.addKeyframe("leg_upper_right", 0.6, 0, 0, -5);    // Swinging forward
+        anim.addKeyframe("leg_upper_right", 0.8, 0, 0, -20);   // Cycle complete
+
+        anim.addKeyframe("leg_lower_right", 0.0, 0, 0, 5);
+        anim.addKeyframe("leg_lower_right", 0.2, 0, 0, 0);
+        anim.addKeyframe("leg_lower_right", 0.4, 0, 0, 5);
+        anim.addKeyframe("leg_lower_right", 0.6, 0, 0, 25);    // Knee bent during swing
+        anim.addKeyframe("leg_lower_right", 0.8, 0, 0, 5);
+
+        // === LEFT LEG - opposite phase ===
+        anim.addKeyframe("leg_upper_left", 0.0, 0, 0, 20);     // Back push-off
+        anim.addKeyframe("leg_upper_left", 0.2, 0, 0, -5);     // Swinging forward
+        anim.addKeyframe("leg_upper_left", 0.4, 0, 0, -20);    // Forward contact
+        anim.addKeyframe("leg_upper_left", 0.6, 0, 0, 0);      // Vertical
+        anim.addKeyframe("leg_upper_left", 0.8, 0, 0, 20);     // Cycle complete
+
+        anim.addKeyframe("leg_lower_left", 0.0, 0, 0, 5);
+        anim.addKeyframe("leg_lower_left", 0.2, 0, 0, 25);     // Knee bent during swing
+        anim.addKeyframe("leg_lower_left", 0.4, 0, 0, 5);
+        anim.addKeyframe("leg_lower_left", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_lower_left", 0.8, 0, 0, 5);
+
+        // === RIGHT ARM - opposite to right leg ===
+        anim.addKeyframe("arm_upper_right", 0.0, 0, 0, 25);    // Arm back
+        anim.addKeyframe("arm_upper_right", 0.2, 0, 0, 5);
+        anim.addKeyframe("arm_upper_right", 0.4, 0, 0, -20);   // Arm forward
+        anim.addKeyframe("arm_upper_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("arm_upper_right", 0.8, 0, 0, 25);
+
+        anim.addKeyframe("arm_lower_right", 0.0, 0, 0, -30);
+        anim.addKeyframe("arm_lower_right", 0.4, 0, 0, -20);
+        anim.addKeyframe("arm_lower_right", 0.8, 0, 0, -30);
+
+        // === LEFT ARM - opposite phase ===
+        anim.addKeyframe("arm_upper_left", 0.0, 0, 0, -20);    // Arm forward
+        anim.addKeyframe("arm_upper_left", 0.2, 0, 0, 0);
+        anim.addKeyframe("arm_upper_left", 0.4, 0, 0, 25);     // Arm back
+        anim.addKeyframe("arm_upper_left", 0.6, 0, 0, 5);
+        anim.addKeyframe("arm_upper_left", 0.8, 0, 0, -20);
+
+        anim.addKeyframe("arm_lower_left", 0.0, 0, 0, -20);
+        anim.addKeyframe("arm_lower_left", 0.4, 0, 0, -30);
+        anim.addKeyframe("arm_lower_left", 0.8, 0, 0, -20);
+
+        // === HANDS - subtle follow-through ===
+        anim.addKeyframe("hand_right", 0.0, 0, 0, 5);
+        anim.addKeyframe("hand_right", 0.4, 0, 0, -5);
+        anim.addKeyframe("hand_right", 0.8, 0, 0, 5);
+
+        anim.addKeyframe("hand_left", 0.0, 0, 0, -5);
+        anim.addKeyframe("hand_left", 0.4, 0, 0, 5);
+        anim.addKeyframe("hand_left", 0.8, 0, 0, -5);
+
+        // === FEET - ground contact ===
+        anim.addKeyframe("foot_right", 0.0, 0, 0, 0);
+        anim.addKeyframe("foot_right", 0.6, 0, 0, -15);
+        anim.addKeyframe("foot_right", 0.8, 0, 0, 0);
+
+        anim.addKeyframe("foot_left", 0.0, 0, 0, -15);
+        anim.addKeyframe("foot_left", 0.2, 0, 0, 0);
+        anim.addKeyframe("foot_left", 0.4, 0, 0, 0);
+        anim.addKeyframe("foot_left", 0.8, 0, 0, -15);
+
+        return anim;
+    }
+
+    /**
      * Creates a natural jump animation for 15-bone skeleton in profile view.
      * Phases: crouch, launch, peak, descent, land
      *
