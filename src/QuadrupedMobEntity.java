@@ -247,11 +247,14 @@ public class QuadrupedMobEntity extends MobEntity {
     @Override
     protected void createSkeleton() {
         if (useTextures && textureDir != null) {
+            // Use custom texture directory
             this.skeleton = QuadrupedSkeleton.createQuadrupedWithTextures(animalType, textureDir);
         } else {
+            // Use TextureManager to ensure PNG textures exist (generates defaults if missing)
+            // Then load them from files so users can edit them
+            String texDir = TextureManager.ensureQuadrupedTextures(animalType);
             this.skeleton = QuadrupedSkeleton.createQuadruped(animalType);
-            // Apply generated textures for better visuals
-            QuadrupedTextureGenerator.applyTexturesToSkeleton(skeleton, animalType);
+            TextureManager.applyTexturesFromDir(skeleton, texDir, QuadrupedSkeleton.getQuadrupedBoneNames());
         }
     }
 
