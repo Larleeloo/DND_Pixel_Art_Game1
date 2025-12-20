@@ -360,7 +360,41 @@ public class QuadrupedMobEntity extends MobEntity {
 
     @Override
     public void draw(Graphics g) {
-        super.draw(g);
+        if (skeleton == null) return;
+
+        Graphics2D g2d = (Graphics2D) g;
+
+        // Position skeleton with feet at ground level
+        double scaledOffsetY = skeletonOffsetY * animationScale;
+        skeleton.setPosition(posX, posY - scaledOffsetY);
+        skeleton.setScale(animationScale);
+
+        // Quadruped skeleton faces LEFT by default, so flip logic is inverted from humanoids
+        // When facingRight is true, we need to flip the skeleton
+        skeleton.setFlipX(facingRight);
+
+        // Flash when hurt
+        if (invincibilityTimer > 0) {
+            if ((int)(invincibilityTimer * 10) % 2 == 0) {
+                skeleton.draw(g2d);
+            }
+        } else {
+            skeleton.draw(g2d);
+        }
+
+        // Debug hitbox
+        if (debugDraw) {
+            g2d.setColor(new Color(255, 0, 0, 100));
+            Rectangle bounds = getBounds();
+            g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            g2d.setColor(Color.RED);
+            g2d.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.drawString(currentState.name(), (int)posX - 20, (int)posY - hitboxHeight - 20);
+            g2d.drawString("HP: " + currentHealth + "/" + maxHealth, (int)posX - 20, (int)posY - hitboxHeight - 10);
+        }
 
         // Draw health bar above mob
         if (currentHealth < maxHealth && currentState != AIState.DEAD) {

@@ -146,6 +146,9 @@ public abstract class MobEntity extends Entity {
 
         // Start with wander target at spawn position to prevent immediate movement
         this.wanderTargetX = x;
+
+        // Randomize initial state timer to prevent all mobs from acting in sync
+        this.stateTimer = Math.random() * idleDuration;
     }
 
     // ==================== Abstract Methods ====================
