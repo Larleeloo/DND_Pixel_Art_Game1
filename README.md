@@ -155,3 +155,9 @@ RESOLVED ISSUES
   -> Increased all mob hitbox sizes by ~40% for better hit detection
   -> Humanoid hitboxes: 60x120 (was 40x100)
   -> Quadruped hitboxes scaled proportionally per animal type
+
+[FIXED] Hostile mobs ignore block collisions and walk through solid blocks
+  -> Rewrote MobEntity.applyPhysics() to check collisions BEFORE applying movement
+  -> Added horizontal collision detection with solid blocks
+  -> Added proper vertical collision detection (both falling and jumping)
+  -> Mobs now stop at walls and land on platforms correctly
