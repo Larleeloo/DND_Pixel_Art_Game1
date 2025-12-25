@@ -8,7 +8,7 @@ import java.awt.*;
  * Represents a light source in the game world.
  * Light sources illuminate areas around them, creating bright spots in the darkness.
  */
-class LightSource {
+public class LightSource {
 
     private double x, y;           // Position in world coordinates
     private double radius;          // Radius of full brightness

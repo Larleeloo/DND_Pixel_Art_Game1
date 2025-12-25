@@ -1,4 +1,6 @@
 package entity;
+import entity.player.*;
+import entity.mob.*;
 import block.*;
 import input.*;
 import graphics.*;
@@ -13,7 +15,7 @@ import java.util.List;
  * Manages all entities in a scene, handling updates and rendering.
  * Supports camera-based rendering for scrolling levels.
  */
-class EntityManager {
+public class EntityManager {
 
     private ArrayList<Entity> entities = new ArrayList<>();
     private long lastUpdateTime = System.nanoTime();

@@ -18,7 +18,7 @@ import java.util.ArrayList;
  * Scene implementation for actual gameplay.
  * Loads levels from JSON files and manages gameplay logic.
  */
-class GameScene implements Scene {
+public class GameScene implements Scene {
 
     private String levelPath;
     private LevelData levelData;

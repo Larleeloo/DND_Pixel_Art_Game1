@@ -3,7 +3,7 @@ package input;
 import java.awt.event.*;
 import java.util.HashSet;
 
-class InputManager implements KeyListener, MouseWheelListener {
+public class InputManager implements KeyListener, MouseWheelListener {
 
     private HashSet<Character> pressed = new HashSet<>();
     private HashSet<Character> justPressed = new HashSet<>();

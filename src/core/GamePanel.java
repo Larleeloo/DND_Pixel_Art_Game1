@@ -16,7 +16,7 @@ import java.awt.event.MouseEvent;
  * Main game panel that handles the game loop and rendering.
  * Uses SceneManager for scene-based game state management.
  */
-class GamePanel extends JPanel implements Runnable {
+public class GamePanel extends JPanel implements Runnable {
 
     private Thread gameThread;
     private final int FPS = 60;

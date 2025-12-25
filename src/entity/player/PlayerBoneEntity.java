@@ -1,5 +1,7 @@
 package entity.player;
 import entity.*;
+import entity.mob.*;
+import scene.*;
 import block.*;
 import animation.*;
 import audio.*;

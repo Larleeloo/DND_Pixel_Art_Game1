@@ -15,7 +15,7 @@ import java.awt.image.BufferedImage;
  * - Keeps width/height scaled by SCALE.
  * - Supports RGB color masking for tinting sprites.
  */
-class SpriteEntity extends Entity {
+public class SpriteEntity extends Entity {
 
     protected Image sprite;       // image to draw
     protected ImageIcon animatedIcon; // optional animated GIF

@@ -6,7 +6,7 @@ import audio.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
-class UIButton {
+public class UIButton {
     private int x, y, width, height;
     private String text;
     private Color normalColor;

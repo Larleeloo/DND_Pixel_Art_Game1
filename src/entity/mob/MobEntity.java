@@ -4,6 +4,7 @@ import entity.player.*;
 import block.*;
 import animation.*;
 import graphics.*;
+import input.*;
 
 import java.awt.*;
 import java.util.ArrayList;

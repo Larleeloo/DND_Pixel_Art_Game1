@@ -14,7 +14,7 @@ import java.util.List;
  * Data class that holds the configuration for a game level.
  * Can be loaded from JSON files via LevelLoader.
  */
-class LevelData {
+public class LevelData {
 
     // Level metadata
     public String name;

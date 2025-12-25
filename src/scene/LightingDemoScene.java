@@ -18,7 +18,7 @@ import java.util.ArrayList;
  * Demonstration scene for the day/night cycle and lighting system.
  * Shows various light sources and allows toggling between day and night.
  */
-class LightingDemoScene implements Scene {
+public class LightingDemoScene implements Scene {
 
     private ArrayList<UIButton> buttons;
     private LightingSystem lightingSystem;

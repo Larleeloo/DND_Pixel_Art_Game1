@@ -17,7 +17,7 @@ import java.awt.*;
  * Interface for game scenes.
  * Scenes represent different states of the game (menu, gameplay, etc.)
  */
-interface Scene {
+public interface Scene {
 
     /**
      * Called when the scene is first loaded.

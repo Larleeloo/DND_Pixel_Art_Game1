@@ -18,7 +18,7 @@ import java.util.ArrayList;
  * Main menu scene - the game's title screen.
  * Provides navigation to level selection and other options.
  */
-class MainMenuScene implements Scene {
+public class MainMenuScene implements Scene {
 
     private ArrayList<UIButton> buttons;
     private String title;

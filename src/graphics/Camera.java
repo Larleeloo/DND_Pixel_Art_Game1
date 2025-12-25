@@ -1,4 +1,5 @@
 package graphics;
+import entity.*;
 import animation.*;
 import block.*;
 

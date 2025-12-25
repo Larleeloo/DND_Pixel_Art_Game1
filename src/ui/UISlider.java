@@ -9,7 +9,7 @@ import java.awt.*;
  * A draggable slider UI component for value selection.
  * Supports horizontal sliders with customizable range and colors.
  */
-class UISlider {
+public class UISlider {
     private int x, y, width, height;
     private String label;
     private double minValue, maxValue;

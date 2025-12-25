@@ -20,7 +20,7 @@ import java.util.List;
  * Each layer scrolls at a different rate relative to camera movement,
  * creating a parallax depth effect similar to Terraria.
  */
-class ParallaxBackground {
+public class ParallaxBackground {
 
     // Standard z-order constants for the 5 depth levels
     public static final int Z_BACKGROUND = -2;      // Furthest back (sky)

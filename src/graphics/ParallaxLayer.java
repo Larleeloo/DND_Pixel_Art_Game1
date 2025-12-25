@@ -15,7 +15,7 @@ import java.awt.image.BufferedImage;
  * - 1.0 = Moves with camera (same as world entities)
  * - > 1.0 = Moves faster than camera (foreground elements)
  */
-class ParallaxLayer {
+public class ParallaxLayer {
 
     // Layer name for identification
     private String name;

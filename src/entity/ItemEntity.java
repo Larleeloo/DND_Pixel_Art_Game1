@@ -11,7 +11,7 @@ import java.awt.image.BufferedImage;
 /**
  * Represents a collectible item in the game world
  */
-class ItemEntity extends Entity {
+public class ItemEntity extends Entity {
 
     private Image sprite;
     private int width, height;

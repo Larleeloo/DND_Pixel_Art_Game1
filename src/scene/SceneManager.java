@@ -19,7 +19,7 @@ import java.util.Map;
  * Manages game scenes and handles transitions between them.
  * Provides a centralized way to switch between different game states.
  */
-class SceneManager {
+public class SceneManager {
 
     private static SceneManager instance;
 

@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import javax.swing.*;
 
-class PlayerEntity extends SpriteEntity implements PlayerBase {
+public class PlayerEntity extends SpriteEntity implements PlayerBase {
 
     private double velY = 0;
     private final double gravity = 0.5;
