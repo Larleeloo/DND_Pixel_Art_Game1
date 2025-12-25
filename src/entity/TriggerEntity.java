@@ -1,4 +1,5 @@
 package entity;
+import scene.*;
 import block.*;
 import input.*;
 import graphics.*;
@@ -11,7 +12,7 @@ import java.awt.*;
  * Invisible trigger zone that fires events when the player enters.
  * Used for level transitions, checkpoints, cutscenes, etc.
  */
-class TriggerEntity extends Entity {
+public class TriggerEntity extends Entity {
 
     private int width;
     private int height;

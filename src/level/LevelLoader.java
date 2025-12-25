@@ -15,7 +15,7 @@ import java.util.*;
  * Loads level data from JSON files.
  * Uses a simple custom JSON parser to avoid external dependencies.
  */
-class LevelLoader {
+public class LevelLoader {
 
     /**
      * Load a level from a JSON file.

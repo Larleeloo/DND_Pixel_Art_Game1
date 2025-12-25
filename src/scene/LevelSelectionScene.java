@@ -19,7 +19,7 @@ import java.util.ArrayList;
  * Level selection scene that displays available levels.
  * Levels are only loaded when clicked, not at startup.
  */
-class LevelSelectionScene implements Scene {
+public class LevelSelectionScene implements Scene {
 
     private ArrayList<LevelEntry> levelEntries;
     private ArrayList<UIButton> buttons;

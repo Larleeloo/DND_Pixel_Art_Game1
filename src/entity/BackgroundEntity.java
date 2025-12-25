@@ -11,7 +11,7 @@ import java.awt.*;
  * Entity for rendering background images.
  * Supports tiling/repeating horizontally and vertically for scrolling levels.
  */
-class BackgroundEntity extends Entity {
+public class BackgroundEntity extends Entity {
 
     private Image image;
     private int width, height;

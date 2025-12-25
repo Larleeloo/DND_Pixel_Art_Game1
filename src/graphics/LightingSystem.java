@@ -11,7 +11,7 @@ import java.util.List;
  * Manages the day/night cycle and lighting effects.
  * Renders a darkness overlay with light sources cutting through it.
  */
-class LightingSystem {
+public class LightingSystem {
 
     // Light sources in the scene
     private List<LightSource> lightSources;

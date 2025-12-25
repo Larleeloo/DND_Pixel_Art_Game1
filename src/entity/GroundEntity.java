@@ -11,7 +11,7 @@ import java.awt.*;
  * Visual indicator for the ground level.
  * Should be added LAST to EntityManager so it draws on top.
  */
-class GroundEntity extends Entity {
+public class GroundEntity extends Entity {
 
     private static final int GROUND_Y = 1800;
 

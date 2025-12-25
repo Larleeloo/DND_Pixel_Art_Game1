@@ -20,7 +20,7 @@ import java.util.Map;
  * Character customization scene allowing players to customize their character's
  * appearance with RGB colors and size adjustments for each body part.
  */
-class CharacterCustomizationScene implements Scene {
+public class CharacterCustomizationScene implements Scene {
 
     private boolean initialized;
 

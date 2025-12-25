@@ -10,7 +10,7 @@ import java.util.ArrayList;
 /**
  * Manages collected items and displays inventory UI
  */
-class Inventory {
+public class Inventory {
 
     private ArrayList<ItemEntity> items;
     private int maxSlots;
