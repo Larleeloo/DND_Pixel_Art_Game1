@@ -360,7 +360,7 @@ class GameScene implements Scene {
                 .name("Default Level")
                 .description("A default test level")
                 .background("assets/background.png")
-                .music("assets/music.wav")
+                .music("sounds/music.wav")
                 .playerSpawn(100, 620)
                 .groundY(720)
                 // Platforms

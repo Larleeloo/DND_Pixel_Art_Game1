@@ -3,10 +3,10 @@
   "description": "A nighttime cityscape showcasing parallax backgrounds with multiple building layers. Toggle Day/Night to see the lighting effects!",
 
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/textures/player",
+  "boneTextureDir": "assets/textures/humanoid/player",
 
   "backgroundPath": "assets/parallax/sky.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
 
   "playerSpawnX": 200,
   "playerSpawnY": 750,

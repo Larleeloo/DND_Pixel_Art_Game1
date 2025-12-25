@@ -1,10 +1,10 @@
 {
   "name": "Scrolling Adventure",
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/textures/player",
+  "boneTextureDir": "assets/textures/humanoid/player",
   "description": "A long level with both horizontal and vertical scrolling, featuring tall climbs and deep descents",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 200,
   "playerSpawnY": 1100,
   "playerSpritePath": "assets/player.png",

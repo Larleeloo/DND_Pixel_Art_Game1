@@ -2,7 +2,7 @@
   "name": "Color Mastery",
   "description": "A level showcasing color-masked obstacles in different hues",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 100,
   "playerSpawnY": 620,
   "playerSpritePath": "assets/player.png",

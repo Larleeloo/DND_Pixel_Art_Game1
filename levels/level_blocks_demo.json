@@ -1,10 +1,10 @@
 {
   "name": "Block Demo - Terrain Test",
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/textures/player",
+  "boneTextureDir": "assets/textures/humanoid/player",
   "description": "A demo level showcasing the new block-based terrain system",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 100,
   "playerSpawnY": 400,
   "playerSpritePath": "assets/player.png",

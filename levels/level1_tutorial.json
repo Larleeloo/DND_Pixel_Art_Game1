@@ -2,7 +2,7 @@
   "name": "Tutorial - The Beginning",
   "description": "Learn the basics of movement and collecting items",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 100,
   "playerSpawnY": 620,
   "playerSpritePath": "assets/player.png",

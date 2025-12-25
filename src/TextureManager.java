@@ -77,7 +77,7 @@ public class TextureManager {
 
     /**
      * Ensures textures exist for a quadruped animal type.
-     * If textures don't exist, generates default ones and saves to PNG files.
+     * If textures don't exist, logs a warning - textures should be pre-generated using devtools.
      *
      * @param type The animal type
      * @return The texture directory path
@@ -89,17 +89,15 @@ public class TextureManager {
         if (!texturesExist(textureDir, QuadrupedSkeleton.getQuadrupedBoneNames())) {
             if (!hasShownGenerationMessage) {
                 System.out.println("=============================================================");
-                System.out.println("GENERATING DEFAULT TEXTURES");
+                System.out.println("WARNING: MISSING TEXTURES");
                 System.out.println("=============================================================");
-                System.out.println("Texture files not found - generating defaults.");
-                System.out.println("You can edit these PNG files to customize your mobs!");
+                System.out.println("Texture files not found for: " + type.name().toLowerCase());
+                System.out.println("Please run the texture generators in the devtools/ directory.");
+                System.out.println("Example: java devtools/QuadrupedTextureGenerator");
                 System.out.println("Location: " + new File(TEXTURE_BASE_DIR).getAbsolutePath());
                 System.out.println("=============================================================");
                 hasShownGenerationMessage = true;
             }
-
-            // Generate default textures
-            QuadrupedTextureGenerator.generateTexturesForAnimal(type);
         }
 
         return textureDir;
@@ -107,7 +105,7 @@ public class TextureManager {
 
     /**
      * Ensures textures exist for a humanoid mob type.
-     * If textures don't exist, generates default ones and saves to PNG files.
+     * If textures don't exist, logs a warning - textures should be pre-generated using devtools.
      *
      * @param mobType The humanoid mob type name (e.g., "orc", "zombie", "skeleton", "player")
      * @return The texture directory path
@@ -129,17 +127,15 @@ public class TextureManager {
         if (!texturesExist(textureDir, humanoidBones)) {
             if (!hasShownGenerationMessage) {
                 System.out.println("=============================================================");
-                System.out.println("GENERATING DEFAULT TEXTURES");
+                System.out.println("WARNING: MISSING TEXTURES");
                 System.out.println("=============================================================");
-                System.out.println("Texture files not found - generating defaults.");
-                System.out.println("You can edit these PNG files to customize your mobs!");
+                System.out.println("Texture files not found for: " + mobType.toLowerCase());
+                System.out.println("Please run the texture generators in the devtools/ directory.");
+                System.out.println("Example: java devtools/HumanoidTextureGenerator");
                 System.out.println("Location: " + new File(TEXTURE_BASE_DIR).getAbsolutePath());
                 System.out.println("=============================================================");
                 hasShownGenerationMessage = true;
             }
-
-            // Generate default textures using HumanoidTextureGenerator
-            HumanoidTextureGenerator.generateTexturesForMob(mobType);
         }
 
         return textureDir;
@@ -193,41 +189,33 @@ public class TextureManager {
     }
 
     /**
-     * Regenerates all default textures, overwriting any existing files.
-     * Useful if you want to reset to defaults.
+     * Prints instructions for regenerating textures using devtools.
+     * Texture generation has been moved to the devtools directory.
      */
-    public static void regenerateAllDefaults() {
-        System.out.println("Regenerating all default textures...");
-
-        // Quadrupeds
-        for (QuadrupedSkeleton.AnimalType type : QuadrupedSkeleton.AnimalType.values()) {
-            QuadrupedTextureGenerator.generateTexturesForAnimal(type);
-        }
-
-        // Humanoids
-        String[] humanoidTypes = {"orc", "zombie", "skeleton", "player"};
-        for (String mobType : humanoidTypes) {
-            HumanoidTextureGenerator.generateTexturesForMob(mobType);
-        }
-
-        System.out.println("Done! All textures regenerated in: " + new File(TEXTURE_BASE_DIR).getAbsolutePath());
+    public static void printRegenerationInstructions() {
+        System.out.println("=============================================================");
+        System.out.println("TEXTURE GENERATION INSTRUCTIONS");
+        System.out.println("=============================================================");
+        System.out.println("Texture generators have been moved to the devtools/ directory.");
+        System.out.println("");
+        System.out.println("To regenerate textures, run the following from the project root:");
+        System.out.println("  java devtools/QuadrupedTextureGenerator  - for animal textures");
+        System.out.println("  java devtools/HumanoidTextureGenerator   - for humanoid textures");
+        System.out.println("  java devtools/BlockTextureGenerator      - for block textures");
+        System.out.println("  java devtools/ParallaxTextureGenerator   - for background textures");
+        System.out.println("");
+        System.out.println("Textures will be generated in: " + new File(TEXTURE_BASE_DIR).getAbsolutePath());
+        System.out.println("=============================================================");
     }
 
     /**
-     * Command-line utility to generate all textures.
+     * Command-line utility - now just prints instructions.
      */
     public static void main(String[] args) {
-        if (args.length > 0 && args[0].equals("--regenerate")) {
-            regenerateAllDefaults();
-        } else {
-            System.out.println("TextureManager - Texture Generation Utility");
-            System.out.println("Usage: java TextureManager [--regenerate]");
-            System.out.println();
-            System.out.println("Options:");
-            System.out.println("  --regenerate   Regenerate all default textures (overwrites existing)");
-            System.out.println();
-            System.out.println("Textures are automatically generated when mobs are created.");
-            System.out.println("Edit the PNG files in " + TEXTURE_BASE_DIR + " to customize!");
-        }
+        System.out.println("TextureManager - Runtime Texture Loader");
+        System.out.println();
+        System.out.println("This class loads textures at runtime from " + TEXTURE_BASE_DIR);
+        System.out.println();
+        printRegenerationInstructions();
     }
 }

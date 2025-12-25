@@ -5,27 +5,27 @@
  */
 public enum BlockType {
     // Terrain blocks
-    GRASS("blocks/grass.png", true, "Grass"),
-    DIRT("blocks/dirt.png", true, "Dirt"),
-    STONE("blocks/stone.png", true, "Stone"),
-    COBBLESTONE("blocks/cobblestone.png", true, "Cobblestone"),
+    GRASS("assets/textures/blocks/grass.png", true, "Grass"),
+    DIRT("assets/textures/blocks/dirt.png", true, "Dirt"),
+    STONE("assets/textures/blocks/stone.png", true, "Stone"),
+    COBBLESTONE("assets/textures/blocks/cobblestone.png", true, "Cobblestone"),
 
     // Nature blocks
-    WOOD("blocks/wood.png", true, "Wood"),
-    LEAVES("blocks/leaves.png", false, "Leaves"),
+    WOOD("assets/textures/blocks/wood.png", true, "Wood"),
+    LEAVES("assets/textures/blocks/leaves.png", false, "Leaves"),
 
     // Special blocks
-    BRICK("blocks/brick.png", true, "Brick"),
-    SAND("blocks/sand.png", true, "Sand"),
-    WATER("blocks/water.png", false, "Water"),
+    BRICK("assets/textures/blocks/brick.png", true, "Brick"),
+    SAND("assets/textures/blocks/sand.png", true, "Sand"),
+    WATER("assets/textures/blocks/water.png", false, "Water"),
 
     // Decorative blocks
-    GLASS("blocks/glass.png", false, "Glass"),
+    GLASS("assets/textures/blocks/glass.png", false, "Glass"),
 
     // Ore blocks
-    COAL_ORE("blocks/coal_ore.png", true, "Coal Ore"),
-    IRON_ORE("blocks/iron_ore.png", true, "Iron Ore"),
-    GOLD_ORE("blocks/gold_ore.png", true, "Gold Ore"),
+    COAL_ORE("assets/textures/blocks/coal_ore.png", true, "Coal Ore"),
+    IRON_ORE("assets/textures/blocks/iron_ore.png", true, "Iron Ore"),
+    GOLD_ORE("assets/textures/blocks/gold_ore.png", true, "Gold Ore"),
 
     // Platform block (for backwards compatibility with obstacle.png)
     PLATFORM("assets/obstacle.png", true, "Platform");

@@ -14,17 +14,41 @@ CURRENT FEATURES
 -Simple parallax
 -Scrolling camera that follows the player (needs fixing for vertical scrolling level, see 'KNOWN ISSUES')
 
+PROJECT STRUCTURE
+src/                    - Game engine source code (runtime classes only)
+devtools/               - Development tools (texture generators, animation importers)
+  - TextureGenerator.java           - Generates player bone textures
+  - HumanoidTextureGenerator.java   - Generates humanoid mob textures
+  - QuadrupedTextureGenerator.java  - Generates quadruped animal textures
+  - BlockTextureGenerator.java      - Generates block textures
+  - ParallaxTextureGenerator.java   - Generates parallax backgrounds
+  - BoneTextureGenerator.java       - Generates simple bone textures
+  - BlockbenchAnimationImporter.java - Imports Blockbench animation files
+assets/
+  textures/
+    humanoid/           - Humanoid character textures (player, orc, zombie, skeleton)
+    quadruped/          - Animal textures (wolf, dog, cat, horse, etc.)
+    blocks/             - Block textures (grass, dirt, stone, etc.)
+  parallax/             - Parallax background layers
+sounds/                 - All sound files (music, effects, footsteps)
+levels/                 - Level JSON files
+
 TODOs
 Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-File order is confusing. Player textures are in 3 redundant locations
+[FIXED] File order is confusing. Player textures are in 3 redundant locations
+  -> Consolidated to single canonical location: assets/textures/humanoid/player/
 Java class structure should be organized by relationship to other classes
-Texture generators should not be part of the game engine, as only PNG and GIF files should be used for textures and imported externally into the assets folder
-Some sound files are located in the base 'assets' folder and should be located in sounds
-'blocks' assets should be a sub folder within textures 
-Blockbench support unclear in usage
+[FIXED] Texture generators should not be part of the game engine, as only PNG and GIF files should be used for textures and imported externally into the assets folder
+  -> Moved all texture generators to devtools/ directory
+[FIXED] Some sound files are located in the base 'assets' folder and should be located in sounds
+  -> Moved collect.wav, drop.wav, jump.wav, music.wav to sounds/ directory
+[FIXED] 'blocks' assets should be a sub folder within textures
+  -> Moved blocks to assets/textures/blocks/
+[FIXED] Blockbench support unclear in usage
+  -> BlockbenchAnimationImporter moved to devtools/, runtime import deprecated
 Occasional stuttering when rendering player
 Mob hitboxes too small
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color

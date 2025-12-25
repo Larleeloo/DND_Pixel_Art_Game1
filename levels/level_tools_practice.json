@@ -1,10 +1,10 @@
 {
   "name": "Tools Practice - Learn Mining",
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/textures/player",
+  "boneTextureDir": "assets/textures/humanoid/player",
   "description": "Pick up tools and discover how they speed up mining! Each tool works best on specific blocks.",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 100,
   "playerSpawnY": 600,
   "playerSpritePath": "assets/player.png",
@@ -14,9 +14,9 @@
   "scrollingEnabled": false,
   "platforms": [],
   "items": [
-    { "x": 200, "y": 550, "spritePath": "blocks/dirt.png", "itemName": "Shovel", "itemType": "shovel" },
-    { "x": 700, "y": 550, "spritePath": "blocks/stone.png", "itemName": "Pickaxe", "itemType": "pickaxe" },
-    { "x": 1200, "y": 550, "spritePath": "blocks/wood.png", "itemName": "Axe", "itemType": "axe" },
+    { "x": 200, "y": 550, "spritePath": "assets/textures/blocks/dirt.png", "itemName": "Shovel", "itemType": "shovel" },
+    { "x": 700, "y": 550, "spritePath": "assets/textures/blocks/stone.png", "itemName": "Pickaxe", "itemType": "pickaxe" },
+    { "x": 1200, "y": 550, "spritePath": "assets/textures/blocks/wood.png", "itemName": "Axe", "itemType": "axe" },
     { "x": 1700, "y": 300, "spritePath": "assets/key.png", "itemName": "Victory Key", "itemType": "key" }
   ],
   "triggers": [],

@@ -386,7 +386,7 @@ public class BoneTextureGenerator {
      * style: "smooth" or "pixel"
      */
     public static void main(String[] args) {
-        String outputDir = "assets/textures/player";
+        String outputDir = "assets/textures/humanoid/player";
         String style = "pixel";
 
         if (args.length > 0) {
