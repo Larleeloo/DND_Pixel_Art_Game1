@@ -50,7 +50,6 @@ Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-Java class structure should be organized by relationship to other classes, meaning that related classes should all be filed in sub-folders
 Occasional stuttering when rendering player
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
 Quadrupeds shape and textures need to be refined
