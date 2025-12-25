@@ -38,23 +38,10 @@ Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-[FIXED] File order is confusing. Player textures are in 3 redundant locations
-  -> Consolidated to single canonical location: assets/textures/humanoid/player/
 Java class structure should be organized by relationship to other classes
-[FIXED] Texture generators should not be part of the game engine, as only PNG and GIF files should be used for textures and imported externally into the assets folder
-  -> Moved all texture generators to devtools/ directory
-[FIXED] Some sound files are located in the base 'assets' folder and should be located in sounds
-  -> Moved collect.wav, drop.wav, jump.wav, music.wav to sounds/ directory
-[FIXED] 'blocks' assets should be a sub folder within textures
-  -> Moved blocks to assets/textures/blocks/
-[FIXED] Blockbench support unclear in usage
-  -> BlockbenchAnimationImporter moved to devtools/, runtime import deprecated
 Occasional stuttering when rendering player
-Mob hitboxes too small
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
 Quadrupeds shape and textures need to be refined
-Red behind blocks when breaking does not disappear. Should only appear when block is targeted
-When mobs attack (specifically quadrupeds) they target the center of the player. Mobs should target the front or back of the player's hitbox
 End of levels does not immediately take you back to menu
 Vertical scrolling has black bars on top and bottom of screen (found after parallax was added). Parallax level should consider vertical scrolling. This is important because most levels will require the player to move vertically and horizontally
 Effect for night and darkness is too opaque
@@ -138,3 +125,33 @@ FUTURE FEATURES (ROADMAP)
 1.07 Finish game and level designs (Areas 2-6)
 
 1.08 Bug fixes and testing
+
+RESOLVED ISSUES
+
+[FIXED] File order is confusing. Player textures are in 3 redundant locations
+  -> Consolidated to single canonical location: assets/textures/humanoid/player/
+
+[FIXED] Texture generators should not be part of the game engine, as only PNG and GIF files should be used for textures and imported externally into the assets folder
+  -> Moved all texture generators to devtools/ directory
+
+[FIXED] Some sound files are located in the base 'assets' folder and should be located in sounds
+  -> Moved collect.wav, drop.wav, jump.wav, music.wav to sounds/ directory
+
+[FIXED] 'blocks' assets should be a sub folder within textures
+  -> Moved blocks to assets/textures/blocks/
+
+[FIXED] Blockbench support unclear in usage
+  -> BlockbenchAnimationImporter moved to devtools/, runtime import deprecated
+
+[FIXED] When mobs attack (specifically quadrupeds) they target the center of the player
+  -> Mobs now target the nearest edge of player's hitbox using getDistanceToTargetFace()
+  -> Attack distance calculated to front/back of player, not center point
+
+[FIXED] Red behind blocks when breaking does not disappear
+  -> Red damage overlay now only appears when block is actively targeted by player
+  -> Added targeted state to BlockEntity, resets each frame
+
+[FIXED] Mob hitboxes too small
+  -> Increased all mob hitbox sizes by ~40% for better hit detection
+  -> Humanoid hitboxes: 60x120 (was 40x100)
+  -> Quadruped hitboxes scaled proportionally per animal type

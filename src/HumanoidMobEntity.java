@@ -94,9 +94,10 @@ public class HumanoidMobEntity extends MobEntity {
         detectionRange = config.detectionRange;
         loseTargetRange = detectionRange * 2;
 
-        // Hitbox based on scale
-        hitboxWidth = (int)(40 * config.scaleX);
-        hitboxHeight = (int)(100 * config.scaleY);
+        // Hitbox based on scale - increased by 50% for better hit detection
+        // Visual skeleton is often larger than collision box, so hitbox needs to match
+        hitboxWidth = (int)(60 * config.scaleX);  // Was 40, now 60
+        hitboxHeight = (int)(120 * config.scaleY); // Was 100, now 120
         hitboxOffsetX = -hitboxWidth / 2;
         hitboxOffsetY = -hitboxHeight;
 
@@ -308,13 +309,17 @@ public class HumanoidMobEntity extends MobEntity {
     protected void performAttack() {
         if (target == null) return;
 
-        double dx = target.getX() - posX;
-        double dy = target.getY() - posY;
-        double distance = Math.sqrt(dx * dx + dy * dy);
+        // Use distance to player's hitbox edge, not center
+        double distance = getDistanceToTargetFace();
 
         if (distance <= attackRange) {
             System.out.println(variantType.name() + " attacks for " + attackDamage + " damage!");
-            // target.takeDamage(attackDamage, dx > 0 ? 5 : -5, -3);
+
+            // Calculate knockback direction based on position relative to player hitbox
+            Rectangle playerBounds = target.getBounds();
+            double playerCenterX = playerBounds.x + playerBounds.width / 2;
+            double knockbackDir = posX < playerCenterX ? 1 : -1;
+            // target.takeDamage(attackDamage, knockbackDir * 5, -3);
         }
     }
 
