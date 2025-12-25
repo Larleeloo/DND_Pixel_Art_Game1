@@ -59,8 +59,8 @@ public class BlockAttributes {
             .breakSound("sounds/grass_break.wav")
             .placeSound("sounds/grass_place.wav")
             .stepSound("sounds/step_grass.wav")
-            .drops("Dirt", "block", "blocks/dirt.png")
-            .silkTouchDrops("Grass Block", "blocks/grass.png")
+            .drops("Dirt", "block", "assets/textures/blocks/dirt.png")
+            .silkTouchDrops("Grass Block", "assets/textures/blocks/grass.png")
             .build());
 
         // DIRT - drops itself
@@ -68,7 +68,7 @@ public class BlockAttributes {
             .breakSound("sounds/dirt_break.wav")
             .placeSound("sounds/dirt_place.wav")
             .stepSound("sounds/step_gravel.wav")
-            .drops("Dirt", "block", "blocks/dirt.png")
+            .drops("Dirt", "block", "assets/textures/blocks/dirt.png")
             .build());
 
         // STONE - drops cobblestone
@@ -76,8 +76,8 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Cobblestone", "block", "blocks/cobblestone.png")
-            .silkTouchDrops("Stone", "blocks/stone.png")
+            .drops("Cobblestone", "block", "assets/textures/blocks/cobblestone.png")
+            .silkTouchDrops("Stone", "assets/textures/blocks/stone.png")
             .build());
 
         // COBBLESTONE - drops itself
@@ -85,7 +85,7 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Cobblestone", "block", "blocks/cobblestone.png")
+            .drops("Cobblestone", "block", "assets/textures/blocks/cobblestone.png")
             .build());
 
         // WOOD - drops itself
@@ -93,7 +93,7 @@ public class BlockAttributes {
             .breakSound("sounds/wood_break.wav")
             .placeSound("sounds/wood_place.wav")
             .stepSound("sounds/step_wood.wav")
-            .drops("Wood", "block", "blocks/wood.png")
+            .drops("Wood", "block", "assets/textures/blocks/wood.png")
             .build());
 
         // LEAVES - chance to drop sapling or apple
@@ -101,7 +101,7 @@ public class BlockAttributes {
             .breakSound("sounds/grass_break.wav")
             .placeSound("sounds/grass_place.wav")
             .stepSound("sounds/step_grass.wav")
-            .drops("Sapling", "resource", "blocks/leaves.png")
+            .drops("Sapling", "resource", "assets/textures/blocks/leaves.png")
             .dropChance(0.05f) // 5% chance
             .build());
 
@@ -110,7 +110,7 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Brick", "block", "blocks/brick.png")
+            .drops("Brick", "block", "assets/textures/blocks/brick.png")
             .build());
 
         // SAND - drops itself
@@ -118,7 +118,7 @@ public class BlockAttributes {
             .breakSound("sounds/sand_break.wav")
             .placeSound("sounds/sand_place.wav")
             .stepSound("sounds/step_sand.wav")
-            .drops("Sand", "block", "blocks/sand.png")
+            .drops("Sand", "block", "assets/textures/blocks/sand.png")
             .build());
 
         // WATER - no drops
@@ -134,7 +134,7 @@ public class BlockAttributes {
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
             .noDrop()
-            .silkTouchDrops("Glass", "blocks/glass.png")
+            .silkTouchDrops("Glass", "assets/textures/blocks/glass.png")
             .build());
 
         // COAL_ORE - drops coal
@@ -142,8 +142,8 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Coal", "resource", "blocks/coal_ore.png")
-            .silkTouchDrops("Coal Ore", "blocks/coal_ore.png")
+            .drops("Coal", "resource", "assets/textures/blocks/coal_ore.png")
+            .silkTouchDrops("Coal Ore", "assets/textures/blocks/coal_ore.png")
             .build());
 
         // IRON_ORE - drops itself (needs smelting)
@@ -151,7 +151,7 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Iron Ore", "resource", "blocks/iron_ore.png")
+            .drops("Iron Ore", "resource", "assets/textures/blocks/iron_ore.png")
             .build());
 
         // GOLD_ORE - drops itself (needs smelting)
@@ -159,7 +159,7 @@ public class BlockAttributes {
             .breakSound("sounds/stone_break.wav")
             .placeSound("sounds/stone_place.wav")
             .stepSound("sounds/step_stone.wav")
-            .drops("Gold Ore", "resource", "blocks/gold_ore.png")
+            .drops("Gold Ore", "resource", "assets/textures/blocks/gold_ore.png")
             .build());
 
         // PLATFORM - legacy platform, drops itself

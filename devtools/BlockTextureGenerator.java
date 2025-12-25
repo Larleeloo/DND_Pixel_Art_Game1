@@ -85,7 +85,7 @@ public class BlockTextureGenerator {
 
     private static void saveTexture(BufferedImage img, String filename) {
         try {
-            File file = new File("blocks/" + filename);
+            File file = new File("assets/textures/blocks/" + filename);
             ImageIO.write(img, "PNG", file);
             System.out.println("  Created: " + file.getPath());
         } catch (Exception e) {

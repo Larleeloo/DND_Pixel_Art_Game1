@@ -40,10 +40,10 @@ class GamePanel extends JPanel implements Runnable {
         addMouseWheelListener(inputManager);
 
         // Load audio files
-        audioManager.loadMusic("assets/music.wav");
-        audioManager.loadSound("jump", "assets/jump.wav");
-        audioManager.loadSound("collect", "assets/collect.wav");
-        audioManager.loadSound("drop", "assets/drop.wav");
+        audioManager.loadMusic("sounds/music.wav");
+        audioManager.loadSound("jump", "sounds/jump.wav");
+        audioManager.loadSound("collect", "sounds/collect.wav");
+        audioManager.loadSound("drop", "sounds/drop.wav");
 
         // Set up mouse handling - forward all events to SceneManager
         MouseAdapter mouseAdapter = new MouseAdapter() {

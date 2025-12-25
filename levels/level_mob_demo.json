@@ -3,10 +3,10 @@
   "description": "A demonstration level showcasing all quadruped and humanoid mobs with their AI behaviors. Features wolves, farm animals, forest creatures, and various humanoid enemies.",
 
   "useBoneAnimation": true,
-  "boneTextureDir": "assets/textures/player",
+  "boneTextureDir": "assets/textures/humanoid/player",
 
   "backgroundPath": "assets/parallax/sky.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
 
   "playerSpawnX": 200,
   "playerSpawnY": 850,

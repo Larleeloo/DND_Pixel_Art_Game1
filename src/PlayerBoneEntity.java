@@ -178,40 +178,31 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
     }
 
     /**
-     * Loads animations from a Blockbench JSON file.
-     * All animations in the file will be added to this player.
-     * @param filePath Path to the Blockbench animation JSON file
-     * @return Number of animations loaded
+     * NOTE: Blockbench animation import has been moved to devtools/BlockbenchAnimationImporter.java
+     *
+     * To import Blockbench animations:
+     * 1. Run: java devtools/BlockbenchAnimationImporter <path-to-blockbench-file>
+     * 2. This will convert the animation to a format that can be loaded at runtime
+     *
+     * For now, use the built-in animations defined in the skeleton classes.
+     * @deprecated Use devtools/BlockbenchAnimationImporter for importing external animations
      */
+    @Deprecated
     public int loadAnimationsFromBlockbench(String filePath) {
-        BlockbenchAnimationImporter importer = new BlockbenchAnimationImporter();
-        java.util.List<BoneAnimation> animations = importer.importFile(filePath);
-        for (BoneAnimation anim : animations) {
-            skeleton.addAnimation(anim);
-        }
-        System.out.println("PlayerBoneEntity: Loaded " + animations.size() +
-                         " animations from Blockbench file: " + filePath);
-        return animations.size();
+        System.out.println("WARNING: Blockbench import is not available at runtime.");
+        System.out.println("Please use devtools/BlockbenchAnimationImporter to pre-import animations.");
+        return 0;
     }
 
     /**
-     * Loads animations from a Blockbench JSON file with custom bone name mappings.
-     * @param filePath Path to the Blockbench animation JSON file
-     * @param boneMappings Map of Blockbench bone names to skeleton bone names
-     * @return Number of animations loaded
+     * NOTE: Blockbench animation import has been moved to devtools/BlockbenchAnimationImporter.java
+     * @deprecated Use devtools/BlockbenchAnimationImporter for importing external animations
      */
+    @Deprecated
     public int loadAnimationsFromBlockbench(String filePath, java.util.Map<String, String> boneMappings) {
-        BlockbenchAnimationImporter importer = new BlockbenchAnimationImporter();
-        for (java.util.Map.Entry<String, String> entry : boneMappings.entrySet()) {
-            importer.addBoneMapping(entry.getKey(), entry.getValue());
-        }
-        java.util.List<BoneAnimation> animations = importer.importFile(filePath);
-        for (BoneAnimation anim : animations) {
-            skeleton.addAnimation(anim);
-        }
-        System.out.println("PlayerBoneEntity: Loaded " + animations.size() +
-                         " animations from Blockbench file: " + filePath);
-        return animations.size();
+        System.out.println("WARNING: Blockbench import is not available at runtime.");
+        System.out.println("Please use devtools/BlockbenchAnimationImporter to pre-import animations.");
+        return 0;
     }
 
     /**

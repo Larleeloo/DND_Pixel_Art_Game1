@@ -2,7 +2,7 @@
   "name": "The Challenge",
   "description": "A more difficult platforming challenge",
   "backgroundPath": "assets/background.png",
-  "musicPath": "assets/music.wav",
+  "musicPath": "sounds/music.wav",
   "playerSpawnX": 100,
   "playerSpawnY": 620,
   "playerSpritePath": "assets/player.png",

@@ -20,7 +20,7 @@ class LevelData {
 
     // Bone animation settings
     public boolean useBoneAnimation = false;       // If true, use PlayerBoneEntity instead of PlayerEntity
-    public String boneTextureDir = "assets/textures/player"; // Directory containing bone textures
+    public String boneTextureDir = "assets/textures/humanoid/player"; // Directory containing bone textures
 
     // Level dimensions (for camera bounds)
     public int levelWidth;
@@ -74,7 +74,7 @@ class LevelData {
         name = "Untitled Level";
         description = "";
         backgroundPath = "assets/background.png";
-        musicPath = "assets/music.wav";
+        musicPath = "sounds/music.wav";
         playerSpawnX = 100;
         playerSpawnY = 620;
         playerSpritePath = "assets/player.png";
@@ -471,7 +471,7 @@ class LevelData {
 
         /**
          * Set the directory containing bone texture PNGs.
-         * @param dir Directory path (e.g., "assets/bones")
+         * @param dir Directory path (e.g., "assets/textures/humanoid/player")
          * @return This builder
          */
         public Builder boneTextureDir(String dir) {

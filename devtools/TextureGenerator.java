@@ -33,7 +33,7 @@ public class TextureGenerator {
     private static final Color OUTLINE = new Color(40, 30, 30);
 
     public static void main(String[] args) {
-        String outputDir = "assets/textures/player";
+        String outputDir = "assets/textures/humanoid/player";
 
         // Ensure output directory exists
         new File(outputDir).mkdirs();
