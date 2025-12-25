@@ -15,7 +15,19 @@ CURRENT FEATURES
 -Scrolling camera that follows the player (needs fixing for vertical scrolling level, see 'KNOWN ISSUES')
 
 PROJECT STRUCTURE
-src/                    - Game engine source code (runtime classes only)
+src/                    - Game engine source code (organized by package)
+  core/                 - Main application classes (Main, GameWindow, GamePanel)
+  scene/                - Scene management (Scene, SceneManager, GameScene, menus)
+  entity/               - Base entity classes (Entity, EntityManager, SpriteEntity)
+    player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
+    mob/                - Mob AI classes (MobEntity, HumanoidMobEntity, QuadrupedMobEntity)
+  block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
+  animation/            - Animation system (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
+  graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
+  level/                - Level loading (LevelData, LevelLoader)
+  audio/                - Sound management (AudioManager)
+  input/                - Input handling (InputManager)
+  ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
 devtools/               - Development tools (texture generators, animation importers)
   - TextureGenerator.java           - Generates player bone textures
   - HumanoidTextureGenerator.java   - Generates humanoid mob textures
@@ -38,7 +50,6 @@ Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-Java class structure should be organized by relationship to other classes
 Occasional stuttering when rendering player
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
 Quadrupeds shape and textures need to be refined
@@ -161,3 +172,16 @@ RESOLVED ISSUES
   -> Added horizontal collision detection with solid blocks
   -> Added proper vertical collision detection (both falling and jumping)
   -> Mobs now stop at walls and land on platforms correctly
+
+[FIXED] Java class structure should be organized by relationship to other classes
+  -> Reorganized all 48 Java files into logical packages under src/
+  -> core/ - Main application entry points
+  -> scene/ - Scene management and game states
+  -> entity/ - Entity hierarchy with player/ and mob/ subpackages
+  -> block/ - Block system classes
+  -> animation/ - Skeleton and bone animation system
+  -> graphics/ - Rendering, camera, lighting, parallax
+  -> level/ - Level data and loading
+  -> audio/ - Sound management
+  -> input/ - Input handling
+  -> ui/ - UI components and inventory
