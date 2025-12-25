@@ -634,8 +634,62 @@ public abstract class MobEntity extends Entity {
 
     protected double getDistanceToTarget() {
         if (target == null) return Double.MAX_VALUE;
-        double dx = target.getX() - posX;
-        double dy = target.getY() - posY;
+
+        // Get the player's hitbox bounds
+        Rectangle playerBounds = target.getBounds();
+
+        // Calculate distance to the nearest edge of the player's hitbox
+        // This makes attacks feel more natural - mobs attack when close to the actual hitbox
+        double nearestX;
+        double nearestY;
+
+        // Find nearest X point on player hitbox
+        if (posX < playerBounds.x) {
+            nearestX = playerBounds.x; // Left edge
+        } else if (posX > playerBounds.x + playerBounds.width) {
+            nearestX = playerBounds.x + playerBounds.width; // Right edge
+        } else {
+            nearestX = posX; // Inside hitbox horizontally
+        }
+
+        // Find nearest Y point on player hitbox
+        if (posY < playerBounds.y) {
+            nearestY = playerBounds.y; // Top edge
+        } else if (posY > playerBounds.y + playerBounds.height) {
+            nearestY = playerBounds.y + playerBounds.height; // Bottom edge
+        } else {
+            nearestY = posY; // Inside hitbox vertically
+        }
+
+        double dx = nearestX - posX;
+        double dy = nearestY - posY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /**
+     * Gets the distance to the front or back edge of the target's hitbox.
+     * Mobs should target the edge facing them, not the center.
+     */
+    protected double getDistanceToTargetFace() {
+        if (target == null) return Double.MAX_VALUE;
+
+        Rectangle playerBounds = target.getBounds();
+
+        // Determine which edge to target based on mob position
+        double targetX;
+        if (posX < playerBounds.x + playerBounds.width / 2) {
+            // Mob is to the left, target player's left edge (their back if facing right)
+            targetX = playerBounds.x;
+        } else {
+            // Mob is to the right, target player's right edge
+            targetX = playerBounds.x + playerBounds.width;
+        }
+
+        // Use player's vertical center for Y
+        double targetY = playerBounds.y + playerBounds.height / 2;
+
+        double dx = targetX - posX;
+        double dy = targetY - posY;
         return Math.sqrt(dx * dx + dy * dy);
     }
 

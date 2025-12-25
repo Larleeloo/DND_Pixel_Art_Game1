@@ -462,6 +462,11 @@ class PlayerEntity extends SpriteEntity implements PlayerBase {
         }
 
         targetedBlock = nearest;
+
+        // Mark the targeted block so it shows its damage overlay
+        if (targetedBlock != null) {
+            targetedBlock.setTargeted(true);
+        }
     }
 
     /**

@@ -35,6 +35,7 @@ public class BlockEntity extends Entity {
 
     // Block state
     private boolean broken = false;
+    private boolean targeted = false; // Whether this block is currently being targeted by player
 
     // Layer-based damage system
     // Each value represents layers removed (0-8), where each layer = 2 base pixels = 8 scaled pixels
@@ -166,8 +167,9 @@ public class BlockEntity extends Entity {
             g.drawRect(x + leftOffset, y + topOffset, visibleWidth - 1, visibleHeight - 1);
         }
 
-        // Debug: draw damage indicators (optional - can be removed)
-        if (hasDamage()) {
+        // Draw damage indicators only when block is currently targeted
+        // Red overlay shows mining progress only on the actively targeted block
+        if (hasDamage() && targeted) {
             g2d.setColor(new Color(255, 0, 0, 50));
             // Show mined areas
             if (damageLeft > 0) {
@@ -183,6 +185,9 @@ public class BlockEntity extends Entity {
                 g2d.fillRect(x, y + size - damageBottom * LAYER_SIZE, size, damageBottom * LAYER_SIZE);
             }
         }
+
+        // Reset targeted state each frame - must be set again by player
+        targeted = false;
     }
 
     /**
@@ -243,6 +248,22 @@ public class BlockEntity extends Entity {
      */
     public boolean hasDamage() {
         return damageLeft > 0 || damageRight > 0 || damageTop > 0 || damageBottom > 0;
+    }
+
+    /**
+     * Sets whether this block is currently targeted by the player.
+     * Targeted blocks show their damage overlay (red highlight).
+     * This state resets each frame and must be set again by the player.
+     */
+    public void setTargeted(boolean targeted) {
+        this.targeted = targeted;
+    }
+
+    /**
+     * Checks if this block is currently targeted.
+     */
+    public boolean isTargeted() {
+        return targeted;
     }
 
     /**

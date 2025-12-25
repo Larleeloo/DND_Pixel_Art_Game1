@@ -91,6 +91,8 @@ public class QuadrupedMobEntity extends MobEntity {
     private void configureForAnimal() {
         QuadrupedSkeleton.AnimalConfig config = QuadrupedSkeleton.getConfig(animalType);
 
+        // Hitbox sizes increased by ~40% for better hit detection
+        // Visual skeleton is often larger than collision box
         switch (animalType) {
             case WOLF:
                 maxHealth = 20;
@@ -100,8 +102,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 250;
                 wanderSpeed = 60;
                 chaseSpeed = 150;
-                hitboxWidth = 60;
-                hitboxHeight = 40;
+                hitboxWidth = 85;   // Was 60
+                hitboxHeight = 56;  // Was 40
                 animationScale = 1.0;
                 break;
 
@@ -113,8 +115,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 200;
                 wanderSpeed = 70;
                 chaseSpeed = 140;
-                hitboxWidth = 50;
-                hitboxHeight = 35;
+                hitboxWidth = 70;   // Was 50
+                hitboxHeight = 50;  // Was 35
                 animationScale = 0.9;
                 break;
 
@@ -126,8 +128,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 150;
                 wanderSpeed = 50;
                 chaseSpeed = 120;
-                hitboxWidth = 40;
-                hitboxHeight = 25;
+                hitboxWidth = 56;   // Was 40
+                hitboxHeight = 35;  // Was 25
                 animationScale = 0.7;
                 break;
 
@@ -139,8 +141,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 180;
                 wanderSpeed = 80;
                 chaseSpeed = 200;
-                hitboxWidth = 90;
-                hitboxHeight = 70;
+                hitboxWidth = 126;  // Was 90
+                hitboxHeight = 100; // Was 70
                 animationScale = 1.5;
                 break;
 
@@ -152,8 +154,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 100;
                 wanderSpeed = 40;
                 chaseSpeed = 80;
-                hitboxWidth = 55;
-                hitboxHeight = 35;
+                hitboxWidth = 77;   // Was 55
+                hitboxHeight = 50;  // Was 35
                 animationScale = 1.1;
                 break;
 
@@ -165,8 +167,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 120;
                 wanderSpeed = 35;
                 chaseSpeed = 70;
-                hitboxWidth = 80;
-                hitboxHeight = 55;
+                hitboxWidth = 112;  // Was 80
+                hitboxHeight = 77;  // Was 55
                 animationScale = 1.4;
                 break;
 
@@ -178,8 +180,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 100;
                 wanderSpeed = 35;
                 chaseSpeed = 90;
-                hitboxWidth = 50;
-                hitboxHeight = 40;
+                hitboxWidth = 70;   // Was 50
+                hitboxHeight = 56;  // Was 40
                 animationScale = 1.0;
                 break;
 
@@ -191,8 +193,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 300;
                 wanderSpeed = 60;
                 chaseSpeed = 180;
-                hitboxWidth = 55;
-                hitboxHeight = 55;
+                hitboxWidth = 77;   // Was 55
+                hitboxHeight = 77;  // Was 55
                 animationScale = 1.1;
                 break;
 
@@ -204,8 +206,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 200;
                 wanderSpeed = 40;
                 chaseSpeed = 100;
-                hitboxWidth = 80;
-                hitboxHeight = 65;
+                hitboxWidth = 112;  // Was 80
+                hitboxHeight = 90;  // Was 65
                 animationScale = 1.5;
                 break;
 
@@ -217,8 +219,8 @@ public class QuadrupedMobEntity extends MobEntity {
                 detectionRange = 200;
                 wanderSpeed = 55;
                 chaseSpeed = 130;
-                hitboxWidth = 45;
-                hitboxHeight = 30;
+                hitboxWidth = 63;   // Was 45
+                hitboxHeight = 42;  // Was 30
                 animationScale = 0.8;
                 break;
 
@@ -270,18 +272,17 @@ public class QuadrupedMobEntity extends MobEntity {
     protected void performAttack() {
         if (target == null) return;
 
-        // Check if target is in range
-        double dx = target.getX() - posX;
-        double dy = target.getY() - posY;
-        double distance = Math.sqrt(dx * dx + dy * dy);
+        // Use distance to player's hitbox edge, not center
+        double distance = getDistanceToTargetFace();
 
         if (distance <= attackRange) {
             // Deal damage to player
-            // Note: Player needs a takeDamage method
             System.out.println(animalType.name() + " attacks for " + attackDamage + " damage!");
 
-            // Apply knockback
-            double knockbackDir = dx > 0 ? 1 : -1;
+            // Calculate knockback direction based on position relative to player hitbox
+            Rectangle playerBounds = target.getBounds();
+            double playerCenterX = playerBounds.x + playerBounds.width / 2;
+            double knockbackDir = posX < playerCenterX ? 1 : -1;
             // target.takeDamage(attackDamage, knockbackDir * 5, -3);
         }
     }
