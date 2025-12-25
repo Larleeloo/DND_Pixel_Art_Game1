@@ -532,9 +532,98 @@ public abstract class MobEntity extends Entity {
                                " movement=" + movement + " oldX=" + (int)posX);
         }
 
-        // Apply velocity
-        posX += velocityX * deltaTime;
-        posY += velocityY * deltaTime;
+        // Calculate new positions
+        double newX = posX + velocityX * deltaTime;
+        double newY = posY + velocityY * deltaTime;
+
+        // Check horizontal collision with solid blocks BEFORE applying movement
+        if (entities != null && velocityX != 0) {
+            Rectangle futureXBounds = new Rectangle(
+                (int)newX + hitboxOffsetX,
+                (int)posY + hitboxOffsetY,
+                hitboxWidth,
+                hitboxHeight
+            );
+
+            boolean xCollision = false;
+            for (Entity e : entities) {
+                if (e instanceof BlockEntity) {
+                    BlockEntity block = (BlockEntity) e;
+                    if (block.isSolid() && futureXBounds.intersects(block.getBounds())) {
+                        xCollision = true;
+                        break;
+                    }
+                }
+            }
+
+            // Only apply horizontal movement if no collision
+            if (!xCollision) {
+                posX = newX;
+            } else {
+                velocityX = 0; // Stop horizontal movement on collision
+            }
+        } else {
+            posX = newX;
+        }
+
+        // Check vertical collision with solid blocks BEFORE applying movement
+        if (entities != null) {
+            Rectangle futureYBounds = new Rectangle(
+                (int)posX + hitboxOffsetX,
+                (int)newY + hitboxOffsetY,
+                hitboxWidth,
+                hitboxHeight
+            );
+
+            boolean yCollision = false;
+            double landingY = groundY;
+
+            for (Entity e : entities) {
+                if (e instanceof BlockEntity) {
+                    BlockEntity block = (BlockEntity) e;
+                    if (block.isSolid() && futureYBounds.intersects(block.getBounds())) {
+                        Rectangle blockBounds = block.getBounds();
+                        yCollision = true;
+
+                        if (velocityY > 0) {
+                            // Falling down - land on top of block
+                            landingY = Math.min(landingY, blockBounds.y);
+                        } else if (velocityY < 0) {
+                            // Jumping up - hit head on bottom of block
+                            newY = blockBounds.y + blockBounds.height - hitboxOffsetY;
+                            velocityY = 0;
+                        }
+                    }
+                }
+            }
+
+            if (yCollision && velocityY > 0) {
+                // Land on the block
+                posY = landingY;
+                velocityY = 0;
+                onGround = true;
+            } else {
+                posY = newY;
+                // Check if on ground
+                if (posY >= groundY) {
+                    posY = groundY;
+                    velocityY = 0;
+                    onGround = true;
+                } else {
+                    onGround = false;
+                }
+            }
+        } else {
+            posY = newY;
+            // Simple ground check when no entities
+            if (posY >= groundY) {
+                posY = groundY;
+                velocityY = 0;
+                onGround = true;
+            } else {
+                onGround = false;
+            }
+        }
 
         // Soft constraint to wander bounds when wandering (no teleporting)
         // Only gently push back if far outside bounds
@@ -549,41 +638,16 @@ public abstract class MobEntity extends Entity {
                 facingRight = false;
             }
         }
-
-        // Ground collision
-        checkGroundCollision(entities);
     }
 
+    /**
+     * @deprecated Use the collision checking in applyPhysics instead.
+     * This method is kept for backwards compatibility but no longer used.
+     */
+    @Deprecated
     protected void checkGroundCollision(List<Entity> entities) {
-        double groundLevel = groundY;
-
-        // Check for block collisions
-        if (entities != null) {
-            Rectangle futureBounds = new Rectangle(
-                (int)posX + hitboxOffsetX,
-                (int)posY + hitboxOffsetY + (int)velocityY,
-                hitboxWidth,
-                hitboxHeight
-            );
-
-            for (Entity e : entities) {
-                if (e instanceof BlockEntity) {
-                    Rectangle blockBounds = e.getBounds();
-                    if (futureBounds.intersects(blockBounds) && velocityY > 0) {
-                        groundLevel = Math.min(groundLevel, blockBounds.y);
-                    }
-                }
-            }
-        }
-
-        // Simple ground check
-        if (posY >= groundLevel) {
-            posY = groundLevel;
-            velocityY = 0;
-            onGround = true;
-        } else {
-            onGround = false;
-        }
+        // Ground collision is now handled in applyPhysics()
+        // This method is kept for subclasses that might override it
     }
 
     // ==================== Animation ====================
