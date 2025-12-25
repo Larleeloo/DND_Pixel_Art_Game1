@@ -38,7 +38,7 @@ Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-Java class structure should be organized by relationship to other classes
+Java class structure should be organized by relationship to other classes, meaning that related classes should all be filed in sub-folders
 Occasional stuttering when rendering player
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
 Quadrupeds shape and textures need to be refined
@@ -48,6 +48,7 @@ Effect for night and darkness is too opaque
 All texture files should support GIF file types.
 Lighting demo level unnecessary (uses java class not JSON file to render)
 'e' to break blocks should be bound to left mouse click
+Hostile mobs are capable of ignoring block hitboxes, allowing them to follow the player even if a block should be obstructing their path
 
 FUTURE FEATURES (ROADMAP)
 
