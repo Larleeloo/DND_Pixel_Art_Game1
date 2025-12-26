@@ -10,15 +10,17 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
- * Simplified SpriteEntity for rollback version.
- * - Handles static sprite (PNG) only, optional GIF for jump.
+ * SpriteEntity supports both static sprites (PNG) and animated sprites (GIF).
+ * - Handles static sprite (PNG) and animated GIF with frame cycling.
  * - Keeps width/height scaled by SCALE.
  * - Supports RGB color masking for tinting sprites.
+ * - Animated sprites automatically cycle through frames when update() is called.
  */
 public class SpriteEntity extends Entity {
 
-    protected Image sprite;       // image to draw
-    protected ImageIcon animatedIcon; // optional animated GIF
+    protected Image sprite;       // Current frame to draw
+    protected AnimatedTexture animatedTexture;  // For animated GIF sprites
+    protected ImageIcon animatedIcon; // Legacy animated GIF support
     protected int width, height;
     private boolean solid;
 
@@ -37,15 +39,50 @@ public class SpriteEntity extends Entity {
 
         AssetLoader.ImageAsset asset = AssetLoader.load(spritePath);
         this.sprite = asset.staticImage;
-        //this.animatedIcon = asset.animatedIcon; // optional GIF
+        this.animatedTexture = asset.animatedTexture;
+        this.animatedIcon = asset.animatedIcon; // Legacy GIF support
 
         this.width = Math.max(1, asset.width) * SCALE;
         this.height = Math.max(1, asset.height) * SCALE;
 
         // Debug
+        String animInfo = (animatedTexture != null && animatedTexture.isAnimated())
+            ? ", " + animatedTexture.getFrameCount() + " frames" : "";
         System.out.println("Loaded sprite \"" + spritePath + "\" -> w=" + asset.width + " h=" + asset.height
-                + " scaled -> " + this.width + "x" + this.height
-                + " animated=" + (this.animatedIcon != null));
+                + " scaled -> " + this.width + "x" + this.height + animInfo);
+    }
+
+    /**
+     * Updates the animated sprite if present.
+     * Call this every frame to advance GIF animation.
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void updateAnimation(long deltaMs) {
+        if (animatedTexture != null && animatedTexture.isAnimated()) {
+            animatedTexture.update(deltaMs);
+            // Update sprite reference to current frame
+            sprite = animatedTexture.getCurrentFrame();
+            // Invalidate tinted cache when frame changes
+            if (hasColorMask) {
+                tintedSprite = createTintedSprite();
+            }
+        }
+    }
+
+    /**
+     * Checks if this sprite is animated.
+     * @return true if the sprite has multiple frames
+     */
+    public boolean isAnimated() {
+        return animatedTexture != null && animatedTexture.isAnimated();
+    }
+
+    /**
+     * Gets the animated texture if available.
+     * @return AnimatedTexture or null if static
+     */
+    public AnimatedTexture getAnimatedTexture() {
+        return animatedTexture;
     }
 
     @Override

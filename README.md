@@ -51,7 +51,6 @@ Begin debugging the following 'KNOWN ISSUES'
 KNOWN ISSUES
 
 Occasional stuttering when rendering player
-All texture files should support GIF file types.
 Lighting demo level unnecessary (uses java class not JSON file to render)
 
 FUTURE FEATURES (ROADMAP)
@@ -208,3 +207,13 @@ RESOLVED ISSUES
   -> Added species-specific body features (cow spots, sheep wool, cat stripes, fox white chest)
   -> Improved walk/run animations with smoother, more natural movement
   -> All 10 animal types now visually distinct and recognizable
+
+[FIXED] All texture files should support GIF file types
+  -> Created AnimatedTexture class for managing GIF frame cycling with proper timing
+  -> Updated AssetLoader to extract all frames from GIF files with per-frame delays
+  -> Added GIF support to Bone class for animated bone textures (e.g., glowing effects)
+  -> Added GIF support to ParallaxLayer for animated backgrounds (e.g., moving clouds)
+  -> Added GIF support to BlockRegistry for animated blocks (e.g., lava, water)
+  -> Added GIF support to SpriteEntity for animated sprites
+  -> GIF animations respect original frame delays and loop automatically
+  -> All components include update() methods for frame advancement

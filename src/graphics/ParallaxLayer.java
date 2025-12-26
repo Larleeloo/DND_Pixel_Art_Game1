@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 /**
  * Represents a single parallax layer in the background system.
  * Each layer has its own scroll speed (depth) that creates a depth illusion.
+ * Supports both static images (PNG) and animated GIFs for dynamic backgrounds.
  *
  * Scroll speeds:
  * - 0.0 = Static (doesn't move with camera)
@@ -20,8 +21,9 @@ public class ParallaxLayer {
     // Layer name for identification
     private String name;
 
-    // Image data
-    private Image image;
+    // Image data - supports both static and animated images
+    private Image image;           // Current frame to display
+    private AnimatedTexture animatedTexture;  // For animated GIF backgrounds
     private int imageWidth;
     private int imageHeight;
 
@@ -89,6 +91,7 @@ public class ParallaxLayer {
 
     /**
      * Load the image from the given path.
+     * Supports both static images (PNG, JPG) and animated GIFs.
      */
     private void loadImage(String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
@@ -98,14 +101,39 @@ public class ParallaxLayer {
 
         try {
             AssetLoader.ImageAsset asset = AssetLoader.load(imagePath);
+            this.animatedTexture = asset.animatedTexture;
             this.image = asset.staticImage;
             this.imageWidth = asset.width;
             this.imageHeight = asset.height;
-            System.out.println("ParallaxLayer '" + name + "' loaded: " + imageWidth + "x" + imageHeight);
+
+            String animInfo = (animatedTexture != null && animatedTexture.isAnimated())
+                ? ", animated (" + animatedTexture.getFrameCount() + " frames)" : "";
+            System.out.println("ParallaxLayer '" + name + "' loaded: " + imageWidth + "x" + imageHeight + animInfo);
         } catch (Exception e) {
             System.err.println("ParallaxLayer: Failed to load image '" + imagePath + "' for layer '" + name + "'");
             createPlaceholderImage();
         }
+    }
+
+    /**
+     * Updates the animated texture if present.
+     * Call this every frame to advance GIF animation.
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void update(long deltaMs) {
+        if (animatedTexture != null && animatedTexture.isAnimated()) {
+            animatedTexture.update(deltaMs);
+            // Update the image reference to current frame
+            image = animatedTexture.getCurrentFrame();
+        }
+    }
+
+    /**
+     * Checks if this layer has an animated texture.
+     * @return true if the layer uses an animated GIF
+     */
+    public boolean isAnimated() {
+        return animatedTexture != null && animatedTexture.isAnimated();
     }
 
     /**

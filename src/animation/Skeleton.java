@@ -347,6 +347,20 @@ public class Skeleton {
                 blendAnimations(currentAnimation, nextAnimation, t);
             }
         }
+
+        // Update animated textures (GIF animations)
+        updateAnimatedTextures((long)(deltaTime * 1000));
+    }
+
+    /**
+     * Updates animated textures on all bones.
+     * Call this every frame to advance GIF animations.
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void updateAnimatedTextures(long deltaMs) {
+        if (rootBone != null) {
+            rootBone.updateAnimation(deltaMs);
+        }
     }
 
     /**

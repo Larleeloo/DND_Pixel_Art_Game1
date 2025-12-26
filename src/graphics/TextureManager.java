@@ -147,29 +147,36 @@ public class TextureManager {
 
     /**
      * Applies textures from a directory to a skeleton.
+     * Supports both PNG and GIF texture files (GIF for animations).
      * Falls back to generated textures if files are missing.
      *
      * @param skeleton The skeleton to apply textures to
-     * @param textureDir The directory containing texture PNG files
+     * @param textureDir The directory containing texture files (PNG or GIF)
      * @param boneNames Array of bone names to load textures for
      */
     public static void applyTexturesFromDir(Skeleton skeleton, String textureDir, String[] boneNames) {
         for (String name : boneNames) {
             Bone bone = skeleton.findBone(name);
             if (bone != null) {
-                String path = textureDir + "/" + name + ".png";
-                File file = new File(path);
+                // Check for GIF first (animated textures take priority)
+                String gifPath = textureDir + "/" + name + ".gif";
+                String pngPath = textureDir + "/" + name + ".png";
+                File gifFile = new File(gifPath);
+                File pngFile = new File(pngPath);
 
-                if (file.exists()) {
-                    bone.loadTexture(path);
+                if (gifFile.exists()) {
+                    bone.loadTexture(gifPath);
+                } else if (pngFile.exists()) {
+                    bone.loadTexture(pngPath);
                 }
-                // If file doesn't exist, bone will use placeholder color
+                // If neither file exists, bone will use placeholder color
             }
         }
     }
 
     /**
      * Checks if texture files exist for the given bone names.
+     * Checks for both PNG and GIF files.
      *
      * @param textureDir The texture directory
      * @param boneNames The bone names to check
@@ -181,10 +188,11 @@ public class TextureManager {
             return false;
         }
 
-        // Check if at least the body/torso texture exists
+        // Check if at least one texture file exists (PNG or GIF)
         for (String name : boneNames) {
-            File file = new File(textureDir + "/" + name + ".png");
-            if (file.exists()) {
+            File pngFile = new File(textureDir + "/" + name + ".png");
+            File gifFile = new File(textureDir + "/" + name + ".gif");
+            if (pngFile.exists() || gifFile.exists()) {
                 return true;
             }
         }
