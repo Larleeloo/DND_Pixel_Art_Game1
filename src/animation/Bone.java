@@ -48,6 +48,8 @@ public class Bone {
     private int defaultHeight = 12;
     private Color placeholderColor = new Color(180, 140, 100);  // Skin tone
     private Color tintColor = null;  // Color tint applied to textures (null = no tint)
+    private BufferedImage tintedTexture = null;  // Cached tinted texture (only non-transparent pixels)
+    private Color cachedTintColor = null;  // Tint color used for cache
 
     // Cached world transform
     private double worldX;
@@ -85,6 +87,8 @@ public class Bone {
     public void loadTexture(String path) {
         AssetLoader.ImageAsset asset = AssetLoader.load(path);
         this.texture = asset.staticImage;
+        // Invalidate tinted texture cache when base texture changes
+        this.tintedTexture = null;
         if (this.texture != null) {
             this.textureWidth = asset.width;
             this.textureHeight = asset.height;
@@ -105,6 +109,8 @@ public class Bone {
      */
     public void setTexture(BufferedImage texture) {
         this.texture = texture;
+        // Invalidate tinted texture cache when base texture changes
+        this.tintedTexture = null;
         if (texture != null) {
             this.textureWidth = texture.getWidth();
             this.textureHeight = texture.getHeight();
@@ -225,7 +231,8 @@ public class Bone {
      */
     public void setPlaceholderColor(Color color) {
         this.placeholderColor = color;
-        this.tintColor = color;  // Also apply as tint for textured bones
+        // Use setTintColor to properly handle cache invalidation
+        setTintColor(color);
     }
 
     /**
@@ -234,6 +241,12 @@ public class Bone {
      */
     public void setTintColor(Color color) {
         this.tintColor = color;
+        // Invalidate cached tinted texture if color changed
+        if ((color == null && cachedTintColor != null) ||
+            (color != null && !color.equals(cachedTintColor))) {
+            tintedTexture = null;
+            cachedTintColor = null;
+        }
     }
 
     /**
@@ -242,6 +255,49 @@ public class Bone {
      */
     public Color getTintColor() {
         return tintColor;
+    }
+
+    /**
+     * Creates a tinted copy of the texture, only affecting non-transparent pixels.
+     * The tint is blended with the original pixel colors.
+     * @return Tinted texture image
+     */
+    private BufferedImage createTintedTexture() {
+        if (texture == null) return null;
+
+        BufferedImage tinted = new BufferedImage(
+            textureWidth, textureHeight, BufferedImage.TYPE_INT_ARGB);
+
+        float tintR = tintColor.getRed() / 255.0f;
+        float tintG = tintColor.getGreen() / 255.0f;
+        float tintB = tintColor.getBlue() / 255.0f;
+        float blendFactor = 0.4f;  // How much of the tint to apply (0.0 = none, 1.0 = full)
+
+        for (int y = 0; y < textureHeight; y++) {
+            for (int x = 0; x < textureWidth; x++) {
+                int pixel = texture.getRGB(x, y);
+                int alpha = (pixel >> 24) & 0xFF;
+
+                // Only tint non-transparent pixels
+                if (alpha > 0) {
+                    int r = (pixel >> 16) & 0xFF;
+                    int g = (pixel >> 8) & 0xFF;
+                    int b = pixel & 0xFF;
+
+                    // Blend original color with tint color
+                    int newR = Math.min(255, (int)(r * (1 - blendFactor) + tintR * 255 * blendFactor));
+                    int newG = Math.min(255, (int)(g * (1 - blendFactor) + tintG * 255 * blendFactor));
+                    int newB = Math.min(255, (int)(b * (1 - blendFactor) + tintB * 255 * blendFactor));
+
+                    tinted.setRGB(x, y, (alpha << 24) | (newR << 16) | (newG << 8) | newB);
+                } else {
+                    // Keep fully transparent pixels transparent
+                    tinted.setRGB(x, y, 0);
+                }
+            }
+        }
+
+        return tinted;
     }
 
     // ==================== Hierarchy Methods ====================
@@ -440,17 +496,18 @@ public class Bone {
 
         // Draw the texture or a placeholder
         if (texture != null) {
-            // Draw texture
-            g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
-
-            // Apply tint color overlay if set
+            // Use tinted texture if tint color is set
             if (tintColor != null) {
-                Composite oldComposite = g.getComposite();
-                // Use SRC_ATOP to only tint the visible pixels of the texture
-                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 0.6f));
-                g.setColor(tintColor);
-                g.fillRect(0, 0, textureWidth, textureHeight);
-                g.setComposite(oldComposite);
+                // Create and cache tinted texture if needed
+                if (tintedTexture == null || !tintColor.equals(cachedTintColor)) {
+                    tintedTexture = createTintedTexture();
+                    cachedTintColor = tintColor;
+                }
+                // Draw the pre-tinted texture (only non-transparent pixels are tinted)
+                g.drawImage(tintedTexture, 0, 0, textureWidth, textureHeight, null);
+            } else {
+                // Draw original texture without tint
+                g.drawImage(texture, 0, 0, textureWidth, textureHeight, null);
             }
         } else {
             // Draw placeholder rectangle for bones without textures

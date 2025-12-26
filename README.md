@@ -51,8 +51,6 @@ Begin debugging the following 'KNOWN ISSUES'
 KNOWN ISSUES
 
 Occasional stuttering when rendering player
-Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
-Quadrupeds shape and textures need to be refined
 All texture files should support GIF file types.
 Lighting demo level unnecessary (uses java class not JSON file to render)
 
@@ -199,3 +197,14 @@ RESOLVED ISSUES
 [FIXED] 'e' to break blocks should be bound to left mouse click
   -> Added MouseListener implementation to InputManager
   -> Left mouse click now works for block mining alongside 'E' key
+
+[FIXED] Moving entities mask more than non-transparent pixels when changing color
+  -> Replaced AlphaComposite overlay with per-pixel tinting in Bone.java
+  -> Tint now only affects pixels where alpha > 0, preserving transparency
+  -> Cached tinted textures for performance optimization
+
+[FIXED] Quadrupeds shape and textures need to be refined
+  -> Added species-specific head generation (canine snout, cat round face, pig disc nose, etc.)
+  -> Added species-specific body features (cow spots, sheep wool, cat stripes, fox white chest)
+  -> Improved walk/run animations with smoother, more natural movement
+  -> All 10 animal types now visually distinct and recognizable
