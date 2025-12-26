@@ -53,12 +53,8 @@ KNOWN ISSUES
 Occasional stuttering when rendering player
 Moving entities (Mobs and player) mask more than non-transparent pixels when changing color
 Quadrupeds shape and textures need to be refined
-End of levels does not immediately take you back to menu
-Vertical scrolling has black bars on top and bottom of screen (found after parallax was added). Parallax level should consider vertical scrolling. This is important because most levels will require the player to move vertically and horizontally
-Effect for night and darkness is too opaque
 All texture files should support GIF file types.
 Lighting demo level unnecessary (uses java class not JSON file to render)
-'e' to break blocks should be bound to left mouse click
 
 FUTURE FEATURES (ROADMAP)
 
@@ -185,3 +181,21 @@ RESOLVED ISSUES
   -> audio/ - Sound management
   -> input/ - Input handling
   -> ui/ - UI components and inventory
+
+[FIXED] End of levels does not immediately take you back to menu
+  -> TriggerEntity now supports menu return for empty/menu targets
+  -> Scene transitions sped up (transitionSpeed increased from 0.05 to 0.12)
+
+[FIXED] Vertical scrolling has black bars on top and bottom of screen
+  -> Black bars only drawn when parallax background is not enabled
+  -> Parallax layers now properly support vertical scrolling with anchorBottom property
+  -> verticalMargin can be set to 0 to eliminate letterboxing
+
+[FIXED] Effect for night and darkness is too opaque
+  -> Lighting buffer now properly cleared to transparent before drawing darkness overlay
+  -> Darkness overlay correctly blends with parallax background layers
+  -> Default nightDarkness reduced, ambientLevel increased for better visibility
+
+[FIXED] 'e' to break blocks should be bound to left mouse click
+  -> Added MouseListener implementation to InputManager
+  -> Left mouse click now works for block mining alongside 'E' key
