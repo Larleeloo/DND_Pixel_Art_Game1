@@ -23,8 +23,8 @@
   "verticalMargin": 0,
 
   "nightMode": true,
-  "nightDarkness": 0.65,
-  "ambientLight": 0.20,
+  "nightDarkness": 0.50,
+  "ambientLight": 0.30,
   "playerLightEnabled": true,
   "playerLightRadius": 180,
   "playerLightFalloff": 350,
@@ -35,66 +35,71 @@
       "name": "sky",
       "imagePath": "assets/parallax/sky.png",
       "scrollSpeedX": 0.02,
-      "scrollSpeedY": 0.0,
+      "scrollSpeedY": 0.02,
       "zOrder": -5,
       "scale": 12.0,
       "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": true,
       "offsetX": 0,
-      "offsetY": 0
+      "offsetY": 0,
+      "anchorBottom": false
     },
     {
       "name": "buildings_far",
       "imagePath": "assets/parallax/buildings_far.png",
       "scrollSpeedX": 0.15,
-      "scrollSpeedY": 0.0,
+      "scrollSpeedY": 0.1,
       "zOrder": -4,
       "scale": 10.0,
       "opacity": 0.7,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 450
+      "offsetY": 150,
+      "anchorBottom": true
     },
     {
       "name": "buildings_mid",
       "imagePath": "assets/parallax/buildings_mid.png",
       "scrollSpeedX": 0.35,
-      "scrollSpeedY": 0.0,
+      "scrollSpeedY": 0.2,
       "zOrder": -3,
       "scale": 10.0,
       "opacity": 0.85,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 50,
-      "offsetY": 350
+      "offsetY": 100,
+      "anchorBottom": true
     },
     {
       "name": "buildings_near",
       "imagePath": "assets/parallax/buildings_near.png",
       "scrollSpeedX": 0.55,
-      "scrollSpeedY": 0.0,
+      "scrollSpeedY": 0.35,
       "zOrder": -2,
       "scale": 10.0,
       "opacity": 0.95,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 100,
-      "offsetY": 200
+      "offsetY": 50,
+      "anchorBottom": true
     },
     {
       "name": "foreground",
       "imagePath": "assets/parallax/foreground.png",
       "scrollSpeedX": 1.15,
-      "scrollSpeedY": 0.0,
+      "scrollSpeedY": 0.8,
       "zOrder": 2,
       "scale": 10.0,
       "opacity": 0.85,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 700
+      "offsetY": 0,
+      "anchorBottom": true
     }
   ],
 

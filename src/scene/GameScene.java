@@ -301,6 +301,7 @@ public class GameScene implements Scene {
             layer.setOpacity((float) pld.opacity);
             layer.setTiling(pld.tileHorizontal, pld.tileVertical);
             layer.setOffset(pld.offsetX, pld.offsetY);
+            layer.setAnchorBottom(pld.anchorBottom);
 
             parallaxBackground.addLayer(layer);
         }
@@ -605,11 +606,17 @@ public class GameScene implements Scene {
     /**
      * Draws black bars at the top and bottom of the screen for vertical scrolling.
      * These bars create a letterbox effect and can be used for gameplay elements.
+     * When parallax is enabled, the bars are semi-transparent to allow background to show through.
      */
     private void drawBlackBars(Graphics2D g2d) {
         int margin = camera.getVerticalMargin();
 
-        g2d.setColor(Color.BLACK);
+        // Use semi-transparent black when parallax is enabled so sky/background shows through
+        if (parallaxBackground != null) {
+            g2d.setColor(new Color(0, 0, 0, 180)); // 70% opacity
+        } else {
+            g2d.setColor(Color.BLACK);
+        }
 
         // Top black bar
         g2d.fillRect(0, 0, GamePanel.SCREEN_WIDTH, margin);
@@ -666,7 +673,7 @@ public class GameScene implements Scene {
 
         // Draw controls hint
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        g2d.drawString("A/D: Move | SPACE: Jump | E/Q/F: Mine (Side/Up/Down) | I: Inventory", 10, 30);
+        g2d.drawString("A/D: Move | SPACE: Jump | LMB/E: Mine | Scroll: Aim | I: Inventory", 10, 30);
 
         // Draw camera position debug info for scrolling levels
         if (levelData.scrollingEnabled && camera != null) {

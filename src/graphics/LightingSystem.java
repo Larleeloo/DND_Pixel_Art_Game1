@@ -46,9 +46,9 @@ public class LightingSystem {
         this.screenHeight = screenHeight;
         this.lightSources = new ArrayList<>();
         this.isNight = false;
-        this.nightDarkness = 0.75;  // Default 75% darkness at night (not completely black)
-        this.ambientColor = new Color(10, 10, 40);  // Dark blue-ish night color
-        this.ambientLevel = 0.15;   // 15% ambient light even in total darkness
+        this.nightDarkness = 0.55;  // Default 55% darkness at night (visible but atmospheric)
+        this.ambientColor = new Color(15, 15, 50);  // Dark blue-ish night color
+        this.ambientLevel = 0.25;   // 25% ambient light even in total darkness
         this.gameTime = 0;
         this.renderScale = 4;       // Render at 1/4 resolution for performance
 
