@@ -271,8 +271,8 @@ public class PlayerBoneEntity extends Entity implements PlayerBase {
         // Update targeted block for crosshair display
         updateTargetedBlock(entities);
 
-        // E - mine the currently targeted block
-        if (input.isKeyJustPressed('e')) {
+        // E key or Left Mouse Click - mine the currently targeted block
+        if (input.isKeyJustPressed('e') || input.isLeftMouseJustPressed()) {
             int direction = getMiningDirection();
             tryMineBlock(entities, direction);
         }

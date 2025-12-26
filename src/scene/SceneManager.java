@@ -42,7 +42,7 @@ public class SceneManager {
         transitioning = false;
         fadeOutComplete = false;
         transitionAlpha = 0;
-        transitionSpeed = 0.05f;
+        transitionSpeed = 0.12f;  // Faster transitions (was 0.05f)
         transitionType = TRANSITION_FADE;
     }
 

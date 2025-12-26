@@ -337,6 +337,7 @@ public class LevelData {
         public boolean tileVertical = false;   // Whether to tile vertically
         public int offsetX = 0;          // Base X offset
         public int offsetY = 0;          // Base Y offset
+        public boolean anchorBottom = false; // If true, offsetY is from bottom of viewport
 
         // Depth level presets (for convenience)
         public String depthLevel = null; // "background", "middleground_3", "middleground_2", "middleground_1", "foreground"

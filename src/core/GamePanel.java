@@ -46,6 +46,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         addKeyListener(inputManager);
         addMouseWheelListener(inputManager);
+        addMouseListener(inputManager);  // For left-click mining
 
         // Load audio files
         audioManager.loadMusic("sounds/music.wav");

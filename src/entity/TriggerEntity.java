@@ -82,8 +82,16 @@ public class TriggerEntity extends Entity {
 
         switch (triggerType) {
             case TYPE_LEVEL_TRANSITION:
-                // Load the next level
-                SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                // Check if target is menu or empty
+                if (target == null || target.isEmpty() ||
+                    target.equalsIgnoreCase("menu") ||
+                    target.equalsIgnoreCase("mainMenu")) {
+                    // Return to main menu
+                    SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
+                } else {
+                    // Load the next level
+                    SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                }
                 break;
 
             case TYPE_CHECKPOINT:

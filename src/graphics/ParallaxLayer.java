@@ -35,6 +35,9 @@ public class ParallaxLayer {
     private double scrollSpeedX;
     private double scrollSpeedY;
 
+    // Vertical anchor mode - if true, offsetY is measured from bottom of viewport
+    private boolean anchorBottom;
+
     // Scaling
     private double scale;
 
@@ -72,6 +75,7 @@ public class ParallaxLayer {
         this.tileVertical = false;
         this.offsetX = 0;
         this.offsetY = 0;
+        this.anchorBottom = false;
 
         loadImage(imagePath);
     }
@@ -157,10 +161,20 @@ public class ParallaxLayer {
         double parallaxX = cameraX * scrollSpeedX;
         double parallaxY = cameraY * scrollSpeedY;
 
+        // Calculate base Y position
+        // If anchorBottom is true, position the image so its bottom edge aligns
+        // with (viewportHeight + offsetY) in screen space
+        double baseOffsetY = offsetY;
+        if (anchorBottom) {
+            // Anchor from bottom: offsetY=0 means image bottom at viewport bottom
+            // offsetY=-100 means image bottom is 100px above viewport bottom
+            baseOffsetY = viewportHeight - scaledHeight + offsetY;
+        }
+
         // Base draw position (in screen space)
         // We draw relative to camera position, adjusted by parallax
         double drawX = offsetX - parallaxX + cameraX;
-        double drawY = offsetY - parallaxY + cameraY;
+        double drawY = baseOffsetY - parallaxY + cameraY;
 
         if (tileHorizontal || tileVertical) {
             drawTiled(g, camera, drawX, drawY, scaledWidth, scaledHeight);
@@ -183,6 +197,12 @@ public class ParallaxLayer {
         double cameraX = camera.getX();
         double cameraY = camera.getY();
 
+        // Calculate base Y offset considering anchor mode
+        double baseOffsetY = offsetY;
+        if (anchorBottom) {
+            baseOffsetY = viewportHeight - scaledHeight + offsetY;
+        }
+
         int startTileX, endTileX, startTileY, endTileY;
 
         if (tileHorizontal && scaledWidth > 0) {
@@ -197,7 +217,7 @@ public class ParallaxLayer {
 
         if (tileVertical && scaledHeight > 0) {
             // Calculate which tiles to draw vertically
-            double effectiveY = cameraY * scrollSpeedY - offsetY;
+            double effectiveY = cameraY * scrollSpeedY - baseOffsetY;
             startTileY = (int) Math.floor(effectiveY / scaledHeight);
             endTileY = (int) Math.ceil((effectiveY + viewportHeight) / scaledHeight);
         } else {
@@ -209,7 +229,7 @@ public class ParallaxLayer {
         for (int tileY = startTileY; tileY <= endTileY; tileY++) {
             for (int tileX = startTileX; tileX <= endTileX; tileX++) {
                 double tileDrawX = tileX * scaledWidth + offsetX - (cameraX * scrollSpeedX) + cameraX;
-                double tileDrawY = tileY * scaledHeight + offsetY - (cameraY * scrollSpeedY) + cameraY;
+                double tileDrawY = tileY * scaledHeight + baseOffsetY - (cameraY * scrollSpeedY) + cameraY;
 
                 g.drawImage(image, (int) tileDrawX, (int) tileDrawY, scaledWidth, scaledHeight, null);
             }
@@ -331,5 +351,13 @@ public class ParallaxLayer {
 
     public int getScaledHeight() {
         return (int) (imageHeight * scale);
+    }
+
+    public boolean isAnchorBottom() {
+        return anchorBottom;
+    }
+
+    public void setAnchorBottom(boolean anchorBottom) {
+        this.anchorBottom = anchorBottom;
     }
 }

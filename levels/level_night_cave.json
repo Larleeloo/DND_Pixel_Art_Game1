@@ -19,8 +19,8 @@
   "nextLevel": "levels/level1_tutorial.json",
 
   "nightMode": true,
-  "nightDarkness": 0.85,
-  "ambientLight": 0.08,
+  "nightDarkness": 0.70,
+  "ambientLight": 0.15,
   "playerLightEnabled": false,
   "playerLightRadius": 120,
   "playerLightFalloff": 250,
