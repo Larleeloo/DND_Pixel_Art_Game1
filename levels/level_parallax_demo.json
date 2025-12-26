@@ -23,8 +23,8 @@
   "verticalMargin": 0,
 
   "nightMode": true,
-  "nightDarkness": 0.50,
-  "ambientLight": 0.30,
+  "nightDarkness": 0.35,
+  "ambientLight": 0.45,
   "playerLightEnabled": true,
   "playerLightRadius": 180,
   "playerLightFalloff": 350,
@@ -52,11 +52,11 @@
       "scrollSpeedY": 0.1,
       "zOrder": -4,
       "scale": 10.0,
-      "opacity": 0.7,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 150,
+      "offsetY": 0,
       "anchorBottom": true
     },
     {
@@ -66,11 +66,11 @@
       "scrollSpeedY": 0.2,
       "zOrder": -3,
       "scale": 10.0,
-      "opacity": 0.85,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 50,
-      "offsetY": 100,
+      "offsetY": -150,
       "anchorBottom": true
     },
     {
@@ -80,11 +80,11 @@
       "scrollSpeedY": 0.35,
       "zOrder": -2,
       "scale": 10.0,
-      "opacity": 0.95,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 100,
-      "offsetY": 50,
+      "offsetY": -300,
       "anchorBottom": true
     },
     {
@@ -94,7 +94,7 @@
       "scrollSpeedY": 0.8,
       "zOrder": 2,
       "scale": 10.0,
-      "opacity": 0.85,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,

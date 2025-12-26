@@ -597,26 +597,19 @@ public class GameScene implements Scene {
             lightingSystem.render(g2d, camera.getX(), camera.getY());
         }
 
-        // Draw black bars at top and bottom for vertical scrolling
-        if (camera.isVerticalScrollEnabled() && camera.getVerticalMargin() > 0) {
+        // Draw black bars at top and bottom for vertical scrolling (only when no parallax)
+        if (camera.isVerticalScrollEnabled() && camera.getVerticalMargin() > 0 && parallaxBackground == null) {
             drawBlackBars(g2d);
         }
     }
 
     /**
      * Draws black bars at the top and bottom of the screen for vertical scrolling.
-     * These bars create a letterbox effect and can be used for gameplay elements.
-     * When parallax is enabled, the bars are semi-transparent to allow background to show through.
+     * These bars create a letterbox effect. Only used when parallax is disabled.
      */
     private void drawBlackBars(Graphics2D g2d) {
         int margin = camera.getVerticalMargin();
-
-        // Use semi-transparent black when parallax is enabled so sky/background shows through
-        if (parallaxBackground != null) {
-            g2d.setColor(new Color(0, 0, 0, 180)); // 70% opacity
-        } else {
-            g2d.setColor(Color.BLACK);
-        }
+        g2d.setColor(Color.BLACK);
 
         // Top black bar
         g2d.fillRect(0, 0, GamePanel.SCREEN_WIDTH, margin);
