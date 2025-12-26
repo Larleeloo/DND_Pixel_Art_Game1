@@ -168,6 +168,30 @@ public class ParallaxBackground {
     }
 
     /**
+     * Updates all animated layers.
+     * Call this every frame to advance GIF animations in parallax backgrounds.
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void update(long deltaMs) {
+        for (ParallaxLayer layer : layers) {
+            layer.update(deltaMs);
+        }
+    }
+
+    /**
+     * Checks if any layer has animation.
+     * @return true if at least one layer is animated
+     */
+    public boolean hasAnimatedLayers() {
+        for (ParallaxLayer layer : layers) {
+            if (layer.isAnimated()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Draw all background layers (z-order < 0).
      * Call this BEFORE drawing game entities.
      *

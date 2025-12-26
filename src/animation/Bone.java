@@ -11,13 +11,15 @@ import java.util.List;
  * Represents a single bone in a skeletal animation system.
  * Each bone can have a texture (PNG/GIF), position, rotation, and pivot point.
  * Bones can be organized hierarchically with parent-child relationships.
+ * Supports animated GIF textures with automatic frame cycling.
  */
 public class Bone {
 
     private String name;
 
-    // Texture
-    private BufferedImage texture;
+    // Texture - supports both static and animated textures
+    private BufferedImage texture;  // Static texture or current frame for backward compatibility
+    private AnimatedTexture animatedTexture;  // Animated texture support (GIF)
     private int textureWidth;
     private int textureHeight;
 
@@ -81,34 +83,89 @@ public class Bone {
 
     /**
      * Loads a texture from a file path.
-     * Supports PNG, JPG, and GIF (first frame for GIF).
+     * Supports PNG, JPG, and animated GIF files.
+     * GIF animations will cycle automatically when update() is called.
      * @param path Path to the image file
      */
     public void loadTexture(String path) {
         AssetLoader.ImageAsset asset = AssetLoader.load(path);
         this.texture = asset.staticImage;
+        this.animatedTexture = asset.animatedTexture;
         // Invalidate tinted texture cache when base texture changes
         this.tintedTexture = null;
         if (this.texture != null) {
             this.textureWidth = asset.width;
             this.textureHeight = asset.height;
+            String animInfo = (animatedTexture != null && animatedTexture.isAnimated())
+                ? ", " + animatedTexture.getFrameCount() + " frames" : "";
             System.out.println("Bone '" + name + "' loaded texture: " + path +
-                              " (" + textureWidth + "x" + textureHeight + ")");
+                              " (" + textureWidth + "x" + textureHeight + animInfo + ")");
         } else {
             // Texture not found - will use placeholder color
             this.textureWidth = 0;
             this.textureHeight = 0;
+            this.animatedTexture = null;
             System.out.println("Bone '" + name + "' texture not found: " + path +
                               " (using placeholder color)");
         }
     }
 
     /**
+     * Updates animated textures. Call this each frame.
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void updateAnimation(long deltaMs) {
+        if (animatedTexture != null && animatedTexture.isAnimated()) {
+            animatedTexture.update(deltaMs);
+            // Update the static texture reference for tinting compatibility
+            texture = animatedTexture.getCurrentFrame();
+            // Invalidate tint cache when frame changes
+            tintedTexture = null;
+        }
+        // Update children recursively
+        for (Bone child : children) {
+            child.updateAnimation(deltaMs);
+        }
+    }
+
+    /**
+     * Checks if this bone has an animated texture.
+     * @return true if the texture is animated (multi-frame GIF)
+     */
+    public boolean isAnimated() {
+        return animatedTexture != null && animatedTexture.isAnimated();
+    }
+
+    /**
+     * Gets the animated texture if available.
+     * @return AnimatedTexture or null if static
+     */
+    public AnimatedTexture getAnimatedTexture() {
+        return animatedTexture;
+    }
+
+    /**
+     * Sets an animated texture directly.
+     * @param animTex The AnimatedTexture to use
+     */
+    public void setAnimatedTexture(AnimatedTexture animTex) {
+        this.animatedTexture = animTex;
+        if (animTex != null) {
+            this.texture = animTex.getCurrentFrame();
+            this.textureWidth = animTex.getWidth();
+            this.textureHeight = animTex.getHeight();
+        }
+        this.tintedTexture = null;
+    }
+
+    /**
      * Sets the texture directly from a BufferedImage.
+     * This clears any animated texture and uses a static image.
      * @param texture The texture image
      */
     public void setTexture(BufferedImage texture) {
         this.texture = texture;
+        this.animatedTexture = null;  // Clear animated texture when setting static
         // Invalidate tinted texture cache when base texture changes
         this.tintedTexture = null;
         if (texture != null) {

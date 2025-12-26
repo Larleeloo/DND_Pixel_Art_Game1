@@ -12,11 +12,13 @@ import java.util.Map;
  * Central registry for block textures and definitions.
  * Uses singleton pattern to ensure textures are loaded only once
  * and shared across all block entities for memory efficiency.
+ * Supports both static textures (PNG) and animated textures (GIF).
  *
  * Key optimizations:
  * - Texture caching: Each texture is loaded once and reused
  * - Pre-scaled textures: Textures are scaled at load time, not render time
  * - Square optimization: Since blocks are always square, only one dimension needed
+ * - Animated texture support: GIF textures are properly handled with frame cycling
  */
 public class BlockRegistry {
 
@@ -31,8 +33,11 @@ public class BlockRegistry {
     // Final rendered block size
     public static final int BLOCK_SIZE = BASE_BLOCK_SIZE * BLOCK_SCALE; // 64 pixels
 
-    // Cache for loaded and scaled textures
+    // Cache for loaded and scaled textures (static)
     private final Map<BlockType, BufferedImage> textureCache;
+
+    // Cache for animated textures (GIF blocks)
+    private final Map<BlockType, AnimatedTexture> animatedTextureCache;
 
     // Cache for tinted texture variants (key: BlockType + color hash)
     private final Map<String, BufferedImage> tintedTextureCache;
@@ -42,6 +47,7 @@ public class BlockRegistry {
 
     private BlockRegistry() {
         textureCache = new HashMap<>();
+        animatedTextureCache = new HashMap<>();
         tintedTextureCache = new HashMap<>();
         createFallbackTexture();
     }
@@ -79,19 +85,90 @@ public class BlockRegistry {
     /**
      * Gets the texture for a block type, loading it if necessary.
      * The returned texture is already scaled to BLOCK_SIZE.
+     * For animated blocks, returns the current frame.
      *
      * @param type The block type
      * @return Scaled BufferedImage for the block
      */
     public BufferedImage getTexture(BlockType type) {
+        // Check if this is an animated block
+        if (animatedTextureCache.containsKey(type)) {
+            return animatedTextureCache.get(type).getCurrentFrame();
+        }
+
         if (textureCache.containsKey(type)) {
             return textureCache.get(type);
         }
 
         // Load and cache the texture
-        BufferedImage texture = loadAndScaleTexture(type.getTexturePath());
-        textureCache.put(type, texture);
-        return texture;
+        return loadAndCacheTexture(type);
+    }
+
+    /**
+     * Gets the animated texture for a block type if it exists.
+     * Returns null for static textures.
+     *
+     * @param type The block type
+     * @return AnimatedTexture or null if static
+     */
+    public AnimatedTexture getAnimatedTexture(BlockType type) {
+        if (!animatedTextureCache.containsKey(type) && !textureCache.containsKey(type)) {
+            loadAndCacheTexture(type);
+        }
+        return animatedTextureCache.get(type);
+    }
+
+    /**
+     * Checks if a block type has an animated texture.
+     *
+     * @param type The block type
+     * @return true if the block is animated
+     */
+    public boolean isAnimated(BlockType type) {
+        AnimatedTexture anim = getAnimatedTexture(type);
+        return anim != null && anim.isAnimated();
+    }
+
+    /**
+     * Updates all animated block textures.
+     * Call this every frame to advance GIF animations.
+     *
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void updateAnimations(long deltaMs) {
+        for (AnimatedTexture anim : animatedTextureCache.values()) {
+            anim.update(deltaMs);
+        }
+    }
+
+    /**
+     * Loads and caches a texture for a block type.
+     * Handles both static and animated textures.
+     */
+    private BufferedImage loadAndCacheTexture(BlockType type) {
+        AssetLoader.ImageAsset asset = AssetLoader.load(type.getTexturePath());
+
+        if (asset == null || asset.staticImage == null) {
+            System.err.println("BlockRegistry: Failed to load texture: " + type.getTexturePath() + ", using fallback");
+            BufferedImage scaled = scaleTexture(fallbackTexture);
+            textureCache.put(type, scaled);
+            return scaled;
+        }
+
+        // Check if this is an animated texture
+        if (asset.animatedTexture != null && asset.animatedTexture.isAnimated()) {
+            // Scale all frames and create a new AnimatedTexture
+            AnimatedTexture scaledAnim = scaleAnimatedTexture(asset.animatedTexture);
+            animatedTextureCache.put(type, scaledAnim);
+            System.out.println("BlockRegistry: Loaded animated block texture: " + type.name() +
+                              " (" + scaledAnim.getFrameCount() + " frames)");
+            return scaledAnim.getCurrentFrame();
+        } else {
+            // Static texture
+            BufferedImage scaled = scaleTexture(asset.staticImage);
+            textureCache.put(type, scaled);
+            return scaled;
+        }
     }
 
     /**
@@ -119,17 +196,24 @@ public class BlockRegistry {
     }
 
     /**
-     * Loads a texture from file and scales it to BLOCK_SIZE.
+     * Scales an animated texture - all frames scaled to BLOCK_SIZE.
      */
-    private BufferedImage loadAndScaleTexture(String path) {
-        AssetLoader.ImageAsset asset = AssetLoader.load(path);
+    private AnimatedTexture scaleAnimatedTexture(AnimatedTexture source) {
+        java.util.List<BufferedImage> scaledFrames = new java.util.ArrayList<>();
+        java.util.List<Integer> delays = new java.util.ArrayList<>();
 
-        if (asset == null || asset.staticImage == null) {
-            System.err.println("BlockRegistry: Failed to load texture: " + path + ", using fallback");
-            return scaleTexture(fallbackTexture);
+        for (int i = 0; i < source.getFrameCount(); i++) {
+            BufferedImage frame = source.getFrame(i);
+            scaledFrames.add(scaleTexture(frame));
         }
 
-        return scaleTexture(asset.staticImage);
+        // Copy delays from original (approximate - AnimatedTexture doesn't expose delays directly)
+        int avgDelay = source.getTotalDuration() / source.getFrameCount();
+        for (int i = 0; i < source.getFrameCount(); i++) {
+            delays.add(avgDelay);
+        }
+
+        return new AnimatedTexture(scaledFrames, delays);
     }
 
     /**
@@ -201,6 +285,7 @@ public class BlockRegistry {
      */
     public void clearCache() {
         textureCache.clear();
+        animatedTextureCache.clear();
         tintedTextureCache.clear();
         System.out.println("BlockRegistry: Cache cleared");
     }
