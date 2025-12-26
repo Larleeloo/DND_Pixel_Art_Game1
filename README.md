@@ -50,7 +50,6 @@ Begin debugging the following 'KNOWN ISSUES'
 
 KNOWN ISSUES
 
-Occasional stuttering when rendering player
 Lighting demo level unnecessary (uses java class not JSON file to render)
 
 FUTURE FEATURES (ROADMAP)
