@@ -6,16 +6,16 @@
   "backgroundPath": "assets/parallax/sky.png",
   "musicPath": "sounds/music.wav",
   "playerSpawnX": 200,
-  "playerSpawnY": 1100,
+  "playerSpawnY": 1050,
   "playerSpritePath": "assets/player.png",
   "levelWidth": 6000,
   "levelHeight": 2500,
-  "groundY": 1200,
+  "groundY": 2600,
   "scrollingEnabled": true,
   "tileBackgroundHorizontal": true,
   "tileBackgroundVertical": true,
   "verticalScrollEnabled": true,
-  "verticalMargin": 100,
+  "verticalMargin": 0,
   "nextLevel": "levels/level1_tutorial.json",
 
   "parallaxEnabled": true,
@@ -41,11 +41,11 @@
       "scrollSpeedY": 0.1,
       "zOrder": -4,
       "scale": 10.0,
-      "opacity": 0.6,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 200,
+      "offsetY": 0,
       "anchorBottom": true
     },
     {
@@ -55,11 +55,11 @@
       "scrollSpeedY": 0.2,
       "zOrder": -3,
       "scale": 10.0,
-      "opacity": 0.75,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 150,
+      "offsetY": -150,
       "anchorBottom": true
     },
     {
@@ -69,16 +69,18 @@
       "scrollSpeedY": 0.35,
       "zOrder": -2,
       "scale": 10.0,
-      "opacity": 0.9,
+      "opacity": 1.0,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 100,
+      "offsetY": -300,
       "anchorBottom": true
     }
   ],
 
   "platforms": [
+    { "x": 100, "y": 1150, "spritePath": "assets/obstacle.png", "solid": true },
+    { "x": 200, "y": 1150, "spritePath": "assets/obstacle.png", "solid": true },
     { "x": 300, "y": 1150, "spritePath": "assets/obstacle.png", "solid": true },
     { "x": 450, "y": 1100, "spritePath": "assets/obstacle.png", "solid": true },
     { "x": 600, "y": 1050, "spritePath": "assets/obstacle.png", "solid": true },
