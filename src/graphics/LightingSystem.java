@@ -157,6 +157,15 @@ public class LightingSystem {
         bufferG.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         bufferG.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 
+        // First, clear the buffer to fully transparent using Src composite
+        // This ensures proper alpha blending when the buffer is drawn to screen
+        bufferG.setComposite(AlphaComposite.Src);
+        bufferG.setColor(new Color(0, 0, 0, 0));
+        bufferG.fillRect(0, 0, bufferWidth, bufferHeight);
+
+        // Reset to SrcOver for normal drawing
+        bufferG.setComposite(AlphaComposite.SrcOver);
+
         // Calculate the alpha for the darkness overlay
         // Adjusted by ambient level so it's never completely dark
         int darknessAlpha = (int) ((nightDarkness * (1.0 - ambientLevel)) * 255);

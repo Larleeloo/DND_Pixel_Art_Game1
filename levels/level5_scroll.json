@@ -45,7 +45,7 @@
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 0,
+      "offsetY": -300,
       "anchorBottom": true
     },
     {
@@ -73,7 +73,7 @@
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": -300,
+      "offsetY": 0,
       "anchorBottom": true
     }
   ],

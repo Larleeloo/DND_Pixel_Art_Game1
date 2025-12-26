@@ -49,57 +49,53 @@
       "name": "buildings_far",
       "imagePath": "assets/parallax/buildings_far.png",
       "scrollSpeedX": 0.15,
-      "scrollSpeedY": 0.1,
+      "scrollSpeedY": 0.0,
       "zOrder": -4,
       "scale": 10.0,
-      "opacity": 1.0,
+      "opacity": 0.7,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 0,
-      "anchorBottom": true
+      "offsetY": 450
     },
     {
       "name": "buildings_mid",
       "imagePath": "assets/parallax/buildings_mid.png",
       "scrollSpeedX": 0.35,
-      "scrollSpeedY": 0.2,
+      "scrollSpeedY": 0.0,
       "zOrder": -3,
       "scale": 10.0,
-      "opacity": 1.0,
+      "opacity": 0.85,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 50,
-      "offsetY": -150,
-      "anchorBottom": true
+      "offsetY": 350
     },
     {
       "name": "buildings_near",
       "imagePath": "assets/parallax/buildings_near.png",
       "scrollSpeedX": 0.55,
-      "scrollSpeedY": 0.35,
+      "scrollSpeedY": 0.0,
       "zOrder": -2,
       "scale": 10.0,
-      "opacity": 1.0,
+      "opacity": 0.95,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 100,
-      "offsetY": -300,
-      "anchorBottom": true
+      "offsetY": 200
     },
     {
       "name": "foreground",
       "imagePath": "assets/parallax/foreground.png",
       "scrollSpeedX": 1.15,
-      "scrollSpeedY": 0.8,
+      "scrollSpeedY": 0.0,
       "zOrder": 2,
       "scale": 10.0,
-      "opacity": 1.0,
+      "opacity": 0.85,
       "tileHorizontal": true,
       "tileVertical": false,
       "offsetX": 0,
-      "offsetY": 0,
-      "anchorBottom": true
+      "offsetY": 700
     }
   ],
 
