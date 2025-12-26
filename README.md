@@ -4,6 +4,7 @@ AUTHOR Larson Sonderman & CLAUDE AI
 DESCRIPTION
 A Java Swing-based game engine that runs a 2D platformer game. Plays similarly to Terraria, Super Mario, or 2D Minecraft.
 Inspired by Dungeons and Dragons games like Baldur's Gate 3. (Non-turn-based)
+This game should feel abundant with the quantity and variations in items and tools.
 
 CURRENT FEATURES
 -JSON file-based level loading
