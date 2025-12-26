@@ -117,259 +117,260 @@ public class QuadrupedAnimation {
      * Creates a natural walking animation using a 4-beat gait.
      * Each leg moves independently in sequence.
      *
-     * Duration: 1.0 seconds (looping)
+     * Duration: 0.8 seconds (looping) - slightly faster for natural pace
      *
      * @return Walk animation for quadruped skeleton
      */
     public static BoneAnimation createWalkAnimation() {
-        BoneAnimation anim = new BoneAnimation("walk", 1.0, true);
+        BoneAnimation anim = new BoneAnimation("walk", 0.8, true);
 
-        // === BODY - subtle vertical bob and slight sway ===
-        anim.addKeyframe("body", 0.0, 0, 1, 2);
-        anim.addKeyframe("body", 0.25, 0, 0, -1);
-        anim.addKeyframe("body", 0.5, 0, 1, 2);
-        anim.addKeyframe("body", 0.75, 0, 0, -1);
-        anim.addKeyframe("body", 1.0, 0, 1, 2);
+        // === BODY - subtle vertical bob (reduced for smoother look) ===
+        anim.addKeyframe("body", 0.0, 0, 0, 1);
+        anim.addKeyframe("body", 0.2, 0, -1, 0);
+        anim.addKeyframe("body", 0.4, 0, 0, 1);
+        anim.addKeyframe("body", 0.6, 0, -1, 0);
+        anim.addKeyframe("body", 0.8, 0, 0, 1);
 
-        // === NECK - stabilizing counter-movement ===
-        anim.addKeyframe("neck", 0.0, 0, 0, -1);
-        anim.addKeyframe("neck", 0.25, 0, 0, 1);
-        anim.addKeyframe("neck", 0.5, 0, 0, -1);
-        anim.addKeyframe("neck", 0.75, 0, 0, 1);
-        anim.addKeyframe("neck", 1.0, 0, 0, -1);
+        // === NECK - gentle stabilizing movement ===
+        anim.addKeyframe("neck", 0.0, 0, 0, 0);
+        anim.addKeyframe("neck", 0.2, 0, 0, 1);
+        anim.addKeyframe("neck", 0.4, 0, 0, 0);
+        anim.addKeyframe("neck", 0.6, 0, 0, 1);
+        anim.addKeyframe("neck", 0.8, 0, 0, 0);
 
-        // === HEAD - slight bob ===
+        // === HEAD - subtle bob ===
         anim.addKeyframe("head", 0.0, 0, 0, 0);
-        anim.addKeyframe("head", 0.25, 0, -1, 2);
-        anim.addKeyframe("head", 0.5, 0, 0, 0);
-        anim.addKeyframe("head", 0.75, 0, -1, 2);
-        anim.addKeyframe("head", 1.0, 0, 0, 0);
+        anim.addKeyframe("head", 0.2, 0, 0, 1);
+        anim.addKeyframe("head", 0.4, 0, 0, 0);
+        anim.addKeyframe("head", 0.6, 0, 0, 1);
+        anim.addKeyframe("head", 0.8, 0, 0, 0);
 
-        // === EARS - slight movement ===
+        // === EARS - gentle movement ===
         anim.addKeyframe("ear_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("ear_left", 0.5, 0, 0, 3);
-        anim.addKeyframe("ear_left", 1.0, 0, 0, 0);
+        anim.addKeyframe("ear_left", 0.4, 0, 0, 2);
+        anim.addKeyframe("ear_left", 0.8, 0, 0, 0);
 
         anim.addKeyframe("ear_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("ear_right", 0.5, 0, 0, -3);
-        anim.addKeyframe("ear_right", 1.0, 0, 0, 0);
+        anim.addKeyframe("ear_right", 0.4, 0, 0, -2);
+        anim.addKeyframe("ear_right", 0.8, 0, 0, 0);
 
-        // === TAIL - following body motion ===
-        anim.addKeyframe("tail_base", 0.0, 0, 0, 10);
-        anim.addKeyframe("tail_base", 0.25, 0, 0, -5);
-        anim.addKeyframe("tail_base", 0.5, 0, 0, 10);
-        anim.addKeyframe("tail_base", 0.75, 0, 0, -5);
-        anim.addKeyframe("tail_base", 1.0, 0, 0, 10);
+        // === TAIL - natural sway following body motion ===
+        anim.addKeyframe("tail_base", 0.0, 0, 0, 8);
+        anim.addKeyframe("tail_base", 0.2, 0, 0, -4);
+        anim.addKeyframe("tail_base", 0.4, 0, 0, 8);
+        anim.addKeyframe("tail_base", 0.6, 0, 0, -4);
+        anim.addKeyframe("tail_base", 0.8, 0, 0, 8);
 
-        anim.addKeyframe("tail_tip", 0.0, 0, 0, 15);
-        anim.addKeyframe("tail_tip", 0.25, 0, 0, -10);
-        anim.addKeyframe("tail_tip", 0.5, 0, 0, 15);
-        anim.addKeyframe("tail_tip", 0.75, 0, 0, -10);
-        anim.addKeyframe("tail_tip", 1.0, 0, 0, 15);
+        anim.addKeyframe("tail_tip", 0.0, 0, 0, 10);
+        anim.addKeyframe("tail_tip", 0.2, 0, 0, -6);
+        anim.addKeyframe("tail_tip", 0.4, 0, 0, 10);
+        anim.addKeyframe("tail_tip", 0.6, 0, 0, -6);
+        anim.addKeyframe("tail_tip", 0.8, 0, 0, 10);
 
-        // === LEGS - 4-beat walk gait ===
-        // Phase: 0.0 = back_right contact, 0.25 = front_right, 0.5 = back_left, 0.75 = front_left
+        // === LEGS - 4-beat walk gait with smoother, more natural angles ===
+        // Reduced rotation angles for more realistic movement
+        // Phase: 0.0 = back_right contact, 0.2 = front_right, 0.4 = back_left, 0.6 = front_left
 
-        // FRONT LEFT LEG - contact at 0.75
-        anim.addKeyframe("leg_front_left_upper", 0.0, 0, 0, 15);    // Swing back
-        anim.addKeyframe("leg_front_left_upper", 0.25, 0, 0, 25);   // Push off
-        anim.addKeyframe("leg_front_left_upper", 0.5, 0, 0, 0);     // Swing forward
-        anim.addKeyframe("leg_front_left_upper", 0.75, 0, 0, -20);  // Contact
-        anim.addKeyframe("leg_front_left_upper", 1.0, 0, 0, 15);
+        // FRONT LEFT LEG - contact at 0.6
+        anim.addKeyframe("leg_front_left_upper", 0.0, 0, 0, 10);
+        anim.addKeyframe("leg_front_left_upper", 0.2, 0, 0, 18);    // Push back
+        anim.addKeyframe("leg_front_left_upper", 0.4, 0, 0, 5);     // Swing forward start
+        anim.addKeyframe("leg_front_left_upper", 0.6, 0, 0, -15);   // Contact (forward)
+        anim.addKeyframe("leg_front_left_upper", 0.8, 0, 0, 10);
 
-        anim.addKeyframe("leg_front_left_lower", 0.0, 0, 0, -10);
-        anim.addKeyframe("leg_front_left_lower", 0.25, 0, 0, -5);
-        anim.addKeyframe("leg_front_left_lower", 0.5, 0, 0, -25);   // Bent during swing
-        anim.addKeyframe("leg_front_left_lower", 0.75, 0, 0, 0);    // Straight at contact
-        anim.addKeyframe("leg_front_left_lower", 1.0, 0, 0, -10);
+        anim.addKeyframe("leg_front_left_lower", 0.0, 0, 0, -8);
+        anim.addKeyframe("leg_front_left_lower", 0.2, 0, 0, -5);
+        anim.addKeyframe("leg_front_left_lower", 0.4, 0, 0, -18);   // Bent during swing
+        anim.addKeyframe("leg_front_left_lower", 0.6, 0, 0, 0);     // Straight at contact
+        anim.addKeyframe("leg_front_left_lower", 0.8, 0, 0, -8);
 
         anim.addKeyframe("paw_front_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("paw_front_left", 0.5, 0, 0, 15);          // Lifted during swing
-        anim.addKeyframe("paw_front_left", 0.75, 0, 0, 0);          // Flat at contact
-        anim.addKeyframe("paw_front_left", 1.0, 0, 0, 0);
+        anim.addKeyframe("paw_front_left", 0.4, 0, 0, 10);          // Lifted during swing
+        anim.addKeyframe("paw_front_left", 0.6, 0, 0, 0);           // Flat at contact
+        anim.addKeyframe("paw_front_left", 0.8, 0, 0, 0);
 
-        // FRONT RIGHT LEG - contact at 0.25
-        anim.addKeyframe("leg_front_right_upper", 0.0, 0, 0, 0);    // Swing forward
-        anim.addKeyframe("leg_front_right_upper", 0.25, 0, 0, -20); // Contact
-        anim.addKeyframe("leg_front_right_upper", 0.5, 0, 0, 15);   // Swing back
-        anim.addKeyframe("leg_front_right_upper", 0.75, 0, 0, 25);  // Push off
-        anim.addKeyframe("leg_front_right_upper", 1.0, 0, 0, 0);
+        // FRONT RIGHT LEG - contact at 0.2
+        anim.addKeyframe("leg_front_right_upper", 0.0, 0, 0, 5);
+        anim.addKeyframe("leg_front_right_upper", 0.2, 0, 0, -15);  // Contact
+        anim.addKeyframe("leg_front_right_upper", 0.4, 0, 0, 10);
+        anim.addKeyframe("leg_front_right_upper", 0.6, 0, 0, 18);   // Push back
+        anim.addKeyframe("leg_front_right_upper", 0.8, 0, 0, 5);
 
-        anim.addKeyframe("leg_front_right_lower", 0.0, 0, 0, -25);  // Bent during swing
-        anim.addKeyframe("leg_front_right_lower", 0.25, 0, 0, 0);   // Straight at contact
-        anim.addKeyframe("leg_front_right_lower", 0.5, 0, 0, -10);
-        anim.addKeyframe("leg_front_right_lower", 0.75, 0, 0, -5);
-        anim.addKeyframe("leg_front_right_lower", 1.0, 0, 0, -25);
+        anim.addKeyframe("leg_front_right_lower", 0.0, 0, 0, -18);  // Bent during swing
+        anim.addKeyframe("leg_front_right_lower", 0.2, 0, 0, 0);    // Straight at contact
+        anim.addKeyframe("leg_front_right_lower", 0.4, 0, 0, -8);
+        anim.addKeyframe("leg_front_right_lower", 0.6, 0, 0, -5);
+        anim.addKeyframe("leg_front_right_lower", 0.8, 0, 0, -18);
 
-        anim.addKeyframe("paw_front_right", 0.0, 0, 0, 15);
-        anim.addKeyframe("paw_front_right", 0.25, 0, 0, 0);
-        anim.addKeyframe("paw_front_right", 0.75, 0, 0, 0);
-        anim.addKeyframe("paw_front_right", 1.0, 0, 0, 15);
+        anim.addKeyframe("paw_front_right", 0.0, 0, 0, 10);
+        anim.addKeyframe("paw_front_right", 0.2, 0, 0, 0);
+        anim.addKeyframe("paw_front_right", 0.6, 0, 0, 0);
+        anim.addKeyframe("paw_front_right", 0.8, 0, 0, 10);
 
-        // BACK LEFT LEG - contact at 0.5
-        anim.addKeyframe("leg_back_left_upper", 0.0, 0, 0, 20);     // Push off
-        anim.addKeyframe("leg_back_left_upper", 0.25, 0, 0, -5);    // Swing forward
-        anim.addKeyframe("leg_back_left_upper", 0.5, 0, 0, -25);    // Contact
-        anim.addKeyframe("leg_back_left_upper", 0.75, 0, 0, 10);    // Swing back
-        anim.addKeyframe("leg_back_left_upper", 1.0, 0, 0, 20);
+        // BACK LEFT LEG - contact at 0.4
+        anim.addKeyframe("leg_back_left_upper", 0.0, 0, 0, 15);
+        anim.addKeyframe("leg_back_left_upper", 0.2, 0, 0, 0);
+        anim.addKeyframe("leg_back_left_upper", 0.4, 0, 0, -18);    // Contact
+        anim.addKeyframe("leg_back_left_upper", 0.6, 0, 0, 8);
+        anim.addKeyframe("leg_back_left_upper", 0.8, 0, 0, 15);
 
         anim.addKeyframe("leg_back_left_lower", 0.0, 0, 0, 5);
-        anim.addKeyframe("leg_back_left_lower", 0.25, 0, 0, 30);    // Bent during swing
-        anim.addKeyframe("leg_back_left_lower", 0.5, 0, 0, 5);      // Slight bend at contact
-        anim.addKeyframe("leg_back_left_lower", 0.75, 0, 0, 0);
-        anim.addKeyframe("leg_back_left_lower", 1.0, 0, 0, 5);
+        anim.addKeyframe("leg_back_left_lower", 0.2, 0, 0, 20);     // Bent during swing
+        anim.addKeyframe("leg_back_left_lower", 0.4, 0, 0, 5);
+        anim.addKeyframe("leg_back_left_lower", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_back_left_lower", 0.8, 0, 0, 5);
 
-        anim.addKeyframe("paw_back_left", 0.0, 0, 0, -10);
-        anim.addKeyframe("paw_back_left", 0.25, 0, 0, 10);
-        anim.addKeyframe("paw_back_left", 0.5, 0, 0, 0);
-        anim.addKeyframe("paw_back_left", 1.0, 0, 0, -10);
+        anim.addKeyframe("paw_back_left", 0.0, 0, 0, -8);
+        anim.addKeyframe("paw_back_left", 0.2, 0, 0, 8);
+        anim.addKeyframe("paw_back_left", 0.4, 0, 0, 0);
+        anim.addKeyframe("paw_back_left", 0.8, 0, 0, -8);
 
         // BACK RIGHT LEG - contact at 0.0
-        anim.addKeyframe("leg_back_right_upper", 0.0, 0, 0, -25);   // Contact
-        anim.addKeyframe("leg_back_right_upper", 0.25, 0, 0, 10);   // Swing back
-        anim.addKeyframe("leg_back_right_upper", 0.5, 0, 0, 20);    // Push off
-        anim.addKeyframe("leg_back_right_upper", 0.75, 0, 0, -5);   // Swing forward
-        anim.addKeyframe("leg_back_right_upper", 1.0, 0, 0, -25);
+        anim.addKeyframe("leg_back_right_upper", 0.0, 0, 0, -18);   // Contact
+        anim.addKeyframe("leg_back_right_upper", 0.2, 0, 0, 8);
+        anim.addKeyframe("leg_back_right_upper", 0.4, 0, 0, 15);
+        anim.addKeyframe("leg_back_right_upper", 0.6, 0, 0, 0);
+        anim.addKeyframe("leg_back_right_upper", 0.8, 0, 0, -18);
 
-        anim.addKeyframe("leg_back_right_lower", 0.0, 0, 0, 5);     // Slight bend at contact
-        anim.addKeyframe("leg_back_right_lower", 0.25, 0, 0, 0);
-        anim.addKeyframe("leg_back_right_lower", 0.5, 0, 0, 5);
-        anim.addKeyframe("leg_back_right_lower", 0.75, 0, 0, 30);   // Bent during swing
-        anim.addKeyframe("leg_back_right_lower", 1.0, 0, 0, 5);
+        anim.addKeyframe("leg_back_right_lower", 0.0, 0, 0, 5);
+        anim.addKeyframe("leg_back_right_lower", 0.2, 0, 0, 0);
+        anim.addKeyframe("leg_back_right_lower", 0.4, 0, 0, 5);
+        anim.addKeyframe("leg_back_right_lower", 0.6, 0, 0, 20);    // Bent during swing
+        anim.addKeyframe("leg_back_right_lower", 0.8, 0, 0, 5);
 
         anim.addKeyframe("paw_back_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("paw_back_right", 0.5, 0, 0, -10);
-        anim.addKeyframe("paw_back_right", 0.75, 0, 0, 10);
-        anim.addKeyframe("paw_back_right", 1.0, 0, 0, 0);
+        anim.addKeyframe("paw_back_right", 0.4, 0, 0, -8);
+        anim.addKeyframe("paw_back_right", 0.6, 0, 0, 8);
+        anim.addKeyframe("paw_back_right", 0.8, 0, 0, 0);
 
         return anim;
     }
 
     /**
-     * Creates a running animation using a bounding/gallop gait.
-     * Front and back leg pairs move together.
+     * Creates a running animation using a trot gait.
+     * Diagonal leg pairs move together for a natural trot.
      *
      * Duration: 0.4 seconds (looping)
      *
      * @return Run animation for quadruped skeleton
      */
     public static BoneAnimation createRunAnimation() {
-        BoneAnimation anim = new BoneAnimation("run", 0.5, true);
+        BoneAnimation anim = new BoneAnimation("run", 0.4, true);
 
         // === TROT GAIT - diagonal pairs move together ===
-        // This is a 2-beat gait: front_left+back_right, then front_right+back_left
-        // More natural looking than gallop for most quadrupeds
+        // 2-beat gait: front_left+back_right, then front_right+back_left
+        // Smoother angles for more natural appearance
 
-        // === BODY - moderate bob and forward lean ===
-        anim.addKeyframe("body", 0.0, 0, 2, 6);
-        anim.addKeyframe("body", 0.125, 0, 0, 5);
-        anim.addKeyframe("body", 0.25, 0, 2, 6);
-        anim.addKeyframe("body", 0.375, 0, 0, 5);
-        anim.addKeyframe("body", 0.5, 0, 2, 6);
+        // === BODY - subtle bob with slight forward lean ===
+        anim.addKeyframe("body", 0.0, 0, 1, 4);
+        anim.addKeyframe("body", 0.1, 0, -1, 3);
+        anim.addKeyframe("body", 0.2, 0, 1, 4);
+        anim.addKeyframe("body", 0.3, 0, -1, 3);
+        anim.addKeyframe("body", 0.4, 0, 1, 4);
 
-        // === NECK - counter-balance ===
-        anim.addKeyframe("neck", 0.0, 0, 0, -3);
-        anim.addKeyframe("neck", 0.25, 0, 0, -1);
-        anim.addKeyframe("neck", 0.5, 0, 0, -3);
+        // === NECK - gentle counter-balance ===
+        anim.addKeyframe("neck", 0.0, 0, 0, -2);
+        anim.addKeyframe("neck", 0.2, 0, 0, 0);
+        anim.addKeyframe("neck", 0.4, 0, 0, -2);
 
         // === HEAD - stable with slight movement ===
-        anim.addKeyframe("head", 0.0, 0, -1, -2);
-        anim.addKeyframe("head", 0.25, 0, 0, 0);
-        anim.addKeyframe("head", 0.5, 0, -1, -2);
+        anim.addKeyframe("head", 0.0, 0, 0, -1);
+        anim.addKeyframe("head", 0.2, 0, 0, 1);
+        anim.addKeyframe("head", 0.4, 0, 0, -1);
 
-        // === EARS - slightly flattened ===
-        anim.addKeyframe("ear_left", 0.0, 0, 0, -10);
-        anim.addKeyframe("ear_left", 0.5, 0, 0, -10);
+        // === EARS - slightly flattened during run ===
+        anim.addKeyframe("ear_left", 0.0, 0, 0, -8);
+        anim.addKeyframe("ear_left", 0.4, 0, 0, -8);
 
-        anim.addKeyframe("ear_right", 0.0, 0, 0, -10);
-        anim.addKeyframe("ear_right", 0.5, 0, 0, -10);
+        anim.addKeyframe("ear_right", 0.0, 0, 0, -8);
+        anim.addKeyframe("ear_right", 0.4, 0, 0, -8);
 
-        // === TAIL - streaming behind with movement ===
-        anim.addKeyframe("tail_base", 0.0, 0, 0, 20);
-        anim.addKeyframe("tail_base", 0.25, 0, 0, 15);
-        anim.addKeyframe("tail_base", 0.5, 0, 0, 20);
+        // === TAIL - streaming behind with natural bounce ===
+        anim.addKeyframe("tail_base", 0.0, 0, 0, 15);
+        anim.addKeyframe("tail_base", 0.2, 0, 0, 12);
+        anim.addKeyframe("tail_base", 0.4, 0, 0, 15);
 
-        anim.addKeyframe("tail_tip", 0.0, 0, 0, 15);
-        anim.addKeyframe("tail_tip", 0.25, 0, 0, 10);
-        anim.addKeyframe("tail_tip", 0.5, 0, 0, 15);
+        anim.addKeyframe("tail_tip", 0.0, 0, 0, 12);
+        anim.addKeyframe("tail_tip", 0.2, 0, 0, 8);
+        anim.addKeyframe("tail_tip", 0.4, 0, 0, 12);
 
         // === DIAGONAL PAIR 1: Front Left + Back Right ===
-        // Contact at 0.0, push-off at 0.125, swing at 0.25-0.5
+        // Contact at 0.0, push-off at 0.1, swing at 0.2-0.4
 
         // FRONT LEFT LEG
-        anim.addKeyframe("leg_front_left_upper", 0.0, 0, 0, -30);   // Contact
-        anim.addKeyframe("leg_front_left_upper", 0.125, 0, 0, 0);   // Mid-stance
-        anim.addKeyframe("leg_front_left_upper", 0.25, 0, 0, 35);   // Push-off
-        anim.addKeyframe("leg_front_left_upper", 0.375, 0, 0, 0);   // Swing
-        anim.addKeyframe("leg_front_left_upper", 0.5, 0, 0, -30);   // Contact
+        anim.addKeyframe("leg_front_left_upper", 0.0, 0, 0, -22);   // Contact
+        anim.addKeyframe("leg_front_left_upper", 0.1, 0, 0, 0);     // Mid-stance
+        anim.addKeyframe("leg_front_left_upper", 0.2, 0, 0, 25);    // Push-off
+        anim.addKeyframe("leg_front_left_upper", 0.3, 0, 0, 5);     // Swing
+        anim.addKeyframe("leg_front_left_upper", 0.4, 0, 0, -22);   // Contact
 
         anim.addKeyframe("leg_front_left_lower", 0.0, 0, 0, 5);
-        anim.addKeyframe("leg_front_left_lower", 0.125, 0, 0, 0);
-        anim.addKeyframe("leg_front_left_lower", 0.25, 0, 0, -10);
-        anim.addKeyframe("leg_front_left_lower", 0.375, 0, 0, -30);  // Folded during swing
-        anim.addKeyframe("leg_front_left_lower", 0.5, 0, 0, 5);
+        anim.addKeyframe("leg_front_left_lower", 0.1, 0, 0, 0);
+        anim.addKeyframe("leg_front_left_lower", 0.2, 0, 0, -8);
+        anim.addKeyframe("leg_front_left_lower", 0.3, 0, 0, -22);   // Folded during swing
+        anim.addKeyframe("leg_front_left_lower", 0.4, 0, 0, 5);
 
         anim.addKeyframe("paw_front_left", 0.0, 0, 0, 0);
-        anim.addKeyframe("paw_front_left", 0.25, 0, 0, -10);
-        anim.addKeyframe("paw_front_left", 0.375, 0, 0, 15);
-        anim.addKeyframe("paw_front_left", 0.5, 0, 0, 0);
+        anim.addKeyframe("paw_front_left", 0.2, 0, 0, -8);
+        anim.addKeyframe("paw_front_left", 0.3, 0, 0, 10);
+        anim.addKeyframe("paw_front_left", 0.4, 0, 0, 0);
 
         // BACK RIGHT LEG (same phase as front left)
-        anim.addKeyframe("leg_back_right_upper", 0.0, 0, 0, -30);
-        anim.addKeyframe("leg_back_right_upper", 0.125, 0, 0, 0);
-        anim.addKeyframe("leg_back_right_upper", 0.25, 0, 0, 35);
-        anim.addKeyframe("leg_back_right_upper", 0.375, 0, 0, 0);
-        anim.addKeyframe("leg_back_right_upper", 0.5, 0, 0, -30);
+        anim.addKeyframe("leg_back_right_upper", 0.0, 0, 0, -22);
+        anim.addKeyframe("leg_back_right_upper", 0.1, 0, 0, 0);
+        anim.addKeyframe("leg_back_right_upper", 0.2, 0, 0, 25);
+        anim.addKeyframe("leg_back_right_upper", 0.3, 0, 0, 5);
+        anim.addKeyframe("leg_back_right_upper", 0.4, 0, 0, -22);
 
         anim.addKeyframe("leg_back_right_lower", 0.0, 0, 0, 5);
-        anim.addKeyframe("leg_back_right_lower", 0.125, 0, 0, 0);
-        anim.addKeyframe("leg_back_right_lower", 0.25, 0, 0, -5);
-        anim.addKeyframe("leg_back_right_lower", 0.375, 0, 0, 35);
-        anim.addKeyframe("leg_back_right_lower", 0.5, 0, 0, 5);
+        anim.addKeyframe("leg_back_right_lower", 0.1, 0, 0, 0);
+        anim.addKeyframe("leg_back_right_lower", 0.2, 0, 0, -5);
+        anim.addKeyframe("leg_back_right_lower", 0.3, 0, 0, 25);
+        anim.addKeyframe("leg_back_right_lower", 0.4, 0, 0, 5);
 
         anim.addKeyframe("paw_back_right", 0.0, 0, 0, 0);
-        anim.addKeyframe("paw_back_right", 0.25, 0, 0, -10);
-        anim.addKeyframe("paw_back_right", 0.375, 0, 0, 10);
-        anim.addKeyframe("paw_back_right", 0.5, 0, 0, 0);
+        anim.addKeyframe("paw_back_right", 0.2, 0, 0, -8);
+        anim.addKeyframe("paw_back_right", 0.3, 0, 0, 8);
+        anim.addKeyframe("paw_back_right", 0.4, 0, 0, 0);
 
         // === DIAGONAL PAIR 2: Front Right + Back Left ===
-        // Opposite phase - contact at 0.25
+        // Opposite phase - contact at 0.2
 
         // FRONT RIGHT LEG
-        anim.addKeyframe("leg_front_right_upper", 0.0, 0, 0, 35);   // Push-off
-        anim.addKeyframe("leg_front_right_upper", 0.125, 0, 0, 0);  // Swing
-        anim.addKeyframe("leg_front_right_upper", 0.25, 0, 0, -30); // Contact
-        anim.addKeyframe("leg_front_right_upper", 0.375, 0, 0, 0);  // Mid-stance
-        anim.addKeyframe("leg_front_right_upper", 0.5, 0, 0, 35);   // Push-off
+        anim.addKeyframe("leg_front_right_upper", 0.0, 0, 0, 25);   // Push-off
+        anim.addKeyframe("leg_front_right_upper", 0.1, 0, 0, 5);    // Swing
+        anim.addKeyframe("leg_front_right_upper", 0.2, 0, 0, -22);  // Contact
+        anim.addKeyframe("leg_front_right_upper", 0.3, 0, 0, 0);    // Mid-stance
+        anim.addKeyframe("leg_front_right_upper", 0.4, 0, 0, 25);   // Push-off
 
-        anim.addKeyframe("leg_front_right_lower", 0.0, 0, 0, -10);
-        anim.addKeyframe("leg_front_right_lower", 0.125, 0, 0, -30);
-        anim.addKeyframe("leg_front_right_lower", 0.25, 0, 0, 5);
-        anim.addKeyframe("leg_front_right_lower", 0.375, 0, 0, 0);
-        anim.addKeyframe("leg_front_right_lower", 0.5, 0, 0, -10);
+        anim.addKeyframe("leg_front_right_lower", 0.0, 0, 0, -8);
+        anim.addKeyframe("leg_front_right_lower", 0.1, 0, 0, -22);
+        anim.addKeyframe("leg_front_right_lower", 0.2, 0, 0, 5);
+        anim.addKeyframe("leg_front_right_lower", 0.3, 0, 0, 0);
+        anim.addKeyframe("leg_front_right_lower", 0.4, 0, 0, -8);
 
-        anim.addKeyframe("paw_front_right", 0.0, 0, 0, -10);
-        anim.addKeyframe("paw_front_right", 0.125, 0, 0, 15);
-        anim.addKeyframe("paw_front_right", 0.25, 0, 0, 0);
-        anim.addKeyframe("paw_front_right", 0.5, 0, 0, -10);
+        anim.addKeyframe("paw_front_right", 0.0, 0, 0, -8);
+        anim.addKeyframe("paw_front_right", 0.1, 0, 0, 10);
+        anim.addKeyframe("paw_front_right", 0.2, 0, 0, 0);
+        anim.addKeyframe("paw_front_right", 0.4, 0, 0, -8);
 
         // BACK LEFT LEG (same phase as front right)
-        anim.addKeyframe("leg_back_left_upper", 0.0, 0, 0, 35);
-        anim.addKeyframe("leg_back_left_upper", 0.125, 0, 0, 0);
-        anim.addKeyframe("leg_back_left_upper", 0.25, 0, 0, -30);
-        anim.addKeyframe("leg_back_left_upper", 0.375, 0, 0, 0);
-        anim.addKeyframe("leg_back_left_upper", 0.5, 0, 0, 35);
+        anim.addKeyframe("leg_back_left_upper", 0.0, 0, 0, 25);
+        anim.addKeyframe("leg_back_left_upper", 0.1, 0, 0, 5);
+        anim.addKeyframe("leg_back_left_upper", 0.2, 0, 0, -22);
+        anim.addKeyframe("leg_back_left_upper", 0.3, 0, 0, 0);
+        anim.addKeyframe("leg_back_left_upper", 0.4, 0, 0, 25);
 
         anim.addKeyframe("leg_back_left_lower", 0.0, 0, 0, -5);
-        anim.addKeyframe("leg_back_left_lower", 0.125, 0, 0, 35);
-        anim.addKeyframe("leg_back_left_lower", 0.25, 0, 0, 5);
-        anim.addKeyframe("leg_back_left_lower", 0.375, 0, 0, 0);
-        anim.addKeyframe("leg_back_left_lower", 0.5, 0, 0, -5);
+        anim.addKeyframe("leg_back_left_lower", 0.1, 0, 0, 25);
+        anim.addKeyframe("leg_back_left_lower", 0.2, 0, 0, 5);
+        anim.addKeyframe("leg_back_left_lower", 0.3, 0, 0, 0);
+        anim.addKeyframe("leg_back_left_lower", 0.4, 0, 0, -5);
 
-        anim.addKeyframe("paw_back_left", 0.0, 0, 0, -10);
-        anim.addKeyframe("paw_back_left", 0.125, 0, 0, 10);
-        anim.addKeyframe("paw_back_left", 0.25, 0, 0, 0);
-        anim.addKeyframe("paw_back_left", 0.5, 0, 0, -10);
+        anim.addKeyframe("paw_back_left", 0.0, 0, 0, -8);
+        anim.addKeyframe("paw_back_left", 0.1, 0, 0, 8);
+        anim.addKeyframe("paw_back_left", 0.2, 0, 0, 0);
+        anim.addKeyframe("paw_back_left", 0.4, 0, 0, -8);
 
         return anim;
     }
