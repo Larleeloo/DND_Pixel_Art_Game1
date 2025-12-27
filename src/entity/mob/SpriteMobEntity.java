@@ -128,7 +128,8 @@ public class SpriteMobEntity extends MobEntity {
         java.util.List<Integer> delays = new java.util.ArrayList<>();
         delays.add(100);
         AnimatedTexture anim = new AnimatedTexture(frames, delays);
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.IDLE, anim);
+        // Use setAction (not loadAction) to set AnimatedTexture directly
+        spriteAnimation.setAction(SpriteAnimation.ActionState.IDLE, anim);
 
         this.spriteWidth = w * SCALE;
         this.spriteHeight = h * SCALE;
