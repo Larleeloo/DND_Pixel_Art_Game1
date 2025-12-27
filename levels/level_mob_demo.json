@@ -2,8 +2,11 @@
   "name": "Mob Demonstration Level",
   "description": "A demonstration level showcasing all quadruped and humanoid mobs with their AI behaviors. Features wolves, farm animals, forest creatures, and various humanoid enemies.",
 
-  "useBoneAnimation": true,
+  "useBoneAnimation": false,
   "boneTextureDir": "assets/textures/humanoid/player",
+
+  "useSpriteAnimation": true,
+  "spriteAnimationDir": "assets/player/sprites",
 
   "backgroundPath": "assets/parallax/sky.png",
   "musicPath": "sounds/music.wav",

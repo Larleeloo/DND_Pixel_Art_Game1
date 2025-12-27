@@ -205,22 +205,35 @@ public class GameScene implements Scene {
         }
         System.out.println("GameScene: Added " + mobsAdded + " mobs to level");
 
-        // Add player - use bone animation if enabled
-        if (levelData.useBoneAnimation) {
+        // Add player - choose animation system based on level settings
+        // Priority: useSpriteAnimation > useBoneAnimation > default (PlayerEntity)
+        AudioManager audio = SceneManager.getInstance().getAudioManager();
+
+        if (levelData.useSpriteAnimation) {
+            // Use sprite/GIF-based animation with equipment overlay support
+            SpritePlayerEntity spriteAnimPlayer = new SpritePlayerEntity(
+                levelData.playerSpawnX, levelData.playerSpawnY, levelData.spriteAnimationDir);
+            spriteAnimPlayer.setGroundY(levelData.groundY);
+            if (audio != null) {
+                spriteAnimPlayer.setAudioManager(audio);
+            }
+            player = spriteAnimPlayer;
+            System.out.println("GameScene: Using sprite-animated player from " + levelData.spriteAnimationDir);
+        } else if (levelData.useBoneAnimation) {
+            // Use bone-based skeletal animation
             PlayerBoneEntity bonePlayer = new PlayerBoneEntity(
                 levelData.playerSpawnX, levelData.playerSpawnY, levelData.boneTextureDir);
             bonePlayer.setGroundY(levelData.groundY);
-            AudioManager audio = SceneManager.getInstance().getAudioManager();
             if (audio != null) {
                 bonePlayer.setAudioManager(audio);
             }
             player = bonePlayer;
             System.out.println("GameScene: Using bone-animated player from " + levelData.boneTextureDir);
         } else {
+            // Use default sprite-based player (simple PNG)
             PlayerEntity spritePlayer = new PlayerEntity(
                 levelData.playerSpawnX, levelData.playerSpawnY, levelData.playerSpritePath);
             spritePlayer.setGroundY(levelData.groundY);
-            AudioManager audio = SceneManager.getInstance().getAudioManager();
             if (audio != null) {
                 spritePlayer.setAudioManager(audio);
             }
@@ -480,14 +493,20 @@ public class GameScene implements Scene {
 
     /**
      * Handles block breaking - removes broken blocks and adds dropped items.
-     * Works with both PlayerEntity and PlayerBoneEntity.
+     * Works with PlayerEntity, PlayerBoneEntity, and SpritePlayerEntity.
      */
     private void handleBlockBreaking() {
         BlockEntity brokenBlock = null;
         ItemEntity droppedItem = null;
 
         // Get broken block from whichever player type we have
-        if (player instanceof PlayerEntity) {
+        if (player instanceof SpritePlayerEntity) {
+            SpritePlayerEntity spriteAnimPlayer = (SpritePlayerEntity) player;
+            brokenBlock = spriteAnimPlayer.getLastBrokenBlock();
+            if (brokenBlock != null) {
+                droppedItem = spriteAnimPlayer.getLastDroppedItem();
+            }
+        } else if (player instanceof PlayerEntity) {
             PlayerEntity spritePlayer = (PlayerEntity) player;
             brokenBlock = spritePlayer.getLastBrokenBlock();
             if (brokenBlock != null) {
