@@ -711,31 +711,36 @@ public abstract class MobEntity extends Entity {
         // Get the player's hitbox bounds
         Rectangle playerBounds = target.getBounds();
 
+        // Get mob's hitbox center for more accurate distance calculation
+        Rectangle mobBounds = getBounds();
+        double mobCenterX = mobBounds.x + mobBounds.width / 2.0;
+        double mobCenterY = mobBounds.y + mobBounds.height / 2.0;
+
         // Calculate distance to the nearest edge of the player's hitbox
         // This makes attacks feel more natural - mobs attack when close to the actual hitbox
         double nearestX;
         double nearestY;
 
         // Find nearest X point on player hitbox
-        if (posX < playerBounds.x) {
+        if (mobCenterX < playerBounds.x) {
             nearestX = playerBounds.x; // Left edge
-        } else if (posX > playerBounds.x + playerBounds.width) {
+        } else if (mobCenterX > playerBounds.x + playerBounds.width) {
             nearestX = playerBounds.x + playerBounds.width; // Right edge
         } else {
-            nearestX = posX; // Inside hitbox horizontally
+            nearestX = mobCenterX; // Inside hitbox horizontally
         }
 
         // Find nearest Y point on player hitbox
-        if (posY < playerBounds.y) {
+        if (mobCenterY < playerBounds.y) {
             nearestY = playerBounds.y; // Top edge
-        } else if (posY > playerBounds.y + playerBounds.height) {
+        } else if (mobCenterY > playerBounds.y + playerBounds.height) {
             nearestY = playerBounds.y + playerBounds.height; // Bottom edge
         } else {
-            nearestY = posY; // Inside hitbox vertically
+            nearestY = mobCenterY; // Inside hitbox vertically
         }
 
-        double dx = nearestX - posX;
-        double dy = nearestY - posY;
+        double dx = nearestX - mobCenterX;
+        double dy = nearestY - mobCenterY;
         return Math.sqrt(dx * dx + dy * dy);
     }
 
@@ -748,9 +753,14 @@ public abstract class MobEntity extends Entity {
 
         Rectangle playerBounds = target.getBounds();
 
+        // Get mob's hitbox center for more accurate distance calculation
+        Rectangle mobBounds = getBounds();
+        double mobCenterX = mobBounds.x + mobBounds.width / 2.0;
+        double mobCenterY = mobBounds.y + mobBounds.height / 2.0;
+
         // Determine which edge to target based on mob position
         double targetX;
-        if (posX < playerBounds.x + playerBounds.width / 2) {
+        if (mobCenterX < playerBounds.x + playerBounds.width / 2) {
             // Mob is to the left, target player's left edge (their back if facing right)
             targetX = playerBounds.x;
         } else {
@@ -761,8 +771,8 @@ public abstract class MobEntity extends Entity {
         // Use player's vertical center for Y
         double targetY = playerBounds.y + playerBounds.height / 2;
 
-        double dx = targetX - posX;
-        double dy = targetY - posY;
+        double dx = targetX - mobCenterX;
+        double dy = targetY - mobCenterY;
         return Math.sqrt(dx * dx + dy * dy);
     }
 

@@ -102,4 +102,28 @@ public interface PlayerBase {
      * @return true if currently invincible
      */
     boolean isInvincible();
+
+    /**
+     * Gets the player's current mana.
+     * @return Current mana
+     */
+    int getMana();
+
+    /**
+     * Gets the player's maximum mana.
+     * @return Maximum mana
+     */
+    int getMaxMana();
+
+    /**
+     * Gets the player's current stamina.
+     * @return Current stamina
+     */
+    int getStamina();
+
+    /**
+     * Gets the player's maximum stamina.
+     * @return Maximum stamina
+     */
+    int getMaxStamina();
 }

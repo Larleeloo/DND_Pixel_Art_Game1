@@ -24,9 +24,9 @@ import java.util.*;
  */
 public class QuadrupedSpriteGenerator {
 
-    // Base sprite dimensions (will be scaled 2x for display)
-    private static final int FRAME_WIDTH = 48;
-    private static final int FRAME_HEIGHT = 32;
+    // Sprite dimensions - 64x64 for larger, more visible mobs
+    private static final int FRAME_WIDTH = 64;
+    private static final int FRAME_HEIGHT = 64;
     private static final int FRAME_DELAY = 150; // ms per frame
 
     // Animal configurations
@@ -225,111 +225,127 @@ public class QuadrupedSpriteGenerator {
     private static void drawQuadruped(Graphics2D g, AnimalConfig config,
             int yOffset, int breathOffset, int[] legOffsets) {
 
+        // Scale factor for 64x64 (was designed for 48x32)
+        float scale = 1.5f;
+
         int centerX = FRAME_WIDTH / 2;
-        int groundY = FRAME_HEIGHT - 4;
+        int groundY = FRAME_HEIGHT - 6;
 
         // Leg positions: front-left, front-right, back-left, back-right
-        int legWidth = 4;
-        int legHeight = 8;
+        int legWidth = (int)(6 * scale);
+        int legHeight = (int)(14 * scale);
+
+        // Scale offsets
+        int scaledYOffset = (int)(yOffset * scale);
+        int[] scaledLegOffsets = new int[4];
+        for (int i = 0; i < 4; i++) {
+            scaledLegOffsets[i] = (int)(legOffsets[i] * scale);
+        }
 
         // Draw back legs first (behind body)
         g.setColor(darken(config.bodyColor, 0.8f));
 
         // Back-left leg
-        int blLegX = centerX - 8;
-        int blLegY = groundY - legHeight + legOffsets[2];
-        g.fillRect(blLegX, blLegY + yOffset, legWidth, legHeight);
+        int blLegX = centerX - (int)(14 * scale);
+        int blLegY = groundY - legHeight + scaledLegOffsets[2];
+        g.fillRect(blLegX, blLegY + scaledYOffset, legWidth, legHeight);
 
         // Back-right leg
-        int brLegX = centerX - 4;
-        int brLegY = groundY - legHeight + legOffsets[3];
-        g.fillRect(brLegX, brLegY + yOffset, legWidth, legHeight);
+        int brLegX = centerX - (int)(7 * scale);
+        int brLegY = groundY - legHeight + scaledLegOffsets[3];
+        g.fillRect(brLegX, brLegY + scaledYOffset, legWidth, legHeight);
 
         // Draw body
-        int bodyWidth = 24;
-        int bodyHeight = 12 + breathOffset;
+        int bodyWidth = (int)(36 * scale);
+        int bodyHeight = (int)(18 * scale) + (int)(breathOffset * scale);
         int bodyX = centerX - bodyWidth / 2;
-        int bodyY = groundY - legHeight - bodyHeight + yOffset;
+        int bodyY = groundY - legHeight - bodyHeight + scaledYOffset;
 
         g.setColor(config.bodyColor);
-        g.fillRoundRect(bodyX, bodyY, bodyWidth, bodyHeight, 4, 4);
+        g.fillRoundRect(bodyX, bodyY, bodyWidth, bodyHeight, 6, 6);
 
         // Draw spots or patterns if applicable
         if (config.hasSpots) {
             g.setColor(config.accentColor);
-            g.fillOval(bodyX + 4, bodyY + 2, 4, 4);
-            g.fillOval(bodyX + 12, bodyY + 4, 5, 4);
-            g.fillOval(bodyX + 8, bodyY + 6, 3, 3);
+            g.fillOval(bodyX + (int)(6 * scale), bodyY + (int)(3 * scale), (int)(6 * scale), (int)(6 * scale));
+            g.fillOval(bodyX + (int)(18 * scale), bodyY + (int)(6 * scale), (int)(8 * scale), (int)(6 * scale));
+            g.fillOval(bodyX + (int)(12 * scale), bodyY + (int)(9 * scale), (int)(5 * scale), (int)(5 * scale));
         }
 
         // Draw belly
         g.setColor(config.bellyColor);
-        g.fillRect(bodyX + 4, bodyY + bodyHeight - 4, bodyWidth - 8, 4);
+        g.fillRect(bodyX + (int)(6 * scale), bodyY + bodyHeight - (int)(6 * scale), bodyWidth - (int)(12 * scale), (int)(6 * scale));
 
         // Draw front legs (in front of body)
         g.setColor(config.bodyColor);
 
         // Front-left leg
-        int flLegX = centerX + 4;
-        int flLegY = groundY - legHeight + legOffsets[0];
-        g.fillRect(flLegX, flLegY + yOffset, legWidth, legHeight);
+        int flLegX = centerX + (int)(4 * scale);
+        int flLegY = groundY - legHeight + scaledLegOffsets[0];
+        g.fillRect(flLegX, flLegY + scaledYOffset, legWidth, legHeight);
 
         // Front-right leg
-        int frLegX = centerX + 8;
-        int frLegY = groundY - legHeight + legOffsets[1];
-        g.fillRect(frLegX, frLegY + yOffset, legWidth, legHeight);
+        int frLegX = centerX + (int)(11 * scale);
+        int frLegY = groundY - legHeight + scaledLegOffsets[1];
+        g.fillRect(frLegX, frLegY + scaledYOffset, legWidth, legHeight);
 
         // Draw hooves/paws
         g.setColor(config.darkColor);
-        g.fillRect(blLegX, groundY - 2, legWidth, 2);
-        g.fillRect(brLegX, groundY - 2, legWidth, 2);
-        g.fillRect(flLegX, groundY - 2, legWidth, 2);
-        g.fillRect(frLegX, groundY - 2, legWidth, 2);
+        int hoofHeight = (int)(3 * scale);
+        g.fillRect(blLegX, groundY - hoofHeight, legWidth, hoofHeight);
+        g.fillRect(brLegX, groundY - hoofHeight, legWidth, hoofHeight);
+        g.fillRect(flLegX, groundY - hoofHeight, legWidth, hoofHeight);
+        g.fillRect(frLegX, groundY - hoofHeight, legWidth, hoofHeight);
 
         // Draw neck
-        int neckX = bodyX + bodyWidth - 6;
-        int neckY = bodyY - 4;
+        int neckWidth = (int)(10 * scale);
+        int neckHeight = (int)(12 * scale);
+        int neckX = bodyX + bodyWidth - (int)(10 * scale);
+        int neckY = bodyY - (int)(6 * scale);
         g.setColor(config.bodyColor);
-        g.fillRect(neckX, neckY, 6, 8);
+        g.fillRect(neckX, neckY, neckWidth, neckHeight);
 
         // Draw head
-        int headWidth = 10;
-        int headHeight = 8;
-        int headX = neckX + 2;
-        int headY = neckY - headHeight + 2;
+        int headWidth = (int)(16 * scale);
+        int headHeight = (int)(12 * scale);
+        int headX = neckX + (int)(3 * scale);
+        int headY = neckY - headHeight + (int)(3 * scale);
         g.setColor(config.bodyColor);
-        g.fillRoundRect(headX, headY, headWidth, headHeight, 3, 3);
+        g.fillRoundRect(headX, headY, headWidth, headHeight, 5, 5);
 
         // Draw ears
         g.setColor(config.bodyColor);
         if (config.pointedEars) {
             // Pointed ears (wolf, dog, fox, cat)
-            int[] earX1 = {headX + 1, headX + 3, headX + 5};
-            int[] earY1 = {headY, headY - 4, headY};
+            int earSize = (int)(6 * scale);
+            int[] earX1 = {headX + (int)(2 * scale), headX + (int)(5 * scale), headX + (int)(8 * scale)};
+            int[] earY1 = {headY, headY - earSize, headY};
             g.fillPolygon(earX1, earY1, 3);
 
-            int[] earX2 = {headX + 5, headX + 7, headX + 9};
-            int[] earY2 = {headY, headY - 4, headY};
+            int[] earX2 = {headX + (int)(8 * scale), headX + (int)(11 * scale), headX + (int)(14 * scale)};
+            int[] earY2 = {headY, headY - earSize, headY};
             g.fillPolygon(earX2, earY2, 3);
         } else {
             // Rounded ears (horse, cow, pig, etc.)
-            g.fillOval(headX, headY - 2, 4, 4);
-            g.fillOval(headX + 6, headY - 2, 4, 4);
+            int earSize = (int)(6 * scale);
+            g.fillOval(headX, headY - (int)(3 * scale), earSize, earSize);
+            g.fillOval(headX + (int)(10 * scale), headY - (int)(3 * scale), earSize, earSize);
         }
 
         // Draw eye
         g.setColor(config.darkColor);
-        g.fillOval(headX + headWidth - 4, headY + 2, 2, 2);
+        int eyeSize = (int)(4 * scale);
+        g.fillOval(headX + headWidth - (int)(6 * scale), headY + (int)(3 * scale), eyeSize, eyeSize);
 
         // Draw nose/snout
         g.setColor(config.darkColor);
-        g.fillOval(headX + headWidth - 2, headY + 4, 3, 2);
+        g.fillOval(headX + headWidth - (int)(3 * scale), headY + (int)(6 * scale), (int)(5 * scale), (int)(4 * scale));
 
         // Draw tail
         g.setColor(config.accentColor);
-        int tailX = bodyX - 2;
-        int tailY = bodyY + 2;
-        g.fillOval(tailX, tailY, 4, 6);
+        int tailX = bodyX - (int)(4 * scale);
+        int tailY = bodyY + (int)(3 * scale);
+        g.fillOval(tailX, tailY, (int)(6 * scale), (int)(10 * scale));
     }
 
     private static Color darken(Color c, float factor) {

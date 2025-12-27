@@ -60,6 +60,17 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private double invincibilityTime = 1.0;
     private double invincibilityTimer = 0;
 
+    // Mana system
+    private int maxMana = 100;
+    private int currentMana = 100;
+    private double manaRegenRate = 5.0; // Mana per second
+
+    // Stamina system
+    private int maxStamina = 100;
+    private int currentStamina = 100;
+    private double staminaRegenRate = 15.0; // Stamina per second
+    private double staminaDrainRate = 20.0; // Stamina drain per second when sprinting
+
     // Systems
     private Inventory inventory;
     private AudioManager audioManager;
@@ -500,6 +511,52 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         }
 
         System.out.println("SpritePlayer took " + damage + " damage! Health: " + currentHealth + "/" + maxHealth);
+    }
+
+    @Override
+    public int getMana() {
+        return currentMana;
+    }
+
+    @Override
+    public int getMaxMana() {
+        return maxMana;
+    }
+
+    @Override
+    public int getStamina() {
+        return currentStamina;
+    }
+
+    @Override
+    public int getMaxStamina() {
+        return maxStamina;
+    }
+
+    /**
+     * Uses mana for an action.
+     * @param amount Amount of mana to use
+     * @return true if enough mana was available
+     */
+    public boolean useMana(int amount) {
+        if (currentMana >= amount) {
+            currentMana -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Uses stamina for an action.
+     * @param amount Amount of stamina to use
+     * @return true if enough stamina was available
+     */
+    public boolean useStamina(int amount) {
+        if (currentStamina >= amount) {
+            currentStamina -= amount;
+            return true;
+        }
+        return false;
     }
 
     // ==================== Block Mining System ====================

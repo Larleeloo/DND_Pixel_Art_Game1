@@ -716,6 +716,9 @@ public class GameScene implements Scene {
         // Draw inventory UI (in screen space, not affected by camera)
         if (player != null) {
             player.getInventory().draw(g2d);
+
+            // Draw player status bars (health, mana, stamina) above hotbar
+            PlayerStatusBar.draw(g2d, player, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
         }
 
         // Draw level name

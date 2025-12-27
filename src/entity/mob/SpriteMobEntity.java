@@ -69,6 +69,9 @@ public class SpriteMobEntity extends MobEntity {
         this.hitboxOffsetX = -hitboxWidth / 2;
         this.hitboxOffsetY = -hitboxHeight;
 
+        // Larger sprites need larger attack range
+        this.attackRange = 80;
+
         this.lastUpdateTime = System.currentTimeMillis();
     }
 
