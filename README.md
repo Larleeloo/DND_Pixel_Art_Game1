@@ -10,7 +10,9 @@ CURRENT FEATURES
 -JSON file-based level loading
 -Block-based level construction
 -Sprite-based player animations with GIF support
+-Sprite-based mob animations with hitbox collision detection
 -Equipment overlay system for character customization (helmets, chest, legs, boots, etc.)
+-Block overlay system (grass, snow, ice overlays on base blocks)
 -Bone-based animations (legacy, moved to animation.bone package)
 -Entity management with custom AI for Humanoid and Quadruped entities
 -Basic lighting support (simple dark mask and light sources)
@@ -23,7 +25,7 @@ src/                    - Game engine source code (organized by package)
   scene/                - Scene management (Scene, SceneManager, GameScene, menus)
   entity/               - Base entity classes (Entity, EntityManager, SpriteEntity)
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
-    mob/                - Mob AI classes (MobEntity, HumanoidMobEntity, QuadrupedMobEntity)
+    mob/                - Mob AI classes (MobEntity, SpriteMobEntity, HumanoidMobEntity, QuadrupedMobEntity)
   block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
   animation/            - Animation system (SpriteAnimation, EquipmentOverlay, AnimatedTexture)
     bone/               - Legacy bone animation (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
@@ -55,8 +57,7 @@ Work on bug fixes
 
 KNOWN ISSUES
 
-Blocks should work with an overlay system. (Grass and snow should be an overlay; frozen blocks should have an icy overlay that covers the whole block with a semi-transparent mask)
-Mobs should be sprite based as well and include hitbox collision detection (quadrupeds and humanoids)
+(All previously listed issues have been resolved - see RESOLVED ISSUES section)
 
 FUTURE FEATURES (ROADMAP)
 
@@ -244,3 +245,20 @@ RESOLVED ISSUES
   -> Updated CURRENT FEATURES to reflect sprite-based animation system
   -> Updated PROJECT STRUCTURE with new package organization
   -> Moved resolved issues from KNOWN ISSUES to RESOLVED ISSUES
+
+[FIXED] Blocks should work with an overlay system
+  -> Created BlockOverlay enum with GRASS, SNOW, ICE, MOSS, VINES overlay types
+  -> Added overlay support to BlockEntity with rendering and damage tracking
+  -> Overlays render on top of base block textures with semi-transparency
+  -> Overlays must be removed before mining the base block
+  -> Includes procedural texture generation for overlays when files not available
+  -> Added overlay texture caching to BlockRegistry for efficiency
+
+[FIXED] Mobs should be sprite based with hitbox collision detection
+  -> Created SpriteMobEntity class for GIF-based mob animations
+  -> Supports idle, walk, run, attack, hurt, death animation states
+  -> Proper hitbox collision detection with configurable hitbox size
+  -> Inherits AI state machine from MobEntity (IDLE, WANDER, CHASE, ATTACK, etc.)
+  -> Health bar rendering and invincibility flash effects
+  -> Debug mode for visualizing hitboxes and mob state
+  -> Placeholder sprite generation for testing without assets
