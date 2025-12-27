@@ -154,7 +154,11 @@ public class SpriteMobEntity extends MobEntity {
         if (target != null && attackTimer <= 0) {
             double dist = getDistanceToTargetFace();
             if (dist <= attackRange) {
-                target.takeDamage(attackDamage);
+                // Calculate knockback direction based on mob position relative to player
+                Rectangle playerBounds = target.getBounds();
+                double playerCenterX = playerBounds.x + playerBounds.width / 2;
+                double knockbackDir = posX < playerCenterX ? 1 : -1;
+                target.takeDamage(attackDamage, knockbackDir * 5, -3);
                 attackTimer = attackCooldown;
                 setAnimationState("attack");
                 System.out.println("SpriteMobEntity: Attacked player for " + attackDamage + " damage");
