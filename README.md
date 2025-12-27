@@ -47,11 +47,17 @@ sounds/                 - All sound files (music, effects, footsteps)
 levels/                 - Level JSON files
 
 TODOs
-Revert 'Bone-based' animation system to Sprite/GIF-based system that allows for GIF clothing and armor items to be overlayed on the sprite. The items should be synchronized with the timing of the sprites in order to give the appearance of wearing a given clothing article. 
+Work on bug fixes 
 
 KNOWN ISSUES
 
+Blocks should work with an overlay system. (Grass and snow should be an overlay; frozen blocks should have an icy overlay that covers the whole block with a semi-transparent mask)
+Character customization UI color sliders location interferes with character screen. Needs to be moved down. Selected color swatch overlaps color sliders
+Mobs should be sprite based as well and include hitbox collision detection (quadrupeds and humanoids)
+Old assets for bone-based animation system need to be moved to their own folder and refactored wherever still referenced. All bone animation and BlockBench tools need to be moved to their own packages with their imports updated
 Lighting demo level unnecessary (uses java class not JSON file to render)
+Old bone-based character customization should be removed from the main menu and replaced with current sprite-based customization
+Update README.md (this document) with current features
 
 FUTURE FEATURES (ROADMAP)
 
