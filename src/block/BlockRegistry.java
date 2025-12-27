@@ -42,6 +42,9 @@ public class BlockRegistry {
     // Cache for tinted texture variants (key: BlockType + color hash)
     private final Map<String, BufferedImage> tintedTextureCache;
 
+    // Cache for overlay textures
+    private final Map<BlockOverlay, BufferedImage> overlayTextureCache;
+
     // Fallback texture for missing assets
     private BufferedImage fallbackTexture;
 
@@ -49,6 +52,7 @@ public class BlockRegistry {
         textureCache = new HashMap<>();
         animatedTextureCache = new HashMap<>();
         tintedTextureCache = new HashMap<>();
+        overlayTextureCache = new HashMap<>();
         createFallbackTexture();
     }
 
@@ -196,6 +200,40 @@ public class BlockRegistry {
     }
 
     /**
+     * Gets an overlay texture, loading from file or generating if not available.
+     * Overlay textures are cached for reuse.
+     *
+     * @param overlay The overlay type
+     * @return Scaled BufferedImage for the overlay, or null if NONE
+     */
+    public BufferedImage getOverlayTexture(BlockOverlay overlay) {
+        if (overlay == null || overlay == BlockOverlay.NONE) {
+            return null;
+        }
+
+        if (overlayTextureCache.containsKey(overlay)) {
+            return overlayTextureCache.get(overlay);
+        }
+
+        // Try to load from file first
+        if (overlay.getTexturePath() != null) {
+            AssetLoader.ImageAsset asset = AssetLoader.load(overlay.getTexturePath());
+            if (asset != null && asset.staticImage != null) {
+                BufferedImage scaled = scaleTexture(asset.staticImage);
+                overlayTextureCache.put(overlay, scaled);
+                System.out.println("BlockRegistry: Loaded overlay texture: " + overlay.name());
+                return scaled;
+            }
+        }
+
+        // Generate texture if file not found
+        BufferedImage generated = overlay.generateTexture(BLOCK_SIZE);
+        overlayTextureCache.put(overlay, generated);
+        System.out.println("BlockRegistry: Generated overlay texture: " + overlay.name());
+        return generated;
+    }
+
+    /**
      * Scales an animated texture - all frames scaled to BLOCK_SIZE.
      */
     private AnimatedTexture scaleAnimatedTexture(AnimatedTexture source) {
@@ -287,6 +325,7 @@ public class BlockRegistry {
         textureCache.clear();
         animatedTextureCache.clear();
         tintedTextureCache.clear();
+        overlayTextureCache.clear();
         System.out.println("BlockRegistry: Cache cleared");
     }
 

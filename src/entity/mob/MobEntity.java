@@ -3,6 +3,7 @@ import entity.*;
 import entity.player.*;
 import block.*;
 import animation.*;
+import animation.bone.*;
 import graphics.*;
 import input.*;
 

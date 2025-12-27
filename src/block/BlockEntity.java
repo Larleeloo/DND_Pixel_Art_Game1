@@ -42,6 +42,12 @@ public class BlockEntity extends Entity {
     private boolean broken = false;
     private boolean targeted = false; // Whether this block is currently being targeted by player
 
+    // Overlay system - overlays are rendered on top of base texture
+    // Must be removed before base block can be mined (if overlay.blocksBaseMining() is true)
+    private BlockOverlay overlay = BlockOverlay.NONE;
+    private BufferedImage overlayTexture = null;
+    private int overlayDamage = 0; // Damage dealt to overlay (0 to overlay.getBreakSteps())
+
     // Layer-based damage system
     // Each value represents layers removed (0-8), where each layer = 2 base pixels = 8 scaled pixels
     public static final int MAX_LAYERS = 8;
@@ -164,6 +170,14 @@ public class BlockEntity extends Entity {
                 destX, destY, destX + visibleWidth, destY + visibleHeight,  // destination
                 srcX, srcY, srcX + srcWidth, srcY + srcHeight,              // source
                 null);
+
+            // Draw overlay on top of base texture
+            if (overlay != BlockOverlay.NONE && overlayTexture != null) {
+                g2d.drawImage(overlayTexture,
+                    destX, destY, destX + visibleWidth, destY + visibleHeight,
+                    srcX, srcY, srcX + srcWidth, srcY + srcHeight,
+                    null);
+            }
         } else {
             // Fallback rendering
             g.setColor(Color.MAGENTA);
@@ -197,6 +211,7 @@ public class BlockEntity extends Entity {
 
     /**
      * Mines one layer from the specified direction.
+     * If block has an overlay that blocks base mining, overlay is damaged first.
      * Returns true if the block was fully broken by this mining action.
      *
      * @param direction MINE_LEFT, MINE_RIGHT, MINE_UP, or MINE_DOWN
@@ -204,6 +219,19 @@ public class BlockEntity extends Entity {
      */
     public boolean mineLayer(int direction) {
         if (broken) return false;
+
+        // If overlay blocks base mining, damage overlay first
+        if (overlay != BlockOverlay.NONE && overlay.blocksBaseMining()) {
+            overlayDamage++;
+            if (overlayDamage >= overlay.getBreakSteps()) {
+                // Overlay is broken, remove it
+                System.out.println("Overlay " + overlay.getDisplayName() + " removed from block at (" + gridX + "," + gridY + ")");
+                overlay = BlockOverlay.NONE;
+                overlayTexture = null;
+                overlayDamage = 0;
+            }
+            return false; // Block not broken yet, only overlay was damaged
+        }
 
         switch (direction) {
             case MINE_LEFT:
@@ -378,6 +406,71 @@ public class BlockEntity extends Entity {
      */
     public int[] getTint() {
         return new int[] { tintRed, tintGreen, tintBlue };
+    }
+
+    // ==================== OVERLAY METHODS ====================
+
+    /**
+     * Sets an overlay on this block.
+     * Overlays are rendered on top of the base texture.
+     *
+     * @param overlay The overlay type to apply
+     */
+    public void setOverlay(BlockOverlay overlay) {
+        this.overlay = overlay != null ? overlay : BlockOverlay.NONE;
+        this.overlayDamage = 0;
+
+        if (this.overlay != BlockOverlay.NONE) {
+            // Try to load overlay texture from file, fall back to generated
+            this.overlayTexture = BlockRegistry.getInstance().getOverlayTexture(this.overlay);
+            if (this.overlayTexture == null) {
+                // Generate texture if not available
+                this.overlayTexture = this.overlay.generateTexture(size);
+            }
+        } else {
+            this.overlayTexture = null;
+        }
+    }
+
+    /**
+     * Gets the current overlay type.
+     * @return The BlockOverlay type (NONE if no overlay)
+     */
+    public BlockOverlay getOverlay() {
+        return overlay;
+    }
+
+    /**
+     * Checks if this block has an overlay.
+     * @return true if overlay is not NONE
+     */
+    public boolean hasOverlay() {
+        return overlay != BlockOverlay.NONE;
+    }
+
+    /**
+     * Removes the overlay from this block.
+     */
+    public void removeOverlay() {
+        this.overlay = BlockOverlay.NONE;
+        this.overlayTexture = null;
+        this.overlayDamage = 0;
+    }
+
+    /**
+     * Gets the current overlay damage level.
+     * @return Damage dealt to overlay (0 to overlay.getBreakSteps())
+     */
+    public int getOverlayDamage() {
+        return overlayDamage;
+    }
+
+    /**
+     * Checks if overlay blocks mining of the base block.
+     * @return true if overlay must be removed before base can be mined
+     */
+    public boolean isOverlayBlockingMining() {
+        return overlay != BlockOverlay.NONE && overlay.blocksBaseMining();
     }
 
     /**

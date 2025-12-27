@@ -1,4 +1,4 @@
-package animation;
+package animation.bone;
 import graphics.*;
 
 import java.util.*;

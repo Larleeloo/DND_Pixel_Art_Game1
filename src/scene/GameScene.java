@@ -5,6 +5,7 @@ import entity.player.*;
 import entity.mob.*;
 import block.*;
 import animation.*;
+import animation.bone.*;
 import graphics.*;
 import level.*;
 import audio.*;
