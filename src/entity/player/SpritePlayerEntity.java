@@ -51,7 +51,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     // Dimensions
     private int width;
     private int height;
-    private static final int SCALE = 4;
+    // Scale factor: 2 gives 64x128 from 32x64 base sprites (similar to original 96x128 player)
+    private static final int SCALE = 2;
 
     // Health system
     private int maxHealth = 100;
