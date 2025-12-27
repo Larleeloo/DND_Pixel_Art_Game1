@@ -582,4 +582,24 @@ public class PlayerEntity extends SpriteEntity implements PlayerBase {
 
         System.out.println("Player took " + damage + " damage! Health: " + currentHealth + "/" + maxHealth);
     }
+
+    @Override
+    public int getMana() {
+        return 100; // Default full mana for basic player
+    }
+
+    @Override
+    public int getMaxMana() {
+        return 100;
+    }
+
+    @Override
+    public int getStamina() {
+        return 100; // Default full stamina for basic player
+    }
+
+    @Override
+    public int getMaxStamina() {
+        return 100;
+    }
 }
