@@ -217,6 +217,8 @@ public class GameScene implements Scene {
             if (audio != null) {
                 spriteAnimPlayer.setAudioManager(audio);
             }
+            // Apply saved character customization (clothing overlays)
+            SpriteCharacterCustomization.applyToPlayer(spriteAnimPlayer);
             player = spriteAnimPlayer;
             System.out.println("GameScene: Using sprite-animated player from " + levelData.spriteAnimationDir);
         } else if (levelData.useBoneAnimation) {
@@ -377,6 +379,39 @@ public class GameScene implements Scene {
                 Color.WHITE
         );
         buttons.add(dayNightButton);
+
+        // Customize button (opens character customization for sprite-based players)
+        if (levelData.useSpriteAnimation) {
+            UIButton customizeButton = new UIButton(GamePanel.SCREEN_WIDTH - 710, 20, 120, 50, "Customize", () -> {
+                openCharacterCustomization();
+            });
+            customizeButton.setColors(
+                    new Color(180, 120, 50, 200),
+                    new Color(220, 160, 80, 230),
+                    Color.WHITE
+            );
+            buttons.add(customizeButton);
+        }
+    }
+
+    /**
+     * Opens the character customization scene.
+     * The current level state is preserved while customizing.
+     */
+    private void openCharacterCustomization() {
+        // Store current level path for return
+        currentLevelPath = this.levelPath;
+        SceneManager.getInstance().setScene("spriteCustomization", SceneManager.TRANSITION_FADE);
+    }
+
+    // Store level path for returning from customization
+    private static String currentLevelPath = null;
+
+    /**
+     * Gets the current level path (used when returning from customization).
+     */
+    public static String getCurrentLevelPath() {
+        return currentLevelPath;
     }
 
     /**
@@ -425,6 +460,11 @@ public class GameScene implements Scene {
         // Handle block breaking - check for broken blocks and dropped items
         if (player != null) {
             handleBlockBreaking();
+        }
+
+        // C key opens character customization (for sprite-based players)
+        if (levelData.useSpriteAnimation && input.isKeyJustPressed('c')) {
+            openCharacterCustomization();
         }
 
         // Update camera to follow player
