@@ -31,6 +31,10 @@ public class LevelData {
     public boolean useBoneAnimation = false;       // If true, use PlayerBoneEntity instead of PlayerEntity
     public String boneTextureDir = "assets/textures/humanoid/player"; // Directory containing bone textures
 
+    // Sprite-based GIF animation settings (alternative to bone animation)
+    public boolean useSpriteAnimation = false;     // If true, use SpritePlayerEntity with GIF animations
+    public String spriteAnimationDir = "assets/player/sprites"; // Directory containing idle.gif, walk.gif, jump.gif
+
     // Level dimensions (for camera bounds)
     public int levelWidth;
     public int levelHeight;
@@ -486,6 +490,28 @@ public class LevelData {
          */
         public Builder boneTextureDir(String dir) {
             data.boneTextureDir = dir;
+            return this;
+        }
+
+        /**
+         * Enable sprite/GIF-based animation for the player.
+         * This provides layered GIF animations with equipment overlay support.
+         * @param enabled True to use sprite animation
+         * @return This builder
+         */
+        public Builder useSpriteAnimation(boolean enabled) {
+            data.useSpriteAnimation = enabled;
+            return this;
+        }
+
+        /**
+         * Set the directory containing sprite animation GIFs.
+         * Expected files: idle.gif, walk.gif, jump.gif
+         * @param dir Directory path (e.g., "assets/player/sprites")
+         * @return This builder
+         */
+        public Builder spriteAnimationDir(String dir) {
+            data.spriteAnimationDir = dir;
             return this;
         }
 
