@@ -883,6 +883,42 @@ public class GameScene implements Scene {
             } else {
                 return new HumanoidMobEntity(m.x, m.y, variantType);
             }
+
+        } else if (type.equals("sprite_quadruped")) {
+            // Sprite-based quadruped mob using GIF animations
+            if (m.spriteDir == null || m.spriteDir.isEmpty()) {
+                System.err.println("GameScene: sprite_quadruped requires spriteDir");
+                return null;
+            }
+
+            SpriteMobEntity mob = new SpriteMobEntity(m.x, m.y, m.spriteDir);
+
+            // Set behavior based on level data
+            if (m.behavior != null) {
+                switch (m.behavior.toLowerCase()) {
+                    case "hostile":
+                        mob.setHostile(true);
+                        mob.setAggroRange(300);
+                        break;
+                    case "neutral":
+                        mob.setHostile(false);
+                        mob.setAggroRange(150); // Will aggro if attacked
+                        break;
+                    case "passive":
+                    default:
+                        mob.setHostile(false);
+                        mob.setAggroRange(0);
+                        break;
+                }
+            }
+
+            // Enable debug drawing if requested
+            if (m.debugDraw) {
+                mob.setDebugDraw(true);
+            }
+
+            System.out.println("GameScene: Created sprite_quadruped mob at (" + m.x + "," + m.y + ") with sprites from " + m.spriteDir);
+            return mob;
         }
 
         System.err.println("GameScene: Unknown mobType: " + type);

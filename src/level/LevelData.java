@@ -403,10 +403,11 @@ public class LevelData {
     public static class MobData {
         public int x;
         public int y;
-        public String mobType;           // "quadruped" or "humanoid"
+        public String mobType;           // "quadruped", "humanoid", or "sprite_quadruped"
         public String subType;           // Animal type (wolf, horse, etc.) or variant (zombie, skeleton, etc.)
         public String behavior = "hostile"; // "passive", "neutral", "hostile"
-        public String textureDir;        // Optional texture directory
+        public String textureDir;        // Optional texture directory (bone-based mobs)
+        public String spriteDir;         // Sprite directory for GIF-based mobs
         public double wanderMinX = -1;   // Wander bounds (-1 = use default)
         public double wanderMaxX = -1;
         public boolean debugDraw = false;
