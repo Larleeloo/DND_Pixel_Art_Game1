@@ -75,7 +75,7 @@ public class MainMenuScene implements Scene {
         );
         buttons.add(playButton);
 
-        // Customize button - opens character customization
+        // Customize button - opens sprite-based character customization
         UIButton customizeButton = new UIButton(
                 centerX - buttonWidth / 2,
                 startY + spacing,
@@ -83,8 +83,8 @@ public class MainMenuScene implements Scene {
                 buttonHeight,
                 "Customize Character",
                 () -> {
-                    System.out.println("MainMenuScene: Opening character customization");
-                    SceneManager.getInstance().setScene("characterCustomization", SceneManager.TRANSITION_FADE);
+                    System.out.println("MainMenuScene: Opening sprite character customization");
+                    SceneManager.getInstance().setScene("spriteCustomization", SceneManager.TRANSITION_FADE);
                 }
         );
         customizeButton.setColors(
@@ -94,29 +94,10 @@ public class MainMenuScene implements Scene {
         );
         buttons.add(customizeButton);
 
-        // Lighting Demo button - opens lighting demonstration
-        UIButton lightingDemoButton = new UIButton(
-                centerX - buttonWidth / 2,
-                startY + spacing * 2,
-                buttonWidth,
-                buttonHeight,
-                "Lighting Demo",
-                () -> {
-                    System.out.println("MainMenuScene: Opening lighting demo");
-                    SceneManager.getInstance().setScene("lightingDemo", SceneManager.TRANSITION_FADE);
-                }
-        );
-        lightingDemoButton.setColors(
-                new Color(50, 50, 100, 220),
-                new Color(80, 80, 150, 255),
-                Color.WHITE
-        );
-        buttons.add(lightingDemoButton);
-
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing * 3,
+                startY + spacing * 2,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",

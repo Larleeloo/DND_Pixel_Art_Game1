@@ -4,6 +4,7 @@ import entity.mob.*;
 import scene.*;
 import block.*;
 import animation.*;
+import animation.bone.*;
 import audio.*;
 import input.*;
 import ui.*;

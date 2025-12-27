@@ -1,5 +1,6 @@
 package graphics;
 import animation.*;
+import animation.bone.*;
 import block.*;
 
 import java.awt.image.BufferedImage;

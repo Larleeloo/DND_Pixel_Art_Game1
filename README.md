@@ -9,11 +9,13 @@ This game should feel abundant with the quantity and variations in items and too
 CURRENT FEATURES
 -JSON file-based level loading
 -Block-based level construction
--Bone-based animations for the player entity with blockbench import support
+-Sprite-based player animations with GIF support
+-Equipment overlay system for character customization (helmets, chest, legs, boots, etc.)
+-Bone-based animations (legacy, moved to animation.bone package)
 -Entity management with custom AI for Humanoid and Quadruped entities
 -Basic lighting support (simple dark mask and light sources)
--Simple parallax
--Scrolling camera that follows the player (needs fixing for vertical scrolling level, see 'KNOWN ISSUES')
+-Simple parallax with animated background support
+-Scrolling camera that follows the player
 
 PROJECT STRUCTURE
 src/                    - Game engine source code (organized by package)
@@ -23,7 +25,8 @@ src/                    - Game engine source code (organized by package)
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
     mob/                - Mob AI classes (MobEntity, HumanoidMobEntity, QuadrupedMobEntity)
   block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
-  animation/            - Animation system (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
+  animation/            - Animation system (SpriteAnimation, EquipmentOverlay, AnimatedTexture)
+    bone/               - Legacy bone animation (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
   audio/                - Sound management (AudioManager)
@@ -35,8 +38,9 @@ devtools/               - Development tools (texture generators, animation impor
   - QuadrupedTextureGenerator.java  - Generates quadruped animal textures
   - BlockTextureGenerator.java      - Generates block textures
   - ParallaxTextureGenerator.java   - Generates parallax backgrounds
-  - BoneTextureGenerator.java       - Generates simple bone textures
-  - BlockbenchAnimationImporter.java - Imports Blockbench animation files
+  blockbench/             - Blockbench import tools (legacy bone animation support)
+    - BoneTextureGenerator.java       - Generates simple bone textures
+    - BlockbenchAnimationImporter.java - Imports Blockbench animation files
 assets/
   textures/
     humanoid/           - Humanoid character textures (player, orc, zombie, skeleton)
@@ -52,12 +56,7 @@ Work on bug fixes
 KNOWN ISSUES
 
 Blocks should work with an overlay system. (Grass and snow should be an overlay; frozen blocks should have an icy overlay that covers the whole block with a semi-transparent mask)
-Character customization UI color sliders location interferes with character screen. Needs to be moved down. Selected color swatch overlaps color sliders
 Mobs should be sprite based as well and include hitbox collision detection (quadrupeds and humanoids)
-Old assets for bone-based animation system need to be moved to their own folder and refactored wherever still referenced. All bone animation and BlockBench tools need to be moved to their own packages with their imports updated
-Lighting demo level unnecessary (uses java class not JSON file to render)
-Old bone-based character customization should be removed from the main menu and replaced with current sprite-based customization
-Update README.md (this document) with current features
 
 FUTURE FEATURES (ROADMAP)
 
@@ -223,3 +222,25 @@ RESOLVED ISSUES
   -> Added GIF support to SpriteEntity for animated sprites
   -> GIF animations respect original frame delays and loop automatically
   -> All components include update() methods for frame advancement
+
+[FIXED] Character customization UI color sliders overlapped with character screen
+  -> Moved slider startY from 120 to 150 to prevent overlap
+  -> Removed dead code that incorrectly accessed slider values for positioning
+
+[FIXED] Old bone-based character customization should be removed from main menu
+  -> Main menu now opens sprite-based customization (SpriteCharacterCustomization)
+  -> Bone-based CharacterCustomizationScene kept for legacy PlayerBoneEntity support
+
+[FIXED] Lighting demo level unnecessary (uses java class not JSON file)
+  -> Removed LightingDemoScene.java and its registration in GamePanel
+  -> Removed Lighting Demo button from main menu
+
+[FIXED] Old bone-based animation assets need to be moved to their own folder
+  -> Moved Bone.java, BoneAnimation.java, Skeleton.java, QuadrupedSkeleton.java, QuadrupedAnimation.java to animation/bone/ package
+  -> Updated all imports in 10+ files to use animation.bone.*
+  -> Moved BlockbenchAnimationImporter.java and BoneTextureGenerator.java to devtools/blockbench/
+
+[FIXED] Update README.md with current features
+  -> Updated CURRENT FEATURES to reflect sprite-based animation system
+  -> Updated PROJECT STRUCTURE with new package organization
+  -> Moved resolved issues from KNOWN ISSUES to RESOLVED ISSUES

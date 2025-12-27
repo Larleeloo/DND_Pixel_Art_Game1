@@ -5,6 +5,7 @@ import entity.player.*;
 import entity.mob.*;
 import block.*;
 import animation.*;
+import animation.bone.*;
 import graphics.*;
 import level.*;
 import audio.*;
@@ -191,7 +192,7 @@ public class CharacterCustomizationScene implements Scene {
         int sliderWidth = 150;
         int columnWidth = 200;
         int startX = GamePanel.SCREEN_WIDTH / 2 + 50;
-        int startY = 120;
+        int startY = 150;
         int partSpacing = 180;
 
         // Create sliders for each body part in two columns
@@ -413,10 +414,6 @@ public class CharacterCustomizationScene implements Scene {
             BodyPartSliders sliders = bodyPartControls.get(partName);
             if (sliders == null) continue;
 
-            // Draw section header with color preview
-            int headerX = sliders.redSlider.getIntValue(); // Hacky way to get x
-            int headerY = (int) sliders.redSlider.getValue(); // This won't work, need to fix
-
             // Draw part name and color preview box
             drawBodyPartHeader(g2d, sliders);
 
@@ -456,7 +453,7 @@ public class CharacterCustomizationScene implements Scene {
         int sliderWidth = 150;
         int columnWidth = 200;
         int startX = GamePanel.SCREEN_WIDTH / 2 + 50;
-        int startY = 120;
+        int startY = 150;
         int partSpacing = 180;
 
         int column = index / 3;

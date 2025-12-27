@@ -6,6 +6,7 @@ import entity.mob.*;
 import block.*;
 import graphics.*;
 import animation.*;
+import animation.bone.*;
 
 import java.util.ArrayList;
 import java.util.List;
