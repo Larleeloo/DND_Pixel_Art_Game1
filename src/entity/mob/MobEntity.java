@@ -817,6 +817,38 @@ public abstract class MobEntity extends Entity {
         this.groundY = groundY;
     }
 
+    /**
+     * Sets the detection/aggro range for this mob.
+     * @param range Detection range in pixels
+     */
+    public void setDetectionRange(double range) {
+        this.detectionRange = range;
+    }
+
+    /**
+     * Sets whether this mob is hostile (will actively seek and attack players).
+     * @param hostile true if hostile, false for passive/neutral
+     */
+    public void setHostile(boolean hostile) {
+        if (hostile) {
+            // Hostile mobs have larger detection range
+            if (this.detectionRange < 200) {
+                this.detectionRange = 200;
+            }
+        } else {
+            // Passive mobs don't detect players
+            this.detectionRange = 0;
+        }
+    }
+
+    /**
+     * Sets the aggro range (alias for setDetectionRange).
+     * @param range Aggro range in pixels
+     */
+    public void setAggroRange(double range) {
+        this.detectionRange = range;
+    }
+
     public Skeleton getSkeleton() {
         return skeleton;
     }

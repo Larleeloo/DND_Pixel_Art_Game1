@@ -312,6 +312,7 @@ public class LevelLoader {
                     if (m.containsKey("subType")) mob.subType = (String) m.get("subType");
                     if (m.containsKey("behavior")) mob.behavior = (String) m.get("behavior");
                     if (m.containsKey("textureDir")) mob.textureDir = (String) m.get("textureDir");
+                    if (m.containsKey("spriteDir")) mob.spriteDir = (String) m.get("spriteDir");
                     if (m.containsKey("wanderMinX")) mob.wanderMinX = toDouble(m.get("wanderMinX"));
                     if (m.containsKey("wanderMaxX")) mob.wanderMaxX = toDouble(m.get("wanderMaxX"));
                     if (m.containsKey("debugDraw")) mob.debugDraw = toBool(m.get("debugDraw"));
