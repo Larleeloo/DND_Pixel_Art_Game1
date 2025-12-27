@@ -78,25 +78,24 @@ public class SpriteMobEntity extends MobEntity {
      * @param dir Directory containing animation GIFs
      */
     protected void loadAnimations(String dir) {
-        // Try to load standard mob animations
+        // Try to load standard mob animations using path-based loading
         String[] actions = {"idle", "walk", "run", "attack", "hurt", "death"};
 
         for (String action : actions) {
             String path = dir + "/" + action + ".gif";
             java.io.File file = new java.io.File(path);
             if (file.exists()) {
-                AssetLoader.ImageAsset asset = AssetLoader.load(path);
-                if (asset != null && asset.animatedTexture != null) {
-                    SpriteAnimation.ActionState state = SpriteAnimation.ActionState.IDLE;
-                    switch (action) {
-                        case "idle": state = SpriteAnimation.ActionState.IDLE; break;
-                        case "walk": state = SpriteAnimation.ActionState.WALK; break;
-                        case "run": state = SpriteAnimation.ActionState.WALK; break; // Use walk if no run
-                        case "attack": state = SpriteAnimation.ActionState.IDLE; break; // Fallback
-                        case "hurt": state = SpriteAnimation.ActionState.IDLE; break; // Fallback
-                        case "death": state = SpriteAnimation.ActionState.IDLE; break; // Fallback
-                    }
-                    spriteAnimation.loadAction(state, asset.animatedTexture);
+                SpriteAnimation.ActionState state = SpriteAnimation.ActionState.IDLE;
+                switch (action) {
+                    case "idle": state = SpriteAnimation.ActionState.IDLE; break;
+                    case "walk": state = SpriteAnimation.ActionState.WALK; break;
+                    case "run": state = SpriteAnimation.ActionState.RUN; break;
+                    case "attack": state = SpriteAnimation.ActionState.ATTACK; break;
+                    case "hurt": state = SpriteAnimation.ActionState.HURT; break;
+                    case "death": state = SpriteAnimation.ActionState.DEAD; break;
+                }
+                // Use loadAction with path (String) - it handles loading internally
+                if (spriteAnimation.loadAction(state, path)) {
                     System.out.println("SpriteMobEntity: Loaded animation: " + action + " from " + path);
                 }
             }
@@ -175,14 +174,25 @@ public class SpriteMobEntity extends MobEntity {
             SpriteAnimation.ActionState actionState = SpriteAnimation.ActionState.IDLE;
             switch (state) {
                 case "walk":
+                    actionState = SpriteAnimation.ActionState.WALK;
+                    break;
                 case "run":
                 case "chase":
-                    actionState = SpriteAnimation.ActionState.WALK;
+                    actionState = SpriteAnimation.ActionState.RUN;
+                    break;
+                case "attack":
+                    actionState = SpriteAnimation.ActionState.ATTACK;
+                    break;
+                case "hurt":
+                    actionState = SpriteAnimation.ActionState.HURT;
+                    break;
+                case "death":
+                    actionState = SpriteAnimation.ActionState.DEAD;
                     break;
                 default:
                     actionState = SpriteAnimation.ActionState.IDLE;
             }
-            spriteAnimation.setAction(actionState);
+            spriteAnimation.setState(actionState);
         }
     }
 
