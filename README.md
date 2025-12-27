@@ -47,7 +47,7 @@ sounds/                 - All sound files (music, effects, footsteps)
 levels/                 - Level JSON files
 
 TODOs
-Begin debugging the following 'KNOWN ISSUES'
+Revert 'Bone-based' animation system to Sprite/GIF-based system that allows for GIF clothing and armor items to be overlayed on the sprite. The items should be synchronized with the timing of the sprites in order to give the appearance of wearing a given clothing article. 
 
 KNOWN ISSUES
 
