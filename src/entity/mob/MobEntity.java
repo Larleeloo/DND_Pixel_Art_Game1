@@ -526,6 +526,39 @@ public abstract class MobEntity extends Entity {
     // ==================== Physics ====================
 
     protected void applyPhysics(double deltaTime, List<Entity> entities) {
+        // IMPORTANT: Check if still on ground each frame by checking for blocks/ground below
+        // This ensures mobs fall when blocks beneath them are broken
+        if (onGround) {
+            boolean stillOnGround = false;
+
+            // Check if at world ground level
+            if (posY >= groundY - 2) {
+                stillOnGround = true;
+            }
+
+            // Check for solid blocks beneath feet
+            if (!stillOnGround && entities != null) {
+                Rectangle feetCheck = new Rectangle(
+                    (int)posX + hitboxOffsetX + 2,
+                    (int)posY + hitboxOffsetY + hitboxHeight,  // Just below feet
+                    hitboxWidth - 4,
+                    4  // Small check area
+                );
+
+                for (Entity e : entities) {
+                    if (e instanceof BlockEntity) {
+                        BlockEntity block = (BlockEntity) e;
+                        if (block.isSolid() && !block.isBroken() && feetCheck.intersects(block.getBounds())) {
+                            stillOnGround = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            onGround = stillOnGround;
+        }
+
         // Apply gravity (frame-based like player, not time-based)
         if (!onGround) {
             velocityY += GRAVITY;
