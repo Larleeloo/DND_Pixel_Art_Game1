@@ -53,7 +53,7 @@ sounds/                 - All sound files (music, effects, footsteps)
 levels/                 - Level JSON files
 
 TODOs
-Work on bug fixes 
+Work on section 1.01 (Inventory and items) 
 
 KNOWN ISSUES
 
