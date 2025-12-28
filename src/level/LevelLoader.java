@@ -256,12 +256,16 @@ public class LevelLoader {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> itemList = (List<Map<String, Object>>) root.get("items");
                 for (Map<String, Object> i : itemList) {
+                    // Skip comment entries
+                    if (i.containsKey("_comment")) continue;
+
                     LevelData.ItemData item = new LevelData.ItemData();
                     item.x = toInt(i.get("x"));
                     item.y = toInt(i.get("y"));
                     if (i.containsKey("spritePath")) item.spritePath = (String) i.get("spritePath");
                     if (i.containsKey("itemName")) item.itemName = (String) i.get("itemName");
                     if (i.containsKey("itemType")) item.itemType = (String) i.get("itemType");
+                    if (i.containsKey("itemId")) item.itemId = (String) i.get("itemId");
                     data.items.add(item);
                 }
             }
@@ -287,6 +291,9 @@ public class LevelLoader {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> blockList = (List<Map<String, Object>>) root.get("blocks");
                 for (Map<String, Object> b : blockList) {
+                    // Skip comment entries
+                    if (b.containsKey("_comment")) continue;
+
                     LevelData.BlockData block = new LevelData.BlockData();
                     block.x = toInt(b.get("x"));
                     block.y = toInt(b.get("y"));
@@ -307,6 +314,9 @@ public class LevelLoader {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> mobList = (List<Map<String, Object>>) root.get("mobs");
                 for (Map<String, Object> m : mobList) {
+                    // Skip comment entries
+                    if (m.containsKey("_comment")) continue;
+
                     LevelData.MobData mob = new LevelData.MobData();
                     mob.x = toInt(m.get("x"));
                     mob.y = toInt(m.get("y"));

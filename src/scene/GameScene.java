@@ -182,7 +182,15 @@ public class GameScene implements Scene {
 
         // Add items
         for (LevelData.ItemData i : levelData.items) {
-            entityManager.addEntity(new ItemEntity(i.x, i.y, i.spritePath, i.itemName, i.itemType));
+            ItemEntity itemEntity;
+            if (i.hasItemId()) {
+                // Use ItemRegistry to create item with full properties
+                itemEntity = new ItemEntity(i.x, i.y, i.itemId);
+            } else {
+                // Legacy support for items without registry ID
+                itemEntity = new ItemEntity(i.x, i.y, i.spritePath, i.itemName, i.itemType);
+            }
+            entityManager.addEntity(itemEntity);
         }
 
         // Add triggers
