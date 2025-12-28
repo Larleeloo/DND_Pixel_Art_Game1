@@ -261,14 +261,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Update targeted block
         updateTargetedBlock(entities);
 
-        // E key - mine block
-        if (input.isKeyJustPressed('e')) {
+        // E key or Left Mouse Click - mine block (use tool)
+        if (input.isKeyJustPressed('e') || input.isLeftMouseJustPressed()) {
             int direction = getMiningDirection();
             tryMineBlock(entities, direction);
         }
 
-        // Left Mouse Click or F key - attack
-        if (input.isLeftMouseJustPressed() || input.isKeyJustPressed('f')) {
+        // Right Mouse Click or F key - attack
+        if (input.isRightMouseJustPressed() || input.isKeyJustPressed('f')) {
             if (attack()) {
                 // Attack started - check for mob hits
                 Rectangle attackBounds = getAttackBounds();
