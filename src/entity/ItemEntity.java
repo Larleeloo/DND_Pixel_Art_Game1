@@ -8,10 +8,17 @@ import audio.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.geom.AffineTransform;
+import java.util.ArrayList;
+import java.util.List;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.util.Iterator;
 
 /**
  * Represents a collectible item in the game world.
  * Can be linked to an Item from ItemRegistry for full properties.
+ * Supports animated GIF sprites with automatic frame cycling.
  */
 public class ItemEntity extends Entity {
 
@@ -35,6 +42,13 @@ public class ItemEntity extends Entity {
     // Stack count for stackable items
     private int stackCount = 1;
     private int maxStackSize = 1;
+
+    // Animation support for GIFs
+    private List<BufferedImage> animationFrames;
+    private int currentFrame = 0;
+    private long lastFrameTime = 0;
+    private int frameDelay = 120; // milliseconds per frame
+    private boolean isAnimated = false;
 
     public static final int SCALE = 3;
     private static final int ICON_SIZE = 16;  // Base icon size
@@ -96,43 +110,115 @@ public class ItemEntity extends Entity {
     /**
      * Attempts to load a sprite from assets, falls back to procedural generation.
      * Prefers GIF files (animated) over PNG files.
+     * For GIFs, loads all frames for animation support.
      */
     private BufferedImage loadOrGenerateSprite(String itemId, String type, String name) {
         // Try loading from assets/items/{itemId}.gif first (animated), then .png
         if (itemId != null && !itemId.isEmpty()) {
-            String[] paths = {
+            String[] gifPaths = {
                 "assets/items/" + itemId + ".gif",
-                "assets/items/" + itemId + ".png",
-                "assets/items/" + type + "/" + itemId + ".gif",
-                "assets/items/" + type + "/" + itemId + ".png"
+                "assets/items/" + type + "/" + itemId + ".gif"
             };
 
-            for (String path : paths) {
+            // Try GIF files first (with animation support)
+            for (String path : gifPaths) {
                 try {
                     java.io.File file = new java.io.File(path);
                     if (file.exists()) {
-                        BufferedImage loaded = javax.imageio.ImageIO.read(file);
-                        if (loaded != null) {
-                            // Scale to icon size if needed
-                            if (loaded.getWidth() != ICON_SIZE || loaded.getHeight() != ICON_SIZE) {
-                                BufferedImage scaled = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
-                                Graphics2D g = scaled.createGraphics();
-                                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-                                g.drawImage(loaded, 0, 0, ICON_SIZE, ICON_SIZE, null);
-                                g.dispose();
-                                return scaled;
-                            }
-                            return loaded;
+                        List<BufferedImage> frames = loadGifFrames(file);
+                        if (frames != null && !frames.isEmpty()) {
+                            this.animationFrames = frames;
+                            this.isAnimated = frames.size() > 1;
+                            this.lastFrameTime = System.currentTimeMillis();
+                            return frames.get(0);
                         }
                     }
                 } catch (Exception e) {
-                    // Continue to next path or fallback
+                    // Continue to next path
+                }
+            }
+
+            // Try PNG files (static)
+            String[] pngPaths = {
+                "assets/items/" + itemId + ".png",
+                "assets/items/" + type + "/" + itemId + ".png"
+            };
+
+            for (String path : pngPaths) {
+                try {
+                    java.io.File file = new java.io.File(path);
+                    if (file.exists()) {
+                        BufferedImage loaded = ImageIO.read(file);
+                        if (loaded != null) {
+                            return scaleToIconSize(loaded);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continue to next path
                 }
             }
         }
 
         // Fall back to procedural generation
         return generateItemIcon(type, name);
+    }
+
+    /**
+     * Loads all frames from an animated GIF file.
+     */
+    private List<BufferedImage> loadGifFrames(java.io.File file) {
+        List<BufferedImage> frames = new ArrayList<>();
+        try {
+            ImageInputStream stream = ImageIO.createImageInputStream(file);
+            Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("gif");
+            if (!readers.hasNext()) return null;
+
+            ImageReader reader = readers.next();
+            reader.setInput(stream);
+
+            int numFrames = reader.getNumImages(true);
+            for (int i = 0; i < numFrames; i++) {
+                BufferedImage frame = reader.read(i);
+                if (frame != null) {
+                    frames.add(scaleToIconSize(frame));
+                }
+            }
+
+            reader.dispose();
+            stream.close();
+        } catch (Exception e) {
+            // Return whatever frames we got
+        }
+        return frames;
+    }
+
+    /**
+     * Scales an image to ICON_SIZE if needed.
+     */
+    private BufferedImage scaleToIconSize(BufferedImage img) {
+        if (img.getWidth() == ICON_SIZE && img.getHeight() == ICON_SIZE) {
+            return img;
+        }
+        BufferedImage scaled = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        g.drawImage(img, 0, 0, ICON_SIZE, ICON_SIZE, null);
+        g.dispose();
+        return scaled;
+    }
+
+    /**
+     * Updates the animation frame if this item has an animated sprite.
+     */
+    public void updateAnimation() {
+        if (!isAnimated || animationFrames == null || animationFrames.size() <= 1) return;
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastFrameTime >= frameDelay) {
+            currentFrame = (currentFrame + 1) % animationFrames.size();
+            sprite = animationFrames.get(currentFrame);
+            lastFrameTime = currentTime;
+        }
     }
 
     /**
@@ -655,6 +741,9 @@ public class ItemEntity extends Entity {
     @Override
     public void draw(Graphics g) {
         if (!collected) {
+            // Update animation frame if animated
+            updateAnimation();
+
             Graphics2D g2d = (Graphics2D) g;
 
             // Draw glow effect
@@ -697,6 +786,8 @@ public class ItemEntity extends Entity {
     }
 
     public Image getSprite() {
+        // Update animation frame when sprite is accessed (for inventory display)
+        updateAnimation();
         return sprite;
     }
 
