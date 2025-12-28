@@ -15,7 +15,7 @@
   "playerSpawnY": 850,
   "playerSpritePath": "assets/player.png",
 
-  "levelWidth": 4000,
+  "levelWidth": 6000,
   "levelHeight": 1080,
   "groundY": 920,
 
@@ -86,7 +86,22 @@
     {"_comment": "=== ADDITIONAL SHOWCASE (3000-3600) ==="},
     {"x": 3100, "y": 920, "mobType": "sprite_quadruped", "subType": "fox", "behavior": "neutral", "spriteDir": "assets/mobs/fox/sprites"},
     {"x": 3300, "y": 920, "mobType": "sprite_quadruped", "subType": "deer", "behavior": "passive", "spriteDir": "assets/mobs/deer/sprites"},
-    {"x": 3500, "y": 920, "mobType": "sprite_quadruped", "subType": "horse", "behavior": "passive", "spriteDir": "assets/mobs/horse/sprites"}
+    {"x": 3500, "y": 920, "mobType": "sprite_quadruped", "subType": "horse", "behavior": "passive", "spriteDir": "assets/mobs/horse/sprites"},
+
+    {"_comment": "=== HUMANOID MOBS (3800-5000) ==="},
+    {"_comment": "Undead zone"},
+    {"x": 3900, "y": 920, "mobType": "sprite_humanoid", "subType": "zombie", "behavior": "hostile", "spriteDir": "assets/mobs/zombie/sprites"},
+    {"x": 4100, "y": 920, "mobType": "sprite_humanoid", "subType": "skeleton", "behavior": "hostile", "spriteDir": "assets/mobs/skeleton/sprites"},
+
+    {"_comment": "Monster zone"},
+    {"x": 4400, "y": 920, "mobType": "sprite_humanoid", "subType": "goblin", "behavior": "hostile", "spriteDir": "assets/mobs/goblin/sprites"},
+    {"x": 4600, "y": 920, "mobType": "sprite_humanoid", "subType": "orc", "behavior": "hostile", "spriteDir": "assets/mobs/orc/sprites"},
+
+    {"_comment": "Human NPCs"},
+    {"x": 4900, "y": 920, "mobType": "sprite_humanoid", "subType": "bandit", "behavior": "hostile", "spriteDir": "assets/mobs/bandit/sprites"},
+    {"x": 5100, "y": 920, "mobType": "sprite_humanoid", "subType": "guard", "behavior": "neutral", "spriteDir": "assets/mobs/guard/sprites"},
+    {"x": 5300, "y": 920, "mobType": "sprite_humanoid", "subType": "wizard", "behavior": "neutral", "spriteDir": "assets/mobs/wizard/sprites"},
+    {"x": 5500, "y": 920, "mobType": "sprite_humanoid", "subType": "knight", "behavior": "neutral", "spriteDir": "assets/mobs/knight/sprites"}
   ],
 
   "blocks": [

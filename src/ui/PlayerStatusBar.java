@@ -5,14 +5,14 @@ import java.awt.*;
 
 /**
  * UI component that displays player health, mana, and stamina bars.
- * Positioned above the hotbar for easy visibility during gameplay.
+ * Positioned below the hotbar for easy visibility during gameplay.
  */
 public class PlayerStatusBar {
 
     // Bar dimensions
     private static final int BAR_WIDTH = 200;
-    private static final int BAR_HEIGHT = 16;
-    private static final int BAR_SPACING = 4;
+    private static final int BAR_HEIGHT = 12;
+    private static final int BAR_SPACING = 3;
     private static final int CORNER_RADIUS = 4;
 
     // Colors for each bar type
@@ -28,7 +28,7 @@ public class PlayerStatusBar {
     private static final Color PANEL_BG = new Color(0, 0, 0, 160);
 
     /**
-     * Draws the player status bars above the hotbar.
+     * Draws the player status bars below the hotbar.
      *
      * @param g2d    Graphics context
      * @param player The player to display stats for
@@ -38,12 +38,12 @@ public class PlayerStatusBar {
     public static void draw(Graphics2D g2d, PlayerBase player, int screenWidth, int screenHeight) {
         if (player == null) return;
 
-        // Calculate position (centered, above the hotbar)
+        // Calculate position (centered, below the hotbar)
         // Hotbar is at bottom of screen with 20px margin and ~60px height
         int panelWidth = BAR_WIDTH + 20;
         int panelHeight = (BAR_HEIGHT + BAR_SPACING) * 3 + BAR_SPACING * 2;
         int panelX = (screenWidth - panelWidth) / 2;
-        int panelY = screenHeight - 130 - panelHeight; // Above hotbar
+        int panelY = screenHeight - 15; // At very bottom, below hotbar
 
         // Draw panel background
         g2d.setColor(PANEL_BG);

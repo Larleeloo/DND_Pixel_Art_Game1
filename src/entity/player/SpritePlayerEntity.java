@@ -41,12 +41,25 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private EquipmentOverlay equipmentOverlay;
 
     // Physics
+    private double velX = 0;
     private double velY = 0;
+    private double pushX = 0; // External push force
+    private double pushY = 0;
     private final double gravity = 0.5;
     private final double jumpStrength = -10;
     private boolean onGround = false;
     private boolean facingRight = true;
     private int airTime = 0;
+
+    // Attack system
+    private boolean isAttacking = false;
+    private double attackTimer = 0;
+    private double attackCooldown = 0.4; // Seconds between attacks
+    private double attackDuration = 0.2; // How long attack animation lasts
+    private int attackDamage = 10;
+    private int attackRange = 60;
+    private int attackWidth = 40;
+    private int attackHeight = 50;
 
     // Dimensions
     private int width;
@@ -248,11 +261,37 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Update targeted block
         updateTargetedBlock(entities);
 
-        // E key or Left Mouse Click - mine block
-        if (input.isKeyJustPressed('e') || input.isLeftMouseJustPressed()) {
+        // E key - mine block
+        if (input.isKeyJustPressed('e')) {
             int direction = getMiningDirection();
             tryMineBlock(entities, direction);
         }
+
+        // Left Mouse Click or F key - attack
+        if (input.isLeftMouseJustPressed() || input.isKeyJustPressed('f')) {
+            if (attack()) {
+                // Attack started - check for mob hits
+                Rectangle attackBounds = getAttackBounds();
+                if (attackBounds != null) {
+                    EntityPhysics.checkPlayerAttack(this, attackBounds, attackDamage, 8.0, entities);
+                    if (audioManager != null) {
+                        audioManager.playSound("attack");
+                    }
+                }
+            }
+        }
+
+        // Update attack state
+        double deltaSeconds = deltaMs / 1000.0;
+        if (attackTimer > 0) {
+            attackTimer -= deltaSeconds;
+        }
+        if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
+            isAttacking = false;
+        }
+
+        // Apply push forces from collisions
+        EntityPhysics.processCollisions(entities, this, deltaSeconds);
 
         // Horizontal movement
         if (input.isKeyPressed('a')) {
@@ -288,6 +327,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         if (!xCollision) {
             x = newX;
+        }
+
+        // Apply push forces
+        if (Math.abs(pushX) > 0.1) {
+            x += (int) pushX;
+            pushX *= 0.8; // Decay push force
+        } else {
+            pushX = 0;
         }
 
         // Check for item collection
@@ -439,6 +486,18 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             g.setColor(Color.WHITE);
             g.fillOval(crosshairX - dotSize/2, crosshairY - dotSize/2, dotSize, dotSize);
         }
+
+        // Draw attack hitbox when attacking
+        if (isAttacking) {
+            Rectangle attackBounds = getAttackBounds();
+            if (attackBounds != null) {
+                g2d.setColor(new Color(255, 100, 100, 100));
+                g2d.fillRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
+                g2d.setColor(new Color(255, 50, 50, 200));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
+            }
+        }
     }
 
     @Override
@@ -557,6 +616,66 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             return true;
         }
         return false;
+    }
+
+    // ==================== Physics Push System ====================
+
+    /**
+     * Applies an external push force to the player (from collisions).
+     * @param pushX Horizontal push force
+     * @param pushY Vertical push force
+     */
+    public void applyPush(double pushX, double pushY) {
+        this.pushX += pushX;
+        this.pushY += pushY;
+    }
+
+    // ==================== Attack System ====================
+
+    /**
+     * Initiates a player attack.
+     * @return true if attack was started, false if on cooldown
+     */
+    public boolean attack() {
+        if (attackTimer <= 0 && !isAttacking) {
+            isAttacking = true;
+            attackTimer = attackCooldown;
+            spriteAnimation.setState(SpriteAnimation.ActionState.ATTACK);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the player is currently attacking.
+     */
+    public boolean isAttacking() {
+        return isAttacking;
+    }
+
+    /**
+     * Gets the current attack hitbox bounds.
+     * @return Rectangle of attack area, or null if not attacking
+     */
+    public Rectangle getAttackBounds() {
+        if (!isAttacking) return null;
+
+        int attackX;
+        if (facingRight) {
+            attackX = x + width;
+        } else {
+            attackX = x - attackRange;
+        }
+
+        int attackY = y + (height - attackHeight) / 2;
+        return new Rectangle(attackX, attackY, attackRange, attackHeight);
+    }
+
+    /**
+     * Gets the attack damage value.
+     */
+    public int getAttackDamage() {
+        return attackDamage;
     }
 
     // ==================== Block Mining System ====================

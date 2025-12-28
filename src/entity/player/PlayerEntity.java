@@ -602,4 +602,14 @@ public class PlayerEntity extends SpriteEntity implements PlayerBase {
     public int getMaxStamina() {
         return 100;
     }
+
+    /**
+     * Applies an external push force to the player (from collisions).
+     * @param pushX Horizontal push force
+     * @param pushY Vertical push force
+     */
+    public void applyPush(double pushX, double pushY) {
+        x += (int) pushX;
+        velY += pushY;
+    }
 }
