@@ -137,6 +137,123 @@ public class Inventory {
     }
 
     /**
+     * Finds and consumes ammo of the specified type.
+     * @param ammoName The name/type of ammo to consume (e.g., "arrow", "bolt")
+     * @return The consumed ItemEntity (for damage calculations), or null if no ammo found
+     */
+    public ItemEntity consumeAmmo(String ammoName) {
+        if (ammoName == null || ammoName.isEmpty()) return null;
+
+        String lowerAmmoName = ammoName.toLowerCase();
+
+        // Search through inventory for matching ammo
+        for (int i = 0; i < items.size(); i++) {
+            ItemEntity item = items.get(i);
+            String itemName = item.getItemName().toLowerCase();
+            String itemType = item.getItemType().toLowerCase();
+            String itemId = item.getItemId();
+
+            // Check if item matches ammo type
+            boolean matches = false;
+
+            // Match by item ID (most reliable)
+            if (itemId != null && itemId.toLowerCase().contains(lowerAmmoName)) {
+                matches = true;
+            }
+            // Match by name containing the ammo type
+            else if (itemName.contains(lowerAmmoName)) {
+                matches = true;
+            }
+            // Match ammo type items
+            else if (itemType.equals("ammo") && itemName.contains(lowerAmmoName)) {
+                matches = true;
+            }
+
+            if (matches) {
+                // Remove and return the ammo item
+                items.remove(i);
+                return item;
+            }
+        }
+
+        return null;  // No matching ammo found
+    }
+
+    /**
+     * Checks if the inventory has ammo of the specified type.
+     * @param ammoName The name/type of ammo to check for
+     * @return true if ammo is available
+     */
+    public boolean hasAmmo(String ammoName) {
+        if (ammoName == null || ammoName.isEmpty()) return false;
+
+        String lowerAmmoName = ammoName.toLowerCase();
+
+        for (ItemEntity item : items) {
+            String itemName = item.getItemName().toLowerCase();
+            String itemId = item.getItemId();
+
+            if (itemId != null && itemId.toLowerCase().contains(lowerAmmoName)) {
+                return true;
+            }
+            if (itemName.contains(lowerAmmoName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Counts how many of a specific ammo type are in the inventory.
+     * @param ammoName The name/type of ammo to count
+     * @return The number of matching ammo items
+     */
+    public int countAmmo(String ammoName) {
+        if (ammoName == null || ammoName.isEmpty()) return 0;
+
+        String lowerAmmoName = ammoName.toLowerCase();
+        int count = 0;
+
+        for (ItemEntity item : items) {
+            String itemName = item.getItemName().toLowerCase();
+            String itemId = item.getItemId();
+
+            if (itemId != null && itemId.toLowerCase().contains(lowerAmmoName)) {
+                count++;
+            } else if (itemName.contains(lowerAmmoName)) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Removes an item at a specific slot index (for throwable consumption).
+     * @param slotIndex The slot index to remove from
+     * @return The removed item, or null if slot was empty
+     */
+    public ItemEntity removeItemAtSlot(int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < items.size()) {
+            return items.remove(slotIndex);
+        }
+        return null;
+    }
+
+    /**
+     * Gets the item at a specific slot index.
+     * @param slotIndex The slot index
+     * @return The item at that slot, or null if empty
+     */
+    public ItemEntity getItemAtSlot(int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < items.size()) {
+            return items.get(slotIndex);
+        }
+        return null;
+    }
+
+    /**
      * Gets the currently selected hotbar slot index.
      */
     public int getSelectedSlot() {

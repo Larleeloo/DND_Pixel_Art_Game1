@@ -80,6 +80,13 @@ public class ProjectileEntity extends Entity {
     private java.util.List<Point> trailPoints = new java.util.ArrayList<>();
     private int maxTrailLength = 10;
 
+    // Explosion effect
+    private boolean showExplosion = false;
+    private double explosionTimer = 0;
+    private double explosionDuration = 0.3;
+    private int explosionFrame = 0;
+    private List<Entity> entitiesReference;  // Reference to entities for explosion damage
+
     // Timing
     private long lastUpdateTime;
 
@@ -128,24 +135,32 @@ public class ProjectileEntity extends Entity {
      * Configures projectile behavior based on type.
      */
     private void configureForType(ProjectileType type) {
+        String spritePath = "assets/projectiles/" + type.name().toLowerCase() + ".gif";
+
         switch (type) {
             case ARROW:
                 gravity = 0.3;
                 rotateWithVelocity = true;
                 hasTrail = false;
-                createPlaceholderSprite(16, 4, new Color(139, 90, 43));
+                if (!tryLoadSprite(spritePath)) {
+                    createArrowSprite(16, 4, new Color(139, 90, 43), new Color(100, 100, 100));
+                }
                 break;
             case BOLT:
                 gravity = 0.2;
                 rotateWithVelocity = true;
-                createPlaceholderSprite(18, 3, new Color(100, 100, 100));
+                if (!tryLoadSprite(spritePath)) {
+                    createBoltSprite(18, 4, new Color(100, 100, 100));
+                }
                 break;
             case MAGIC_BOLT:
                 gravity = 0.0;
                 rotateWithVelocity = false;
                 hasTrail = true;
                 trailColor = new Color(100, 100, 255);
-                createPlaceholderSprite(12, 12, new Color(100, 150, 255));
+                if (!tryLoadSprite(spritePath)) {
+                    createMagicBoltSprite(12, 12, new Color(100, 150, 255));
+                }
                 break;
             case FIREBALL:
                 gravity = 0.0;
@@ -153,41 +168,376 @@ public class ProjectileEntity extends Entity {
                 trailColor = new Color(255, 100, 0);
                 explosive = true;
                 explosionRadius = 64;
-                createPlaceholderSprite(16, 16, new Color(255, 100, 0));
+                if (!tryLoadSprite(spritePath)) {
+                    createFireballSprite(16, 16);
+                }
                 break;
             case ICEBALL:
                 gravity = 0.1;
                 hasTrail = true;
                 trailColor = new Color(150, 200, 255);
-                createPlaceholderSprite(14, 14, new Color(150, 200, 255));
+                if (!tryLoadSprite(spritePath)) {
+                    createIceballSprite(14, 14);
+                }
                 break;
             case THROWING_KNIFE:
                 gravity = 0.4;
                 rotateWithVelocity = true;
-                createPlaceholderSprite(12, 4, new Color(150, 150, 150));
+                if (!tryLoadSprite(spritePath)) {
+                    createKnifeSprite(14, 4, new Color(180, 180, 180));
+                }
                 break;
             case THROWING_AXE:
                 gravity = 0.5;
                 rotateWithVelocity = true;
-                createPlaceholderSprite(16, 16, new Color(100, 100, 100));
+                if (!tryLoadSprite(spritePath)) {
+                    createAxeSprite(16, 16);
+                }
                 break;
             case ROCK:
                 gravity = 0.6;
-                createPlaceholderSprite(10, 10, new Color(100, 100, 100));
+                if (!tryLoadSprite(spritePath)) {
+                    createRockSprite(10, 10, new Color(100, 100, 100));
+                }
                 break;
             case POTION:
                 gravity = 0.5;
                 explosive = true;
                 explosionRadius = 48;
-                createPlaceholderSprite(10, 14, new Color(100, 200, 100));
+                if (!tryLoadSprite(spritePath)) {
+                    createPotionSprite(10, 14, new Color(100, 200, 100));
+                }
                 break;
             case BOMB:
                 gravity = 0.4;
                 explosive = true;
                 explosionRadius = 96;
-                createPlaceholderSprite(14, 14, new Color(50, 50, 50));
+                if (!tryLoadSprite(spritePath)) {
+                    createBombSprite(14, 14);
+                }
                 break;
         }
+    }
+
+    /**
+     * Attempts to load a sprite from a file path.
+     * @return true if sprite was loaded successfully
+     */
+    private boolean tryLoadSprite(String path) {
+        try {
+            java.io.File file = new java.io.File(path);
+            if (!file.exists()) return false;
+
+            AssetLoader.ImageAsset asset = AssetLoader.load(path);
+            if (asset.animatedTexture != null) {
+                this.animation = asset.animatedTexture;
+                this.width = asset.width * SCALE;
+                this.height = asset.height * SCALE;
+                return true;
+            } else if (asset.staticImage != null) {
+                this.staticSprite = asset.staticImage;
+                this.width = asset.width * SCALE;
+                this.height = asset.height * SCALE;
+                return true;
+            }
+        } catch (Exception e) {
+            // Sprite loading failed, will use placeholder
+        }
+        return false;
+    }
+
+    /**
+     * Creates a detailed arrow sprite.
+     */
+    private void createArrowSprite(int w, int h, Color shaftColor, Color tipColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Shaft
+        g.setColor(shaftColor);
+        g.fillRect(0, h/2 - 1, w - 4, 2);
+
+        // Arrowhead (triangle)
+        g.setColor(tipColor);
+        int[] xPoints = {w - 4, w, w - 4};
+        int[] yPoints = {0, h/2, h};
+        g.fillPolygon(xPoints, yPoints, 3);
+
+        // Fletching (back feathers)
+        g.setColor(new Color(200, 50, 50));
+        g.fillRect(0, 0, 3, h);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a detailed bolt sprite (crossbow bolt).
+     */
+    private void createBoltSprite(int w, int h, Color metalColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Metal shaft
+        g.setColor(metalColor);
+        g.fillRect(0, h/2 - 1, w - 3, 2);
+
+        // Pointed tip
+        g.setColor(metalColor.brighter());
+        int[] xPoints = {w - 3, w, w - 3};
+        int[] yPoints = {0, h/2, h};
+        g.fillPolygon(xPoints, yPoints, 3);
+
+        // Small fins at back
+        g.setColor(new Color(60, 60, 60));
+        g.fillRect(0, 0, 4, h);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a glowing magic bolt sprite.
+     */
+    private void createMagicBoltSprite(int w, int h, Color magicColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Outer glow
+        g.setColor(new Color(magicColor.getRed(), magicColor.getGreen(), magicColor.getBlue(), 100));
+        g.fillOval(0, 0, w, h);
+
+        // Inner core
+        g.setColor(magicColor);
+        g.fillOval(w/4, h/4, w/2, h/2);
+
+        // Bright center
+        g.setColor(Color.WHITE);
+        g.fillOval(w/3, h/3, w/3, h/3);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a fireball sprite with flame effect.
+     */
+    private void createFireballSprite(int w, int h) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Outer red glow
+        g.setColor(new Color(255, 50, 0, 150));
+        g.fillOval(0, 0, w, h);
+
+        // Orange middle
+        g.setColor(new Color(255, 150, 0));
+        g.fillOval(w/6, h/6, w*2/3, h*2/3);
+
+        // Yellow core
+        g.setColor(new Color(255, 255, 100));
+        g.fillOval(w/3, h/3, w/3, h/3);
+
+        // White hot center
+        g.setColor(new Color(255, 255, 255));
+        g.fillOval(w*3/8, h*3/8, w/4, h/4);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates an iceball sprite with frost effect.
+     */
+    private void createIceballSprite(int w, int h) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Outer frost glow
+        g.setColor(new Color(150, 200, 255, 150));
+        g.fillOval(0, 0, w, h);
+
+        // Blue middle
+        g.setColor(new Color(100, 180, 255));
+        g.fillOval(w/6, h/6, w*2/3, h*2/3);
+
+        // Light blue core
+        g.setColor(new Color(200, 230, 255));
+        g.fillOval(w/3, h/3, w/3, h/3);
+
+        // White crystal center
+        g.setColor(Color.WHITE);
+        g.fillOval(w*3/8, h*3/8, w/4, h/4);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a throwing knife sprite.
+     */
+    private void createKnifeSprite(int w, int h, Color bladeColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Blade
+        g.setColor(bladeColor);
+        g.fillRect(4, h/2 - 1, w - 6, 2);
+
+        // Pointed tip
+        g.setColor(bladeColor.brighter());
+        int[] xPoints = {w - 2, w, w - 2};
+        int[] yPoints = {0, h/2, h};
+        g.fillPolygon(xPoints, yPoints, 3);
+
+        // Handle
+        g.setColor(new Color(100, 60, 30));
+        g.fillRect(0, 0, 5, h);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a throwing axe sprite.
+     */
+    private void createAxeSprite(int w, int h) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Handle
+        g.setColor(new Color(139, 90, 43));
+        g.fillRect(w/2 - 1, 2, 3, h - 4);
+
+        // Axe head
+        g.setColor(new Color(120, 120, 120));
+        g.fillArc(0, 0, w*2/3, h, 270, 180);
+
+        // Axe edge highlight
+        g.setColor(new Color(180, 180, 180));
+        g.drawArc(1, 1, w*2/3 - 2, h - 2, 270, 180);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a rock sprite.
+     */
+    private void createRockSprite(int w, int h, Color rockColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Main rock shape
+        g.setColor(rockColor);
+        g.fillOval(1, 1, w - 2, h - 2);
+
+        // Shadow
+        g.setColor(rockColor.darker());
+        g.fillArc(2, h/2, w - 4, h/2, 180, 180);
+
+        // Highlight
+        g.setColor(rockColor.brighter());
+        g.fillOval(w/4, h/4, w/3, h/3);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a potion bottle sprite.
+     */
+    private void createPotionSprite(int w, int h, Color liquidColor) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Glass bottle
+        g.setColor(new Color(200, 200, 255, 180));
+        g.fillOval(1, h/3, w - 2, h*2/3 - 1);
+
+        // Liquid inside
+        g.setColor(liquidColor);
+        g.fillOval(2, h/2, w - 4, h/2 - 2);
+
+        // Bottle neck
+        g.setColor(new Color(200, 200, 255, 180));
+        g.fillRect(w/3, 2, w/3, h/3);
+
+        // Cork
+        g.setColor(new Color(139, 90, 43));
+        g.fillRect(w/3, 0, w/3, 3);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a bomb sprite.
+     */
+    private void createBombSprite(int w, int h) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Main bomb body
+        g.setColor(new Color(40, 40, 40));
+        g.fillOval(1, 3, w - 2, h - 4);
+
+        // Highlight
+        g.setColor(new Color(80, 80, 80));
+        g.fillArc(2, 4, w/2, h/2, 45, 90);
+
+        // Fuse
+        g.setColor(new Color(139, 90, 43));
+        g.fillRect(w/2 - 1, 0, 2, 4);
+
+        // Spark
+        g.setColor(new Color(255, 200, 0));
+        g.fillOval(w/2 - 2, 0, 4, 4);
+        g.setColor(new Color(255, 100, 0));
+        g.fillOval(w/2 - 1, 1, 2, 2);
+
+        g.dispose();
+        this.staticSprite = img;
     }
 
     /**
@@ -205,47 +555,27 @@ public class ProjectileEntity extends Entity {
                 this.width = asset.width * SCALE;
                 this.height = asset.height * SCALE;
             } else {
-                createPlaceholderSprite(8, 8, Color.YELLOW);
+                createFallbackSprite();
             }
         } catch (Exception e) {
             System.err.println("ProjectileEntity: Failed to load sprite: " + spritePath);
-            createPlaceholderSprite(8, 8, Color.YELLOW);
+            createFallbackSprite();
         }
     }
 
     /**
-     * Creates a placeholder sprite for the projectile.
+     * Creates a basic fallback sprite when loading fails.
      */
-    private void createPlaceholderSprite(int w, int h, Color color) {
-        this.width = w * SCALE;
-        this.height = h * SCALE;
+    private void createFallbackSprite() {
+        this.width = 16 * SCALE;
+        this.height = 16 * SCALE;
 
-        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
-
-        // Draw projectile shape based on type
-        if (type == ProjectileType.ARROW || type == ProjectileType.BOLT ||
-            type == ProjectileType.THROWING_KNIFE) {
-            // Arrow/bolt shape
-            g.setColor(color);
-            g.fillRect(0, h/4, w - 4, h/2);
-            g.setColor(color.darker());
-            int[] xPoints = {w - 4, w, w - 4};
-            int[] yPoints = {0, h/2, h};
-            g.fillPolygon(xPoints, yPoints, 3);
-        } else if (type == ProjectileType.FIREBALL || type == ProjectileType.MAGIC_BOLT ||
-                   type == ProjectileType.ICEBALL) {
-            // Round projectile
-            g.setColor(color);
-            g.fillOval(0, 0, w, h);
-            g.setColor(new Color(255, 255, 255, 100));
-            g.fillOval(w/4, h/4, w/3, h/3);
-        } else {
-            // Generic round shape
-            g.setColor(color);
-            g.fillOval(0, 0, w, h);
-        }
-
+        g.setColor(Color.YELLOW);
+        g.fillOval(2, 2, 12, 12);
+        g.setColor(Color.WHITE);
+        g.fillOval(4, 4, 4, 4);
         g.dispose();
         this.staticSprite = img;
     }
@@ -254,6 +584,20 @@ public class ProjectileEntity extends Entity {
      * Updates the projectile's position and checks for collisions.
      */
     public void update(double deltaTime, List<Entity> entities) {
+        // Store reference for explosion damage
+        this.entitiesReference = entities;
+
+        // Handle explosion animation if active
+        if (showExplosion) {
+            explosionTimer += deltaTime;
+            explosionFrame = (int)((explosionTimer / explosionDuration) * 5);  // 5 explosion frames
+            if (explosionTimer >= explosionDuration) {
+                active = false;
+                showExplosion = false;
+            }
+            return;  // Don't move or check collisions during explosion
+        }
+
         if (!active) return;
 
         // Update timer
@@ -356,17 +700,79 @@ public class ProjectileEntity extends Entity {
      * Called when projectile impacts something.
      */
     private void onImpact() {
-        if (explosive) {
-            // TODO: Create explosion effect and damage nearby entities
+        if (explosive && explosionRadius > 0) {
+            // Trigger explosion effect
+            showExplosion = true;
+            explosionTimer = 0;
+            explosionFrame = 0;
+
+            // Deal damage to all entities within explosion radius
+            if (entitiesReference != null) {
+                int centerX = x + width / 2;
+                int centerY = y + height / 2;
+
+                for (Entity entity : entitiesReference) {
+                    if (entity == this || entity == source) continue;
+
+                    // Calculate distance to entity center
+                    Rectangle bounds = entity.getBounds();
+                    int entityCenterX = bounds.x + bounds.width / 2;
+                    int entityCenterY = bounds.y + bounds.height / 2;
+                    double distance = Math.sqrt(
+                        Math.pow(entityCenterX - centerX, 2) +
+                        Math.pow(entityCenterY - centerY, 2)
+                    );
+
+                    if (distance <= explosionRadius) {
+                        // Calculate damage falloff (100% at center, 25% at edge)
+                        double damageMultiplier = 1.0 - (distance / explosionRadius) * 0.75;
+                        int explosionDamage = (int)(damage * damageMultiplier);
+
+                        // Calculate knockback direction (away from explosion center)
+                        double knockbackX = 0;
+                        double knockbackY = 0;
+                        if (distance > 0) {
+                            knockbackX = ((entityCenterX - centerX) / distance) * knockbackForce * 1.5;
+                            knockbackY = ((entityCenterY - centerY) / distance) * knockbackForce - 3;  // Upward boost
+                        } else {
+                            knockbackY = -knockbackForce;  // Direct hit - knock upward
+                        }
+
+                        // Deal damage based on entity type
+                        if (fromPlayer && entity instanceof MobEntity) {
+                            MobEntity mob = (MobEntity) entity;
+                            if (mob.getCurrentHealth() > 0) {
+                                mob.takeDamage(explosionDamage, knockbackX, knockbackY);
+                            }
+                        } else if (!fromPlayer && entity instanceof PlayerBase) {
+                            PlayerBase player = (PlayerBase) entity;
+                            if (!player.isInvincible()) {
+                                player.takeDamage(explosionDamage, knockbackX, knockbackY);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Stop movement but keep active for explosion animation
+            velX = 0;
+            velY = 0;
+        } else {
+            active = false;
         }
-        active = false;
     }
 
     @Override
     public void draw(Graphics g) {
-        if (!active) return;
+        if (!active && !showExplosion) return;
 
         Graphics2D g2d = (Graphics2D) g;
+
+        // Draw explosion effect if active
+        if (showExplosion) {
+            drawExplosion(g2d);
+            return;
+        }
 
         // Draw trail
         if (hasTrail && trailPoints.size() > 1) {
@@ -419,6 +825,71 @@ public class ProjectileEntity extends Entity {
         g2d.setTransform(oldTransform);
     }
 
+    /**
+     * Draws the explosion effect animation.
+     */
+    private void drawExplosion(Graphics2D g2d) {
+        int centerX = x + width / 2;
+        int centerY = y + height / 2;
+
+        // Calculate current explosion size based on frame
+        float progress = (float) explosionFrame / 5;
+        int currentRadius = (int)(explosionRadius * (0.3 + progress * 0.7));
+
+        // Determine colors based on projectile type
+        Color innerColor, outerColor;
+        switch (type) {
+            case FIREBALL:
+                innerColor = new Color(255, 255, 200);  // White-yellow center
+                outerColor = new Color(255, 100, 0);    // Orange outer
+                break;
+            case ICEBALL:
+                innerColor = new Color(200, 240, 255);  // Light blue center
+                outerColor = new Color(100, 180, 255);  // Blue outer
+                break;
+            case BOMB:
+            case POTION:
+            default:
+                innerColor = new Color(255, 255, 150);  // Yellow center
+                outerColor = new Color(255, 80, 0);     // Red-orange outer
+                break;
+        }
+
+        // Calculate alpha (fade out towards end)
+        int alpha = (int)(255 * (1.0 - progress * 0.6));
+
+        // Draw outer explosion circle
+        g2d.setColor(new Color(outerColor.getRed(), outerColor.getGreen(), outerColor.getBlue(), Math.max(0, alpha - 50)));
+        g2d.fillOval(centerX - currentRadius, centerY - currentRadius, currentRadius * 2, currentRadius * 2);
+
+        // Draw middle ring
+        int midRadius = (int)(currentRadius * 0.7);
+        g2d.setColor(new Color(
+            (innerColor.getRed() + outerColor.getRed()) / 2,
+            (innerColor.getGreen() + outerColor.getGreen()) / 2,
+            (innerColor.getBlue() + outerColor.getBlue()) / 2,
+            Math.max(0, alpha)
+        ));
+        g2d.fillOval(centerX - midRadius, centerY - midRadius, midRadius * 2, midRadius * 2);
+
+        // Draw inner bright core
+        int coreRadius = (int)(currentRadius * 0.35);
+        g2d.setColor(new Color(innerColor.getRed(), innerColor.getGreen(), innerColor.getBlue(), Math.min(255, alpha + 50)));
+        g2d.fillOval(centerX - coreRadius, centerY - coreRadius, coreRadius * 2, coreRadius * 2);
+
+        // Draw spark particles
+        g2d.setColor(new Color(255, 255, 200, alpha));
+        int numSparks = 8;
+        for (int i = 0; i < numSparks; i++) {
+            double angle = (Math.PI * 2 * i / numSparks) + (progress * Math.PI);
+            int sparkDist = (int)(currentRadius * (0.5 + progress * 0.5));
+            int sparkX = centerX + (int)(Math.cos(angle) * sparkDist);
+            int sparkY = centerY + (int)(Math.sin(angle) * sparkDist);
+            int sparkSize = Math.max(2, (int)(6 * (1 - progress)));
+            g2d.fillOval(sparkX - sparkSize/2, sparkY - sparkSize/2, sparkSize, sparkSize);
+        }
+    }
+
     @Override
     public Rectangle getBounds() {
         // Use a slightly smaller hitbox for better gameplay feel
@@ -434,7 +905,7 @@ public class ProjectileEntity extends Entity {
     // ==================== Getters and Setters ====================
 
     public boolean isActive() {
-        return active;
+        return active || showExplosion;  // Keep active during explosion animation
     }
 
     public void setActive(boolean active) {
