@@ -394,11 +394,11 @@ public class SpriteMobEntity extends MobEntity {
 
     /**
      * Equips an overlay item (like clothing/armor visual).
-     * @param slot Equipment slot (head, chest, legs, feet)
+     * @param slot Equipment slot enum
      * @param spriteDir Directory containing overlay sprites
      * @param itemName Name of the item
      */
-    public void equipOverlay(String slot, String spriteDir, String itemName) {
+    public void equipOverlay(EquipmentOverlay.EquipmentSlot slot, String spriteDir, String itemName) {
         if (!isHumanoid) return;
 
         String basePath = spriteDir + "/";
@@ -406,6 +406,67 @@ public class SpriteMobEntity extends MobEntity {
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.WALK, basePath + "walk.gif", itemName);
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.RUN, basePath + "run.gif", itemName);
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.ATTACK, basePath + "attack.gif", itemName);
+    }
+
+    /**
+     * Equips an overlay item (like clothing/armor visual) using slot name string.
+     * @param slotName Equipment slot name (helmet, chest, legs, boots, weapon, back, gloves, necklace, accessory)
+     * @param spriteDir Directory containing overlay sprites
+     * @param itemName Name of the item
+     */
+    public void equipOverlay(String slotName, String spriteDir, String itemName) {
+        if (!isHumanoid) return;
+
+        // Convert string to EquipmentSlot enum
+        EquipmentOverlay.EquipmentSlot slot;
+        switch (slotName.toLowerCase()) {
+            case "helmet":
+            case "head":
+                slot = EquipmentOverlay.EquipmentSlot.HELMET;
+                break;
+            case "chest":
+            case "body":
+            case "torso":
+                slot = EquipmentOverlay.EquipmentSlot.CHEST;
+                break;
+            case "legs":
+            case "pants":
+                slot = EquipmentOverlay.EquipmentSlot.LEGS;
+                break;
+            case "boots":
+            case "feet":
+            case "shoes":
+                slot = EquipmentOverlay.EquipmentSlot.BOOTS;
+                break;
+            case "weapon":
+            case "hand":
+                slot = EquipmentOverlay.EquipmentSlot.WEAPON;
+                break;
+            case "back":
+            case "cape":
+            case "backpack":
+                slot = EquipmentOverlay.EquipmentSlot.BACK;
+                break;
+            case "gloves":
+            case "hands":
+                slot = EquipmentOverlay.EquipmentSlot.GLOVES;
+                break;
+            case "necklace":
+            case "neck":
+                slot = EquipmentOverlay.EquipmentSlot.NECKLACE;
+                break;
+            case "wrist":
+            case "wristwear":
+            case "bracelet":
+                slot = EquipmentOverlay.EquipmentSlot.WRISTWEAR;
+                break;
+            case "accessory":
+            default:
+                slot = EquipmentOverlay.EquipmentSlot.ACCESSORY;
+                break;
+        }
+
+        equipOverlay(slot, spriteDir, itemName);
     }
 
     // ==================== Animation State ====================
