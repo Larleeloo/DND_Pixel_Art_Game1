@@ -87,10 +87,51 @@ public class ItemEntity extends Entity {
             this.itemType = "unknown";
         }
 
-        // Generate colored icon based on item type and rarity
-        this.sprite = generateItemIcon(itemType, itemName);
+        // Try to load sprite from assets, fall back to procedural generation
+        this.sprite = loadOrGenerateSprite(itemId, itemType, itemName);
         this.width = ICON_SIZE * SCALE;
         this.height = ICON_SIZE * SCALE;
+    }
+
+    /**
+     * Attempts to load a sprite from assets, falls back to procedural generation.
+     */
+    private BufferedImage loadOrGenerateSprite(String itemId, String type, String name) {
+        // Try loading from assets/items/{itemId}.png
+        if (itemId != null && !itemId.isEmpty()) {
+            String[] paths = {
+                "assets/items/" + itemId + ".png",
+                "assets/items/" + itemId + ".gif",
+                "assets/items/" + type + "/" + itemId + ".png",
+                "assets/items/" + type + "/" + itemId + ".gif"
+            };
+
+            for (String path : paths) {
+                try {
+                    java.io.File file = new java.io.File(path);
+                    if (file.exists()) {
+                        BufferedImage loaded = javax.imageio.ImageIO.read(file);
+                        if (loaded != null) {
+                            // Scale to icon size if needed
+                            if (loaded.getWidth() != ICON_SIZE || loaded.getHeight() != ICON_SIZE) {
+                                BufferedImage scaled = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
+                                Graphics2D g = scaled.createGraphics();
+                                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                                g.drawImage(loaded, 0, 0, ICON_SIZE, ICON_SIZE, null);
+                                g.dispose();
+                                return scaled;
+                            }
+                            return loaded;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continue to next path or fallback
+                }
+            }
+        }
+
+        // Fall back to procedural generation
+        return generateItemIcon(type, name);
     }
 
     /**

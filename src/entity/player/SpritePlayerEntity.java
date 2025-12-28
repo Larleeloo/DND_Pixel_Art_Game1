@@ -308,22 +308,45 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Sync held item with inventory selection
         syncHeldItemWithInventory();
 
-        // Scroll wheel cycles mining direction
+        // Scroll wheel - cycles hotbar when inventory closed, scrolls inventory when open
         int scroll = input.getScrollDirection();
         if (scroll != 0) {
-            miningDirection = (miningDirection + scroll + NUM_DIRECTIONS) % NUM_DIRECTIONS;
+            if (inventory.isOpen()) {
+                // Scroll through inventory
+                inventory.handleScroll(scroll);
+            } else {
+                // Cycle hotbar selection
+                inventory.handleScroll(scroll);
+                syncHeldItemWithInventory();
+            }
         }
 
         // Update targeted block
         updateTargetedBlock(entities);
 
         // E key or Left Mouse Click - mine block (use tool) or fire projectile
-        if (input.isKeyJustPressed('e') || input.isLeftMouseJustPressed()) {
-            if (heldItem != null && heldItem.isRangedWeapon()) {
+        // Also handle inventory auto-equip on left click when inventory is open
+        if (input.isLeftMouseJustPressed()) {
+            if (inventory.isOpen()) {
+                // Try auto-equip in open inventory
+                if (inventory.handleLeftClick(input.getMouseX(), input.getMouseY())) {
+                    syncHeldItemWithInventory();
+                }
+            } else if (heldItem != null && heldItem.isRangedWeapon()) {
                 // Fire projectile
                 fireProjectile(entities);
             } else {
                 // Mine block
+                int direction = getMiningDirection();
+                tryMineBlock(entities, direction);
+            }
+        }
+
+        // E key always fires or mines (not affected by inventory)
+        if (input.isKeyJustPressed('e')) {
+            if (heldItem != null && heldItem.isRangedWeapon()) {
+                fireProjectile(entities);
+            } else {
                 int direction = getMiningDirection();
                 tryMineBlock(entities, direction);
             }
@@ -606,6 +629,10 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         boolean usesMana = "mana".equalsIgnoreCase(ammoType);
         int manaCost = 10;  // Base mana cost for magic weapons
 
+        // Save reference to the item being used for projectile creation
+        // (needed because throwables may be removed from inventory before we create the projectile)
+        Item itemForProjectile = heldItem;
+
         // Check and consume resources
         int bonusDamage = 0;
 
@@ -617,8 +644,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 // No item to throw
                 return;
             }
-            // Throwable item was consumed
-            syncHeldItemWithInventory();  // Update held item reference
+            // Throwable item was consumed - sync AFTER we've saved the item reference
+            syncHeldItemWithInventory();  // Update held item reference (may become null)
         } else if (usesMana) {
             // Magic weapons consume mana
             if (currentMana < manaCost) {
@@ -640,12 +667,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             }
         }
 
-        // Create projectile
+        // Create projectile using the saved item reference
         int projX = facingRight ? x + width : x - 10;
         int projY = y + height / 3;
         double dirX = facingRight ? 1.0 : -1.0;
 
-        ProjectileEntity projectile = heldItem.createProjectile(projX, projY, dirX, 0, true);
+        ProjectileEntity projectile = itemForProjectile.createProjectile(projX, projY, dirX, 0, true);
         if (projectile != null) {
             // Apply bonus damage from ammo
             if (bonusDamage > 0) {

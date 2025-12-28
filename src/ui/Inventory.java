@@ -8,12 +8,20 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 /**
- * Manages collected items and displays inventory UI
+ * Manages collected items and displays inventory UI.
+ *
+ * Features:
+ * - 32 slot maximum inventory capacity
+ * - 5-slot hotbar for quick access
+ * - Scroll wheel support for inventory navigation
+ * - Left-click to auto-equip items to hotbar
+ * - Drag and drop for item management
+ * - Stack display for stackable items
  */
 public class Inventory {
 
     private ArrayList<ItemEntity> items;
-    private int maxSlots;
+    private static final int MAX_SLOTS = 32;  // Fixed 32 slot limit
     private boolean isOpen;
 
     // UI positioning
@@ -31,14 +39,18 @@ public class Inventory {
     private int selectedSlot = 0; // Which slot is currently "held" (0-indexed)
     private static final int HOTBAR_SIZE = 5; // Number of hotbar slots shown
 
-    public Inventory(int maxSlots) {
+    // Scroll support for full inventory
+    private int scrollOffset = 0;  // Number of rows scrolled
+    private static final int VISIBLE_ROWS = 4;  // Rows visible at once in full inventory
+    private static final int COLS = 8;  // Columns in full inventory
+
+    public Inventory() {
         this.items = new ArrayList<>();
-        this.maxSlots = maxSlots;
         this.isOpen = false;
 
         // UI settings
         this.slotSize = 60;
-        this.padding = 10;
+        this.padding = 8;
         this.uiX = 50;
         this.uiY = 80;
 
@@ -46,6 +58,18 @@ public class Inventory {
         this.draggedItem = null;
         this.draggedIndex = -1;
         this.isDragging = false;
+    }
+
+    // Legacy constructor for compatibility
+    public Inventory(int maxSlots) {
+        this();  // Use fixed 32 slots regardless of passed value
+    }
+
+    /**
+     * Gets the maximum number of slots in the inventory.
+     */
+    public int getMaxSlots() {
+        return MAX_SLOTS;
     }
 
     public boolean addItem(ItemEntity item) {
@@ -63,7 +87,7 @@ public class Inventory {
         }
 
         // If item still has count remaining, add as new slot
-        if (item.getStackCount() > 0 && items.size() < maxSlots) {
+        if (item.getStackCount() > 0 && items.size() < MAX_SLOTS) {
             items.add(item);
             return true;
         }
@@ -78,6 +102,9 @@ public class Inventory {
 
     public void toggleOpen() {
         isOpen = !isOpen;
+        if (isOpen) {
+            scrollOffset = 0;  // Reset scroll when opening
+        }
     }
 
     public boolean isOpen() {
@@ -88,19 +115,125 @@ public class Inventory {
         return items.size();
     }
 
-    public void handleMousePressed(int mouseX, int mouseY) {
-        if (!isOpen) return;
+    /**
+     * Handles scroll wheel input.
+     * When inventory is closed: cycles hotbar selection
+     * When inventory is open: scrolls through inventory rows
+     * @param scrollDirection Positive for scroll up, negative for scroll down
+     */
+    public void handleScroll(int scrollDirection) {
+        if (isOpen) {
+            // Scroll through inventory
+            int totalRows = (int) Math.ceil(items.size() / (double) COLS);
+            int maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);
+            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - scrollDirection));
+        } else {
+            // Cycle hotbar selection
+            cycleSelectedSlot(-scrollDirection);
+        }
+    }
 
-        int cols = 5;
-        int panelX = (1920 - (cols * (slotSize + padding) + padding)) / 2;
+    /**
+     * Handles left-click for auto-equip and selection.
+     * @return true if click was handled
+     */
+    public boolean handleLeftClick(int mouseX, int mouseY) {
+        if (!isOpen) {
+            // Check hotbar clicks when closed
+            return handleHotbarClick(mouseX, mouseY);
+        }
+
+        // Full inventory is open - check for item clicks
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelHeight = VISIBLE_ROWS * (slotSize + padding) + padding + 80;
+        int panelX = (1920 - panelWidth) / 2;
         int panelY = 150;
 
         // Check if clicking on an item slot
         for (int i = 0; i < items.size(); i++) {
-            int col = i % cols;
-            int row = i / cols;
+            int displayIndex = i - (scrollOffset * COLS);
+            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+
+            int col = displayIndex % COLS;
+            int row = displayIndex / COLS;
             int slotX = panelX + padding + col * (slotSize + padding);
-            int slotY = panelY + 50 + row * (slotSize + padding);
+            int slotY = panelY + 60 + row * (slotSize + padding);
+
+            if (mouseX >= slotX && mouseX <= slotX + slotSize &&
+                    mouseY >= slotY && mouseY <= slotY + slotSize) {
+                // Auto-equip: move item to hotbar (swap if needed)
+                autoEquipItem(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Handles clicking on the hotbar to select slots.
+     */
+    private boolean handleHotbarClick(int mouseX, int mouseY) {
+        int hotbarSlotSize = 50;
+        int hotbarPadding = 5;
+        int hotbarWidth = HOTBAR_SIZE * (hotbarSlotSize + hotbarPadding) + hotbarPadding;
+        int hotbarHeight = hotbarSlotSize + hotbarPadding * 2;
+        int hotbarX = (1920 - hotbarWidth) / 2;
+        int hotbarY = 1080 - hotbarHeight - 20;
+
+        for (int i = 0; i < HOTBAR_SIZE; i++) {
+            int slotX = hotbarX + hotbarPadding + i * (hotbarSlotSize + hotbarPadding);
+            int slotY = hotbarY + hotbarPadding;
+
+            if (mouseX >= slotX && mouseX <= slotX + hotbarSlotSize &&
+                    mouseY >= slotY && mouseY <= slotY + hotbarSlotSize) {
+                setSelectedSlot(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Auto-equips an item by moving it to the selected hotbar slot.
+     * If the hotbar slot has an item, they swap positions.
+     */
+    private void autoEquipItem(int sourceIndex) {
+        if (sourceIndex < 0 || sourceIndex >= items.size()) return;
+        if (sourceIndex == selectedSlot) return;  // Already in selected slot
+
+        // If selected slot has an item, swap
+        if (selectedSlot < items.size()) {
+            // Swap items
+            ItemEntity temp = items.get(selectedSlot);
+            items.set(selectedSlot, items.get(sourceIndex));
+            items.set(sourceIndex, temp);
+        } else {
+            // Move to selected slot (fill gaps first)
+            ItemEntity item = items.remove(sourceIndex);
+
+            // Ensure we don't go past the items list
+            int targetSlot = Math.min(selectedSlot, items.size());
+            items.add(targetSlot, item);
+        }
+    }
+
+    public void handleMousePressed(int mouseX, int mouseY) {
+        if (!isOpen) return;
+
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelX = (1920 - panelWidth) / 2;
+        int panelY = 150;
+
+        // Check if clicking on an item slot for dragging
+        for (int i = 0; i < items.size(); i++) {
+            int displayIndex = i - (scrollOffset * COLS);
+            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+
+            int col = displayIndex % COLS;
+            int row = displayIndex / COLS;
+            int slotX = panelX + padding + col * (slotSize + padding);
+            int slotY = panelY + 60 + row * (slotSize + padding);
 
             if (mouseX >= slotX && mouseX <= slotX + slotSize &&
                     mouseY >= slotY && mouseY <= slotY + slotSize) {
@@ -128,10 +261,8 @@ public class Inventory {
         ItemEntity droppedItem = null;
 
         // Check if dropped outside inventory panel
-        int cols = 5;
-        int rows = (int)Math.ceil(maxSlots / (double)cols);
-        int panelWidth = cols * (slotSize + padding) + padding;
-        int panelHeight = rows * (slotSize + padding) + padding + 50;
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelHeight = VISIBLE_ROWS * (slotSize + padding) + padding + 80;
         int panelX = (1920 - panelWidth) / 2;
         int panelY = 150;
 
@@ -451,17 +582,16 @@ public class Inventory {
             g2d.drawString(heldName, textX, hotbarY - 8);
         }
 
-        // Draw inventory hint in corner
+        // Draw inventory count and hint
         g2d.setColor(new Color(200, 200, 200, 150));
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        g2d.drawString("[I] Inventory | [1-5] Select", 10, 1080 - 10);
+        String hint = "[I] Inventory (" + items.size() + "/" + MAX_SLOTS + ") | [1-5] Select | Scroll to cycle";
+        g2d.drawString(hint, 10, 1080 - 10);
     }
 
     private void drawFullInventory(Graphics2D g2d) {
-        int cols = 5;
-        int rows = (int)Math.ceil(maxSlots / (double)cols);
-        int panelWidth = cols * (slotSize + padding) + padding;
-        int panelHeight = rows * (slotSize + padding) + padding + 50;
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelHeight = VISIBLE_ROWS * (slotSize + padding) + padding + 100;
 
         // Center the panel
         int panelX = (1920 - panelWidth) / 2;
@@ -481,25 +611,71 @@ public class Inventory {
         g2d.setFont(new Font("Arial", Font.BOLD, 24));
         g2d.drawString("INVENTORY", panelX + 20, panelY + 35);
 
-        // Draw slots
-        for (int i = 0; i < maxSlots; i++) {
-            int col = i % cols;
-            int row = i / cols;
-            int slotX = panelX + padding + col * (slotSize + padding);
-            int slotY = panelY + 50 + row * (slotSize + padding);
+        // Item count
+        g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+        g2d.setColor(new Color(180, 180, 180));
+        String countText = items.size() + " / " + MAX_SLOTS + " items";
+        g2d.drawString(countText, panelX + panelWidth - 120, panelY + 35);
 
-            // Slot background
-            if (i < items.size()) {
+        // Draw scroll indicator if needed
+        int totalRows = (int) Math.ceil(items.size() / (double) COLS);
+        if (totalRows > VISIBLE_ROWS) {
+            int scrollBarX = panelX + panelWidth - 15;
+            int scrollBarY = panelY + 60;
+            int scrollBarHeight = VISIBLE_ROWS * (slotSize + padding);
+
+            // Background track
+            g2d.setColor(new Color(60, 60, 60));
+            g2d.fillRoundRect(scrollBarX, scrollBarY, 10, scrollBarHeight, 5, 5);
+
+            // Scroll thumb
+            int thumbHeight = Math.max(30, scrollBarHeight * VISIBLE_ROWS / totalRows);
+            int maxScroll = totalRows - VISIBLE_ROWS;
+            int thumbY = scrollBarY + (scrollBarHeight - thumbHeight) * scrollOffset / maxScroll;
+            g2d.setColor(new Color(150, 150, 150));
+            g2d.fillRoundRect(scrollBarX, thumbY, 10, thumbHeight, 5, 5);
+        }
+
+        // Draw slots
+        int startIndex = scrollOffset * COLS;
+        int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
+
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
+            int col = displayIndex % COLS;
+            int row = displayIndex / COLS;
+            int slotX = panelX + padding + col * (slotSize + padding);
+            int slotY = panelY + 60 + row * (slotSize + padding);
+
+            // Slot background - different colors for hotbar slots
+            if (i < HOTBAR_SIZE) {
+                g2d.setColor(new Color(100, 80, 60, 200));  // Hotbar slots are orange-ish
+            } else if (i < items.size()) {
                 g2d.setColor(new Color(80, 80, 120, 200));
             } else {
                 g2d.setColor(new Color(60, 60, 60, 200));
             }
             g2d.fillRoundRect(slotX, slotY, slotSize, slotSize, 8, 8);
 
-            // Slot border
-            g2d.setColor(new Color(150, 150, 150));
-            g2d.setStroke(new BasicStroke(2));
+            // Slot border - highlight selected slot
+            if (i == selectedSlot) {
+                g2d.setColor(Color.YELLOW);
+                g2d.setStroke(new BasicStroke(3));
+            } else if (i < HOTBAR_SIZE) {
+                g2d.setColor(new Color(200, 150, 100));
+                g2d.setStroke(new BasicStroke(2));
+            } else {
+                g2d.setColor(new Color(150, 150, 150));
+                g2d.setStroke(new BasicStroke(2));
+            }
             g2d.drawRoundRect(slotX, slotY, slotSize, slotSize, 8, 8);
+
+            // Draw hotbar number for first 5 slots
+            if (i < HOTBAR_SIZE) {
+                g2d.setColor(new Color(255, 200, 100));
+                g2d.setFont(new Font("Arial", Font.BOLD, 10));
+                g2d.drawString(String.valueOf(i + 1), slotX + 3, slotY + 12);
+            }
 
             // Draw item if present
             if (i < items.size()) {
@@ -531,17 +707,6 @@ public class Inventory {
                         g2d.setColor(Color.WHITE);
                         g2d.drawString(countStr, countX, countY);
                     }
-
-                    // Item name
-                    g2d.setColor(Color.WHITE);
-                    g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-                    FontMetrics fm = g2d.getFontMetrics();
-                    String name = item.getItemName();
-                    if (fm.stringWidth(name) > slotSize) {
-                        name = name.substring(0, 6) + "...";
-                    }
-                    int textX = slotX + (slotSize - fm.stringWidth(name)) / 2;
-                    g2d.drawString(name, textX, slotY + slotSize + 15);
                 }
             }
         }
@@ -549,6 +714,9 @@ public class Inventory {
         // Instructions
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.setFont(new Font("Arial", Font.ITALIC, 14));
-        g2d.drawString("Press [I] to close | Drag items outside to drop", panelX + 20, panelY + panelHeight - 15);
+        String instructions = "[I] Close | Left-click to equip | Scroll to browse | Drag outside to drop";
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
+        g2d.drawString(instructions, textX, panelY + panelHeight - 15);
     }
 }
