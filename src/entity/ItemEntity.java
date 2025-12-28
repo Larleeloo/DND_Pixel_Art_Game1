@@ -95,15 +95,16 @@ public class ItemEntity extends Entity {
 
     /**
      * Attempts to load a sprite from assets, falls back to procedural generation.
+     * Prefers GIF files (animated) over PNG files.
      */
     private BufferedImage loadOrGenerateSprite(String itemId, String type, String name) {
-        // Try loading from assets/items/{itemId}.png
+        // Try loading from assets/items/{itemId}.gif first (animated), then .png
         if (itemId != null && !itemId.isEmpty()) {
             String[] paths = {
-                "assets/items/" + itemId + ".png",
                 "assets/items/" + itemId + ".gif",
-                "assets/items/" + type + "/" + itemId + ".png",
-                "assets/items/" + type + "/" + itemId + ".gif"
+                "assets/items/" + itemId + ".png",
+                "assets/items/" + type + "/" + itemId + ".gif",
+                "assets/items/" + type + "/" + itemId + ".png"
             };
 
             for (String path : paths) {
