@@ -153,6 +153,7 @@ public class LevelData {
         public String spritePath;
         public String itemName;
         public String itemType;
+        public String itemId;  // ItemRegistry ID for creating linked items
 
         public ItemData() {
             spritePath = "assets/obstacle.png";
@@ -173,6 +174,10 @@ public class LevelData {
             this.spritePath = spritePath;
             this.itemName = itemName;
             this.itemType = itemType;
+        }
+
+        public boolean hasItemId() {
+            return itemId != null && !itemId.isEmpty();
         }
     }
 
