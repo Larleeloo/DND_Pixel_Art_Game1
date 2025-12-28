@@ -9,9 +9,8 @@ import java.awt.*;
  */
 public class PlayerStatusBar {
 
-    // Bar dimensions
-    private static final int HEALTH_BAR_WIDTH = 180;
-    private static final int SIDE_BAR_WIDTH = 120;
+    // Bar dimensions - all bars same width
+    private static final int BAR_WIDTH = 140;
     private static final int BAR_HEIGHT = 16;
     private static final int BAR_SPACING = 8;
     private static final int CORNER_RADIUS = 4;
@@ -41,7 +40,7 @@ public class PlayerStatusBar {
         if (player == null) return;
 
         // Calculate total panel width: Mana + spacing + Health + spacing + Stamina
-        int panelWidth = SIDE_BAR_WIDTH + BAR_SPACING + HEALTH_BAR_WIDTH + BAR_SPACING + SIDE_BAR_WIDTH + 20;
+        int panelWidth = BAR_WIDTH * 3 + BAR_SPACING * 2 + 20;
         int panelHeight = BAR_HEIGHT + 10;
         int panelX = (screenWidth - panelWidth) / 2;
         // Position above hotbar (hotbar is at ~1080-80, so place this at ~1080-140)
@@ -58,17 +57,17 @@ public class PlayerStatusBar {
         int currentX = panelX + 10;
 
         // Draw Mana bar (left)
-        drawBar(g2d, currentX, barY, SIDE_BAR_WIDTH, player.getMana(), player.getMaxMana(),
+        drawBar(g2d, currentX, barY, BAR_WIDTH, player.getMana(), player.getMaxMana(),
                 MANA_COLOR, MANA_BG, "MP");
-        currentX += SIDE_BAR_WIDTH + BAR_SPACING;
+        currentX += BAR_WIDTH + BAR_SPACING;
 
-        // Draw Health bar (center - larger)
-        drawBar(g2d, currentX, barY, HEALTH_BAR_WIDTH, player.getHealth(), player.getMaxHealth(),
+        // Draw Health bar (center)
+        drawBar(g2d, currentX, barY, BAR_WIDTH, player.getHealth(), player.getMaxHealth(),
                 HEALTH_COLOR, HEALTH_BG, "HP");
-        currentX += HEALTH_BAR_WIDTH + BAR_SPACING;
+        currentX += BAR_WIDTH + BAR_SPACING;
 
         // Draw Stamina bar (right)
-        drawBar(g2d, currentX, barY, SIDE_BAR_WIDTH, player.getStamina(), player.getMaxStamina(),
+        drawBar(g2d, currentX, barY, BAR_WIDTH, player.getStamina(), player.getMaxStamina(),
                 STAMINA_COLOR, STAMINA_BG, "SP");
     }
 
