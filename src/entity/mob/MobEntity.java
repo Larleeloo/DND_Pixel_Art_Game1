@@ -106,8 +106,9 @@ public abstract class MobEntity extends Entity {
     protected double animationScale = 1.0;
     protected double skeletonOffsetY = 0;  // Offset from position to skeleton anchor (for feet on ground)
 
-    // Physics constants
-    protected static final double GRAVITY = 0.5;
+    // Physics constants - Gravity is applied per frame, balanced for 60 FPS
+    // Higher value = faster falling (more Earth-like, less moon-like)
+    protected static final double GRAVITY = 0.8;
     protected double groundY = 920;  // Ground level from level data
 
     // Visual bounds padding for camera culling (skeleton may be larger than hitbox)
@@ -147,8 +148,8 @@ public abstract class MobEntity extends Entity {
 
         this.detectionRange = 200;
         this.loseTargetRange = 400;
-        this.wanderSpeed = 50;
-        this.chaseSpeed = 100;
+        this.wanderSpeed = 120;
+        this.chaseSpeed = 200;
 
         this.wanderMinX = x - 200;
         this.wanderMaxX = x + 200;
@@ -446,12 +447,6 @@ public abstract class MobEntity extends Entity {
         // Move toward wander target
         double dx = wanderTargetX - posX;
 
-        // Debug output - remove after fixing
-        if (debugDraw) {
-            System.out.println("WANDER: pos=" + (int)posX + " target=" + (int)wanderTargetX +
-                               " dx=" + (int)dx + " vX=" + (int)velocityX + " speed=" + (int)wanderSpeed);
-        }
-
         if (Math.abs(dx) < 10) {
             // Reached target, pick a new one or go idle
             pickWanderTarget();
@@ -532,13 +527,6 @@ public abstract class MobEntity extends Entity {
         // Apply gravity
         if (!onGround) {
             velocityY += GRAVITY;
-        }
-
-        // Debug: log movement when in WANDER state
-        if (debugDraw && currentState == AIState.WANDER && velocityX != 0) {
-            double movement = velocityX * deltaTime;
-            System.out.println("PHYSICS: vX=" + (int)velocityX + " dt=" + deltaTime +
-                               " movement=" + movement + " oldX=" + (int)posX);
         }
 
         // Calculate new positions

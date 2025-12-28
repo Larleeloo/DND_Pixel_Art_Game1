@@ -89,6 +89,7 @@ public class SpriteAnimation {
 
     /**
      * Loads an animation for a specific action state from a GIF file.
+     * If the file doesn't exist, creates a placeholder animation.
      *
      * @param state The action state this animation represents
      * @param gifPath Path to the GIF file
@@ -96,6 +97,13 @@ public class SpriteAnimation {
      */
     public boolean loadAction(ActionState state, String gifPath) {
         try {
+            java.io.File file = new java.io.File(gifPath);
+            if (!file.exists()) {
+                // Create placeholder animation for missing file
+                createPlaceholderAnimation(state);
+                return true;
+            }
+
             AssetLoader.ImageAsset asset = AssetLoader.load(gifPath);
             if (asset.animatedTexture != null) {
                 animations.put(state, asset.animatedTexture);
@@ -105,20 +113,97 @@ public class SpriteAnimation {
                     baseWidth = asset.width;
                     baseHeight = asset.height;
                 }
-
-                System.out.println("SpriteAnimation: Loaded " + state + " from " + gifPath +
-                        " (" + asset.animatedTexture.getFrameCount() + " frames)");
                 return true;
-            } else {
+            } else if (asset.staticImage != null) {
                 // Create single-frame animated texture from static image
                 AnimatedTexture staticAnim = new AnimatedTexture(asset.staticImage);
                 animations.put(state, staticAnim);
-                System.out.println("SpriteAnimation: Loaded " + state + " as static from " + gifPath);
+                return true;
+            } else {
+                // Create placeholder for failed load
+                createPlaceholderAnimation(state);
                 return true;
             }
         } catch (Exception e) {
-            System.err.println("SpriteAnimation: Failed to load " + state + " from " + gifPath + ": " + e.getMessage());
-            return false;
+            createPlaceholderAnimation(state);
+            return true;
+        }
+    }
+
+    /**
+     * Creates a colored placeholder animation for a missing action state.
+     * The color is based on the action type for visual distinction.
+     */
+    private void createPlaceholderAnimation(ActionState state) {
+        // Skip if already has animation
+        if (animations.containsKey(state)) return;
+
+        // Use existing animation dimensions or defaults
+        int w = baseWidth > 0 ? baseWidth : 32;
+        int h = baseHeight > 0 ? baseHeight : 64;
+
+        // Create a colored placeholder frame based on action type
+        Color color = getPlaceholderColor(state);
+        BufferedImage frame = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = frame.createGraphics();
+
+        // Draw body shape
+        g.setColor(color);
+        g.fillRoundRect(w/4, h/4, w/2, h*3/4 - h/4, 8, 8);
+
+        // Draw head
+        g.fillOval(w/3, 2, w/3, h/4);
+
+        // Draw action indicator
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, Math.max(8, h/8)));
+        String label = state.name().substring(0, Math.min(4, state.name().length()));
+        g.drawString(label, 2, h - 4);
+
+        g.dispose();
+
+        AnimatedTexture placeholder = new AnimatedTexture(frame);
+        animations.put(state, placeholder);
+    }
+
+    /**
+     * Gets a distinct color for each action state placeholder.
+     */
+    private Color getPlaceholderColor(ActionState state) {
+        switch (state) {
+            case IDLE: return new Color(100, 100, 200);       // Blue
+            case WALK: return new Color(100, 200, 100);       // Green
+            case RUN: return new Color(200, 200, 100);        // Yellow
+            case SPRINT: return new Color(255, 200, 50);      // Orange
+            case JUMP: return new Color(100, 200, 200);       // Cyan
+            case DOUBLE_JUMP: return new Color(50, 220, 220); // Light cyan
+            case TRIPLE_JUMP: return new Color(0, 255, 255);  // Bright cyan
+            case FALL: return new Color(150, 150, 200);       // Light blue
+            case ATTACK: return new Color(200, 50, 50);       // Red
+            case FIRE: return new Color(255, 100, 50);        // Orange-red
+            case USE_ITEM: return new Color(200, 150, 100);   // Tan
+            case EAT: return new Color(200, 150, 50);         // Gold
+            case HURT: return new Color(255, 50, 50);         // Bright red
+            case DEAD: return new Color(80, 80, 80);          // Dark gray
+            case BLOCK: return new Color(150, 150, 150);      // Gray
+            case CAST: return new Color(150, 50, 200);        // Purple
+            default: return new Color(180, 180, 180);         // Light gray
+        }
+    }
+
+    /**
+     * Ensures all basic animations exist, creating placeholders for missing ones.
+     */
+    public void ensureBasicAnimations() {
+        ActionState[] basicStates = {
+            ActionState.IDLE, ActionState.WALK, ActionState.RUN,
+            ActionState.JUMP, ActionState.ATTACK, ActionState.HURT
+        };
+
+        for (ActionState state : basicStates) {
+            if (!animations.containsKey(state)) {
+                createPlaceholderAnimation(state);
+            }
         }
     }
 

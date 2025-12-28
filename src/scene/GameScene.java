@@ -429,7 +429,6 @@ public class GameScene implements Scene {
      */
     private void toggleDebugMode() {
         debugMode = !debugMode;
-        System.out.println("GameScene: Debug mode " + (debugMode ? "ENABLED" : "DISABLED"));
 
         // Enable/disable debug drawing on all mobs
         if (entityManager != null) {

@@ -231,7 +231,6 @@ public class ItemRegistry {
                 "Opens many locks");
 
         initialized = true;
-        System.out.println("ItemRegistry: Initialized " + templates.size() + " items");
     }
 
     // ==================== Registration Helpers ====================

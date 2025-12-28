@@ -71,6 +71,14 @@ public class SpriteMobEntity extends MobEntity {
     protected boolean isEating = false;
     protected double eatTimer = 0;
 
+    // Mob inventory and equipment system
+    protected List<Item> inventory = new ArrayList<>();
+    protected int maxInventorySize = 5;
+    protected Item equippedWeapon = null;
+    protected Item equippedArmor = null;
+    protected EquipmentOverlay equipmentOverlay;
+    protected boolean isHumanoid = false;  // Whether this mob can equip humanoid items
+
     /**
      * Creates a sprite-based mob entity.
      *
@@ -98,6 +106,9 @@ public class SpriteMobEntity extends MobEntity {
 
         // Larger sprites need larger attack range
         this.attackRange = 80;
+
+        // Initialize equipment overlay for humanoid mobs
+        this.equipmentOverlay = new EquipmentOverlay();
 
         this.lastUpdateTime = System.currentTimeMillis();
     }
@@ -129,9 +140,7 @@ public class SpriteMobEntity extends MobEntity {
             String path = dir + "/" + entry.getKey() + ".gif";
             java.io.File file = new java.io.File(path);
             if (file.exists()) {
-                if (spriteAnimation.loadAction(entry.getValue(), path)) {
-                    System.out.println("SpriteMobEntity: Loaded animation: " + entry.getKey() + " from " + path);
-                }
+                spriteAnimation.loadAction(entry.getValue(), path);
             }
         }
 
@@ -203,7 +212,6 @@ public class SpriteMobEntity extends MobEntity {
             target.takeDamage(attackDamage, knockbackDir * 5, -3);
             attackTimer = attackCooldown;
             setAnimationState("attack");
-            System.out.println("SpriteMobEntity: Attacked player for " + attackDamage + " damage");
         }
     }
 
@@ -240,8 +248,6 @@ public class SpriteMobEntity extends MobEntity {
 
         projectileTimer = projectileCooldown;
         setAnimationState("fire");
-
-        System.out.println("SpriteMobEntity: Fired projectile at player");
     }
 
     /**
@@ -269,6 +275,137 @@ public class SpriteMobEntity extends MobEntity {
      */
     public void setSprintSpeed(double speed) {
         this.sprintSpeed = speed;
+    }
+
+    // ==================== Inventory and Equipment ====================
+
+    /**
+     * Sets whether this mob is humanoid (can equip humanoid items like armor, weapons).
+     */
+    public void setHumanoid(boolean humanoid) {
+        this.isHumanoid = humanoid;
+    }
+
+    /**
+     * Adds an item to this mob's inventory.
+     * @return true if added successfully, false if inventory full
+     */
+    public boolean addToInventory(Item item) {
+        if (inventory.size() < maxInventorySize) {
+            inventory.add(item);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Removes an item from inventory.
+     */
+    public boolean removeFromInventory(Item item) {
+        return inventory.remove(item);
+    }
+
+    /**
+     * Gets the mob's inventory.
+     */
+    public List<Item> getInventory() {
+        return new ArrayList<>(inventory);
+    }
+
+    /**
+     * Equips a weapon from inventory (humanoid mobs only).
+     * @param item The weapon to equip
+     * @return true if equipped successfully
+     */
+    public boolean equipWeapon(Item item) {
+        if (!isHumanoid) return false;
+        if (item.getCategory() != Item.ItemCategory.WEAPON &&
+            item.getCategory() != Item.ItemCategory.RANGED_WEAPON) return false;
+
+        // Unequip current weapon
+        if (equippedWeapon != null) {
+            inventory.add(equippedWeapon);
+        }
+
+        equippedWeapon = item;
+        inventory.remove(item);
+
+        // Update attack damage based on weapon
+        this.attackDamage = item.getDamage();
+        this.attackRange = item.getRange();
+
+        // If ranged weapon, configure ranged attack
+        if (item.isRangedWeapon()) {
+            setRangedAttack(
+                item.getProjectileType(),
+                item.getDamage(),
+                item.getProjectileSpeed(),
+                1.5,  // Cooldown
+                item.getRange()
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Equips armor from inventory (humanoid mobs only).
+     * @param item The armor to equip
+     * @return true if equipped successfully
+     */
+    public boolean equipArmor(Item item) {
+        if (!isHumanoid) return false;
+        if (item.getCategory() != Item.ItemCategory.ARMOR) return false;
+
+        // Unequip current armor
+        if (equippedArmor != null) {
+            inventory.add(equippedArmor);
+        }
+
+        equippedArmor = item;
+        inventory.remove(item);
+
+        return true;
+    }
+
+    /**
+     * Gets the equipped weapon.
+     */
+    public Item getEquippedWeapon() {
+        return equippedWeapon;
+    }
+
+    /**
+     * Gets the equipped armor.
+     */
+    public Item getEquippedArmor() {
+        return equippedArmor;
+    }
+
+    /**
+     * Gets the defense value from equipped armor.
+     */
+    public int getDefense() {
+        if (equippedArmor != null) {
+            return equippedArmor.getDefense();
+        }
+        return 0;
+    }
+
+    /**
+     * Equips an overlay item (like clothing/armor visual).
+     * @param slot Equipment slot (head, chest, legs, feet)
+     * @param spriteDir Directory containing overlay sprites
+     * @param itemName Name of the item
+     */
+    public void equipOverlay(String slot, String spriteDir, String itemName) {
+        if (!isHumanoid) return;
+
+        String basePath = spriteDir + "/";
+        equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.IDLE, basePath + "idle.gif", itemName);
+        equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.WALK, basePath + "walk.gif", itemName);
+        equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.RUN, basePath + "run.gif", itemName);
+        equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.ATTACK, basePath + "attack.gif", itemName);
     }
 
     // ==================== Animation State ====================

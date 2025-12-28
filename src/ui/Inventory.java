@@ -51,16 +51,13 @@ public class Inventory {
     public boolean addItem(ItemEntity item) {
         if (items.size() < maxSlots) {
             items.add(item);
-            System.out.println("Added to inventory: " + item.getItemName() + " (" + (items.size()) + "/" + maxSlots + ")");
             return true;
         }
-        System.out.println("Inventory full!");
         return false;
     }
 
     public void toggleOpen() {
         isOpen = !isOpen;
-        System.out.println("Inventory " + (isOpen ? "opened" : "closed"));
     }
 
     public boolean isOpen() {
@@ -93,7 +90,6 @@ public class Inventory {
                 isDragging = true;
                 dragX = mouseX;
                 dragY = mouseY;
-                System.out.println("Started dragging: " + draggedItem.getItemName());
                 break;
             }
         }
@@ -126,9 +122,6 @@ public class Inventory {
             // Drop the item into the world
             droppedItem = draggedItem;
             items.remove(draggedIndex);
-            System.out.println("Dropped item outside inventory: " + droppedItem.getItemName());
-        } else {
-            System.out.println("Released item inside inventory (not dropping)");
         }
 
         // Reset drag state
