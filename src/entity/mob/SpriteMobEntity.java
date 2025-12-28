@@ -7,6 +7,8 @@ import graphics.*;
 
 import java.awt.*;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Base class for sprite-based AI-controlled mobs.
@@ -43,6 +45,31 @@ public class SpriteMobEntity extends MobEntity {
     protected int spriteWidth;
     protected int spriteHeight;
     protected static final int SCALE = 2;
+
+    // Multi-jump system
+    protected int maxJumps = 1;           // Default to single jump
+    protected int jumpsRemaining = 1;
+    protected int currentJumpNumber = 0;
+    protected double doubleJumpStrength = -8;
+    protected double tripleJumpStrength = -7;
+
+    // Sprint system
+    protected boolean isSprinting = false;
+    protected double sprintSpeed = 0;      // Set by subclasses
+
+    // Ranged attack system
+    protected boolean canFireProjectiles = false;
+    protected ProjectileEntity.ProjectileType projectileType;
+    protected int projectileDamage = 5;
+    protected double projectileSpeed = 12.0;
+    protected double projectileCooldown = 2.0;
+    protected double projectileTimer = 0;
+    protected double preferredAttackRange = 200; // Range to start firing
+    protected List<ProjectileEntity> activeProjectiles = new ArrayList<>();
+
+    // Eating animation (for herbivore mobs)
+    protected boolean isEating = false;
+    protected double eatTimer = 0;
 
     /**
      * Creates a sprite-based mob entity.
@@ -81,25 +108,29 @@ public class SpriteMobEntity extends MobEntity {
      * @param dir Directory containing animation GIFs
      */
     protected void loadAnimations(String dir) {
-        // Try to load standard mob animations using path-based loading
-        String[] actions = {"idle", "walk", "run", "attack", "hurt", "death"};
+        // Map of file names to action states (extended for new animations)
+        java.util.Map<String, SpriteAnimation.ActionState> actionMap = new java.util.HashMap<>();
+        actionMap.put("idle", SpriteAnimation.ActionState.IDLE);
+        actionMap.put("walk", SpriteAnimation.ActionState.WALK);
+        actionMap.put("run", SpriteAnimation.ActionState.RUN);
+        actionMap.put("sprint", SpriteAnimation.ActionState.SPRINT);
+        actionMap.put("jump", SpriteAnimation.ActionState.JUMP);
+        actionMap.put("double_jump", SpriteAnimation.ActionState.DOUBLE_JUMP);
+        actionMap.put("triple_jump", SpriteAnimation.ActionState.TRIPLE_JUMP);
+        actionMap.put("fall", SpriteAnimation.ActionState.FALL);
+        actionMap.put("attack", SpriteAnimation.ActionState.ATTACK);
+        actionMap.put("fire", SpriteAnimation.ActionState.FIRE);
+        actionMap.put("cast", SpriteAnimation.ActionState.CAST);
+        actionMap.put("eat", SpriteAnimation.ActionState.EAT);
+        actionMap.put("hurt", SpriteAnimation.ActionState.HURT);
+        actionMap.put("death", SpriteAnimation.ActionState.DEAD);
 
-        for (String action : actions) {
-            String path = dir + "/" + action + ".gif";
+        for (java.util.Map.Entry<String, SpriteAnimation.ActionState> entry : actionMap.entrySet()) {
+            String path = dir + "/" + entry.getKey() + ".gif";
             java.io.File file = new java.io.File(path);
             if (file.exists()) {
-                SpriteAnimation.ActionState state = SpriteAnimation.ActionState.IDLE;
-                switch (action) {
-                    case "idle": state = SpriteAnimation.ActionState.IDLE; break;
-                    case "walk": state = SpriteAnimation.ActionState.WALK; break;
-                    case "run": state = SpriteAnimation.ActionState.RUN; break;
-                    case "attack": state = SpriteAnimation.ActionState.ATTACK; break;
-                    case "hurt": state = SpriteAnimation.ActionState.HURT; break;
-                    case "death": state = SpriteAnimation.ActionState.DEAD; break;
-                }
-                // Use loadAction with path (String) - it handles loading internally
-                if (spriteAnimation.loadAction(state, path)) {
-                    System.out.println("SpriteMobEntity: Loaded animation: " + action + " from " + path);
+                if (spriteAnimation.loadAction(entry.getValue(), path)) {
+                    System.out.println("SpriteMobEntity: Loaded animation: " + entry.getKey() + " from " + path);
                 }
             }
         }
@@ -153,20 +184,91 @@ public class SpriteMobEntity extends MobEntity {
 
     @Override
     protected void performAttack() {
-        // Basic attack behavior - can be overridden in subclasses
-        if (target != null && attackTimer <= 0) {
-            double dist = getDistanceToTargetFace();
-            if (dist <= attackRange) {
-                // Calculate knockback direction based on mob position relative to player
-                Rectangle playerBounds = target.getBounds();
-                double playerCenterX = playerBounds.x + playerBounds.width / 2;
-                double knockbackDir = posX < playerCenterX ? 1 : -1;
-                target.takeDamage(attackDamage, knockbackDir * 5, -3);
-                attackTimer = attackCooldown;
-                setAnimationState("attack");
-                System.out.println("SpriteMobEntity: Attacked player for " + attackDamage + " damage");
-            }
+        if (target == null) return;
+
+        double dist = getDistanceToTargetFace();
+
+        // Check for ranged attack first
+        if (canFireProjectiles && dist <= preferredAttackRange && projectileTimer <= 0) {
+            fireProjectile();
+            return;
         }
+
+        // Melee attack if in range
+        if (attackTimer <= 0 && dist <= attackRange) {
+            // Calculate knockback direction based on mob position relative to player
+            Rectangle playerBounds = target.getBounds();
+            double playerCenterX = playerBounds.x + playerBounds.width / 2;
+            double knockbackDir = posX < playerCenterX ? 1 : -1;
+            target.takeDamage(attackDamage, knockbackDir * 5, -3);
+            attackTimer = attackCooldown;
+            setAnimationState("attack");
+            System.out.println("SpriteMobEntity: Attacked player for " + attackDamage + " damage");
+        }
+    }
+
+    /**
+     * Fires a projectile at the target.
+     */
+    protected void fireProjectile() {
+        if (target == null || projectileType == null) return;
+
+        // Calculate direction to target
+        Rectangle targetBounds = target.getBounds();
+        double targetCenterX = targetBounds.x + targetBounds.width / 2;
+        double targetCenterY = targetBounds.y + targetBounds.height / 2;
+
+        double dx = targetCenterX - posX;
+        double dy = targetCenterY - (posY - spriteHeight / 2);
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            dx /= length;
+            dy /= length;
+        }
+
+        // Create projectile
+        int projX = (int)posX;
+        int projY = (int)(posY - spriteHeight / 2);
+
+        ProjectileEntity projectile = new ProjectileEntity(
+            projX, projY, projectileType, projectileDamage,
+            dx * projectileSpeed, dy * projectileSpeed, false
+        );
+        projectile.setSource(this);
+        activeProjectiles.add(projectile);
+
+        projectileTimer = projectileCooldown;
+        setAnimationState("fire");
+
+        System.out.println("SpriteMobEntity: Fired projectile at player");
+    }
+
+    /**
+     * Configures this mob for ranged attacks.
+     */
+    public void setRangedAttack(ProjectileEntity.ProjectileType type, int damage, double speed, double cooldown, double range) {
+        this.canFireProjectiles = true;
+        this.projectileType = type;
+        this.projectileDamage = damage;
+        this.projectileSpeed = speed;
+        this.projectileCooldown = cooldown;
+        this.preferredAttackRange = range;
+    }
+
+    /**
+     * Sets the maximum number of jumps for this mob.
+     */
+    public void setMaxJumps(int jumps) {
+        this.maxJumps = Math.max(1, Math.min(3, jumps));
+        this.jumpsRemaining = this.maxJumps;
+    }
+
+    /**
+     * Sets the sprint speed for this mob.
+     */
+    public void setSprintSpeed(double speed) {
+        this.sprintSpeed = speed;
     }
 
     // ==================== Animation State ====================
@@ -174,7 +276,7 @@ public class SpriteMobEntity extends MobEntity {
     /**
      * Sets the current animation state.
      *
-     * @param state Animation state name (idle, walk, run, attack, hurt, death)
+     * @param state Animation state name (idle, walk, run, sprint, attack, fire, hurt, death, eat)
      */
     protected void setAnimationState(String state) {
         if (!state.equals(currentAnimState)) {
@@ -188,8 +290,41 @@ public class SpriteMobEntity extends MobEntity {
                 case "chase":
                     actionState = SpriteAnimation.ActionState.RUN;
                     break;
+                case "sprint":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.SPRINT)
+                            ? SpriteAnimation.ActionState.SPRINT
+                            : SpriteAnimation.ActionState.RUN;
+                    break;
+                case "jump":
+                    actionState = SpriteAnimation.ActionState.JUMP;
+                    break;
+                case "double_jump":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.DOUBLE_JUMP)
+                            ? SpriteAnimation.ActionState.DOUBLE_JUMP
+                            : SpriteAnimation.ActionState.JUMP;
+                    break;
+                case "fall":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.FALL)
+                            ? SpriteAnimation.ActionState.FALL
+                            : SpriteAnimation.ActionState.JUMP;
+                    break;
                 case "attack":
                     actionState = SpriteAnimation.ActionState.ATTACK;
+                    break;
+                case "fire":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.FIRE)
+                            ? SpriteAnimation.ActionState.FIRE
+                            : SpriteAnimation.ActionState.ATTACK;
+                    break;
+                case "cast":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.CAST)
+                            ? SpriteAnimation.ActionState.CAST
+                            : SpriteAnimation.ActionState.ATTACK;
+                    break;
+                case "eat":
+                    actionState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.EAT)
+                            ? SpriteAnimation.ActionState.EAT
+                            : SpriteAnimation.ActionState.IDLE;
                     break;
                 case "hurt":
                     actionState = SpriteAnimation.ActionState.HURT;
@@ -213,6 +348,22 @@ public class SpriteMobEntity extends MobEntity {
         long elapsed = currentTime - lastUpdateTime;
         lastUpdateTime = currentTime;
 
+        // Update projectile timer
+        if (projectileTimer > 0) {
+            projectileTimer -= deltaTime;
+        }
+
+        // Update eating timer
+        if (isEating) {
+            eatTimer -= deltaTime;
+            if (eatTimer <= 0) {
+                isEating = false;
+            }
+        }
+
+        // Determine if sprinting (when chasing and has sprint speed set)
+        isSprinting = (currentState == AIState.CHASE && sprintSpeed > 0);
+
         // Update sprite animation
         spriteAnimation.update(elapsed);
 
@@ -222,15 +373,47 @@ public class SpriteMobEntity extends MobEntity {
         // Call parent update for AI and physics
         super.update(deltaTime, entities);
 
+        // Update projectiles
+        updateProjectiles(deltaTime, entities);
+
         // Sync entity position with mob position
         this.x = (int)posX;
         this.y = (int)posY;
     }
 
     /**
+     * Updates active projectiles.
+     */
+    protected void updateProjectiles(double deltaTime, List<Entity> entities) {
+        Iterator<ProjectileEntity> iterator = activeProjectiles.iterator();
+        while (iterator.hasNext()) {
+            ProjectileEntity proj = iterator.next();
+            proj.update(deltaTime, entities);
+
+            if (!proj.isActive()) {
+                iterator.remove();
+                entities.remove(proj);
+            }
+        }
+    }
+
+    /**
+     * Gets active projectiles for drawing.
+     */
+    public List<ProjectileEntity> getActiveProjectiles() {
+        return activeProjectiles;
+    }
+
+    /**
      * Updates the animation state based on current AI state.
      */
     protected void updateAnimationFromAIState() {
+        // Priority: eating > firing > special states
+        if (isEating) {
+            setAnimationState("eat");
+            return;
+        }
+
         switch (currentState) {
             case IDLE:
                 setAnimationState("idle");
@@ -239,10 +422,20 @@ public class SpriteMobEntity extends MobEntity {
                 setAnimationState("walk");
                 break;
             case CHASE:
-                setAnimationState("run");
+                // Use sprint if available and configured, otherwise run
+                if (isSprinting && spriteAnimation.hasAnimation(SpriteAnimation.ActionState.SPRINT)) {
+                    setAnimationState("sprint");
+                } else {
+                    setAnimationState("run");
+                }
                 break;
             case ATTACK:
-                setAnimationState("attack");
+                // Check if we're in ranged or melee mode
+                if (canFireProjectiles && projectileTimer > projectileCooldown - 0.3) {
+                    setAnimationState("fire");
+                } else {
+                    setAnimationState("attack");
+                }
                 break;
             case FLEE:
                 setAnimationState("run");

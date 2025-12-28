@@ -19,15 +19,95 @@ CURRENT FEATURES
 -Simple parallax with animated background support
 -Scrolling camera that follows the player
 
+MOVEMENT AND ANIMATION SYSTEM (NEW)
+-Extended animation states supporting 5-15 frames for smooth, clear motion
+  -Movement: IDLE, WALK, RUN, SPRINT (with Shift key)
+  -Jumping: JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL
+  -Combat: ATTACK, FIRE, BLOCK, CAST
+  -Item Usage: USE_ITEM, EAT
+  -Reactions: HURT, DEAD
+-Double and triple jumping for all entities
+  -Press Space while in air to perform additional jumps
+  -Each jump has unique animation (flips and spins)
+  -Configurable max jumps per entity (setMaxJumps)
+-Sprinting system for all entities
+  -Hold Shift to sprint (increased speed, drains stamina)
+  -Stamina regenerates when not sprinting
+  -Sprint animations with forward lean
+
+PROJECTILE SYSTEM (NEW)
+-ProjectileEntity class for fired/thrown projectiles
+  -GIF-based animated projectile sprites
+  -Velocity-based movement with optional gravity
+  -Collision detection with entities and blocks
+  -Configurable damage and knockback
+  -Trail effects for visual polish
+-Multiple projectile types:
+  -ARROW, BOLT (bows, crossbows)
+  -MAGIC_BOLT, FIREBALL, ICEBALL (magic weapons)
+  -THROWING_KNIFE, THROWING_AXE, ROCK (throwables)
+  -POTION, BOMB (explosives)
+-Mobs can fire projectiles with ranged attacks
+  -Configurable projectile type, damage, speed, cooldown
+  -AI switches between ranged and melee based on distance
+
+ITEM AND WEAPON SYSTEM (NEW)
+-Comprehensive Item class with categories and properties
+  -Categories: WEAPON, RANGED_WEAPON, TOOL, ARMOR, CLOTHING, BLOCK, FOOD, POTION, MATERIAL, KEY, ACCESSORY, THROWABLE
+  -Rarity tiers: COMMON (white), UNCOMMON (green), RARE (blue), EPIC (purple), LEGENDARY (orange), MYTHIC (cyan)
+  -Properties: damage, defense, attack speed, range, crit chance, special effects
+-Held item overlay system
+  -Items render as GIF overlays on the character when held
+  -Animations sync with base character animation states
+  -Support for all action states (idle, walk, attack, fire, etc.)
+-Ranged weapons with projectile firing
+  -Crossbow, longbow, magic wand, fire staff, ice staff
+  -Configurable projectile type, damage, and speed
+  -Firing animation triggers on attack
+-Consumable items (food and potions)
+  -Health, mana, and stamina restoration
+  -Eating animation with progress bar
+  -Configurable consume time
+-ItemRegistry with predefined items
+  -Melee weapons: swords, daggers, axes, maces
+  -Ranged weapons: bows, crossbows, magic staves
+  -Throwing weapons: knives, axes, rocks
+  -Tools: pickaxes, shovels, axes
+  -Armor: helmets, chestplates, leggings, boots
+  -Consumables: food, potions
+  -Materials: crafting ingredients
+  -Keys: for doors and chests
+
+NEW PLAYER ANIMATIONS
+-Firing animation for projectile weapons (8-12 frames)
+-Using item animation for general item usage (6-10 frames)
+-Taking damage animation with flinch effect (5-8 frames)
+-Eating animation with food approaching mouth (10-15 frames)
+-Sprint animation with forward lean (6-10 frames)
+-Double jump with spin/flip effect (8-12 frames)
+-Triple jump with dramatic spin (10-15 frames)
+
+EXTENDED MOB CAPABILITIES
+-Mobs support all new animation states
+-Ranged attack support for mobs (setRangedAttack)
+-Sprint mode when chasing player
+-Projectile management for mob attacks
+
 PROJECT STRUCTURE
 src/                    - Game engine source code (organized by package)
   core/                 - Main application classes (Main, GameWindow, GamePanel)
   scene/                - Scene management (Scene, SceneManager, GameScene, menus)
   entity/               - Base entity classes (Entity, EntityManager, SpriteEntity)
+    - Item.java             - Item class with categories, rarities, and held item overlay support
+    - ItemRegistry.java     - Predefined items (weapons, armor, consumables, etc.)
+    - ProjectileEntity.java - Projectile system for ranged attacks and thrown items
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
+      - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
     mob/                - Mob AI classes (MobEntity, SpriteMobEntity, HumanoidMobEntity, QuadrupedMobEntity)
+      - SpriteMobEntity.java - Mob with ranged attacks, sprint, and extended animations
   block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
   animation/            - Animation system (SpriteAnimation, EquipmentOverlay, AnimatedTexture)
+    - SpriteAnimation.java  - Extended with 16 action states (IDLE, WALK, RUN, SPRINT, JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL, ATTACK, FIRE, USE_ITEM, EAT, HURT, DEAD, BLOCK, CAST)
     bone/               - Legacy bone animation (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
@@ -40,6 +120,9 @@ devtools/               - Development tools (texture generators, animation impor
   - QuadrupedTextureGenerator.java  - Generates quadruped animal textures
   - BlockTextureGenerator.java      - Generates block textures
   - ParallaxTextureGenerator.java   - Generates parallax backgrounds
+  - HumanoidSpriteGenerator.java    - Generates GIF sprites for humanoid mobs
+  - QuadrupedSpriteGenerator.java   - Generates GIF sprites for quadruped mobs
+  - ExtendedSpriteGenerator.java    - Generates all 15 animation GIFs (sprint, double_jump, fire, eat, etc.)
   blockbench/             - Blockbench import tools (legacy bone animation support)
     - BoneTextureGenerator.java       - Generates simple bone textures
     - BlockbenchAnimationImporter.java - Imports Blockbench animation files

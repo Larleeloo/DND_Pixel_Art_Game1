@@ -10,6 +10,8 @@ import graphics.*;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Iterator;
 
 /**
  * SpritePlayerEntity is a player implementation that uses sprite/GIF-based animation
@@ -50,6 +52,38 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private boolean onGround = false;
     private boolean facingRight = true;
     private int airTime = 0;
+
+    // Multi-jump system
+    private int maxJumps = 3;           // Allows up to triple jump
+    private int jumpsRemaining = 3;
+    private int currentJumpNumber = 0;  // 0 = not jumping, 1 = first jump, 2 = double, 3 = triple
+    private double doubleJumpStrength = -9;
+    private double tripleJumpStrength = -8;
+    private boolean jumpKeyReleased = true;
+
+    // Sprint system
+    private boolean isSprinting = false;
+    private double walkSpeed = 4;
+    private double sprintSpeed = 7;
+    private double sprintStaminaCost = 0.5; // Stamina per frame while sprinting
+
+    // Projectile system
+    private List<ProjectileEntity> activeProjectiles = new ArrayList<>();
+    private Item heldItem = null;        // Currently held item
+    private boolean isFiring = false;
+    private double fireTimer = 0;
+    private double fireCooldown = 0.5;   // Seconds between shots
+    private double fireDuration = 0.3;   // Animation duration
+
+    // Item usage system
+    private boolean isUsingItem = false;
+    private double useItemTimer = 0;
+    private double useItemDuration = 0.5;
+
+    // Eating system
+    private boolean isEating = false;
+    private double eatTimer = 0;
+    private double eatDuration = 1.5;    // Time to consume food
 
     // Attack system
     private boolean isAttacking = false;
@@ -162,16 +196,31 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private void loadAnimations(String spriteDir) {
         String basePath = spriteDir.endsWith("/") ? spriteDir : spriteDir + "/";
 
-        // Try to load each action state
+        // Core movement animations
         spriteAnimation.loadAction(SpriteAnimation.ActionState.IDLE, basePath + "idle.gif");
         spriteAnimation.loadAction(SpriteAnimation.ActionState.WALK, basePath + "walk.gif");
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.JUMP, basePath + "jump.gif");
-
-        // Optional: load additional states if they exist
         spriteAnimation.loadAction(SpriteAnimation.ActionState.RUN, basePath + "run.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.SPRINT, basePath + "sprint.gif");
+
+        // Jump animations (single, double, triple)
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.JUMP, basePath + "jump.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.DOUBLE_JUMP, basePath + "double_jump.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.TRIPLE_JUMP, basePath + "triple_jump.gif");
         spriteAnimation.loadAction(SpriteAnimation.ActionState.FALL, basePath + "fall.gif");
+
+        // Combat animations
         spriteAnimation.loadAction(SpriteAnimation.ActionState.ATTACK, basePath + "attack.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.FIRE, basePath + "fire.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.BLOCK, basePath + "block.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.CAST, basePath + "cast.gif");
+
+        // Item usage animations
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.USE_ITEM, basePath + "use_item.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.EAT, basePath + "eat.gif");
+
+        // Reaction animations
         spriteAnimation.loadAction(SpriteAnimation.ActionState.HURT, basePath + "hurt.gif");
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.DEAD, basePath + "dead.gif");
 
         System.out.println("SpritePlayerEntity: Loaded animations from " + spriteDir);
     }
@@ -229,13 +278,22 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         long currentTime = System.currentTimeMillis();
         long deltaMs = currentTime - lastUpdateTime;
         lastUpdateTime = currentTime;
+        double deltaSeconds = deltaMs / 1000.0;
 
         // Update invincibility timer
         if (invincibilityTimer > 0) {
-            invincibilityTimer -= deltaMs / 1000.0;
+            invincibilityTimer -= deltaSeconds;
         }
 
-        int speed = 4;
+        // Update action timers
+        updateActionTimers(deltaSeconds);
+
+        // Regenerate mana and stamina
+        if (!isSprinting) {
+            currentStamina = Math.min(maxStamina, currentStamina + (int)(staminaRegenRate * deltaSeconds));
+        }
+        currentMana = Math.min(maxMana, currentMana + (int)(manaRegenRate * deltaSeconds));
+
         int newX = x;
         int newY = y;
         boolean isMoving = false;
@@ -261,15 +319,24 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Update targeted block
         updateTargetedBlock(entities);
 
-        // E key or Left Mouse Click - mine block (use tool)
+        // E key or Left Mouse Click - mine block (use tool) or fire projectile
         if (input.isKeyJustPressed('e') || input.isLeftMouseJustPressed()) {
-            int direction = getMiningDirection();
-            tryMineBlock(entities, direction);
+            if (heldItem != null && heldItem.isRangedWeapon()) {
+                // Fire projectile
+                fireProjectile(entities);
+            } else {
+                // Mine block
+                int direction = getMiningDirection();
+                tryMineBlock(entities, direction);
+            }
         }
 
-        // Right Mouse Click or F key - attack
+        // Right Mouse Click or F key - attack or use item
         if (input.isRightMouseJustPressed() || input.isKeyJustPressed('f')) {
-            if (attack()) {
+            if (heldItem != null && heldItem.isConsumable()) {
+                // Start eating/using consumable
+                startEating();
+            } else if (attack()) {
                 // Attack started - check for mob hits
                 Rectangle attackBounds = getAttackBounds();
                 if (attackBounds != null) {
@@ -281,26 +348,34 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             }
         }
 
-        // Update attack state
-        double deltaSeconds = deltaMs / 1000.0;
-        if (attackTimer > 0) {
-            attackTimer -= deltaSeconds;
-        }
-        if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
-            isAttacking = false;
+        // Q key - use item (non-consumable)
+        if (input.isKeyJustPressed('q') && heldItem != null && !heldItem.isConsumable()) {
+            startUsingItem();
         }
 
         // Apply push forces from collisions
         EntityPhysics.processCollisions(entities, this, deltaSeconds);
 
+        // Sprinting - hold Shift
+        boolean wantsSprint = input.isKeyPressed(java.awt.event.KeyEvent.VK_SHIFT);
+        if (wantsSprint && currentStamina > 0 && (input.isKeyPressed('a') || input.isKeyPressed('d'))) {
+            isSprinting = true;
+            currentStamina = Math.max(0, currentStamina - (int)(sprintStaminaCost));
+        } else {
+            isSprinting = false;
+        }
+
+        // Determine movement speed
+        double speed = isSprinting ? sprintSpeed : walkSpeed;
+
         // Horizontal movement
         if (input.isKeyPressed('a')) {
-            newX -= speed;
+            newX -= (int)speed;
             facingRight = false;
             isMoving = true;
         }
         if (input.isKeyPressed('d')) {
-            newX += speed;
+            newX += (int)speed;
             facingRight = true;
             isMoving = true;
         }
@@ -353,15 +428,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             }
         }
 
-        // Jumping
-        if (input.isKeyPressed(' ') && onGround) {
-            velY = jumpStrength;
-            onGround = false;
-
-            if (audioManager != null) {
-                audioManager.playSound("jump");
-            }
-        }
+        // Multi-jump system
+        handleJumping(input);
 
         // Apply gravity
         velY += gravity;
@@ -390,6 +458,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                         velY = 0;
                         onGround = true;
                         foundPlatform = true;
+                        // Reset jumps on landing
+                        jumpsRemaining = maxJumps;
+                        currentJumpNumber = 0;
                     } else if (velY < 0) {
                         newY = platformBounds.y + platformBounds.height;
                         velY = 0;
@@ -404,6 +475,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             newY = groundY - height;
             velY = 0;
             onGround = true;
+            // Reset jumps on landing
+            jumpsRemaining = maxJumps;
+            currentJumpNumber = 0;
         } else if (!foundPlatform) {
             onGround = false;
         }
@@ -417,6 +491,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             airTime++;
         }
 
+        // Update projectiles
+        updateProjectiles(deltaSeconds, entities);
+
         // Update animation state based on movement
         updateAnimationState(isMoving);
 
@@ -428,18 +505,231 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 spriteAnimation.getCurrentFrameIndex(),
                 spriteAnimation.getState()
         );
+
+        // Sync held item animation
+        if (heldItem != null) {
+            heldItem.syncHeldAnimations(
+                    spriteAnimation.getCurrentFrameIndex(),
+                    spriteAnimation.getState()
+            );
+        }
     }
 
     /**
-     * Updates the animation state based on player movement.
+     * Handles multi-jump input (single, double, triple jump).
+     */
+    private void handleJumping(InputManager input) {
+        // Track jump key release for proper multi-jump detection
+        if (!input.isKeyPressed(' ')) {
+            jumpKeyReleased = true;
+        }
+
+        // Jump input
+        if (input.isKeyPressed(' ') && jumpKeyReleased && jumpsRemaining > 0) {
+            jumpKeyReleased = false;
+
+            if (onGround) {
+                // First jump from ground
+                velY = jumpStrength;
+                onGround = false;
+                jumpsRemaining--;
+                currentJumpNumber = 1;
+
+                if (audioManager != null) {
+                    audioManager.playSound("jump");
+                }
+            } else if (jumpsRemaining > 0) {
+                // Air jump (double or triple)
+                currentJumpNumber++;
+
+                if (currentJumpNumber == 2) {
+                    velY = doubleJumpStrength;
+                    System.out.println("Double jump!");
+                } else if (currentJumpNumber == 3) {
+                    velY = tripleJumpStrength;
+                    System.out.println("Triple jump!");
+                }
+
+                jumpsRemaining--;
+
+                if (audioManager != null) {
+                    audioManager.playSound("jump");
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates action timers for attack, fire, eat, use item.
+     */
+    private void updateActionTimers(double deltaSeconds) {
+        // Attack timer
+        if (attackTimer > 0) {
+            attackTimer -= deltaSeconds;
+        }
+        if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
+            isAttacking = false;
+        }
+
+        // Fire timer
+        if (fireTimer > 0) {
+            fireTimer -= deltaSeconds;
+        }
+        if (isFiring && fireTimer <= fireCooldown - fireDuration) {
+            isFiring = false;
+        }
+
+        // Eat timer
+        if (isEating) {
+            eatTimer -= deltaSeconds;
+            if (eatTimer <= 0) {
+                finishEating();
+            }
+        }
+
+        // Use item timer
+        if (isUsingItem) {
+            useItemTimer -= deltaSeconds;
+            if (useItemTimer <= 0) {
+                finishUsingItem();
+            }
+        }
+    }
+
+    /**
+     * Fires a projectile from the held ranged weapon.
+     */
+    private void fireProjectile(ArrayList<Entity> entities) {
+        if (heldItem == null || !heldItem.isRangedWeapon()) return;
+        if (fireTimer > 0) return; // On cooldown
+
+        // Create projectile
+        int projX = facingRight ? x + width : x - 10;
+        int projY = y + height / 3;
+        double dirX = facingRight ? 1.0 : -1.0;
+
+        ProjectileEntity projectile = heldItem.createProjectile(projX, projY, dirX, 0, true);
+        if (projectile != null) {
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+            entities.add(projectile);
+
+            isFiring = true;
+            fireTimer = fireCooldown;
+
+            if (audioManager != null) {
+                audioManager.playSound("fire");
+            }
+
+            System.out.println("Fired projectile: " + projectile);
+        }
+    }
+
+    /**
+     * Updates active projectiles.
+     */
+    private void updateProjectiles(double deltaSeconds, ArrayList<Entity> entities) {
+        Iterator<ProjectileEntity> iterator = activeProjectiles.iterator();
+        while (iterator.hasNext()) {
+            ProjectileEntity proj = iterator.next();
+            proj.update(deltaSeconds, entities);
+
+            if (!proj.isActive()) {
+                iterator.remove();
+                entities.remove(proj);
+            }
+        }
+    }
+
+    /**
+     * Starts eating/consuming a held item.
+     */
+    private void startEating() {
+        if (heldItem == null || !heldItem.isConsumable()) return;
+        if (isEating) return;
+
+        isEating = true;
+        eatTimer = heldItem.getConsumeTime();
+        eatDuration = heldItem.getConsumeTime();
+
+        System.out.println("Started eating: " + heldItem.getName());
+    }
+
+    /**
+     * Finishes eating and applies effects.
+     */
+    private void finishEating() {
+        if (heldItem == null) return;
+
+        // Apply restoration
+        currentHealth = Math.min(maxHealth, currentHealth + heldItem.getHealthRestore());
+        currentMana = Math.min(maxMana, currentMana + heldItem.getManaRestore());
+        currentStamina = Math.min(maxStamina, currentStamina + heldItem.getStaminaRestore());
+
+        System.out.println("Finished eating: " + heldItem.getName() +
+                " - Health: " + currentHealth + ", Mana: " + currentMana);
+
+        isEating = false;
+        // TODO: Remove item from inventory after consumption
+    }
+
+    /**
+     * Starts using a non-consumable item.
+     */
+    private void startUsingItem() {
+        if (heldItem == null) return;
+        if (isUsingItem) return;
+
+        isUsingItem = true;
+        useItemTimer = useItemDuration;
+
+        System.out.println("Started using item: " + heldItem.getName());
+    }
+
+    /**
+     * Finishes using an item.
+     */
+    private void finishUsingItem() {
+        isUsingItem = false;
+        System.out.println("Finished using item");
+        // TODO: Apply item effects
+    }
+
+    /**
+     * Updates the animation state based on player movement and actions.
+     * Priority: Death > Hurt > Eating > Firing > Using Item > Attack > Jump > Sprint/Run/Walk > Idle
      */
     private void updateAnimationState(boolean isMoving) {
         SpriteAnimation.ActionState newState;
 
-        if (airTime > 3) {
-            // In the air
+        // Priority-based animation state selection
+
+        // Highest priority: Special actions
+        if (isEating) {
+            newState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.EAT)
+                    ? SpriteAnimation.ActionState.EAT
+                    : SpriteAnimation.ActionState.USE_ITEM;
+        } else if (isFiring) {
+            newState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.FIRE)
+                    ? SpriteAnimation.ActionState.FIRE
+                    : SpriteAnimation.ActionState.ATTACK;
+        } else if (isUsingItem) {
+            newState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.USE_ITEM)
+                    ? SpriteAnimation.ActionState.USE_ITEM
+                    : SpriteAnimation.ActionState.IDLE;
+        } else if (isAttacking) {
+            newState = SpriteAnimation.ActionState.ATTACK;
+        } else if (airTime > 3) {
+            // In the air - check for multi-jump animations
             if (velY < 0) {
-                newState = SpriteAnimation.ActionState.JUMP;
+                // Going up
+                if (currentJumpNumber == 3 && spriteAnimation.hasAnimation(SpriteAnimation.ActionState.TRIPLE_JUMP)) {
+                    newState = SpriteAnimation.ActionState.TRIPLE_JUMP;
+                } else if (currentJumpNumber == 2 && spriteAnimation.hasAnimation(SpriteAnimation.ActionState.DOUBLE_JUMP)) {
+                    newState = SpriteAnimation.ActionState.DOUBLE_JUMP;
+                } else {
+                    newState = SpriteAnimation.ActionState.JUMP;
+                }
             } else {
                 // Falling - use FALL if available, otherwise JUMP
                 newState = spriteAnimation.hasAnimation(SpriteAnimation.ActionState.FALL)
@@ -447,7 +737,19 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                         : SpriteAnimation.ActionState.JUMP;
             }
         } else if (isMoving) {
-            newState = SpriteAnimation.ActionState.WALK;
+            // On ground and moving
+            if (isSprinting) {
+                // Use SPRINT if available, otherwise RUN, otherwise WALK
+                if (spriteAnimation.hasAnimation(SpriteAnimation.ActionState.SPRINT)) {
+                    newState = SpriteAnimation.ActionState.SPRINT;
+                } else if (spriteAnimation.hasAnimation(SpriteAnimation.ActionState.RUN)) {
+                    newState = SpriteAnimation.ActionState.RUN;
+                } else {
+                    newState = SpriteAnimation.ActionState.WALK;
+                }
+            } else {
+                newState = SpriteAnimation.ActionState.WALK;
+            }
         } else {
             newState = SpriteAnimation.ActionState.IDLE;
         }
@@ -460,17 +762,27 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         Graphics2D g2d = (Graphics2D) g;
         SpriteAnimation.ActionState currentState = spriteAnimation.getState();
 
-        // Draw equipment behind (BACK slot - capes, etc.)
-        equipmentOverlay.drawBehind(g, x, y, width, height, facingRight, currentState);
+        // Invincibility flash effect
+        boolean flashHide = invincibilityTimer > 0 && (int)(invincibilityTimer * 10) % 2 == 0;
 
-        // Draw base sprite
-        spriteAnimation.draw(g, x, y, width, height, facingRight);
+        if (!flashHide) {
+            // Draw equipment behind (BACK slot - capes, etc.)
+            equipmentOverlay.drawBehind(g, x, y, width, height, facingRight, currentState);
 
-        // Draw equipment in front (armor, weapons, etc.)
-        equipmentOverlay.drawInFront(g, x, y, width, height, facingRight, currentState);
+            // Draw base sprite
+            spriteAnimation.draw(g, x, y, width, height, facingRight);
+
+            // Draw equipment in front (armor, weapons, etc.)
+            equipmentOverlay.drawInFront(g, x, y, width, height, facingRight, currentState);
+
+            // Draw held item overlay
+            if (heldItem != null) {
+                heldItem.drawHeld(g, x, y, width, height, facingRight, currentState);
+            }
+        }
 
         // Debug: draw bounds
-        g.setColor((airTime > 3) ? Color.ORANGE : Color.RED);
+        g.setColor((airTime > 3) ? Color.ORANGE : (isSprinting ? Color.CYAN : Color.RED));
         g2d.setStroke(new BasicStroke(2));
         g.drawRect(x, y, width, height);
 
@@ -497,6 +809,22 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 g2d.setStroke(new BasicStroke(2));
                 g2d.drawRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
             }
+        }
+
+        // Draw eating progress bar
+        if (isEating) {
+            int barWidth = 40;
+            int barHeight = 6;
+            int barX = x + (width - barWidth) / 2;
+            int barY = y - 15;
+            float progress = 1.0f - (float)(eatTimer / eatDuration);
+
+            g2d.setColor(new Color(50, 50, 50));
+            g2d.fillRect(barX, barY, barWidth, barHeight);
+            g2d.setColor(new Color(100, 200, 100));
+            g2d.fillRect(barX, barY, (int)(barWidth * progress), barHeight);
+            g2d.setColor(Color.WHITE);
+            g2d.drawRect(barX, barY, barWidth, barHeight);
         }
     }
 
@@ -813,5 +1141,115 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         ItemEntity item = lastDroppedItem;
         lastDroppedItem = null;
         return item;
+    }
+
+    // ==================== Held Item System ====================
+
+    /**
+     * Sets the currently held item.
+     * The held item will be rendered as an overlay and used for attacks/actions.
+     *
+     * @param item The item to hold
+     */
+    public void setHeldItem(Item item) {
+        this.heldItem = item;
+        if (item != null) {
+            System.out.println("SpritePlayerEntity: Now holding " + item.getName());
+        } else {
+            System.out.println("SpritePlayerEntity: Unequipped held item");
+        }
+    }
+
+    /**
+     * Gets the currently held item.
+     *
+     * @return The held item, or null if empty-handed
+     */
+    public Item getHeldItem() {
+        return heldItem;
+    }
+
+    /**
+     * Checks if the player is currently holding an item.
+     */
+    public boolean hasHeldItem() {
+        return heldItem != null;
+    }
+
+    // ==================== Multi-Jump Configuration ====================
+
+    /**
+     * Sets the maximum number of jumps (1 = single, 2 = double, 3 = triple).
+     *
+     * @param maxJumps Maximum jumps allowed (1-3)
+     */
+    public void setMaxJumps(int maxJumps) {
+        this.maxJumps = Math.max(1, Math.min(3, maxJumps));
+        this.jumpsRemaining = this.maxJumps;
+    }
+
+    /**
+     * Gets the maximum number of jumps allowed.
+     */
+    public int getMaxJumps() {
+        return maxJumps;
+    }
+
+    /**
+     * Gets the remaining jumps available.
+     */
+    public int getJumpsRemaining() {
+        return jumpsRemaining;
+    }
+
+    /**
+     * Checks if currently sprinting.
+     */
+    public boolean isSprinting() {
+        return isSprinting;
+    }
+
+    /**
+     * Sets sprint speed.
+     */
+    public void setSprintSpeed(double speed) {
+        this.sprintSpeed = speed;
+    }
+
+    /**
+     * Gets the active projectiles fired by this player.
+     */
+    public List<ProjectileEntity> getActiveProjectiles() {
+        return activeProjectiles;
+    }
+
+    // ==================== Action State Queries ====================
+
+    /**
+     * Checks if currently firing a projectile.
+     */
+    public boolean isFiring() {
+        return isFiring;
+    }
+
+    /**
+     * Checks if currently eating.
+     */
+    public boolean isEating() {
+        return isEating;
+    }
+
+    /**
+     * Checks if currently using an item.
+     */
+    public boolean isUsingItem() {
+        return isUsingItem;
+    }
+
+    /**
+     * Gets the current jump number (0 = not jumping, 1 = first, 2 = double, 3 = triple).
+     */
+    public int getCurrentJumpNumber() {
+        return currentJumpNumber;
     }
 }
