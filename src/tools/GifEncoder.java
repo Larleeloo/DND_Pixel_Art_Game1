@@ -5,7 +5,7 @@ import java.io.*;
 
 /**
  * Simple GIF89a encoder for creating animated GIFs.
- * Supports multiple frames with configurable delay and looping.
+ * Supports multiple frames with configurable delay, looping, and transparency.
  */
 public class GifEncoder {
     private OutputStream out;
@@ -13,6 +13,7 @@ public class GifEncoder {
     private int delay = 100; // Delay between frames in milliseconds
     private boolean started = false;
     private int repeatCount = 0; // 0 = infinite loop
+    private static final int TRANSPARENT_INDEX = 255; // Reserved for transparency
 
     public GifEncoder(OutputStream out) {
         this.out = out;
@@ -38,7 +39,7 @@ public class GifEncoder {
         writeShort(width);
         writeShort(height);
         out.write(0xF7); // Global Color Table Flag, Color Resolution, Sort Flag, Size of GCT (256 colors)
-        out.write(0);    // Background Color Index
+        out.write(TRANSPARENT_INDEX); // Background Color Index (transparent)
         out.write(0);    // Pixel Aspect Ratio
 
         // Global Color Table (256 colors)
@@ -50,6 +51,7 @@ public class GifEncoder {
 
     private void writeGlobalColorTable() throws IOException {
         // Write 256-color palette (6x6x6 color cube + grayscale)
+        // Index 0-215: 6x6x6 color cube
         for (int r = 0; r < 6; r++) {
             for (int g = 0; g < 6; g++) {
                 for (int b = 0; b < 6; b++) {
@@ -59,13 +61,17 @@ public class GifEncoder {
                 }
             }
         }
-        // Fill remaining with grayscale
-        for (int i = 216; i < 256; i++) {
-            int gray = (i - 216) * 6;
+        // Index 216-254: grayscale
+        for (int i = 216; i < 255; i++) {
+            int gray = (i - 216) * 6 + 3;
             out.write(gray);
             out.write(gray);
             out.write(gray);
         }
+        // Index 255: Transparent (magenta - won't be seen)
+        out.write(255);
+        out.write(0);
+        out.write(255);
     }
 
     private void writeNetscapeExt() throws IOException {
@@ -84,13 +90,14 @@ public class GifEncoder {
             start(image.getWidth(), image.getHeight());
         }
 
-        // Graphic Control Extension
+        // Graphic Control Extension with transparency
         out.write(0x21); // Extension Introducer
         out.write(0xF9); // Graphic Control Label
         out.write(4);    // Block Size
-        out.write(0x04); // Disposal method (restore to background), no transparency
+        // Packed byte: disposal=2 (restore to bg), user input=0, transparency=1
+        out.write(0x09); // 00001001 = dispose to background + transparency flag
         writeShort(delay / 10); // Delay time in 1/100ths of a second
-        out.write(0);    // Transparent Color Index
+        out.write(TRANSPARENT_INDEX); // Transparent Color Index
         out.write(0);    // Block Terminator
 
         // Image Descriptor
@@ -129,13 +136,13 @@ public class GifEncoder {
 
     private int findClosestColor(int argb) {
         int a = (argb >> 24) & 0xFF;
-        if (a < 128) return 0; // Transparent -> black
+        if (a < 128) return TRANSPARENT_INDEX; // Transparent pixels
 
         int r = (argb >> 16) & 0xFF;
         int g = (argb >> 8) & 0xFF;
         int b = argb & 0xFF;
 
-        // Map to 6x6x6 color cube
+        // Map to 6x6x6 color cube (indices 0-215)
         int ri = Math.min(5, r / 43);
         int gi = Math.min(5, g / 43);
         int bi = Math.min(5, b / 43);
