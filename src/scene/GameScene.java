@@ -13,6 +13,7 @@ import input.*;
 import ui.*;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 /**
@@ -43,6 +44,12 @@ public class GameScene implements Scene {
 
     // Timing for lighting updates
     private long lastUpdateTime;
+
+    // Debug mode
+    private boolean debugMode = false;
+    private long frameCount = 0;
+    private long lastFpsTime = System.nanoTime();
+    private int currentFps = 0;
 
     public GameScene(String levelPath) {
         this.levelPath = levelPath;
@@ -393,6 +400,17 @@ public class GameScene implements Scene {
             );
             buttons.add(customizeButton);
         }
+
+        // Debug toggle button (F3 key also toggles)
+        UIButton debugButton = new UIButton(GamePanel.SCREEN_WIDTH - 850, 20, 120, 50, "Debug (F3)", () -> {
+            toggleDebugMode();
+        });
+        debugButton.setColors(
+                new Color(80, 80, 80, 200),
+                new Color(120, 120, 120, 230),
+                Color.WHITE
+        );
+        buttons.add(debugButton);
     }
 
     /**
@@ -403,6 +421,31 @@ public class GameScene implements Scene {
         // Store current level path for return
         currentLevelPath = this.levelPath;
         SceneManager.getInstance().setScene("spriteCustomization", SceneManager.TRANSITION_FADE);
+    }
+
+    /**
+     * Toggles debug mode on/off.
+     * Debug mode shows hitboxes, entity positions, performance stats, etc.
+     */
+    private void toggleDebugMode() {
+        debugMode = !debugMode;
+        System.out.println("GameScene: Debug mode " + (debugMode ? "ENABLED" : "DISABLED"));
+
+        // Enable/disable debug drawing on all mobs
+        if (entityManager != null) {
+            for (Entity entity : entityManager.getEntities()) {
+                if (entity instanceof MobEntity) {
+                    ((MobEntity) entity).setDebugDraw(debugMode);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns whether debug mode is currently enabled.
+     */
+    public boolean isDebugMode() {
+        return debugMode;
     }
 
     // Store level path for returning from customization
@@ -466,6 +509,20 @@ public class GameScene implements Scene {
         // C key opens character customization (for sprite-based players)
         if (levelData.useSpriteAnimation && input.isKeyJustPressed('c')) {
             openCharacterCustomization();
+        }
+
+        // F3 key toggles debug mode
+        if (input.isKeyJustPressed(KeyEvent.VK_F3)) {
+            toggleDebugMode();
+        }
+
+        // Update FPS counter
+        frameCount++;
+        long now = System.nanoTime();
+        if (now - lastFpsTime >= 1_000_000_000) {
+            currentFps = (int) frameCount;
+            frameCount = 0;
+            lastFpsTime = now;
         }
 
         // Update camera to follow player
@@ -739,6 +796,89 @@ public class GameScene implements Scene {
                     camera.getX(), camera.getY(), levelData.levelWidth, levelData.levelHeight);
             g2d.drawString(camInfo, 10, GamePanel.SCREEN_HEIGHT - 20);
         }
+
+        // Draw debug overlay if debug mode is enabled
+        if (debugMode) {
+            drawDebugOverlay(g2d);
+        }
+    }
+
+    /**
+     * Draws debug information overlay when debug mode is enabled.
+     */
+    private void drawDebugOverlay(Graphics2D g2d) {
+        int debugX = 10;
+        int debugY = 100;
+        int lineHeight = 18;
+
+        // Semi-transparent background for debug panel
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.fillRect(5, debugY - 15, 350, 220);
+
+        g2d.setFont(new Font("Monospaced", Font.BOLD, 14));
+        g2d.setColor(Color.CYAN);
+        g2d.drawString("=== DEBUG MODE (F3 to toggle) ===", debugX, debugY);
+        debugY += lineHeight;
+
+        g2d.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        g2d.setColor(Color.WHITE);
+
+        // FPS
+        g2d.drawString(String.format("FPS: %d", currentFps), debugX, debugY);
+        debugY += lineHeight;
+
+        // Player info
+        if (player != null) {
+            Rectangle bounds = player.getBounds();
+            g2d.drawString(String.format("Player Pos: (%.0f, %.0f)", bounds.getX(), bounds.getY()), debugX, debugY);
+            debugY += lineHeight;
+            g2d.drawString(String.format("Player Health: %d/%d", player.getHealth(), player.getMaxHealth()), debugX, debugY);
+            debugY += lineHeight;
+            g2d.drawString(String.format("Player Mana: %d/%d", player.getMana(), player.getMaxMana()), debugX, debugY);
+            debugY += lineHeight;
+            g2d.drawString(String.format("Player Stamina: %d/%d", player.getStamina(), player.getMaxStamina()), debugX, debugY);
+            debugY += lineHeight;
+        }
+
+        // Entity count
+        if (entityManager != null) {
+            int totalEntities = entityManager.getEntities().size();
+            int mobCount = 0;
+            int blockCount = 0;
+            int itemCount = 0;
+            for (Entity e : entityManager.getEntities()) {
+                if (e instanceof MobEntity) mobCount++;
+                else if (e instanceof BlockEntity) blockCount++;
+                else if (e instanceof ItemEntity) itemCount++;
+            }
+            g2d.drawString(String.format("Entities: %d (Mobs: %d, Blocks: %d, Items: %d)",
+                    totalEntities, mobCount, blockCount, itemCount), debugX, debugY);
+            debugY += lineHeight;
+        }
+
+        // Lighting info
+        if (lightingSystem != null) {
+            g2d.drawString(String.format("Lighting: %s | Lights: %d",
+                    lightingSystem.isNight() ? "NIGHT" : "DAY",
+                    lightingSystem.getLightSources().size()), debugX, debugY);
+            debugY += lineHeight;
+        }
+
+        // Camera info
+        if (camera != null) {
+            g2d.drawString(String.format("Camera: (%.0f, %.0f) | Zoom: %.2f",
+                    camera.getX(), camera.getY(), 1.0), debugX, debugY);
+            debugY += lineHeight;
+        }
+
+        // Level info
+        g2d.drawString(String.format("Level: %s (%dx%d)",
+                levelData.name, levelData.levelWidth, levelData.levelHeight), debugX, debugY);
+        debugY += lineHeight;
+
+        // Controls hint
+        g2d.setColor(Color.YELLOW);
+        g2d.drawString("SHIFT+A/D: Sprint | SPACE x3: Triple Jump", debugX, debugY);
     }
 
     @Override
