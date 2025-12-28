@@ -241,8 +241,6 @@ public class SpriteAnimation {
             if (anim != null) {
                 anim.reset();
             }
-
-            System.out.println("SpriteAnimation: State changed from " + previousState + " to " + currentState);
         }
     }
 

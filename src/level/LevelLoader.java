@@ -292,6 +292,8 @@ public class LevelLoader {
                     block.y = toInt(b.get("y"));
                     if (b.containsKey("blockType")) block.blockType = (String) b.get("blockType");
                     if (b.containsKey("useGridCoords")) block.useGridCoords = toBool(b.get("useGridCoords"));
+                    // Parse optional overlay (GRASS, SNOW, ICE, MOSS, VINES)
+                    if (b.containsKey("overlay")) block.overlay = (String) b.get("overlay");
                     // Parse optional color tint
                     if (b.containsKey("tintRed")) block.tintRed = toInt(b.get("tintRed"));
                     if (b.containsKey("tintGreen")) block.tintGreen = toInt(b.get("tintGreen"));

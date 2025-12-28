@@ -538,7 +538,41 @@
     {"x": 117, "y": 8, "blockType": "BRICK", "useGridCoords": true},
     {"x": 118, "y": 8, "blockType": "BRICK", "useGridCoords": true},
     {"x": 119, "y": 8, "blockType": "BRICK", "useGridCoords": true},
-    {"x": 120, "y": 8, "blockType": "BRICK", "useGridCoords": true}
+    {"x": 120, "y": 8, "blockType": "BRICK", "useGridCoords": true},
+
+    {"_comment": "=== BLOCK MASKS/OVERLAYS DEMONSTRATION ==="},
+
+    {"_comment": "=== ICE ZONE (near wizard tower) - icy ground ==="},
+    {"x": 121, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 122, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 123, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 124, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 125, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 126, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 127, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+    {"x": 128, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "ICE"},
+
+    {"_comment": "=== SNOW ZONE (after ice) - snowy ground ==="},
+    {"x": 129, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+    {"x": 130, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+    {"x": 131, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+    {"x": 132, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+    {"x": 133, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+    {"x": 134, "y": 14, "blockType": "STONE", "useGridCoords": true, "overlay": "SNOW"},
+
+    {"_comment": "=== MOSS COVERED STONES (graveyard area) ==="},
+    {"x": 68, "y": 13, "blockType": "STONE", "useGridCoords": true, "overlay": "MOSS"},
+    {"x": 69, "y": 13, "blockType": "STONE", "useGridCoords": true, "overlay": "MOSS"},
+    {"x": 70, "y": 13, "blockType": "STONE", "useGridCoords": true, "overlay": "MOSS"},
+    {"x": 71, "y": 13, "blockType": "STONE", "useGridCoords": true, "overlay": "VINES"},
+
+    {"_comment": "=== GRASS OVERLAY ON DIRT (farm area) ==="},
+    {"x": 5, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"},
+    {"x": 6, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"},
+    {"x": 7, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"},
+    {"x": 8, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"},
+    {"x": 9, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"},
+    {"x": 10, "y": 13, "blockType": "DIRT", "useGridCoords": true, "overlay": "GRASS"}
   ],
 
   "lightSources": [

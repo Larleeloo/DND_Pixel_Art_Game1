@@ -34,19 +34,30 @@ public class GameWindow extends JFrame {
         setVisible(true);
         panel.startGameLoop();
 
+        // Maintain always-on-top and request focus when focus is lost
         addWindowFocusListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowGainedFocus(java.awt.event.WindowEvent e) {
                 panel.requestFocusInWindow();
             }
+
+            @Override
+            public void windowLostFocus(java.awt.event.WindowEvent e) {
+                // Re-request focus and ensure window stays on top
+                SwingUtilities.invokeLater(() -> {
+                    setAlwaysOnTop(true);
+                    toFront();
+                    panel.requestFocusInWindow();
+                });
+            }
         });
 
-        // 🔥 This is the critical part:
+        // Ensure focus on startup
         SwingUtilities.invokeLater(() -> {
             panel.requestFocusInWindow();
         });
 
-        // 🔥 And this ensures focus WON’T be stolen:
+        // Ensure focus setup is complete
         panel.addNotify();
         SwingUtilities.invokeLater(() -> {
             panel.requestFocusInWindow();

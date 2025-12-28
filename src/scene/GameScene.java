@@ -158,6 +158,11 @@ public class GameScene implements Scene {
         for (LevelData.BlockData b : levelData.blocks) {
             BlockType blockType = BlockType.fromName(b.blockType);
             BlockEntity block = new BlockEntity(b.x, b.y, blockType, b.useGridCoords);
+            // Apply overlay if specified (GRASS, SNOW, ICE, MOSS, VINES)
+            if (b.hasOverlay()) {
+                BlockOverlay overlay = BlockOverlay.fromName(b.overlay);
+                block.setOverlay(overlay);
+            }
             // Apply tint if specified
             if (b.hasTint()) {
                 block.setTint(b.tintRed, b.tintGreen, b.tintBlue);
