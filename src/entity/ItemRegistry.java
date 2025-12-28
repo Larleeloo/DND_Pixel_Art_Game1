@@ -66,33 +66,40 @@ public class ItemRegistry {
         // ==================== RANGED WEAPONS ====================
 
         registerRangedWeapon("wooden_bow", "Wooden Bow", 8, 12.0f, ProjectileType.ARROW,
-                ItemRarity.COMMON, "A simple hunting bow");
+                ItemRarity.COMMON, "A simple hunting bow")
+                .setAmmoItemName("arrow");
 
         registerRangedWeapon("longbow", "Longbow", 15, 18.0f, ProjectileType.ARROW,
-                ItemRarity.UNCOMMON, "Greater range and power");
+                ItemRarity.UNCOMMON, "Greater range and power")
+                .setAmmoItemName("arrow");
 
         registerRangedWeapon("crossbow", "Crossbow", 20, 20.0f, ProjectileType.BOLT,
-                ItemRarity.UNCOMMON, "Powerful but slow to reload");
+                ItemRarity.UNCOMMON, "Powerful but slow to reload")
+                .setAmmoItemName("bolt");
 
         registerRangedWeapon("heavy_crossbow", "Heavy Crossbow", 30, 22.0f, ProjectileType.BOLT,
-                ItemRarity.RARE, "Devastating power")
-                .setAttackSpeed(0.5f);
+                ItemRarity.RARE, "Devastating power");
+        templates.get("heavy_crossbow").setAttackSpeed(0.5f);
+        templates.get("heavy_crossbow").setAmmoItemName("bolt");
 
         registerRangedWeapon("magic_wand", "Magic Wand", 10, 15.0f, ProjectileType.MAGIC_BOLT,
                 ItemRarity.UNCOMMON, "Fires magic bolts")
-                .setAmmoItemName(null); // Uses mana instead
+                .setAmmoItemName("mana"); // Uses mana
 
         registerRangedWeapon("fire_staff", "Staff of Fire", 25, 12.0f, ProjectileType.FIREBALL,
-                ItemRarity.RARE, "Launches explosive fireballs")
-                .setSpecialEffect("Explosion on impact");
+                ItemRarity.RARE, "Launches explosive fireballs");
+        templates.get("fire_staff").setSpecialEffect("Explosion on impact");
+        templates.get("fire_staff").setAmmoItemName("mana");
 
         registerRangedWeapon("ice_staff", "Staff of Ice", 18, 14.0f, ProjectileType.ICEBALL,
-                ItemRarity.RARE, "Freezes enemies")
-                .setSpecialEffect("Slow effect");
+                ItemRarity.RARE, "Freezes enemies");
+        templates.get("ice_staff").setSpecialEffect("Slow effect");
+        templates.get("ice_staff").setAmmoItemName("mana");
 
         registerRangedWeapon("arcane_staff", "Arcane Staff", 35, 16.0f, ProjectileType.MAGIC_BOLT,
-                ItemRarity.EPIC, "Channels pure arcane energy")
-                .setCritChance(0.20f);
+                ItemRarity.EPIC, "Channels pure arcane energy");
+        templates.get("arcane_staff").setCritChance(0.20f);
+        templates.get("arcane_staff").setAmmoItemName("mana");
 
         // ==================== THROWING WEAPONS ====================
 
@@ -104,6 +111,34 @@ public class ItemRegistry {
 
         registerThrowingWeapon("rock", "Rock", 5, 12.0f,
                 ItemRarity.COMMON, "A simple projectile");
+
+        // ==================== AMMO ====================
+
+        registerAmmo("arrow", "Arrow", 5, ProjectileType.ARROW,
+                ItemRarity.COMMON, "Standard ammunition for bows");
+
+        registerAmmo("fire_arrow", "Fire Arrow", 8, ProjectileType.ARROW,
+                ItemRarity.UNCOMMON, "Arrows that burn on impact");
+
+        registerAmmo("ice_arrow", "Ice Arrow", 7, ProjectileType.ARROW,
+                ItemRarity.UNCOMMON, "Arrows that slow enemies");
+
+        registerAmmo("bolt", "Bolt", 8, ProjectileType.BOLT,
+                ItemRarity.COMMON, "Standard crossbow ammunition");
+
+        registerAmmo("heavy_bolt", "Heavy Bolt", 12, ProjectileType.BOLT,
+                ItemRarity.UNCOMMON, "Heavier bolts for more damage");
+
+        registerAmmo("mana_crystal", "Mana Crystal", 0, null,
+                ItemRarity.UNCOMMON, "Powers magic weapons");
+
+        // ==================== THROWABLES (Consumable) ====================
+
+        registerThrowableAmmo("bomb", "Bomb", 40, ProjectileType.BOMB,
+                ItemRarity.UNCOMMON, "Explodes on impact");
+
+        registerThrowableAmmo("throwing_potion", "Throwing Potion", 15, ProjectileType.POTION,
+                ItemRarity.COMMON, "Explodes in a splash");
 
         // ==================== TOOLS ====================
 
@@ -332,6 +367,34 @@ public class ItemRegistry {
         item.setRarity(rarity);
         item.setDescription(desc);
         item.setStackable(false);
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerAmmo(String id, String name, int bonusDamage, ProjectileType projType,
+                                       ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.MATERIAL);  // Ammo is a stackable material
+        item.setDamage(bonusDamage);  // Bonus damage added to weapon damage
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(true);
+        item.setMaxStackSize(64);
+        // Store projectile type info in the ammo item for reference
+        if (projType != null) {
+            item.setRangedWeapon(false, projType, bonusDamage, 0);
+        }
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerThrowableAmmo(String id, String name, int damage, ProjectileType projType,
+                                               ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.THROWABLE);
+        item.setRangedWeapon(true, projType, damage, 14.0f);  // Throwables are self-consuming ranged weapons
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(true);
+        item.setMaxStackSize(16);
         templates.put(id, item);
         return item;
     }

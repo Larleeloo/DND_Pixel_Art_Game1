@@ -594,10 +594,51 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     /**
      * Fires a projectile from the held ranged weapon.
+     * Consumes appropriate ammo or mana based on weapon type.
      */
     private void fireProjectile(ArrayList<Entity> entities) {
         if (heldItem == null || !heldItem.isRangedWeapon()) return;
         if (fireTimer > 0) return; // On cooldown
+
+        // Determine ammo requirements
+        String ammoType = heldItem.getAmmoItemName();
+        boolean isThrowable = heldItem.getCategory() == Item.ItemCategory.THROWABLE;
+        boolean usesMana = "mana".equalsIgnoreCase(ammoType);
+        int manaCost = 10;  // Base mana cost for magic weapons
+
+        // Check and consume resources
+        int bonusDamage = 0;
+
+        if (isThrowable) {
+            // Throwables consume themselves - remove from current slot
+            int currentSlot = inventory.getSelectedSlot();
+            ItemEntity removedItem = inventory.removeItemAtSlot(currentSlot);
+            if (removedItem == null) {
+                // No item to throw
+                return;
+            }
+            // Throwable item was consumed
+            syncHeldItemWithInventory();  // Update held item reference
+        } else if (usesMana) {
+            // Magic weapons consume mana
+            if (currentMana < manaCost) {
+                // Not enough mana - play fail sound or show indicator
+                return;
+            }
+            currentMana -= manaCost;
+        } else if (ammoType != null && !ammoType.isEmpty()) {
+            // Regular ranged weapons consume ammo from inventory
+            ItemEntity consumedAmmo = inventory.consumeAmmo(ammoType);
+            if (consumedAmmo == null) {
+                // No ammo available - can't fire
+                return;
+            }
+            // Check if ammo provides bonus damage
+            Item ammoItem = consumedAmmo.getLinkedItem();
+            if (ammoItem != null) {
+                bonusDamage = ammoItem.getDamage();
+            }
+        }
 
         // Create projectile
         int projX = facingRight ? x + width : x - 10;
@@ -606,6 +647,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         ProjectileEntity projectile = heldItem.createProjectile(projX, projY, dirX, 0, true);
         if (projectile != null) {
+            // Apply bonus damage from ammo
+            if (bonusDamage > 0) {
+                projectile.setDamage(projectile.getDamage() + bonusDamage);
+            }
+
             projectile.setSource(this);
             activeProjectiles.add(projectile);
             entities.add(projectile);
@@ -616,7 +662,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             if (audioManager != null) {
                 audioManager.playSound("fire");
             }
-
         }
     }
 
@@ -660,7 +705,15 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         currentStamina = Math.min(maxStamina, currentStamina + heldItem.getStaminaRestore());
 
         isEating = false;
-        // TODO: Remove item from inventory after consumption
+
+        // Remove consumed item from inventory
+        int currentSlot = inventory.getSelectedSlot();
+        inventory.removeItemAtSlot(currentSlot);
+        syncHeldItemWithInventory();  // Update held item reference
+
+        if (audioManager != null) {
+            audioManager.playSound("eat");
+        }
     }
 
     /**
