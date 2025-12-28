@@ -866,4 +866,14 @@ public abstract class MobEntity extends Entity {
     public int getX() { return (int)posX; }
 
     public int getY() { return (int)posY; }
+
+    /**
+     * Applies an external push force to the mob (from collisions).
+     * @param pushX Horizontal push force
+     * @param pushY Vertical push force
+     */
+    public void applyPush(double pushX, double pushY) {
+        this.velocityX += pushX;
+        this.velocityY += pushY;
+    }
 }
