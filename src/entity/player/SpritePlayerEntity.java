@@ -113,6 +113,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     // Stamina system
     private int maxStamina = 100;
+    private double currentStaminaFloat = 100.0;  // Use float for smooth draining
     private int currentStamina = 100;
     private double staminaRegenRate = 15.0; // Stamina per second
     private double staminaDrainRate = 20.0; // Stamina drain per second when sprinting
@@ -281,10 +282,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Update action timers
         updateActionTimers(deltaSeconds);
 
-        // Regenerate mana and stamina
+        // Regenerate mana and stamina (use float for smooth regeneration)
         if (!isSprinting) {
-            currentStamina = Math.min(maxStamina, currentStamina + (int)(staminaRegenRate * deltaSeconds));
+            currentStaminaFloat = Math.min(maxStamina, currentStaminaFloat + staminaRegenRate * deltaSeconds);
         }
+        currentStamina = (int) currentStaminaFloat;
         currentMana = Math.min(maxMana, currentMana + (int)(manaRegenRate * deltaSeconds));
 
         int newX = x;
@@ -354,10 +356,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Sprinting - hold Shift (drains stamina over time)
         boolean wantsSprint = input.isKeyPressed(java.awt.event.KeyEvent.VK_SHIFT);
-        if (wantsSprint && currentStamina > 0 && (input.isKeyPressed('a') || input.isKeyPressed('d'))) {
+        if (wantsSprint && currentStaminaFloat > 0 && (input.isKeyPressed('a') || input.isKeyPressed('d'))) {
             isSprinting = true;
-            // Drain stamina while sprinting (using delta time for smooth drain)
-            currentStamina = Math.max(0, currentStamina - (int)(staminaDrainRate * deltaSeconds));
+            // Drain stamina while sprinting (using float for smooth drain)
+            currentStaminaFloat = Math.max(0, currentStaminaFloat - staminaDrainRate * deltaSeconds);
+            currentStamina = (int) currentStaminaFloat;
         } else {
             isSprinting = false;
         }
@@ -515,10 +518,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     /**
      * Handles multi-jump input (single, double, triple jump).
      * Uses isKeyJustPressed for immediate response on key press.
+     * Checks both space char and VK_SPACE keyCode for maximum responsiveness.
      */
     private void handleJumping(InputManager input) {
-        // Use isKeyJustPressed for immediate, responsive jump detection
-        if (input.isKeyJustPressed(' ') && jumpsRemaining > 0) {
+        // Use both space char and VK_SPACE keyCode for reliable detection
+        boolean spacePressed = input.isKeyJustPressed(' ') ||
+                               input.isKeyJustPressed(java.awt.event.KeyEvent.VK_SPACE);
+
+        if (spacePressed && jumpsRemaining > 0) {
             if (onGround) {
                 // First jump from ground
                 velY = jumpStrength;
@@ -1236,11 +1243,39 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             case "potion": category = Item.ItemCategory.POTION; break;
             case "food": category = Item.ItemCategory.FOOD; break;
             case "tool": category = Item.ItemCategory.TOOL; break;
+            case "throwable": category = Item.ItemCategory.THROWABLE; break;
         }
 
         Item basicItem = new Item(entity.getItemName(), category);
-        basicItem.setDamage(5);  // Default damage
-        basicItem.setRange(50);  // Default range
+        basicItem.setDamage(10);  // Default damage
+        basicItem.setRange(60);   // Default range
+
+        // Set ranged weapon properties for bows/crossbows
+        if (category == Item.ItemCategory.RANGED_WEAPON) {
+            // Determine projectile type from name
+            ProjectileEntity.ProjectileType projType = ProjectileEntity.ProjectileType.ARROW;
+            String lowerName = entity.getItemName().toLowerCase();
+            if (lowerName.contains("crossbow")) {
+                projType = ProjectileEntity.ProjectileType.BOLT;
+            } else if (lowerName.contains("wand") || lowerName.contains("staff")) {
+                projType = ProjectileEntity.ProjectileType.MAGIC_BOLT;
+            } else if (lowerName.contains("fire")) {
+                projType = ProjectileEntity.ProjectileType.FIREBALL;
+            }
+            basicItem.setRangedWeapon(true, projType, 10, 15.0f);
+        }
+
+        // Set throwable properties
+        if (category == Item.ItemCategory.THROWABLE) {
+            ProjectileEntity.ProjectileType projType = ProjectileEntity.ProjectileType.ROCK;
+            String lowerName = entity.getItemName().toLowerCase();
+            if (lowerName.contains("knife")) {
+                projType = ProjectileEntity.ProjectileType.THROWING_KNIFE;
+            } else if (lowerName.contains("axe")) {
+                projType = ProjectileEntity.ProjectileType.THROWING_AXE;
+            }
+            basicItem.setRangedWeapon(true, projType, 8, 18.0f);
+        }
 
         // Set consumable properties for food/potions
         if (category == Item.ItemCategory.FOOD || category == Item.ItemCategory.POTION) {
