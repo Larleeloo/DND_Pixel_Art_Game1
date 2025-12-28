@@ -16,9 +16,9 @@ import java.util.List;
  */
 public class EntityPhysics {
 
-    // Push force when entities collide
-    private static final double PUSH_FORCE = 3.0;
-    private static final double VERTICAL_PUSH = 0.5;
+    // Push force when entities collide - gentle push
+    private static final double PUSH_FORCE = 0.8;
+    private static final double VERTICAL_PUSH = 0.0;
 
     /**
      * Processes all entity collisions and applies appropriate responses.

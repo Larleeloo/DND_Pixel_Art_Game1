@@ -546,12 +546,15 @@ public abstract class MobEntity extends Entity {
         double newY = posY + velocityY * deltaTime;
 
         // Check horizontal collision with solid blocks BEFORE applying movement
+        // Use a shorter hitbox that doesn't include the bottom portion (feet area)
+        // This prevents false collisions with blocks the mob is standing ON
         if (entities != null && velocityX != 0) {
+            int feetMargin = 10; // Pixels to exclude from bottom of hitbox for horizontal checks
             Rectangle futureXBounds = new Rectangle(
                 (int)newX + hitboxOffsetX,
                 (int)posY + hitboxOffsetY,
                 hitboxWidth,
-                hitboxHeight
+                Math.max(hitboxHeight - feetMargin, 1) // Exclude feet area
             );
 
             boolean xCollision = false;
@@ -559,8 +562,18 @@ public abstract class MobEntity extends Entity {
                 if (e instanceof BlockEntity) {
                     BlockEntity block = (BlockEntity) e;
                     if (block.isSolid() && futureXBounds.intersects(block.getBounds())) {
-                        xCollision = true;
-                        break;
+                        // Additional check: only count as horizontal collision if the block
+                        // is actually beside us, not beneath us
+                        Rectangle blockBounds = block.getBounds();
+                        int mobBottom = (int)posY + hitboxOffsetY + hitboxHeight;
+                        int blockTop = blockBounds.y;
+
+                        // If mob's bottom is at or above block's top, it's a side collision
+                        // If mob's bottom is well inside the block, we're standing on it
+                        if (mobBottom <= blockTop + feetMargin) {
+                            xCollision = true;
+                            break;
+                        }
                     }
                 }
             }

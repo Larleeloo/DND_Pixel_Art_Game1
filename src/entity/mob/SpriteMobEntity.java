@@ -315,24 +315,34 @@ public class SpriteMobEntity extends MobEntity {
      * Draws a health bar above the mob.
      */
     protected void drawHealthBar(Graphics2D g2d) {
-        if (currentHealth >= maxHealth) return;
-
-        int barWidth = hitboxWidth;
-        int barHeight = 4;
+        // Always show health bar for mobs
+        int barWidth = Math.max(hitboxWidth, 60);
+        int barHeight = 6;
         int barX = (int)posX - barWidth / 2;
-        int barY = (int)posY - spriteHeight - 10;
+        int barY = (int)posY - spriteHeight - 12;
 
-        // Background
-        g2d.setColor(new Color(50, 50, 50, 180));
+        // Background (dark red for lost health)
+        g2d.setColor(new Color(100, 20, 20));
         g2d.fillRect(barX, barY, barWidth, barHeight);
 
-        // Health fill
-        double healthPercent = (double)currentHealth / maxHealth;
-        int fillWidth = (int)(barWidth * healthPercent);
-        Color healthColor = healthPercent > 0.5 ? Color.GREEN :
-                           healthPercent > 0.25 ? Color.YELLOW : Color.RED;
-        g2d.setColor(healthColor);
-        g2d.fillRect(barX, barY, fillWidth, barHeight);
+        // Health fill (bright red/green based on health)
+        if (maxHealth > 0 && currentHealth > 0) {
+            double healthPercent = (double)currentHealth / maxHealth;
+            int fillWidth = (int)(barWidth * healthPercent);
+            fillWidth = Math.max(fillWidth, 1); // At least 1 pixel if alive
+
+            // Color gradient: green when healthy, yellow when hurt, red when critical
+            Color healthColor;
+            if (healthPercent > 0.6) {
+                healthColor = new Color(50, 220, 50); // Green
+            } else if (healthPercent > 0.3) {
+                healthColor = new Color(220, 200, 50); // Yellow
+            } else {
+                healthColor = new Color(220, 50, 50); // Red
+            }
+            g2d.setColor(healthColor);
+            g2d.fillRect(barX, barY, fillWidth, barHeight);
+        }
 
         // Border
         g2d.setColor(Color.BLACK);
