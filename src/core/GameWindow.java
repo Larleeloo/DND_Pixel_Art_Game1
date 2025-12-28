@@ -11,6 +11,7 @@ import javax.swing.*;
 
 public class GameWindow extends JFrame {
     private GamePanel panel;
+    private Timer alwaysOnTopTimer;
 
     public GameWindow() {
         setTitle("My Game");
@@ -45,12 +46,25 @@ public class GameWindow extends JFrame {
             public void windowLostFocus(java.awt.event.WindowEvent e) {
                 // Re-request focus and ensure window stays on top
                 SwingUtilities.invokeLater(() -> {
+                    setAlwaysOnTop(false);
                     setAlwaysOnTop(true);
                     toFront();
                     panel.requestFocusInWindow();
                 });
             }
         });
+
+        // Timer to ensure window stays on top even when other apps try to steal focus
+        alwaysOnTopTimer = new Timer(500, e -> {
+            if (!isFocused()) {
+                SwingUtilities.invokeLater(() -> {
+                    setAlwaysOnTop(false);
+                    setAlwaysOnTop(true);
+                    toFront();
+                });
+            }
+        });
+        alwaysOnTopTimer.start();
 
         // Ensure focus on startup
         SwingUtilities.invokeLater(() -> {

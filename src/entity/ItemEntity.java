@@ -86,138 +86,377 @@ public class ItemEntity extends Entity {
     }
 
     /**
-     * Generates a colored icon based on item type.
+     * Generates a colored icon based on item type with unique variations based on name.
      */
     private BufferedImage generateItemIcon(String type, String name) {
         BufferedImage icon = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = icon.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Get colors based on item type
-        Color primary = getTypeColor(type);
+        // Get unique colors based on item name for variety
+        Color primary = getUniqueItemColor(type, name);
         Color secondary = primary.darker();
         Color outline = Color.BLACK;
 
         // Draw based on item type
         switch (type.toLowerCase()) {
             case "weapon":
-                // Sword shape
-                g.setColor(secondary);
-                g.fillRect(7, 2, 2, 10);  // Blade
-                g.setColor(primary);
-                g.fillRect(6, 2, 4, 2);   // Tip
-                g.setColor(new Color(139, 90, 43));  // Brown handle
-                g.fillRect(6, 12, 4, 3);
-                g.setColor(new Color(255, 215, 0));  // Gold guard
-                g.fillRect(4, 11, 8, 2);
+                // Sword shape with unique styling
+                drawWeaponIcon(g, primary, secondary, name);
                 break;
 
             case "ranged_weapon":
             case "bow":
-                // Bow shape
-                g.setColor(new Color(139, 90, 43));  // Brown wood
-                g.drawArc(4, 2, 8, 12, 30, 120);
-                g.setColor(Color.WHITE);  // String
-                g.drawLine(8, 2, 8, 14);
+                // Bow/crossbow shape
+                drawRangedWeaponIcon(g, primary, secondary, name);
                 break;
 
             case "armor":
-                // Chestplate shape
-                g.setColor(secondary);
-                g.fillRoundRect(3, 3, 10, 11, 3, 3);
-                g.setColor(primary);
-                g.fillRoundRect(4, 4, 8, 9, 2, 2);
-                g.setColor(secondary);
-                g.fillRect(5, 5, 6, 3);  // Neck hole
+                // Armor piece
+                drawArmorIcon(g, primary, secondary, name);
                 break;
 
             case "potion":
-                // Potion bottle
-                g.setColor(new Color(200, 200, 255));  // Glass
-                g.fillOval(4, 6, 8, 8);  // Bottle body
-                g.setColor(primary);  // Liquid
-                g.fillOval(5, 8, 6, 5);
-                g.setColor(new Color(139, 90, 43));  // Cork
-                g.fillRect(6, 3, 4, 4);
+                // Potion bottle with unique liquid color
+                drawPotionIcon(g, primary, name);
                 break;
 
             case "food":
-                // Food (circular with bite mark)
-                g.setColor(primary);
-                g.fillOval(3, 4, 10, 10);
-                g.setColor(secondary);
-                g.fillOval(10, 4, 4, 4);  // Bite mark
+                // Food with variety
+                drawFoodIcon(g, primary, secondary, name);
                 break;
 
             case "tool":
-                // Pickaxe shape
-                g.setColor(new Color(139, 90, 43));  // Handle
-                g.fillRect(7, 6, 2, 9);
-                g.setColor(primary);  // Head
-                g.fillRect(3, 3, 10, 4);
-                g.setColor(secondary);
-                g.fillRect(4, 4, 8, 2);
+                // Tool shape
+                drawToolIcon(g, primary, secondary, name);
                 break;
 
             case "ammo":
-                // Arrow
-                g.setColor(new Color(139, 90, 43));  // Shaft
-                g.fillRect(7, 4, 2, 10);
-                g.setColor(Color.GRAY);  // Tip
-                int[] tipX = {8, 5, 11};
-                int[] tipY = {2, 5, 5};
-                g.fillPolygon(tipX, tipY, 3);
-                g.setColor(Color.RED);  // Fletching
-                g.fillRect(6, 12, 4, 2);
+                // Arrow/bolt
+                drawAmmoIcon(g, primary, name);
                 break;
 
             case "collectible":
             case "material":
                 // Gem/crystal shape
-                g.setColor(primary);
-                int[] gemX = {8, 3, 5, 11, 13};
-                int[] gemY = {2, 6, 14, 14, 6};
-                g.fillPolygon(gemX, gemY, 5);
-                g.setColor(secondary);
-                g.drawPolygon(gemX, gemY, 5);
+                drawMaterialIcon(g, primary, secondary, name);
                 break;
 
             case "key":
-                // Key shape
-                g.setColor(new Color(255, 215, 0));  // Gold
-                g.fillOval(3, 3, 6, 6);  // Handle
-                g.fillRect(7, 6, 7, 2);  // Shaft
-                g.fillRect(11, 6, 2, 4);  // Teeth
-                g.fillRect(13, 6, 2, 3);
-                g.setColor(new Color(180, 150, 0));
-                g.drawOval(4, 4, 4, 4);
+                // Key with unique color
+                drawKeyIcon(g, primary, name);
                 break;
 
             case "lantern":
                 // Lantern
-                g.setColor(new Color(139, 90, 43));  // Frame
-                g.fillRect(5, 3, 6, 2);
-                g.fillRect(5, 12, 6, 2);
-                g.setColor(new Color(255, 200, 100, 200));  // Glow
-                g.fillOval(4, 4, 8, 9);
-                g.setColor(new Color(255, 255, 100));  // Flame
-                g.fillOval(6, 6, 4, 5);
+                drawLanternIcon(g, primary, name);
+                break;
+
+            case "throwable":
+                // Throwable item
+                drawThrowableIcon(g, primary, secondary, name);
                 break;
 
             default:
-                // Default square
+                // Default square with item initial
                 g.setColor(primary);
                 g.fillRoundRect(2, 2, 12, 12, 4, 4);
                 g.setColor(secondary);
                 g.drawRoundRect(2, 2, 12, 12, 4, 4);
+                // Draw first letter
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 10));
+                String initial = name.length() > 0 ? name.substring(0, 1).toUpperCase() : "?";
+                g.drawString(initial, 5, 12);
         }
-
-        // Draw outline for visibility
-        g.setColor(outline);
-        g.setStroke(new BasicStroke(0.5f));
 
         g.dispose();
         return icon;
+    }
+
+    /**
+     * Gets a unique color based on item type and name for variety.
+     */
+    private Color getUniqueItemColor(String type, String name) {
+        Color baseColor = getTypeColor(type);
+
+        // Hash the name to get a consistent variation
+        int hash = name.hashCode();
+        float hueShift = ((hash & 0xFF) - 128) / 512.0f;  // -0.25 to 0.25
+
+        float[] hsb = Color.RGBtoHSB(baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue(), null);
+        hsb[0] = (hsb[0] + hueShift + 1.0f) % 1.0f;  // Shift hue
+        hsb[1] = Math.min(1.0f, hsb[1] + ((hash >> 8) & 0xFF) / 1024.0f);  // Adjust saturation
+        hsb[2] = Math.min(1.0f, hsb[2] + ((hash >> 16) & 0xFF) / 1024.0f); // Adjust brightness
+
+        return Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
+    }
+
+    private void drawWeaponIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("axe")) {
+            // Axe shape
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(7, 4, 2, 11);  // Handle
+            g.setColor(primary);
+            g.fillArc(3, 2, 10, 8, 90, 180);  // Blade
+            g.setColor(secondary);
+            g.drawArc(3, 2, 10, 8, 90, 180);
+        } else if (lowerName.contains("mace") || lowerName.contains("hammer")) {
+            // Mace shape
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(7, 6, 2, 9);  // Handle
+            g.setColor(primary);
+            g.fillOval(4, 2, 8, 8);  // Head
+            g.setColor(secondary);
+            g.drawOval(4, 2, 8, 8);
+        } else if (lowerName.contains("dagger") || lowerName.contains("knife")) {
+            // Dagger shape
+            g.setColor(secondary);
+            g.fillRect(7, 3, 2, 7);  // Short blade
+            g.setColor(primary);
+            int[] tipX = {8, 6, 10};
+            int[] tipY = {1, 4, 4};
+            g.fillPolygon(tipX, tipY, 3);
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(6, 10, 4, 4);  // Handle
+        } else {
+            // Default sword
+            g.setColor(secondary);
+            g.fillRect(7, 2, 2, 10);  // Blade
+            g.setColor(primary);
+            g.fillRect(6, 1, 4, 2);   // Tip
+            g.setColor(new Color(139, 90, 43));  // Brown handle
+            g.fillRect(6, 12, 4, 3);
+            g.setColor(new Color(255, 215, 0));  // Gold guard
+            g.fillRect(4, 11, 8, 2);
+        }
+    }
+
+    private void drawRangedWeaponIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("crossbow")) {
+            // Crossbow shape
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(5, 6, 6, 2);   // Stock
+            g.fillRect(7, 4, 2, 8);   // Vertical part
+            g.setColor(primary);
+            g.fillRect(2, 5, 12, 2);  // Arms
+            g.setColor(Color.WHITE);
+            g.drawLine(2, 6, 14, 6);  // String
+        } else if (lowerName.contains("wand") || lowerName.contains("staff")) {
+            // Magic wand/staff
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(7, 4, 2, 10);  // Shaft
+            g.setColor(primary);
+            g.fillOval(5, 2, 6, 6);   // Magic orb
+            g.setColor(Color.WHITE);
+            g.fillOval(6, 3, 3, 3);   // Sparkle
+        } else {
+            // Default bow
+            g.setColor(new Color(139, 90, 43));
+            g.setStroke(new BasicStroke(2));
+            g.drawArc(3, 2, 10, 12, 30, 120);
+            g.setColor(Color.WHITE);
+            g.setStroke(new BasicStroke(1));
+            g.drawLine(8, 2, 8, 14);
+        }
+    }
+
+    private void drawArmorIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("helmet") || lowerName.contains("hat")) {
+            // Helmet shape
+            g.setColor(secondary);
+            g.fillRoundRect(3, 4, 10, 10, 3, 3);
+            g.setColor(primary);
+            g.fillArc(3, 2, 10, 10, 0, 180);  // Dome
+        } else if (lowerName.contains("boot") || lowerName.contains("shoe")) {
+            // Boot shape
+            g.setColor(secondary);
+            g.fillRect(3, 6, 8, 8);
+            g.setColor(primary);
+            g.fillRoundRect(2, 10, 10, 5, 2, 2);  // Foot
+        } else if (lowerName.contains("legging") || lowerName.contains("pant")) {
+            // Leggings shape
+            g.setColor(secondary);
+            g.fillRect(4, 2, 8, 6);  // Waist
+            g.setColor(primary);
+            g.fillRect(4, 7, 3, 7);   // Left leg
+            g.fillRect(9, 7, 3, 7);   // Right leg
+        } else {
+            // Default chestplate
+            g.setColor(secondary);
+            g.fillRoundRect(3, 3, 10, 11, 3, 3);
+            g.setColor(primary);
+            g.fillRoundRect(4, 4, 8, 9, 2, 2);
+            g.setColor(secondary);
+            g.fillRect(5, 5, 6, 3);  // Neck hole
+        }
+    }
+
+    private void drawPotionIcon(Graphics2D g, Color primary, String name) {
+        // Potion bottle with unique liquid color
+        g.setColor(new Color(200, 200, 255, 180));  // Glass
+        g.fillOval(4, 6, 8, 8);  // Bottle body
+        g.setColor(primary);  // Liquid based on type
+        g.fillOval(5, 8, 6, 5);
+        g.setColor(new Color(139, 90, 43));  // Cork
+        g.fillRect(6, 3, 4, 4);
+        // Add sparkle
+        g.setColor(new Color(255, 255, 255, 150));
+        g.fillOval(6, 8, 2, 2);
+    }
+
+    private void drawFoodIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("bread") || lowerName.contains("loaf")) {
+            // Bread shape
+            g.setColor(primary);
+            g.fillRoundRect(2, 6, 12, 8, 4, 4);
+            g.setColor(secondary);
+            g.drawRoundRect(2, 6, 12, 8, 4, 4);
+        } else if (lowerName.contains("apple") || lowerName.contains("fruit")) {
+            // Apple shape
+            g.setColor(primary);
+            g.fillOval(3, 4, 10, 10);
+            g.setColor(new Color(80, 50, 20));
+            g.fillRect(7, 2, 2, 3);  // Stem
+            g.setColor(new Color(50, 150, 50));
+            g.fillOval(8, 1, 4, 3);  // Leaf
+        } else if (lowerName.contains("meat") || lowerName.contains("steak")) {
+            // Meat shape
+            g.setColor(primary);
+            g.fillRoundRect(2, 4, 12, 10, 3, 3);
+            g.setColor(secondary);
+            g.fillRect(4, 6, 8, 2);  // Grill marks
+            g.fillRect(4, 10, 8, 2);
+        } else {
+            // Default food (cheese wedge)
+            g.setColor(primary);
+            int[] cheeseX = {2, 14, 8};
+            int[] cheeseY = {12, 12, 4};
+            g.fillPolygon(cheeseX, cheeseY, 3);
+            g.setColor(secondary);
+            g.fillOval(5, 8, 2, 2);  // Hole
+            g.fillOval(9, 9, 2, 2);
+        }
+    }
+
+    private void drawToolIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("shovel")) {
+            // Shovel shape
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(7, 2, 2, 10);  // Handle
+            g.setColor(primary);
+            g.fillRoundRect(4, 10, 8, 5, 2, 2);  // Blade
+        } else if (lowerName.contains("axe")) {
+            // Tool axe
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(7, 4, 2, 11);  // Handle
+            g.setColor(primary);
+            g.fillArc(3, 2, 10, 8, 90, 180);  // Blade
+        } else {
+            // Default pickaxe
+            g.setColor(new Color(139, 90, 43));  // Handle
+            g.fillRect(7, 6, 2, 9);
+            g.setColor(primary);  // Head
+            g.fillRect(3, 3, 10, 4);
+            g.setColor(secondary);
+            g.fillRect(4, 4, 8, 2);
+        }
+    }
+
+    private void drawAmmoIcon(Graphics2D g, Color primary, String name) {
+        // Arrow/bolt
+        g.setColor(new Color(139, 90, 43));  // Shaft
+        g.fillRect(7, 4, 2, 10);
+        g.setColor(Color.GRAY);  // Tip
+        int[] tipX = {8, 5, 11};
+        int[] tipY = {2, 5, 5};
+        g.fillPolygon(tipX, tipY, 3);
+        g.setColor(primary);  // Fletching
+        g.fillRect(6, 12, 4, 2);
+    }
+
+    private void drawMaterialIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("ingot") || lowerName.contains("bar")) {
+            // Ingot shape
+            int[] ingotX = {2, 4, 12, 14, 12, 4};
+            int[] ingotY = {10, 6, 6, 10, 14, 14};
+            g.setColor(primary);
+            g.fillPolygon(ingotX, ingotY, 6);
+            g.setColor(secondary);
+            g.drawPolygon(ingotX, ingotY, 6);
+        } else if (lowerName.contains("crystal") || lowerName.contains("gem") || lowerName.contains("diamond")) {
+            // Crystal shape
+            int[] gemX = {8, 3, 5, 11, 13};
+            int[] gemY = {2, 6, 14, 14, 6};
+            g.setColor(primary);
+            g.fillPolygon(gemX, gemY, 5);
+            g.setColor(new Color(255, 255, 255, 100));
+            g.fillRect(5, 5, 3, 4);  // Shine
+            g.setColor(secondary);
+            g.drawPolygon(gemX, gemY, 5);
+        } else {
+            // Default ore/chunk
+            g.setColor(secondary);
+            g.fillRoundRect(3, 4, 10, 10, 3, 3);
+            g.setColor(primary);
+            g.fillOval(5, 6, 4, 4);
+            g.fillOval(8, 9, 3, 3);
+        }
+    }
+
+    private void drawKeyIcon(Graphics2D g, Color primary, String name) {
+        g.setColor(primary);
+        g.fillOval(3, 3, 6, 6);  // Handle
+        g.fillRect(7, 6, 7, 2);  // Shaft
+        g.fillRect(11, 6, 2, 4);  // Teeth
+        g.fillRect(13, 6, 2, 3);
+        g.setColor(primary.darker());
+        g.drawOval(4, 4, 4, 4);  // Handle hole
+    }
+
+    private void drawLanternIcon(Graphics2D g, Color primary, String name) {
+        g.setColor(new Color(139, 90, 43));  // Frame
+        g.fillRect(5, 3, 6, 2);
+        g.fillRect(5, 12, 6, 2);
+        g.setColor(new Color(255, 200, 100, 200));  // Glow
+        g.fillOval(4, 4, 8, 9);
+        g.setColor(primary);  // Flame
+        g.fillOval(6, 6, 4, 5);
+    }
+
+    private void drawThrowableIcon(Graphics2D g, Color primary, Color secondary, String name) {
+        String lowerName = name.toLowerCase();
+        if (lowerName.contains("knife")) {
+            // Throwing knife
+            g.setColor(secondary);
+            g.fillRect(7, 2, 2, 8);  // Blade
+            g.setColor(primary);
+            int[] tipX = {8, 6, 10};
+            int[] tipY = {1, 3, 3};
+            g.fillPolygon(tipX, tipY, 3);
+            g.setColor(new Color(139, 90, 43));
+            g.fillRect(6, 10, 4, 4);  // Handle
+        } else if (lowerName.contains("bomb")) {
+            // Bomb
+            g.setColor(Color.DARK_GRAY);
+            g.fillOval(3, 4, 10, 10);
+            g.setColor(new Color(255, 200, 0));
+            g.fillRect(7, 2, 2, 4);  // Fuse
+            g.setColor(Color.RED);
+            g.fillOval(7, 1, 2, 2);  // Spark
+        } else {
+            // Default rock
+            g.setColor(primary);
+            g.fillOval(3, 4, 10, 10);
+            g.setColor(secondary);
+            g.drawOval(3, 4, 10, 10);
+        }
     }
 
     /**

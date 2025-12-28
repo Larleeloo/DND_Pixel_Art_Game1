@@ -46,6 +46,15 @@ public class SpriteMobEntity extends MobEntity {
     protected int spriteHeight;
     protected static final int SCALE = 2;
 
+    // Mob type for different body shapes
+    public enum MobBodyType {
+        HUMANOID,   // 32x64 base (64x128 scaled) - bipedal creatures
+        QUADRUPED,  // 64x64 base (128x128 scaled) - four-legged creatures
+        SMALL,      // 16x16 base (32x32 scaled) - tiny creatures
+        LARGE       // 64x96 base (128x192 scaled) - large creatures
+    }
+    protected MobBodyType bodyType = MobBodyType.HUMANOID;
+
     // Multi-jump system
     protected int maxJumps = 1;           // Default to single jump
     protected int jumpsRemaining = 1;
@@ -152,18 +161,128 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
-     * Creates a placeholder sprite for testing.
+     * Creates a placeholder sprite for testing based on body type and mob name.
      */
     protected void createPlaceholderSprite() {
-        // Create a simple colored rectangle as placeholder
-        int w = 32, h = 48;
+        // Determine dimensions based on body type
+        int w, h;
+        switch (bodyType) {
+            case QUADRUPED:
+                w = 64; h = 64;
+                break;
+            case SMALL:
+                w = 16; h = 16;
+                break;
+            case LARGE:
+                w = 64; h = 96;
+                break;
+            case HUMANOID:
+            default:
+                w = 32; h = 64;
+                break;
+        }
+
+        // Generate unique color based on mob's sprite directory name
+        Color bodyColor = generateMobColor();
+
         java.awt.image.BufferedImage placeholder = new java.awt.image.BufferedImage(
             w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = placeholder.createGraphics();
-        g.setColor(new Color(150, 100, 100, 200));
-        g.fillRect(0, 0, w, h);
-        g.setColor(Color.RED);
-        g.fillOval(w/4, h/8, w/2, w/2);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                           java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw based on body type
+        if (bodyType == MobBodyType.QUADRUPED) {
+            // Four-legged creature shape
+            Color darkerColor = bodyColor.darker();
+
+            // Body (horizontal oval)
+            g.setColor(bodyColor);
+            g.fillOval(8, 16, 48, 32);
+
+            // Head
+            g.fillOval(50, 8, 14, 20);
+
+            // Legs
+            g.setColor(darkerColor);
+            g.fillRect(12, 44, 8, 16);
+            g.fillRect(28, 44, 8, 16);
+            g.fillRect(40, 44, 8, 16);
+
+            // Tail
+            g.setColor(bodyColor);
+            g.fillRect(0, 24, 12, 6);
+
+            // Eyes
+            g.setColor(Color.WHITE);
+            g.fillOval(54, 12, 6, 6);
+            g.setColor(Color.BLACK);
+            g.fillOval(56, 14, 3, 3);
+        } else if (bodyType == MobBodyType.SMALL) {
+            // Tiny creature (slime, bug, etc.)
+            g.setColor(bodyColor);
+            g.fillOval(2, 4, 12, 10);
+
+            // Eyes
+            g.setColor(Color.WHITE);
+            g.fillOval(3, 6, 4, 4);
+            g.fillOval(9, 6, 4, 4);
+            g.setColor(Color.BLACK);
+            g.fillOval(4, 7, 2, 2);
+            g.fillOval(10, 7, 2, 2);
+        } else if (bodyType == MobBodyType.LARGE) {
+            // Large creature
+            Color darkerColor = bodyColor.darker();
+
+            // Body
+            g.setColor(bodyColor);
+            g.fillRoundRect(8, 20, 48, 60, 12, 12);
+
+            // Head
+            g.fillOval(12, 4, 40, 24);
+
+            // Arms
+            g.setColor(darkerColor);
+            g.fillRect(0, 30, 12, 30);
+            g.fillRect(52, 30, 12, 30);
+
+            // Legs
+            g.fillRect(16, 76, 14, 20);
+            g.fillRect(34, 76, 14, 20);
+
+            // Eyes
+            g.setColor(Color.WHITE);
+            g.fillOval(18, 8, 12, 12);
+            g.fillOval(34, 8, 12, 12);
+            g.setColor(Color.RED);
+            g.fillOval(22, 11, 5, 5);
+            g.fillOval(38, 11, 5, 5);
+        } else {
+            // Humanoid (default)
+            Color darkerColor = bodyColor.darker();
+
+            // Body
+            g.setColor(bodyColor);
+            g.fillRoundRect(w/4, h/4, w/2, h*3/4 - h/4, 8, 8);
+
+            // Head
+            g.fillOval(w/3, 2, w/3, h/4);
+
+            // Arms
+            g.setColor(darkerColor);
+            g.fillRect(w/4 - 6, h/4 + 4, 6, h/3);
+            g.fillRect(w*3/4, h/4 + 4, 6, h/3);
+
+            // Legs
+            g.fillRect(w/3, h*3/4 - 4, 6, h/4);
+            g.fillRect(w*2/3 - 6, h*3/4 - 4, 6, h/4);
+
+            // Eyes
+            g.setColor(Color.WHITE);
+            g.fillOval(w/3 + 2, h/8, 4, 4);
+            g.fillOval(w*2/3 - 6, h/8, 4, 4);
+        }
+
         g.dispose();
 
         java.util.List<java.awt.image.BufferedImage> frames = new java.util.ArrayList<>();
@@ -171,11 +290,25 @@ public class SpriteMobEntity extends MobEntity {
         java.util.List<Integer> delays = new java.util.ArrayList<>();
         delays.add(100);
         AnimatedTexture anim = new AnimatedTexture(frames, delays);
-        // Use setAction (not loadAction) to set AnimatedTexture directly
         spriteAnimation.setAction(SpriteAnimation.ActionState.IDLE, anim);
 
         this.spriteWidth = w * SCALE;
         this.spriteHeight = h * SCALE;
+    }
+
+    /**
+     * Generates a unique color for this mob based on its sprite directory.
+     */
+    protected Color generateMobColor() {
+        // Hash the sprite directory to get a consistent color
+        int hash = spriteDir != null ? spriteDir.hashCode() : 0;
+
+        // Generate HSB color from hash for good color variety
+        float hue = (hash & 0xFF) / 255.0f;
+        float saturation = 0.5f + ((hash >> 8) & 0xFF) / 510.0f; // 0.5 to 1.0
+        float brightness = 0.5f + ((hash >> 16) & 0xFF) / 510.0f; // 0.5 to 1.0
+
+        return Color.getHSBColor(hue, saturation, brightness);
     }
 
     // ==================== Override Abstract Methods ====================
@@ -284,6 +417,69 @@ public class SpriteMobEntity extends MobEntity {
      */
     public void setHumanoid(boolean humanoid) {
         this.isHumanoid = humanoid;
+    }
+
+    /**
+     * Sets the body type for this mob, adjusting dimensions accordingly.
+     * Call this before or after constructor to update dimensions.
+     */
+    public void setBodyType(MobBodyType type) {
+        this.bodyType = type;
+
+        // Set dimensions based on body type
+        switch (type) {
+            case QUADRUPED:
+                // 64x64 base, scaled to 128x128
+                this.spriteWidth = 64 * SCALE;
+                this.spriteHeight = 64 * SCALE;
+                this.hitboxWidth = (int)(spriteWidth * 0.8);
+                this.hitboxHeight = (int)(spriteHeight * 0.7);
+                this.hitboxOffsetX = -hitboxWidth / 2;
+                this.hitboxOffsetY = -hitboxHeight;
+                this.isHumanoid = false;
+                break;
+            case SMALL:
+                // 16x16 base, scaled to 32x32
+                this.spriteWidth = 16 * SCALE;
+                this.spriteHeight = 16 * SCALE;
+                this.hitboxWidth = (int)(spriteWidth * 0.8);
+                this.hitboxHeight = (int)(spriteHeight * 0.9);
+                this.hitboxOffsetX = -hitboxWidth / 2;
+                this.hitboxOffsetY = -hitboxHeight;
+                this.isHumanoid = false;
+                break;
+            case LARGE:
+                // 64x96 base, scaled to 128x192
+                this.spriteWidth = 64 * SCALE;
+                this.spriteHeight = 96 * SCALE;
+                this.hitboxWidth = (int)(spriteWidth * 0.7);
+                this.hitboxHeight = (int)(spriteHeight * 0.8);
+                this.hitboxOffsetX = -hitboxWidth / 2;
+                this.hitboxOffsetY = -hitboxHeight;
+                this.isHumanoid = false;
+                break;
+            case HUMANOID:
+            default:
+                // 32x64 base, scaled to 64x128
+                this.spriteWidth = 32 * SCALE;
+                this.spriteHeight = 64 * SCALE;
+                this.hitboxWidth = (int)(spriteWidth * 0.8);
+                this.hitboxHeight = (int)(spriteHeight * 0.9);
+                this.hitboxOffsetX = -hitboxWidth / 2;
+                this.hitboxOffsetY = -hitboxHeight;
+                this.isHumanoid = true;
+                break;
+        }
+
+        // Adjust attack range based on size
+        this.attackRange = Math.max(60, spriteWidth);
+    }
+
+    /**
+     * Gets the current body type.
+     */
+    public MobBodyType getBodyType() {
+        return bodyType;
     }
 
     /**

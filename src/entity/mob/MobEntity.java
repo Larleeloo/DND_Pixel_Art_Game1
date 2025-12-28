@@ -108,7 +108,9 @@ public abstract class MobEntity extends Entity {
 
     // Physics constants - Gravity is applied per frame, balanced for 60 FPS
     // Higher value = faster falling (more Earth-like, less moon-like)
-    protected static final double GRAVITY = 0.8;
+    // Note: This is raw acceleration, applied directly to velocityY each frame
+    protected static final double GRAVITY = 0.6;
+    protected static final double MAX_FALL_SPEED = 15.0;  // Terminal velocity
     protected double groundY = 920;  // Ground level from level data
 
     // Visual bounds padding for camera culling (skeleton may be larger than hitbox)
@@ -524,18 +526,19 @@ public abstract class MobEntity extends Entity {
     // ==================== Physics ====================
 
     protected void applyPhysics(double deltaTime, List<Entity> entities) {
-        // Apply gravity
+        // Apply gravity (frame-based like player, not time-based)
         if (!onGround) {
             velocityY += GRAVITY;
+            // Cap fall speed for terminal velocity
+            if (velocityY > MAX_FALL_SPEED) {
+                velocityY = MAX_FALL_SPEED;
+            }
         }
 
-        // Calculate new positions - clamp velocity to prevent tunneling
-        double maxVelocity = 400.0; // Max pixels per second
-        velocityX = Math.max(-maxVelocity, Math.min(maxVelocity, velocityX));
-        velocityY = Math.max(-maxVelocity, Math.min(maxVelocity, velocityY));
-
+        // Calculate movement directly from velocity (frame-based, like player)
+        // velocityX is already in pixels/frame for movement, but needs deltaTime for wandering
         double moveX = velocityX * deltaTime;
-        double moveY = velocityY * deltaTime;
+        double moveY = velocityY;  // Frame-based for gravity, not multiplied by deltaTime
 
         // Step-based movement to prevent phasing through blocks
         // Move in smaller increments for better collision detection
