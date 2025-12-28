@@ -49,11 +49,31 @@ public class Inventory {
     }
 
     public boolean addItem(ItemEntity item) {
-        if (items.size() < maxSlots) {
+        // Try to stack with existing items first
+        if (item.isStackable()) {
+            for (ItemEntity existing : items) {
+                if (existing.canStackWith(item)) {
+                    int remaining = existing.addToStack(item);
+                    if (remaining == 0) {
+                        return true; // Fully stacked
+                    }
+                    // Continue looking for more stacks if there's overflow
+                }
+            }
+        }
+
+        // If item still has count remaining, add as new slot
+        if (item.getStackCount() > 0 && items.size() < maxSlots) {
             items.add(item);
             return true;
         }
-        return false;
+
+        // Check if fully consumed during stacking
+        if (item.getStackCount() == 0) {
+            return true;
+        }
+
+        return false; // No room
     }
 
     public void toggleOpen() {
@@ -170,9 +190,15 @@ public class Inventory {
             }
 
             if (matches) {
-                // Remove and return the ammo item
-                items.remove(i);
-                return item;
+                // Decrement stack count or remove if last item
+                if (item.getStackCount() > 1) {
+                    item.decrementStack();
+                    return item; // Return reference for damage calculations
+                } else {
+                    // Remove the item from inventory when stack is exhausted
+                    items.remove(i);
+                    return item;
+                }
             }
         }
 
@@ -207,7 +233,7 @@ public class Inventory {
     /**
      * Counts how many of a specific ammo type are in the inventory.
      * @param ammoName The name/type of ammo to count
-     * @return The number of matching ammo items
+     * @return The total number of matching ammo items (including stacks)
      */
     public int countAmmo(String ammoName) {
         if (ammoName == null || ammoName.isEmpty()) return 0;
@@ -220,9 +246,9 @@ public class Inventory {
             String itemId = item.getItemId();
 
             if (itemId != null && itemId.toLowerCase().contains(lowerAmmoName)) {
-                count++;
+                count += item.getStackCount();
             } else if (itemName.contains(lowerAmmoName)) {
-                count++;
+                count += item.getStackCount();
             }
         }
 
@@ -231,12 +257,19 @@ public class Inventory {
 
     /**
      * Removes an item at a specific slot index (for throwable consumption).
+     * If the item is stacked, decrements the stack count instead of removing.
      * @param slotIndex The slot index to remove from
-     * @return The removed item, or null if slot was empty
+     * @return The item (for reference), or null if slot was empty
      */
     public ItemEntity removeItemAtSlot(int slotIndex) {
         if (slotIndex >= 0 && slotIndex < items.size()) {
-            return items.remove(slotIndex);
+            ItemEntity item = items.get(slotIndex);
+            if (item.getStackCount() > 1) {
+                item.decrementStack();
+                return item; // Return reference, item still in inventory
+            } else {
+                return items.remove(slotIndex); // Remove last item in stack
+            }
         }
         return null;
     }
@@ -384,6 +417,21 @@ public class Inventory {
                     g2d.drawImage(item.getSprite(), slotX + 5, slotY + 5,
                             hotbarSlotSize - 10, hotbarSlotSize - 10, null);
                 }
+
+                // Draw stack count if more than 1
+                if (item.getStackCount() > 1) {
+                    g2d.setColor(Color.WHITE);
+                    g2d.setFont(new Font("Arial", Font.BOLD, 12));
+                    String countStr = String.valueOf(item.getStackCount());
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int textX = slotX + hotbarSlotSize - fm.stringWidth(countStr) - 4;
+                    int textY = slotY + hotbarSlotSize - 4;
+                    // Draw shadow for visibility
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawString(countStr, textX + 1, textY + 1);
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(countStr, textX, textY);
+                }
             }
 
             // Draw slot number
@@ -468,6 +516,20 @@ public class Inventory {
                     // Draw normal item
                     if (item.getSprite() != null) {
                         g2d.drawImage(item.getSprite(), slotX + 5, slotY + 5, slotSize - 10, slotSize - 10, null);
+                    }
+
+                    // Draw stack count if more than 1
+                    if (item.getStackCount() > 1) {
+                        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+                        String countStr = String.valueOf(item.getStackCount());
+                        FontMetrics cfm = g2d.getFontMetrics();
+                        int countX = slotX + slotSize - cfm.stringWidth(countStr) - 5;
+                        int countY = slotY + slotSize - 5;
+                        // Draw shadow for visibility
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(countStr, countX + 1, countY + 1);
+                        g2d.setColor(Color.WHITE);
+                        g2d.drawString(countStr, countX, countY);
                     }
 
                     // Item name
