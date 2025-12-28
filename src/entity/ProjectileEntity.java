@@ -892,13 +892,16 @@ public class ProjectileEntity extends Entity {
 
     @Override
     public Rectangle getBounds() {
-        // Use a slightly smaller hitbox for better gameplay feel
-        int hitboxPadding = 4;
+        // Use scaled bounds for collision detection
+        // Ensure minimum size of 1x1 for visibility checking
+        int hitboxPadding = Math.min(4, Math.min(width, height) / 4);
+        int boundsWidth = Math.max(1, width - hitboxPadding * 2);
+        int boundsHeight = Math.max(1, height - hitboxPadding * 2);
         return new Rectangle(
             x + hitboxPadding,
             y + hitboxPadding,
-            width - hitboxPadding * 2,
-            height - hitboxPadding * 2
+            boundsWidth,
+            boundsHeight
         );
     }
 
