@@ -99,13 +99,25 @@ public class SpriteMobEntity extends MobEntity {
         super(x, y);
         this.spriteDir = spriteDir;
 
+        // Detect body type from directory name first
+        detectBodyTypeFromDir(spriteDir);
+
         // Initialize sprite animation
         this.spriteAnimation = new SpriteAnimation();
         loadAnimations(spriteDir);
 
-        // Set dimensions from sprite
-        this.spriteWidth = spriteAnimation.getBaseWidth() * SCALE;
-        this.spriteHeight = spriteAnimation.getBaseHeight() * SCALE;
+        // Set dimensions based on body type (if sprite loading failed or has wrong dimensions)
+        int baseWidth = spriteAnimation.getBaseWidth();
+        int baseHeight = spriteAnimation.getBaseHeight();
+
+        // If sprite loaded with valid dimensions, use them; otherwise use body type defaults
+        if (baseWidth > 0 && baseHeight > 0) {
+            this.spriteWidth = baseWidth * SCALE;
+            this.spriteHeight = baseHeight * SCALE;
+        } else {
+            // Use body type defaults
+            applyBodyTypeDimensions();
+        }
 
         // Set hitbox based on sprite size (slightly smaller for better gameplay feel)
         this.hitboxWidth = (int)(spriteWidth * 0.8);
@@ -114,12 +126,82 @@ public class SpriteMobEntity extends MobEntity {
         this.hitboxOffsetY = -hitboxHeight;
 
         // Larger sprites need larger attack range
-        this.attackRange = 80;
+        this.attackRange = Math.max(60, spriteWidth);
 
         // Initialize equipment overlay for humanoid mobs
         this.equipmentOverlay = new EquipmentOverlay();
 
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Detects body type from sprite directory name.
+     * Looks for keywords like "quadruped", "wolf", "horse", etc.
+     */
+    private void detectBodyTypeFromDir(String dir) {
+        if (dir == null) {
+            bodyType = MobBodyType.HUMANOID;
+            isHumanoid = true;
+            return;
+        }
+
+        String lowerDir = dir.toLowerCase();
+
+        // Quadruped animals
+        if (lowerDir.contains("quadruped") || lowerDir.contains("wolf") ||
+            lowerDir.contains("dog") || lowerDir.contains("cat") ||
+            lowerDir.contains("horse") || lowerDir.contains("cow") ||
+            lowerDir.contains("pig") || lowerDir.contains("sheep") ||
+            lowerDir.contains("bear") || lowerDir.contains("deer") ||
+            lowerDir.contains("fox") || lowerDir.contains("lion") ||
+            lowerDir.contains("tiger") || lowerDir.contains("spider")) {
+            bodyType = MobBodyType.QUADRUPED;
+            isHumanoid = false;
+        }
+        // Small creatures
+        else if (lowerDir.contains("slime") || lowerDir.contains("bug") ||
+                 lowerDir.contains("bat") || lowerDir.contains("small") ||
+                 lowerDir.contains("tiny") || lowerDir.contains("rat")) {
+            bodyType = MobBodyType.SMALL;
+            isHumanoid = false;
+        }
+        // Large creatures
+        else if (lowerDir.contains("giant") || lowerDir.contains("boss") ||
+                 lowerDir.contains("dragon") || lowerDir.contains("large") ||
+                 lowerDir.contains("ogre") || lowerDir.contains("troll")) {
+            bodyType = MobBodyType.LARGE;
+            isHumanoid = false;
+        }
+        // Default to humanoid
+        else {
+            bodyType = MobBodyType.HUMANOID;
+            isHumanoid = true;
+        }
+    }
+
+    /**
+     * Applies dimensions based on body type.
+     */
+    private void applyBodyTypeDimensions() {
+        switch (bodyType) {
+            case QUADRUPED:
+                this.spriteWidth = 64 * SCALE;
+                this.spriteHeight = 64 * SCALE;
+                break;
+            case SMALL:
+                this.spriteWidth = 16 * SCALE;
+                this.spriteHeight = 16 * SCALE;
+                break;
+            case LARGE:
+                this.spriteWidth = 64 * SCALE;
+                this.spriteHeight = 96 * SCALE;
+                break;
+            case HUMANOID:
+            default:
+                this.spriteWidth = 32 * SCALE;
+                this.spriteHeight = 64 * SCALE;
+                break;
+        }
     }
 
     /**
@@ -770,9 +852,101 @@ public class SpriteMobEntity extends MobEntity {
         // Update projectiles
         updateProjectiles(deltaTime, entities);
 
+        // Check for nearby items to pick up (humanoid mobs only)
+        if (isHumanoid && entities != null) {
+            checkForItemPickup(entities);
+        }
+
         // Sync entity position with mob position
         this.x = (int)posX;
         this.y = (int)posY;
+    }
+
+    /**
+     * Checks for nearby items and picks them up if possible.
+     */
+    protected void checkForItemPickup(List<Entity> entities) {
+        if (inventory.size() >= maxInventorySize) return;
+
+        Rectangle pickupRange = new Rectangle(
+            (int)posX - 40,
+            (int)posY - 60,
+            80,
+            80
+        );
+
+        for (Entity e : entities) {
+            if (e instanceof ItemEntity) {
+                ItemEntity item = (ItemEntity) e;
+                if (!item.isCollected() && pickupRange.intersects(item.getBounds())) {
+                    // Try to pick up the item
+                    Item linkedItem = item.getLinkedItem();
+                    if (linkedItem == null) {
+                        // Create a basic item from the entity
+                        linkedItem = createItemFromEntity(item);
+                    }
+
+                    if (linkedItem != null && canEquipItem(linkedItem)) {
+                        // Add to inventory or equip
+                        if (addToInventory(linkedItem)) {
+                            item.collect();
+
+                            // Auto-equip if slot is empty
+                            if (linkedItem.getCategory() == Item.ItemCategory.WEAPON ||
+                                linkedItem.getCategory() == Item.ItemCategory.RANGED_WEAPON) {
+                                if (equippedWeapon == null) {
+                                    equipWeapon(linkedItem);
+                                }
+                            } else if (linkedItem.getCategory() == Item.ItemCategory.ARMOR) {
+                                if (equippedArmor == null) {
+                                    equipArmor(linkedItem);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates an Item from an ItemEntity.
+     */
+    protected Item createItemFromEntity(ItemEntity entity) {
+        String name = entity.getItemName().toLowerCase().replace(" ", "_");
+        Item item = ItemRegistry.create(name);
+        if (item != null) {
+            entity.setLinkedItem(item);
+            return item;
+        }
+
+        // Create basic item
+        Item.ItemCategory category = Item.ItemCategory.MATERIAL;
+        String type = entity.getItemType().toLowerCase();
+        switch (type) {
+            case "weapon": category = Item.ItemCategory.WEAPON; break;
+            case "ranged_weapon":
+            case "bow": category = Item.ItemCategory.RANGED_WEAPON; break;
+            case "armor": category = Item.ItemCategory.ARMOR; break;
+            case "food": category = Item.ItemCategory.FOOD; break;
+        }
+
+        Item basicItem = new Item(entity.getItemName(), category);
+        basicItem.setDamage(8);
+        entity.setLinkedItem(basicItem);
+        return basicItem;
+    }
+
+    /**
+     * Checks if this mob can equip the given item.
+     */
+    protected boolean canEquipItem(Item item) {
+        if (!isHumanoid) {
+            // Quadrupeds can only use certain items
+            return item.getCategory() == Item.ItemCategory.FOOD ||
+                   item.getCategory() == Item.ItemCategory.MATERIAL;
+        }
+        return true;
     }
 
     /**

@@ -1232,18 +1232,33 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             return item;
         }
 
-        // Create a basic item based on type
-        Item.ItemCategory category = Item.ItemCategory.MATERIAL;
+        // Determine category - check item NAME for ranged weapon keywords first
+        String lowerName = entity.getItemName().toLowerCase();
         String type = entity.getItemType().toLowerCase();
-        switch (type) {
-            case "weapon": category = Item.ItemCategory.WEAPON; break;
-            case "ranged_weapon":
-            case "bow": category = Item.ItemCategory.RANGED_WEAPON; break;
-            case "armor": category = Item.ItemCategory.ARMOR; break;
-            case "potion": category = Item.ItemCategory.POTION; break;
-            case "food": category = Item.ItemCategory.FOOD; break;
-            case "tool": category = Item.ItemCategory.TOOL; break;
-            case "throwable": category = Item.ItemCategory.THROWABLE; break;
+        Item.ItemCategory category = Item.ItemCategory.MATERIAL;
+
+        // Detect ranged weapons by name (since JSON might have them typed as "weapon")
+        boolean isRangedByName = lowerName.contains("bow") || lowerName.contains("crossbow") ||
+                                  lowerName.contains("wand") || lowerName.contains("staff") ||
+                                  lowerName.contains("sling");
+        boolean isThrowableByName = lowerName.contains("throwing") || lowerName.contains("thrown") ||
+                                     lowerName.contains("rock") || lowerName.contains("bomb");
+
+        if (isRangedByName) {
+            category = Item.ItemCategory.RANGED_WEAPON;
+        } else if (isThrowableByName) {
+            category = Item.ItemCategory.THROWABLE;
+        } else {
+            switch (type) {
+                case "weapon": category = Item.ItemCategory.WEAPON; break;
+                case "ranged_weapon":
+                case "bow": category = Item.ItemCategory.RANGED_WEAPON; break;
+                case "armor": category = Item.ItemCategory.ARMOR; break;
+                case "potion": category = Item.ItemCategory.POTION; break;
+                case "food": category = Item.ItemCategory.FOOD; break;
+                case "tool": category = Item.ItemCategory.TOOL; break;
+                case "throwable": category = Item.ItemCategory.THROWABLE; break;
+            }
         }
 
         Item basicItem = new Item(entity.getItemName(), category);
@@ -1254,7 +1269,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         if (category == Item.ItemCategory.RANGED_WEAPON) {
             // Determine projectile type from name
             ProjectileEntity.ProjectileType projType = ProjectileEntity.ProjectileType.ARROW;
-            String lowerName = entity.getItemName().toLowerCase();
             if (lowerName.contains("crossbow")) {
                 projType = ProjectileEntity.ProjectileType.BOLT;
             } else if (lowerName.contains("wand") || lowerName.contains("staff")) {
@@ -1262,19 +1276,20 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             } else if (lowerName.contains("fire")) {
                 projType = ProjectileEntity.ProjectileType.FIREBALL;
             }
-            basicItem.setRangedWeapon(true, projType, 10, 15.0f);
+            basicItem.setRangedWeapon(true, projType, 15, 15.0f);
         }
 
         // Set throwable properties
         if (category == Item.ItemCategory.THROWABLE) {
             ProjectileEntity.ProjectileType projType = ProjectileEntity.ProjectileType.ROCK;
-            String lowerName = entity.getItemName().toLowerCase();
             if (lowerName.contains("knife")) {
                 projType = ProjectileEntity.ProjectileType.THROWING_KNIFE;
             } else if (lowerName.contains("axe")) {
                 projType = ProjectileEntity.ProjectileType.THROWING_AXE;
+            } else if (lowerName.contains("bomb")) {
+                projType = ProjectileEntity.ProjectileType.BOMB;
             }
-            basicItem.setRangedWeapon(true, projType, 8, 18.0f);
+            basicItem.setRangedWeapon(true, projType, 12, 18.0f);
         }
 
         // Set consumable properties for food/potions
