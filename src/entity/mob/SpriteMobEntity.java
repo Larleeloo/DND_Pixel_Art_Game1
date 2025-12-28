@@ -136,17 +136,17 @@ public class SpriteMobEntity extends MobEntity {
         actionMap.put("hurt", SpriteAnimation.ActionState.HURT);
         actionMap.put("death", SpriteAnimation.ActionState.DEAD);
 
+        // Load all animation states - loadAction creates placeholders for missing files
         for (java.util.Map.Entry<String, SpriteAnimation.ActionState> entry : actionMap.entrySet()) {
             String path = dir + "/" + entry.getKey() + ".gif";
-            java.io.File file = new java.io.File(path);
-            if (file.exists()) {
-                spriteAnimation.loadAction(entry.getValue(), path);
-            }
+            spriteAnimation.loadAction(entry.getValue(), path);
         }
 
-        // Fallback: if no animations loaded, create placeholder
+        // Ensure basic animations have placeholders even if directory doesn't exist
+        spriteAnimation.ensureBasicAnimations();
+
+        // Fallback: if still no valid dimensions, create placeholder
         if (spriteAnimation.getBaseWidth() <= 0) {
-            System.err.println("SpriteMobEntity: No animations loaded from " + dir + ", using placeholder");
             createPlaceholderSprite();
         }
     }

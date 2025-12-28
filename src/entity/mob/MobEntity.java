@@ -529,111 +529,138 @@ public abstract class MobEntity extends Entity {
             velocityY += GRAVITY;
         }
 
-        // Calculate new positions
-        double newX = posX + velocityX * deltaTime;
-        double newY = posY + velocityY * deltaTime;
+        // Calculate new positions - clamp velocity to prevent tunneling
+        double maxVelocity = 400.0; // Max pixels per second
+        velocityX = Math.max(-maxVelocity, Math.min(maxVelocity, velocityX));
+        velocityY = Math.max(-maxVelocity, Math.min(maxVelocity, velocityY));
 
-        // Check horizontal collision with solid blocks BEFORE applying movement
-        // Use a shorter hitbox that doesn't include the bottom portion (feet area)
-        // This prevents false collisions with blocks the mob is standing ON
-        if (entities != null && velocityX != 0) {
-            int feetMargin = 10; // Pixels to exclude from bottom of hitbox for horizontal checks
-            Rectangle futureXBounds = new Rectangle(
-                (int)newX + hitboxOffsetX,
-                (int)posY + hitboxOffsetY,
-                hitboxWidth,
-                Math.max(hitboxHeight - feetMargin, 1) // Exclude feet area
-            );
+        double moveX = velocityX * deltaTime;
+        double moveY = velocityY * deltaTime;
 
-            boolean xCollision = false;
-            for (Entity e : entities) {
-                if (e instanceof BlockEntity) {
-                    BlockEntity block = (BlockEntity) e;
-                    if (block.isSolid() && futureXBounds.intersects(block.getBounds())) {
-                        // Additional check: only count as horizontal collision if the block
-                        // is actually beside us, not beneath us
-                        Rectangle blockBounds = block.getBounds();
-                        int mobBottom = (int)posY + hitboxOffsetY + hitboxHeight;
-                        int blockTop = blockBounds.y;
+        // Step-based movement to prevent phasing through blocks
+        // Move in smaller increments for better collision detection
+        int steps = Math.max(1, (int)(Math.max(Math.abs(moveX), Math.abs(moveY)) / 8));
+        double stepX = moveX / steps;
+        double stepY = moveY / steps;
 
-                        // If mob's bottom is at or above block's top, it's a side collision
-                        // If mob's bottom is well inside the block, we're standing on it
-                        if (mobBottom <= blockTop + feetMargin) {
-                            xCollision = true;
-                            break;
+        for (int step = 0; step < steps; step++) {
+            double newX = posX + stepX;
+            double newY = posY + stepY;
+
+            // Check horizontal collision with solid blocks
+            if (entities != null && stepX != 0) {
+                int feetMargin = 10;
+                Rectangle futureXBounds = new Rectangle(
+                    (int)newX + hitboxOffsetX,
+                    (int)posY + hitboxOffsetY + feetMargin,  // Start below top
+                    hitboxWidth,
+                    Math.max(hitboxHeight - feetMargin * 2, 1) // Exclude feet and head area
+                );
+
+                boolean xCollision = false;
+                BlockEntity collidedBlock = null;
+                for (Entity e : entities) {
+                    if (e instanceof BlockEntity) {
+                        BlockEntity block = (BlockEntity) e;
+                        if (block.isSolid() && !block.isBroken() && futureXBounds.intersects(block.getBounds())) {
+                            Rectangle blockBounds = block.getBounds();
+                            int mobBottom = (int)posY + hitboxOffsetY + hitboxHeight;
+                            int blockTop = blockBounds.y;
+
+                            // True side collision - block is beside us, not beneath
+                            if (mobBottom <= blockTop + feetMargin + 5) {
+                                xCollision = true;
+                                collidedBlock = block;
+                                break;
+                            }
                         }
                     }
                 }
-            }
 
-            // Only apply horizontal movement if no collision
-            if (!xCollision) {
+                if (!xCollision) {
+                    posX = newX;
+                } else {
+                    // Stop and snap to block edge
+                    velocityX = 0;
+                    stepX = 0;
+                    if (collidedBlock != null) {
+                        Rectangle blockBounds = collidedBlock.getBounds();
+                        if (moveX > 0) {
+                            // Moving right, snap to left edge of block
+                            posX = blockBounds.x - hitboxWidth / 2 - 1;
+                        } else {
+                            // Moving left, snap to right edge of block
+                            posX = blockBounds.x + blockBounds.width + hitboxWidth / 2 + 1;
+                        }
+                    }
+                }
+            } else if (stepX != 0) {
                 posX = newX;
-            } else {
-                velocityX = 0; // Stop horizontal movement on collision
             }
-        } else {
-            posX = newX;
-        }
 
-        // Check vertical collision with solid blocks BEFORE applying movement
-        if (entities != null) {
-            Rectangle futureYBounds = new Rectangle(
-                (int)posX + hitboxOffsetX,
-                (int)newY + hitboxOffsetY,
-                hitboxWidth,
-                hitboxHeight
-            );
+            // Check vertical collision with solid blocks
+            if (entities != null && stepY != 0) {
+                Rectangle futureYBounds = new Rectangle(
+                    (int)posX + hitboxOffsetX,
+                    (int)newY + hitboxOffsetY,
+                    hitboxWidth,
+                    hitboxHeight
+                );
 
-            boolean yCollision = false;
-            double landingY = groundY;
+                boolean yCollision = false;
+                double landingY = groundY;
 
-            for (Entity e : entities) {
-                if (e instanceof BlockEntity) {
-                    BlockEntity block = (BlockEntity) e;
-                    if (block.isSolid() && futureYBounds.intersects(block.getBounds())) {
-                        Rectangle blockBounds = block.getBounds();
-                        yCollision = true;
+                for (Entity e : entities) {
+                    if (e instanceof BlockEntity) {
+                        BlockEntity block = (BlockEntity) e;
+                        if (block.isSolid() && !block.isBroken() && futureYBounds.intersects(block.getBounds())) {
+                            Rectangle blockBounds = block.getBounds();
+                            yCollision = true;
 
-                        if (velocityY > 0) {
-                            // Falling down - land on top of block
-                            landingY = Math.min(landingY, blockBounds.y);
-                        } else if (velocityY < 0) {
-                            // Jumping up - hit head on bottom of block
-                            newY = blockBounds.y + blockBounds.height - hitboxOffsetY;
-                            velocityY = 0;
+                            if (velocityY > 0) {
+                                // Falling down - land on top of block
+                                landingY = Math.min(landingY, blockBounds.y);
+                            } else if (velocityY < 0) {
+                                // Jumping up - hit head on bottom of block
+                                newY = blockBounds.y + blockBounds.height - hitboxOffsetY;
+                                velocityY = 0;
+                                stepY = 0;
+                            }
                         }
                     }
                 }
-            }
 
-            if (yCollision && velocityY > 0) {
-                // Land on the block
-                posY = landingY;
-                velocityY = 0;
-                onGround = true;
-            } else {
+                if (yCollision && velocityY > 0) {
+                    // Land on the block
+                    posY = landingY;
+                    velocityY = 0;
+                    stepY = 0;
+                    onGround = true;
+                } else {
+                    posY = newY;
+                    // Check if on ground
+                    if (posY >= groundY) {
+                        posY = groundY;
+                        velocityY = 0;
+                        stepY = 0;
+                        onGround = true;
+                    } else {
+                        onGround = false;
+                    }
+                }
+            } else if (stepY != 0) {
                 posY = newY;
-                // Check if on ground
+                // Simple ground check when no entities
                 if (posY >= groundY) {
                     posY = groundY;
                     velocityY = 0;
+                    stepY = 0;
                     onGround = true;
                 } else {
                     onGround = false;
                 }
             }
-        } else {
-            posY = newY;
-            // Simple ground check when no entities
-            if (posY >= groundY) {
-                posY = groundY;
-                velocityY = 0;
-                onGround = true;
-            } else {
-                onGround = false;
-            }
-        }
+        }  // End of step-based collision loop
 
         // Soft constraint to wander bounds when wandering (no teleporting)
         // Only gently push back if far outside bounds

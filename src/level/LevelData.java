@@ -213,6 +213,9 @@ public class LevelData {
         public String blockType;      // BlockType enum name (e.g., "GRASS", "STONE")
         public boolean useGridCoords; // If true, x/y are grid positions, not pixels
 
+        // Optional overlay (e.g., "GRASS", "SNOW", "ICE", "MOSS", "VINES")
+        public String overlay = null;
+
         // Optional color tint (RGB 0-255 each, -1 means no tint)
         public int tintRed = -1;
         public int tintGreen = -1;
@@ -237,6 +240,14 @@ public class LevelData {
             this.useGridCoords = useGridCoords;
         }
 
+        public BlockData(int x, int y, String blockType, boolean useGridCoords, String overlay) {
+            this.x = x;
+            this.y = y;
+            this.blockType = blockType;
+            this.useGridCoords = useGridCoords;
+            this.overlay = overlay;
+        }
+
         public BlockData(int x, int y, String blockType, boolean useGridCoords,
                          int tintRed, int tintGreen, int tintBlue) {
             this.x = x;
@@ -250,6 +261,10 @@ public class LevelData {
 
         public boolean hasTint() {
             return tintRed >= 0 && tintGreen >= 0 && tintBlue >= 0;
+        }
+
+        public boolean hasOverlay() {
+            return overlay != null && !overlay.isEmpty();
         }
     }
 

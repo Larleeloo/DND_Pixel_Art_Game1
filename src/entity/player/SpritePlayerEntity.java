@@ -89,8 +89,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private double attackTimer = 0;
     private double attackCooldown = 0.4; // Seconds between attacks
     private double attackDuration = 0.2; // How long attack animation lasts
-    private int attackDamage = 10;
-    private int attackRange = 60;
+    private int baseAttackDamage = 5;     // Unarmed damage
+    private int baseAttackRange = 40;     // Unarmed range
     private int attackWidth = 40;
     private int attackHeight = 50;
 
@@ -336,7 +336,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 // Attack started - check for mob hits
                 Rectangle attackBounds = getAttackBounds();
                 if (attackBounds != null) {
-                    EntityPhysics.checkPlayerAttack(this, attackBounds, attackDamage, 8.0, entities);
+                    EntityPhysics.checkPlayerAttack(this, attackBounds, getAttackDamage(), 8.0, entities);
                     if (audioManager != null) {
                         audioManager.playSound("attack");
                     }
@@ -755,10 +755,13 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             // Draw equipment in front (armor, weapons, etc.)
             equipmentOverlay.drawInFront(g, x, y, width, height, facingRight, currentState);
 
-            // Draw held item overlay
+            // Draw held item overlay (if animated overlay exists)
             if (heldItem != null) {
                 heldItem.drawHeld(g, x, y, width, height, facingRight, currentState);
             }
+
+            // Draw mini held item icon in player's hand
+            drawHeldItemIcon(g2d);
         }
 
         // Debug: draw bounds
@@ -961,27 +964,42 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     /**
      * Gets the current attack hitbox bounds.
+     * Uses held weapon's range if available.
      * @return Rectangle of attack area, or null if not attacking
      */
     public Rectangle getAttackBounds() {
         if (!isAttacking) return null;
 
+        int effectiveRange = getEffectiveAttackRange();
         int attackX;
         if (facingRight) {
             attackX = x + width;
         } else {
-            attackX = x - attackRange;
+            attackX = x - effectiveRange;
         }
 
         int attackY = y + (height - attackHeight) / 2;
-        return new Rectangle(attackX, attackY, attackRange, attackHeight);
+        return new Rectangle(attackX, attackY, effectiveRange, attackHeight);
     }
 
     /**
-     * Gets the attack damage value.
+     * Gets the effective attack damage (from weapon if held, otherwise base).
      */
     public int getAttackDamage() {
-        return attackDamage;
+        if (heldItem != null && heldItem.getDamage() > 0) {
+            return heldItem.getDamage();
+        }
+        return baseAttackDamage;
+    }
+
+    /**
+     * Gets the effective attack range (from weapon if held, otherwise base).
+     */
+    public int getEffectiveAttackRange() {
+        if (heldItem != null && heldItem.getRange() > 0) {
+            return heldItem.getRange();
+        }
+        return baseAttackRange;
     }
 
     // ==================== Block Mining System ====================
@@ -1122,6 +1140,49 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     }
 
     // ==================== Held Item System ====================
+
+    /**
+     * Draws a mini icon of the held item near the player's hand.
+     */
+    private void drawHeldItemIcon(Graphics2D g2d) {
+        ItemEntity heldEntity = inventory.getHeldItem();
+        if (heldEntity == null) return;
+
+        // Get the item sprite from the inventory slot
+        Image itemSprite = heldEntity.getSprite();
+        if (itemSprite == null) return;
+
+        // Calculate position near player's hand
+        int iconSize = 24; // Mini icon size
+        int handOffsetX = facingRight ? width - 8 : -iconSize + 8;
+        int handOffsetY = height / 2 - 10;
+
+        // Adjust position based on animation state
+        SpriteAnimation.ActionState currentState = spriteAnimation.getState();
+        if (currentState == SpriteAnimation.ActionState.ATTACK ||
+            currentState == SpriteAnimation.ActionState.FIRE) {
+            // Extend arm during attack/fire
+            handOffsetX = facingRight ? width + 10 : -iconSize - 10;
+        }
+
+        int iconX = x + handOffsetX;
+        int iconY = y + handOffsetY;
+
+        // Draw with slight rotation for held appearance
+        java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
+
+        if (!facingRight) {
+            // Flip for left-facing
+            g2d.translate(iconX + iconSize/2, iconY + iconSize/2);
+            g2d.scale(-1, 1);
+            g2d.translate(-iconSize/2, -iconSize/2);
+            g2d.drawImage(itemSprite, 0, 0, iconSize, iconSize, null);
+        } else {
+            g2d.drawImage(itemSprite, iconX, iconY, iconSize, iconSize, null);
+        }
+
+        g2d.setTransform(oldTransform);
+    }
 
     /**
      * Syncs the held Item with the currently selected inventory slot.
