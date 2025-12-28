@@ -8,6 +8,10 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     private HashSet<Character> pressed = new HashSet<>();
     private HashSet<Character> justPressed = new HashSet<>();
 
+    // Special key tracking (for Shift, Ctrl, Alt, arrow keys, etc.)
+    private HashSet<Integer> keysPressed = new HashSet<>();
+    private HashSet<Integer> keysJustPressed = new HashSet<>();
+
     // Mouse wheel state: -1 = scroll up, 0 = no scroll, 1 = scroll down
     private int scrollDirection = 0;
 
@@ -20,6 +24,25 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     public boolean isKeyPressed(char c) {
         return pressed.contains(Character.toLowerCase(c));
+    }
+
+    /**
+     * Check if a key is pressed by key code (for special keys like Shift, Ctrl, arrows).
+     * Use KeyEvent.VK_* constants.
+     */
+    public boolean isKeyPressed(int keyCode) {
+        return keysPressed.contains(keyCode);
+    }
+
+    /**
+     * Check if a key was just pressed by key code.
+     */
+    public boolean isKeyJustPressed(int keyCode) {
+        if (keysJustPressed.contains(keyCode)) {
+            keysJustPressed.remove(keyCode);
+            return true;
+        }
+        return false;
     }
 
     public boolean isKeyJustPressed(char c) {
@@ -49,11 +72,19 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
             justPressed.add(c);
         }
         pressed.add(c);
+
+        // Track key codes for special keys (Shift, Ctrl, arrows, etc.)
+        int keyCode = e.getKeyCode();
+        if (!keysPressed.contains(keyCode)) {
+            keysJustPressed.add(keyCode);
+        }
+        keysPressed.add(keyCode);
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         pressed.remove(Character.toLowerCase(e.getKeyChar()));
+        keysPressed.remove(e.getKeyCode());
     }
 
     @Override
