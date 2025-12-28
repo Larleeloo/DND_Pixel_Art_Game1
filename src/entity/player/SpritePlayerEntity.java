@@ -59,7 +59,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private int currentJumpNumber = 0;  // 0 = not jumping, 1 = first jump, 2 = double, 3 = triple
     private double doubleJumpStrength = -9;
     private double tripleJumpStrength = -8;
-    private boolean jumpKeyReleased = true;
 
     // Sprint system
     private boolean isSprinting = false;
@@ -162,8 +161,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         this.inventory = new Inventory(10);
         this.lastUpdateTime = System.currentTimeMillis();
 
-        System.out.println("SpritePlayerEntity created at: x=" + x + " y=" + y +
-                " width=" + width + " height=" + height);
     }
 
     /**
@@ -185,7 +182,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         this.inventory = new Inventory(10);
         this.lastUpdateTime = System.currentTimeMillis();
 
-        System.out.println("SpritePlayerEntity created with custom animation at: x=" + x + " y=" + y);
     }
 
     /**
@@ -222,7 +218,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         spriteAnimation.loadAction(SpriteAnimation.ActionState.HURT, basePath + "hurt.gif");
         spriteAnimation.loadAction(SpriteAnimation.ActionState.DEAD, basePath + "dead.gif");
 
-        System.out.println("SpritePlayerEntity: Loaded animations from " + spriteDir);
     }
 
     /**
@@ -258,13 +253,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.WALK, basePath + "walk.gif", itemName);
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.JUMP, basePath + "jump.gif", itemName);
 
-        System.out.println("SpritePlayerEntity: Equipped " + itemName + " overlay from " + spriteDir);
     }
 
     @Override
     public void setGroundY(int groundY) {
         this.groundY = groundY;
-        System.out.println("SpritePlayerEntity ground level updated to: " + groundY);
     }
 
     @Override
@@ -309,6 +302,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 inventory.handleHotbarKey(c);
             }
         }
+
+        // Sync held item with inventory selection
+        syncHeldItemWithInventory();
 
         // Scroll wheel cycles mining direction
         int scroll = input.getScrollDirection();
@@ -356,11 +352,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Apply push forces from collisions
         EntityPhysics.processCollisions(entities, this, deltaSeconds);
 
-        // Sprinting - hold Shift
+        // Sprinting - hold Shift (drains stamina over time)
         boolean wantsSprint = input.isKeyPressed(java.awt.event.KeyEvent.VK_SHIFT);
         if (wantsSprint && currentStamina > 0 && (input.isKeyPressed('a') || input.isKeyPressed('d'))) {
             isSprinting = true;
-            currentStamina = Math.max(0, currentStamina - (int)(sprintStaminaCost));
+            // Drain stamina while sprinting (using delta time for smooth drain)
+            currentStamina = Math.max(0, currentStamina - (int)(staminaDrainRate * deltaSeconds));
         } else {
             isSprinting = false;
         }
@@ -517,17 +514,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     /**
      * Handles multi-jump input (single, double, triple jump).
+     * Uses isKeyJustPressed for immediate response on key press.
      */
     private void handleJumping(InputManager input) {
-        // Track jump key release for proper multi-jump detection
-        if (!input.isKeyPressed(' ')) {
-            jumpKeyReleased = true;
-        }
-
-        // Jump input
-        if (input.isKeyPressed(' ') && jumpKeyReleased && jumpsRemaining > 0) {
-            jumpKeyReleased = false;
-
+        // Use isKeyJustPressed for immediate, responsive jump detection
+        if (input.isKeyJustPressed(' ') && jumpsRemaining > 0) {
             if (onGround) {
                 // First jump from ground
                 velY = jumpStrength;
@@ -544,10 +535,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
                 if (currentJumpNumber == 2) {
                     velY = doubleJumpStrength;
-                    System.out.println("Double jump!");
                 } else if (currentJumpNumber == 3) {
                     velY = tripleJumpStrength;
-                    System.out.println("Triple jump!");
                 }
 
                 jumpsRemaining--;
@@ -621,7 +610,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 audioManager.playSound("fire");
             }
 
-            System.out.println("Fired projectile: " + projectile);
         }
     }
 
@@ -651,8 +639,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         isEating = true;
         eatTimer = heldItem.getConsumeTime();
         eatDuration = heldItem.getConsumeTime();
-
-        System.out.println("Started eating: " + heldItem.getName());
     }
 
     /**
@@ -665,9 +651,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         currentHealth = Math.min(maxHealth, currentHealth + heldItem.getHealthRestore());
         currentMana = Math.min(maxMana, currentMana + heldItem.getManaRestore());
         currentStamina = Math.min(maxStamina, currentStamina + heldItem.getStaminaRestore());
-
-        System.out.println("Finished eating: " + heldItem.getName() +
-                " - Health: " + currentHealth + ", Mana: " + currentMana);
 
         isEating = false;
         // TODO: Remove item from inventory after consumption
@@ -682,8 +665,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         isUsingItem = true;
         useItemTimer = useItemDuration;
-
-        System.out.println("Started using item: " + heldItem.getName());
     }
 
     /**
@@ -691,7 +672,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
      */
     private void finishUsingItem() {
         isUsingItem = false;
-        System.out.println("Finished using item");
         // TODO: Apply item effects
     }
 
@@ -896,8 +876,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         if (audioManager != null) {
             audioManager.playSound("hurt");
         }
-
-        System.out.println("SpritePlayer took " + damage + " damage! Health: " + currentHealth + "/" + maxHealth);
     }
 
     @Override
@@ -1146,6 +1124,74 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     // ==================== Held Item System ====================
 
     /**
+     * Syncs the held Item with the currently selected inventory slot.
+     * Converts ItemEntity to Item for use in combat/actions.
+     */
+    private void syncHeldItemWithInventory() {
+        ItemEntity selectedEntity = inventory.getHeldItem();
+        if (selectedEntity != null) {
+            // Check if the ItemEntity has a linked Item
+            Item linked = selectedEntity.getLinkedItem();
+            if (linked != null) {
+                heldItem = linked;
+            } else {
+                // Try to create an Item based on the ItemEntity's type
+                heldItem = createItemFromEntity(selectedEntity);
+            }
+        } else {
+            heldItem = null;
+        }
+    }
+
+    /**
+     * Creates an Item from an ItemEntity by looking up in registry or creating a basic one.
+     */
+    private Item createItemFromEntity(ItemEntity entity) {
+        // Try registry lookup by itemId
+        if (entity.getItemId() != null) {
+            Item item = ItemRegistry.create(entity.getItemId());
+            if (item != null) {
+                entity.setLinkedItem(item);
+                return item;
+            }
+        }
+
+        // Try to find by name (convert name to registry id format)
+        String name = entity.getItemName().toLowerCase().replace(" ", "_");
+        Item item = ItemRegistry.create(name);
+        if (item != null) {
+            entity.setLinkedItem(item);
+            return item;
+        }
+
+        // Create a basic item based on type
+        Item.ItemCategory category = Item.ItemCategory.MATERIAL;
+        String type = entity.getItemType().toLowerCase();
+        switch (type) {
+            case "weapon": category = Item.ItemCategory.WEAPON; break;
+            case "ranged_weapon":
+            case "bow": category = Item.ItemCategory.RANGED_WEAPON; break;
+            case "armor": category = Item.ItemCategory.ARMOR; break;
+            case "potion": category = Item.ItemCategory.POTION; break;
+            case "food": category = Item.ItemCategory.FOOD; break;
+            case "tool": category = Item.ItemCategory.TOOL; break;
+        }
+
+        Item basicItem = new Item(entity.getItemName(), category);
+        basicItem.setDamage(5);  // Default damage
+        basicItem.setRange(50);  // Default range
+
+        // Set consumable properties for food/potions
+        if (category == Item.ItemCategory.FOOD || category == Item.ItemCategory.POTION) {
+            basicItem.setHealthRestore(20);
+            basicItem.setConsumeTime(1.0f);
+        }
+
+        entity.setLinkedItem(basicItem);
+        return basicItem;
+    }
+
+    /**
      * Sets the currently held item.
      * The held item will be rendered as an overlay and used for attacks/actions.
      *
@@ -1153,11 +1199,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
      */
     public void setHeldItem(Item item) {
         this.heldItem = item;
-        if (item != null) {
-            System.out.println("SpritePlayerEntity: Now holding " + item.getName());
-        } else {
-            System.out.println("SpritePlayerEntity: Unequipped held item");
-        }
     }
 
     /**

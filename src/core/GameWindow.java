@@ -15,6 +15,7 @@ public class GameWindow extends JFrame {
     public GameWindow() {
         setTitle("My Game");
         setUndecorated(true);
+        setAlwaysOnTop(true);
 
         panel = new GamePanel();
         add(panel);

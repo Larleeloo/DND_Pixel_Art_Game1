@@ -317,7 +317,6 @@ public class ProjectileEntity extends Entity {
                     // Deal damage
                     double knockbackDir = velX > 0 ? 1 : -1;
                     mob.takeDamage(damage, knockbackDir * knockbackForce, -knockbackForce / 2);
-                    System.out.println("Projectile hit mob for " + damage + " damage");
 
                     // Handle piercing or deactivate
                     if (piercing && pierceCount < maxPierceCount) {
@@ -337,7 +336,6 @@ public class ProjectileEntity extends Entity {
                     // Deal damage
                     double knockbackDir = velX > 0 ? 1 : -1;
                     player.takeDamage(damage, knockbackDir * knockbackForce, -knockbackForce / 2);
-                    System.out.println("Projectile hit player for " + damage + " damage");
                     onImpact();
                     return;
                 }
@@ -360,7 +358,6 @@ public class ProjectileEntity extends Entity {
     private void onImpact() {
         if (explosive) {
             // TODO: Create explosion effect and damage nearby entities
-            System.out.println("Projectile exploded with radius " + explosionRadius);
         }
         active = false;
     }

@@ -233,7 +233,6 @@ public class Item {
             AssetLoader.ImageAsset asset = AssetLoader.load(path);
             if (asset.animatedTexture != null) {
                 heldAnimations.put(state, asset.animatedTexture);
-                System.out.println("Item: Loaded held animation for " + name + " - " + state);
             } else if (asset.staticImage != null) {
                 AnimatedTexture singleFrame = new AnimatedTexture(asset.staticImage);
                 heldAnimations.put(state, singleFrame);
