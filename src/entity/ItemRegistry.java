@@ -378,7 +378,7 @@ public class ItemRegistry {
         item.setRarity(rarity);
         item.setDescription(desc);
         item.setStackable(true);
-        item.setMaxStackSize(64);
+        item.setMaxStackSize(16);  // Arrows/bolts stack up to 16
         // Store projectile type info in the ammo item for reference
         if (projType != null) {
             item.setRangedWeapon(false, projType, bonusDamage, 0);

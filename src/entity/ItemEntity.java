@@ -32,6 +32,10 @@ public class ItemEntity extends Entity {
     private boolean hasColorMask = false;
     private BufferedImage tintedSprite; // Cached tinted version
 
+    // Stack count for stackable items
+    private int stackCount = 1;
+    private int maxStackSize = 1;
+
     public static final int SCALE = 3;
     private static final int ICON_SIZE = 16;  // Base icon size
 
@@ -74,6 +78,10 @@ public class ItemEntity extends Entity {
         if (linkedItem != null) {
             this.itemName = linkedItem.getName();
             this.itemType = linkedItem.getCategory().name().toLowerCase();
+            // Set stack properties from linked item
+            if (linkedItem.isStackable()) {
+                this.maxStackSize = linkedItem.getMaxStackSize();
+            }
         } else {
             this.itemName = itemId;
             this.itemType = "unknown";
@@ -503,6 +511,89 @@ public class ItemEntity extends Entity {
      */
     public String getItemId() {
         return itemId;
+    }
+
+    // ==================== Stack Methods ====================
+
+    /**
+     * Gets the current stack count.
+     */
+    public int getStackCount() {
+        return stackCount;
+    }
+
+    /**
+     * Sets the stack count.
+     */
+    public void setStackCount(int count) {
+        this.stackCount = Math.max(1, Math.min(count, maxStackSize));
+    }
+
+    /**
+     * Gets the maximum stack size for this item.
+     */
+    public int getMaxStackSize() {
+        return maxStackSize;
+    }
+
+    /**
+     * Sets the maximum stack size.
+     */
+    public void setMaxStackSize(int max) {
+        this.maxStackSize = Math.max(1, max);
+    }
+
+    /**
+     * Checks if this item is stackable.
+     */
+    public boolean isStackable() {
+        return maxStackSize > 1;
+    }
+
+    /**
+     * Checks if this item can stack with another item.
+     * Items can stack if they have the same ID or name and type.
+     */
+    public boolean canStackWith(ItemEntity other) {
+        if (other == null || !isStackable()) return false;
+        if (stackCount >= maxStackSize) return false;
+
+        // Match by item ID if both have one
+        if (itemId != null && other.itemId != null) {
+            return itemId.equals(other.itemId);
+        }
+
+        // Fallback to matching by name and type
+        return itemName.equals(other.itemName) && itemType.equals(other.itemType);
+    }
+
+    /**
+     * Adds items from another stack to this stack.
+     * @param other The stack to add from
+     * @return The number of items that couldn't be added (overflow)
+     */
+    public int addToStack(ItemEntity other) {
+        if (!canStackWith(other)) return other.stackCount;
+
+        int spaceAvailable = maxStackSize - stackCount;
+        int toAdd = Math.min(spaceAvailable, other.stackCount);
+
+        stackCount += toAdd;
+        other.stackCount -= toAdd;
+
+        return other.stackCount; // Return remaining
+    }
+
+    /**
+     * Removes one item from the stack.
+     * @return true if an item was removed, false if stack is empty
+     */
+    public boolean decrementStack() {
+        if (stackCount > 0) {
+            stackCount--;
+            return true;
+        }
+        return false;
     }
 
     @Override
