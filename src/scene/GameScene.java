@@ -3,6 +3,7 @@ import core.*;
 import entity.*;
 import entity.player.*;
 import entity.mob.*;
+import entity.mob.old.*;  // Deprecated bone-based mobs (HumanoidMobEntity, QuadrupedMobEntity)
 import block.*;
 import animation.*;
 import animation.bone.*;

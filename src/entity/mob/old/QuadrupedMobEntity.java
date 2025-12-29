@@ -1,5 +1,6 @@
-package entity.mob;
+package entity.mob.old;
 import entity.*;
+import entity.mob.MobEntity;
 import entity.player.*;
 import block.*;
 import animation.*;
@@ -10,6 +11,8 @@ import java.awt.*;
 import java.util.List;
 
 /**
+ * [DEPRECATED - Use SpriteMobEntity instead]
+ *
  * A quadruped (4-legged animal) mob entity using the QuadrupedSkeleton system.
  * Can be configured for different animal types: wolf, dog, cat, horse, pig, cow, etc.
  *
