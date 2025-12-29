@@ -264,6 +264,145 @@ public class SpriteMobEntity extends MobEntity {
             bodyType = MobBodyType.HUMANOID;
             isHumanoid = true;
         }
+
+        // Set stats based on detected mob type
+        configureMobStats(lowerDir);
+    }
+
+    /**
+     * Configures mob stats (health, damage, speed) based on detected mob type from sprite directory.
+     * This applies to sprite-based mobs to give them appropriate stats.
+     */
+    private void configureMobStats(String lowerDir) {
+        // Humanoid mob types
+        if (lowerDir.contains("zombie")) {
+            maxHealth = 50;
+            currentHealth = maxHealth;
+            attackDamage = 8;
+            wanderSpeed = 40;
+            chaseSpeed = 60;
+        } else if (lowerDir.contains("skeleton")) {
+            maxHealth = 40;
+            currentHealth = maxHealth;
+            attackDamage = 6;
+            wanderSpeed = 50;
+            chaseSpeed = 80;
+        } else if (lowerDir.contains("goblin")) {
+            maxHealth = 40;
+            currentHealth = maxHealth;
+            attackDamage = 5;
+            wanderSpeed = 60;
+            chaseSpeed = 100;
+        } else if (lowerDir.contains("orc")) {
+            maxHealth = 60;
+            currentHealth = maxHealth;
+            attackDamage = 15;
+            wanderSpeed = 40;
+            chaseSpeed = 60;
+        } else if (lowerDir.contains("bandit")) {
+            maxHealth = 45;
+            currentHealth = maxHealth;
+            attackDamage = 8;
+            wanderSpeed = 50;
+            chaseSpeed = 70;
+        } else if (lowerDir.contains("knight")) {
+            maxHealth = 55;
+            currentHealth = maxHealth;
+            attackDamage = 12;
+            wanderSpeed = 35;
+            chaseSpeed = 50;
+        } else if (lowerDir.contains("mage")) {
+            maxHealth = 40;
+            currentHealth = maxHealth;
+            attackDamage = 15;
+            wanderSpeed = 30;
+            chaseSpeed = 40;
+        }
+        // Quadruped mob types
+        else if (lowerDir.contains("wolf")) {
+            maxHealth = 45;
+            currentHealth = maxHealth;
+            attackDamage = 6;
+            wanderSpeed = 60;
+            chaseSpeed = 150;
+        } else if (lowerDir.contains("bear")) {
+            maxHealth = 55;
+            currentHealth = maxHealth;
+            attackDamage = 12;
+            wanderSpeed = 40;
+            chaseSpeed = 100;
+        } else if (lowerDir.contains("dog")) {
+            maxHealth = 35;
+            currentHealth = maxHealth;
+            attackDamage = 4;
+            wanderSpeed = 70;
+            chaseSpeed = 140;
+        } else if (lowerDir.contains("lion") || lowerDir.contains("tiger")) {
+            maxHealth = 50;
+            currentHealth = maxHealth;
+            attackDamage = 10;
+            wanderSpeed = 50;
+            chaseSpeed = 180;
+        } else if (lowerDir.contains("spider")) {
+            maxHealth = 35;
+            currentHealth = maxHealth;
+            attackDamage = 8;
+            wanderSpeed = 40;
+            chaseSpeed = 120;
+        }
+        // Large boss creatures
+        else if (lowerDir.contains("dragon")) {
+            maxHealth = 150;
+            currentHealth = maxHealth;
+            attackDamage = 25;
+            wanderSpeed = 30;
+            chaseSpeed = 80;
+        } else if (lowerDir.contains("ogre") || lowerDir.contains("troll")) {
+            maxHealth = 100;
+            currentHealth = maxHealth;
+            attackDamage = 20;
+            wanderSpeed = 25;
+            chaseSpeed = 50;
+        } else if (lowerDir.contains("giant") || lowerDir.contains("boss")) {
+            maxHealth = 120;
+            currentHealth = maxHealth;
+            attackDamage = 18;
+            wanderSpeed = 20;
+            chaseSpeed = 40;
+        }
+        // Small creatures
+        else if (lowerDir.contains("slime")) {
+            maxHealth = 25;
+            currentHealth = maxHealth;
+            attackDamage = 3;
+            wanderSpeed = 30;
+            chaseSpeed = 60;
+        } else if (lowerDir.contains("bat")) {
+            maxHealth = 20;
+            currentHealth = maxHealth;
+            attackDamage = 4;
+            wanderSpeed = 50;
+            chaseSpeed = 120;
+        } else if (lowerDir.contains("rat")) {
+            maxHealth = 15;
+            currentHealth = maxHealth;
+            attackDamage = 2;
+            wanderSpeed = 40;
+            chaseSpeed = 80;
+        }
+        // Default humanoid stats
+        else if (bodyType == MobBodyType.HUMANOID) {
+            maxHealth = 45;
+            currentHealth = maxHealth;
+            attackDamage = 8;
+            wanderSpeed = 50;
+            chaseSpeed = 70;
+        }
+        // Default for other body types
+        else {
+            maxHealth = 40;
+            currentHealth = maxHealth;
+        }
     }
 
     /**
