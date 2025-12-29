@@ -94,6 +94,30 @@ public class SpriteMobEntity extends MobEntity {
     protected List<ItemEntity> pendingDroppedItems = new ArrayList<>();
     protected boolean hasDroppedItems = false;
 
+    // ==================== Status Effect System ====================
+
+    /**
+     * Status effects that can be applied to mobs from special arrows/magic.
+     */
+    public enum StatusEffect {
+        NONE,
+        BURNING,    // Fire damage over time
+        FROZEN,     // Slowed movement, ice damage
+        POISONED    // Poison damage over time
+    }
+
+    // Current active status effect
+    protected StatusEffect activeEffect = StatusEffect.NONE;
+    protected double effectTimer = 0;           // Duration remaining
+    protected double effectDamageTimer = 0;     // Timer for damage ticks
+    protected int effectDamagePerTick = 0;      // Damage per tick
+    protected double effectTickInterval = 0.5;  // Seconds between damage ticks
+    protected double effectSlowMultiplier = 1.0; // Movement speed multiplier (1.0 = normal)
+
+    // Effect visual properties
+    protected Color effectTintColor = null;     // Tint overlay color
+    protected float effectTintAlpha = 0.4f;     // Tint transparency
+
     /**
      * Creates a sprite-based mob entity.
      *
@@ -250,6 +274,11 @@ public class SpriteMobEntity extends MobEntity {
         actionMap.put("eat", SpriteAnimation.ActionState.EAT);
         actionMap.put("hurt", SpriteAnimation.ActionState.HURT);
         actionMap.put("death", SpriteAnimation.ActionState.DEAD);
+
+        // Status effect animations
+        actionMap.put("burning", SpriteAnimation.ActionState.BURNING);
+        actionMap.put("frozen", SpriteAnimation.ActionState.FROZEN);
+        actionMap.put("poisoned", SpriteAnimation.ActionState.POISONED);
 
         // Load all animation states - loadAction creates placeholders for missing files
         for (java.util.Map.Entry<String, SpriteAnimation.ActionState> entry : actionMap.entrySet()) {
@@ -803,6 +832,126 @@ public class SpriteMobEntity extends MobEntity {
         equipmentOverlay.equipItem(slot, SpriteAnimation.ActionState.ATTACK, basePath + "attack.gif", itemName);
     }
 
+    // ==================== Status Effect Methods ====================
+
+    /**
+     * Applies a status effect to this mob.
+     *
+     * @param effect The type of status effect
+     * @param duration Duration in seconds
+     * @param damagePerTick Damage dealt per tick (for DoT effects)
+     * @param damageMultiplier Multiplier for arrow/weapon damage
+     */
+    public void applyStatusEffect(StatusEffect effect, double duration, int damagePerTick, float damageMultiplier) {
+        if (currentState == AIState.DEAD) return;  // Can't affect dead mobs
+
+        this.activeEffect = effect;
+        this.effectTimer = duration;
+        this.effectDamageTimer = 0;
+        this.effectDamagePerTick = damagePerTick;
+
+        // Configure effect-specific properties
+        switch (effect) {
+            case BURNING:
+                this.effectTickInterval = 0.5;      // Burn damage every 0.5s
+                this.effectSlowMultiplier = 1.0;    // No slow from fire
+                this.effectTintColor = new Color(255, 100, 0);  // Orange-red
+                this.effectTintAlpha = 0.35f;
+                // Try to use burning animation if available
+                if (spriteAnimation.hasAnimation(SpriteAnimation.ActionState.BURNING)) {
+                    spriteAnimation.setTint(null);  // Use animation instead of tint
+                }
+                break;
+
+            case FROZEN:
+                this.effectTickInterval = 1.0;      // Ice damage every 1s
+                this.effectSlowMultiplier = 0.4;    // 60% speed reduction
+                this.effectTintColor = new Color(100, 200, 255);  // Ice blue
+                this.effectTintAlpha = 0.45f;
+                // Try to use frozen animation if available
+                if (spriteAnimation.hasAnimation(SpriteAnimation.ActionState.FROZEN)) {
+                    spriteAnimation.setTint(null);
+                }
+                break;
+
+            case POISONED:
+                this.effectTickInterval = 0.75;     // Poison damage every 0.75s
+                this.effectSlowMultiplier = 0.85;   // 15% speed reduction
+                this.effectTintColor = new Color(100, 200, 50);  // Green
+                this.effectTintAlpha = 0.3f;
+                break;
+
+            case NONE:
+            default:
+                clearStatusEffect();
+                break;
+        }
+    }
+
+    /**
+     * Clears the current status effect.
+     */
+    public void clearStatusEffect() {
+        this.activeEffect = StatusEffect.NONE;
+        this.effectTimer = 0;
+        this.effectDamageTimer = 0;
+        this.effectDamagePerTick = 0;
+        this.effectSlowMultiplier = 1.0;
+        this.effectTintColor = null;
+        spriteAnimation.setTint(null);
+    }
+
+    /**
+     * Updates the status effect, dealing damage and applying slow.
+     */
+    protected void updateStatusEffect(double deltaTime) {
+        if (activeEffect == StatusEffect.NONE || effectTimer <= 0) {
+            if (activeEffect != StatusEffect.NONE) {
+                clearStatusEffect();
+            }
+            return;
+        }
+
+        // Decrease effect timer
+        effectTimer -= deltaTime;
+
+        // Handle damage ticks
+        if (effectDamagePerTick > 0) {
+            effectDamageTimer += deltaTime;
+            if (effectDamageTimer >= effectTickInterval) {
+                effectDamageTimer -= effectTickInterval;
+                // Deal effect damage (no knockback)
+                takeDamage(effectDamagePerTick, 0, 0);
+            }
+        }
+
+        // Check if effect expired
+        if (effectTimer <= 0) {
+            clearStatusEffect();
+        }
+    }
+
+    /**
+     * Gets the current status effect.
+     */
+    public StatusEffect getActiveEffect() {
+        return activeEffect;
+    }
+
+    /**
+     * Checks if the mob has an active status effect.
+     */
+    public boolean hasStatusEffect() {
+        return activeEffect != StatusEffect.NONE && effectTimer > 0;
+    }
+
+    /**
+     * Gets the current speed multiplier from status effects.
+     */
+    public double getEffectSpeedMultiplier() {
+        return effectSlowMultiplier;
+    }
+
     /**
      * Equips an overlay item (like clothing/armor visual) using slot name string.
      * @param slotName Equipment slot name (helmet, chest, legs, boots, weapon, back, gloves, necklace, accessory)
@@ -959,6 +1108,9 @@ public class SpriteMobEntity extends MobEntity {
 
         // Update sprite animation
         spriteAnimation.update(elapsed);
+
+        // Update status effects (burning, frozen, etc.)
+        updateStatusEffect(deltaTime);
 
         // Update animation state based on AI state
         updateAnimationFromAIState();
@@ -1168,6 +1320,23 @@ public class SpriteMobEntity extends MobEntity {
             g2d.fillRect(drawX, drawY, spriteWidth, spriteHeight);
         }
 
+        // Draw status effect overlay
+        if (activeEffect != StatusEffect.NONE && effectTintColor != null) {
+            // Pulsing effect based on timer
+            float pulse = (float)(0.8 + 0.2 * Math.sin(effectTimer * 8));
+            int alpha = (int)(effectTintAlpha * 255 * pulse);
+            g2d.setColor(new Color(
+                effectTintColor.getRed(),
+                effectTintColor.getGreen(),
+                effectTintColor.getBlue(),
+                Math.min(255, alpha)
+            ));
+            g2d.fillRect(drawX, drawY, spriteWidth, spriteHeight);
+
+            // Draw effect particles
+            drawStatusEffectParticles(g2d, drawX, drawY);
+        }
+
         // Draw hitbox in debug mode
         if (debugDraw) {
             g2d.setColor(new Color(255, 0, 0, 100));
@@ -1226,6 +1395,71 @@ public class SpriteMobEntity extends MobEntity {
         // Border
         g2d.setColor(Color.BLACK);
         g2d.drawRect(barX, barY, barWidth, barHeight);
+    }
+
+    /**
+     * Draws particle effects for status effects (fire sparks, ice crystals, poison bubbles).
+     */
+    protected void drawStatusEffectParticles(Graphics2D g2d, int drawX, int drawY) {
+        // Use effect timer to animate particles
+        double animTime = System.currentTimeMillis() / 100.0;
+
+        switch (activeEffect) {
+            case BURNING:
+                // Fire sparks rising upward
+                for (int i = 0; i < 6; i++) {
+                    double offset = (animTime + i * 1.5) % 4.0;
+                    int sparkX = drawX + (int)((Math.sin(animTime * 0.5 + i * 1.2) + 1) * spriteWidth / 2);
+                    int sparkY = drawY + spriteHeight - (int)(offset * spriteHeight / 3);
+                    int sparkSize = 3 + (int)(Math.random() * 3);
+
+                    // Orange-yellow gradient
+                    int red = 255;
+                    int green = 150 + (int)(Math.random() * 100);
+                    int alpha = (int)(200 * (1.0 - offset / 4.0));
+                    g2d.setColor(new Color(red, green, 0, Math.max(0, alpha)));
+                    g2d.fillOval(sparkX, sparkY, sparkSize, sparkSize);
+                }
+                break;
+
+            case FROZEN:
+                // Ice crystals / snowflakes
+                for (int i = 0; i < 5; i++) {
+                    double offset = (animTime * 0.3 + i * 0.8) % 3.0;
+                    int iceX = drawX + (int)((Math.sin(animTime * 0.3 + i) + 1) * spriteWidth / 2);
+                    int iceY = drawY + (int)(offset * spriteHeight / 2);
+                    int iceSize = 4 + (int)(Math.random() * 3);
+
+                    // Light blue crystals
+                    int alpha = (int)(180 * (1.0 - offset / 3.0));
+                    g2d.setColor(new Color(200, 230, 255, Math.max(0, alpha)));
+                    // Draw simple crystal shape
+                    g2d.drawLine(iceX, iceY - iceSize/2, iceX, iceY + iceSize/2);
+                    g2d.drawLine(iceX - iceSize/2, iceY, iceX + iceSize/2, iceY);
+                    g2d.drawLine(iceX - iceSize/3, iceY - iceSize/3, iceX + iceSize/3, iceY + iceSize/3);
+                }
+                break;
+
+            case POISONED:
+                // Poison bubbles rising
+                for (int i = 0; i < 4; i++) {
+                    double offset = (animTime * 0.4 + i * 1.0) % 3.5;
+                    int bubbleX = drawX + (int)((Math.sin(animTime * 0.4 + i * 1.5) + 1) * spriteWidth / 2);
+                    int bubbleY = drawY + spriteHeight - (int)(offset * spriteHeight / 2.5);
+                    int bubbleSize = 4 + (int)(Math.sin(animTime + i) * 2);
+
+                    // Green bubbles
+                    int alpha = (int)(150 * (1.0 - offset / 3.5));
+                    g2d.setColor(new Color(100, 200, 50, Math.max(0, alpha)));
+                    g2d.fillOval(bubbleX, bubbleY, bubbleSize, bubbleSize);
+                    g2d.setColor(new Color(150, 255, 100, Math.max(0, alpha / 2)));
+                    g2d.drawOval(bubbleX, bubbleY, bubbleSize, bubbleSize);
+                }
+                break;
+
+            default:
+                break;
+        }
     }
 
     // ==================== Hitbox Collision ====================

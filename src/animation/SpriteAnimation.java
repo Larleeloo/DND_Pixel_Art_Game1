@@ -31,7 +31,8 @@ public class SpriteAnimation {
 
     /**
      * Enumeration of animation action states.
-     * Extended to support projectile firing, item usage, eating, sprinting, and multi-jumps.
+     * Extended to support projectile firing, item usage, eating, sprinting, multi-jumps,
+     * and status effects (burning, frozen, poisoned).
      * Animations should support 5-15 frames for smooth, clear motion.
      */
     public enum ActionState {
@@ -50,7 +51,10 @@ public class SpriteAnimation {
         HURT,           // Taking damage reaction (5-8 frames)
         DEAD,           // Death animation (10-15 frames)
         BLOCK,          // Blocking with shield (5-8 frames)
-        CAST            // Casting spell (10-15 frames)
+        CAST,           // Casting spell (10-15 frames)
+        BURNING,        // On fire status effect (8-12 frames, looping)
+        FROZEN,         // Frozen/slowed status effect (5-8 frames)
+        POISONED        // Poisoned status effect (6-10 frames)
     }
 
     // Animation textures for each action state
@@ -187,6 +191,9 @@ public class SpriteAnimation {
             case DEAD: return new Color(80, 80, 80);          // Dark gray
             case BLOCK: return new Color(150, 150, 150);      // Gray
             case CAST: return new Color(150, 50, 200);        // Purple
+            case BURNING: return new Color(255, 100, 0);      // Orange-red (fire)
+            case FROZEN: return new Color(100, 200, 255);     // Light blue (ice)
+            case POISONED: return new Color(100, 200, 50);    // Green (poison)
             default: return new Color(180, 180, 180);         // Light gray
         }
     }
