@@ -60,8 +60,9 @@ public class EntityManager {
             player.update(input, entities);
         }
 
-        // Collect dead mobs for removal
+        // Collect dead mobs for removal and items to add
         ArrayList<Entity> toRemove = new ArrayList<>();
+        ArrayList<Entity> toAdd = new ArrayList<>();
 
         // Update all other entities (items, obstacles, mobs, etc.)
         for (Entity e : entities) {
@@ -74,6 +75,15 @@ public class EntityManager {
                 MobEntity mob = (MobEntity) e;
                 mob.update(deltaTime, entities);
 
+                // Collect dropped items from sprite mobs
+                if (mob instanceof SpriteMobEntity) {
+                    SpriteMobEntity spriteMob = (SpriteMobEntity) mob;
+                    if (spriteMob.hasPendingDroppedItems()) {
+                        List<ItemEntity> droppedItems = spriteMob.collectDroppedItems();
+                        toAdd.addAll(droppedItems);
+                    }
+                }
+
                 // Mark dead mobs for removal after their death animation
                 if (mob.isDead()) {
                     toRemove.add(e);
@@ -82,6 +92,11 @@ public class EntityManager {
                 // Regular entity update
                 e.update(input);
             }
+        }
+
+        // Add dropped items to the world
+        for (Entity e : toAdd) {
+            entities.add(e);
         }
 
         // Remove dead mobs
