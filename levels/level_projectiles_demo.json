@@ -152,48 +152,48 @@
 
   "mobs": [
     {"_comment": "=== BOW TARGET AREA (800-1000) - Easy targets ==="},
-    {"x": 1000, "y": 920, "mobType": "humanoid", "subType": "zombie", "behavior": "hostile"},
+    {"x": 1000, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/zombie", "behavior": "hostile"},
 
     {"_comment": "=== LONGBOW TARGET AREA (1300-1500) ==="},
-    {"x": 1450, "y": 920, "mobType": "humanoid", "subType": "zombie", "behavior": "hostile"},
+    {"x": 1450, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/zombie", "behavior": "hostile"},
 
     {"_comment": "=== CROSSBOW TARGET AREA (1800-2000) ==="},
-    {"x": 1950, "y": 920, "mobType": "humanoid", "subType": "skeleton", "behavior": "hostile"},
+    {"x": 1950, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/skeleton", "behavior": "hostile"},
 
     {"_comment": "=== HEAVY CROSSBOW TARGET AREA (2200-2400) ==="},
-    {"x": 2350, "y": 920, "mobType": "humanoid", "subType": "skeleton", "behavior": "hostile"},
-    {"x": 2400, "y": 920, "mobType": "humanoid", "subType": "orc", "behavior": "hostile"},
+    {"x": 2350, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/skeleton", "behavior": "hostile"},
+    {"x": 2400, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/orc", "behavior": "hostile"},
 
     {"_comment": "=== MAGIC WAND TARGET AREA (2550-2700) ==="},
-    {"x": 2650, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
+    {"x": 2650, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
 
     {"_comment": "=== FIRE STAFF TARGET AREA (2900-3100) ==="},
-    {"x": 2950, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
-    {"x": 3000, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
+    {"x": 2950, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
+    {"x": 3000, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
 
     {"_comment": "=== ICE STAFF TARGET AREA (3150-3350) ==="},
-    {"x": 3200, "y": 920, "mobType": "humanoid", "subType": "bandit", "behavior": "hostile"},
+    {"x": 3200, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/bandit", "behavior": "hostile"},
 
     {"_comment": "=== ARCANE STAFF TARGET AREA (3450-3650) ==="},
-    {"x": 3500, "y": 920, "mobType": "humanoid", "subType": "knight", "behavior": "hostile"},
+    {"x": 3500, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/knight", "behavior": "hostile"},
 
     {"_comment": "=== THROWABLES TARGET AREA (4000-4200) ==="},
-    {"x": 4100, "y": 920, "mobType": "humanoid", "subType": "zombie", "behavior": "hostile"},
-    {"x": 4150, "y": 920, "mobType": "humanoid", "subType": "zombie", "behavior": "hostile"},
+    {"x": 4100, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/zombie", "behavior": "hostile"},
+    {"x": 4150, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/zombie", "behavior": "hostile"},
 
     {"_comment": "=== EXPLOSIVES TARGET AREA (4500-4700) - Group for AoE testing ==="},
-    {"x": 4600, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
-    {"x": 4650, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
-    {"x": 4700, "y": 920, "mobType": "humanoid", "subType": "goblin", "behavior": "hostile"},
+    {"x": 4600, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
+    {"x": 4650, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
+    {"x": 4700, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/goblin", "behavior": "hostile"},
 
     {"_comment": "=== FINAL CHALLENGE AREA (5000-5800) - Multiple enemies ==="},
-    {"x": 5100, "y": 920, "mobType": "humanoid", "subType": "skeleton", "behavior": "hostile"},
-    {"x": 5200, "y": 920, "mobType": "humanoid", "subType": "orc", "behavior": "hostile"},
-    {"x": 5300, "y": 920, "mobType": "humanoid", "subType": "knight", "behavior": "hostile"},
-    {"x": 5400, "y": 920, "mobType": "humanoid", "subType": "mage", "behavior": "hostile"},
-    {"x": 5500, "y": 920, "mobType": "quadruped", "subType": "wolf", "behavior": "hostile"},
-    {"x": 5600, "y": 920, "mobType": "quadruped", "subType": "wolf", "behavior": "hostile"},
-    {"x": 5700, "y": 920, "mobType": "quadruped", "subType": "bear", "behavior": "hostile"}
+    {"x": 5100, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/skeleton", "behavior": "hostile"},
+    {"x": 5200, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/orc", "behavior": "hostile"},
+    {"x": 5300, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/knight", "behavior": "hostile"},
+    {"x": 5400, "y": 920, "mobType": "sprite_humanoid", "spriteDir": "assets/mobs/mage", "behavior": "hostile"},
+    {"x": 5500, "y": 920, "mobType": "sprite_quadruped", "spriteDir": "assets/mobs/wolf", "behavior": "hostile"},
+    {"x": 5600, "y": 920, "mobType": "sprite_quadruped", "spriteDir": "assets/mobs/wolf", "behavior": "hostile"},
+    {"x": 5700, "y": 920, "mobType": "sprite_quadruped", "spriteDir": "assets/mobs/bear", "behavior": "hostile"}
   ],
 
   "blocks": [
