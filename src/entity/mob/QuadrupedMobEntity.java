@@ -103,7 +103,7 @@ public class QuadrupedMobEntity extends MobEntity {
         // Visual skeleton is often larger than collision box
         switch (animalType) {
             case WOLF:
-                maxHealth = 20;
+                maxHealth = 45;
                 currentHealth = maxHealth;
                 attackDamage = 6;
                 attackRange = 40;

@@ -84,7 +84,7 @@ public class HumanoidVariants {
                     new Color(120, 150, 100),   // Green-gray skin
                     new Color(80, 60, 40),      // Tattered brown clothes
                     new Color(50, 40, 30),      // Dark accent
-                    30, 8, 40,                  // Slow but durable
+                    50, 8, 40,                  // Slow but durable
                     45, 150
                 );
 
@@ -94,7 +94,7 @@ public class HumanoidVariants {
                     new Color(230, 220, 200),   // Bone white
                     new Color(60, 50, 40),      // Dark remnants
                     new Color(40, 35, 30),      // Darker accent
-                    15, 6, 80,                  // Fast but fragile
+                    40, 6, 80,                  // Fast but fragile
                     50, 200
                 );
 
@@ -104,7 +104,7 @@ public class HumanoidVariants {
                     new Color(100, 150, 80),    // Green skin
                     new Color(120, 80, 50),     // Brown leather
                     new Color(80, 60, 40),      // Leather accent
-                    12, 5, 100,                 // Small and fast
+                    40, 5, 100,                 // Small and fast
                     35, 180
                 );
 
@@ -114,7 +114,7 @@ public class HumanoidVariants {
                     new Color(80, 120, 60),     // Dark green skin
                     new Color(100, 70, 50),     // Brown armor
                     new Color(60, 45, 35),      // Dark accent
-                    50, 15, 60,                 // Big and strong
+                    60, 15, 60,                 // Big and strong
                     60, 200
                 );
 
@@ -124,7 +124,7 @@ public class HumanoidVariants {
                     new Color(220, 180, 150),   // Human skin
                     new Color(80, 60, 50),      // Dark clothes
                     new Color(150, 100, 70),    // Leather
-                    25, 8, 70,                  // Balanced
+                    45, 8, 70,                  // Balanced
                     50, 220
                 );
 
@@ -134,7 +134,7 @@ public class HumanoidVariants {
                     new Color(200, 160, 130),   // Human skin
                     new Color(150, 150, 160),   // Steel armor
                     new Color(100, 100, 110),   // Dark steel
-                    40, 12, 50,                 // Armored, slower
+                    55, 12, 50,                 // Armored, slower
                     55, 180
                 );
 
@@ -144,7 +144,7 @@ public class HumanoidVariants {
                     new Color(200, 180, 160),   // Pale skin
                     new Color(80, 60, 120),     // Purple robes
                     new Color(60, 40, 90),      // Dark purple
-                    20, 15, 40,                 // Fragile but dangerous
+                    40, 15, 40,                 // Fragile but dangerous
                     100, 250                    // Long range
                 );
 
