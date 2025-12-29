@@ -440,4 +440,19 @@ public class ItemRegistry {
         initialize();
         return templates.containsKey(id);
     }
+
+    /**
+     * Finds an item ID by item name.
+     * @return The registry ID or null if not found
+     */
+    public static String findIdByName(String name) {
+        if (name == null) return null;
+        initialize();
+        for (Map.Entry<String, Item> entry : templates.entrySet()) {
+            if (entry.getValue().getName().equalsIgnoreCase(name)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
 }

@@ -42,17 +42,18 @@ public class SpriteMobEntity extends MobEntity {
     protected long lastUpdateTime;
 
     // Visual dimensions (from sprite)
-    // Note: Final sizes should be humanoid=32x64, quadruped=64x64 per game spec
+    // Base sizes: humanoid=32x64, quadruped=64x64
+    // With SCALE=2: humanoid=64x128 (matches player), quadruped=128x128
     protected int spriteWidth;
     protected int spriteHeight;
-    protected static final int SCALE = 1;  // No scaling - use native GIF dimensions
+    protected static final int SCALE = 2;  // Match player scale (2x)
 
-    // Mob type for different body shapes (dimensions are final sizes, no scaling)
+    // Mob type for different body shapes (base dimensions, scaled 2x for final size)
     public enum MobBodyType {
-        HUMANOID,   // 32x64 pixels - bipedal creatures (zombies, skeletons, knights, etc.)
-        QUADRUPED,  // 64x64 pixels - four-legged creatures (wolves, bears, etc.)
-        SMALL,      // 16x16 pixels - tiny creatures (slimes, bugs, etc.)
-        LARGE       // 64x96 pixels - large creatures (giants, bosses, etc.)
+        HUMANOID,   // 32x64 base → 64x128 final (matches player size)
+        QUADRUPED,  // 64x64 base → 128x128 final (double width of humanoid)
+        SMALL,      // 16x16 base → 32x32 final
+        LARGE       // 64x96 base → 128x192 final
     }
     protected MobBodyType bodyType = MobBodyType.HUMANOID;
 
@@ -88,6 +89,10 @@ public class SpriteMobEntity extends MobEntity {
     protected Item equippedArmor = null;
     protected EquipmentOverlay equipmentOverlay;
     protected boolean isHumanoid = false;  // Whether this mob can equip humanoid items
+
+    // Items dropped on death (to be added to game world)
+    protected List<ItemEntity> pendingDroppedItems = new ArrayList<>();
+    protected boolean hasDroppedItems = false;
 
     /**
      * Creates a sprite-based mob entity.
@@ -163,27 +168,28 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
-     * Applies dimensions based on body type.
-     * Humanoid: 32x64, Quadruped: 64x64, Small: 16x16, Large: 64x96
+     * Applies dimensions based on body type (with SCALE applied).
+     * Humanoid: 32x64 base → 64x128 scaled
+     * Quadruped: 64x64 base → 128x128 scaled
      */
     private void applyBodyTypeDimensions() {
         switch (bodyType) {
             case QUADRUPED:
-                this.spriteWidth = 64;  // Wide for four-legged creatures
-                this.spriteHeight = 64;
+                this.spriteWidth = 64 * SCALE;   // 128px wide
+                this.spriteHeight = 64 * SCALE;  // 128px tall
                 break;
             case SMALL:
-                this.spriteWidth = 16;
-                this.spriteHeight = 16;
+                this.spriteWidth = 16 * SCALE;   // 32px
+                this.spriteHeight = 16 * SCALE;
                 break;
             case LARGE:
-                this.spriteWidth = 64;
-                this.spriteHeight = 96;
+                this.spriteWidth = 64 * SCALE;   // 128px wide
+                this.spriteHeight = 96 * SCALE;  // 192px tall
                 break;
             case HUMANOID:
             default:
-                this.spriteWidth = 32;  // Narrow for bipedal creatures
-                this.spriteHeight = 64;
+                this.spriteWidth = 32 * SCALE;   // 64px wide (matches player)
+                this.spriteHeight = 64 * SCALE;  // 128px tall (matches player)
                 break;
         }
     }
@@ -228,24 +234,24 @@ public class SpriteMobEntity extends MobEntity {
 
     /**
      * Creates a placeholder sprite for testing based on body type and mob name.
-     * Humanoid: 32x64, Quadruped: 64x64, Small: 16x16, Large: 64x96
+     * Uses scaled dimensions to match final display size.
      */
     protected void createPlaceholderSprite() {
-        // Determine dimensions based on body type (native sizes, no scaling)
+        // Determine dimensions based on body type (scaled sizes)
         int w, h;
         switch (bodyType) {
             case QUADRUPED:
-                w = 64; h = 64;  // Wide for four-legged creatures
+                w = 64 * SCALE; h = 64 * SCALE;  // 128x128 - wide four-legged
                 break;
             case SMALL:
-                w = 16; h = 16;
+                w = 16 * SCALE; h = 16 * SCALE;  // 32x32
                 break;
             case LARGE:
-                w = 64; h = 96;
+                w = 64 * SCALE; h = 96 * SCALE;  // 128x192
                 break;
             case HUMANOID:
             default:
-                w = 32; h = 64;  // Narrow for bipedal creatures
+                w = 32 * SCALE; h = 64 * SCALE;  // 64x128 - matches player
                 break;
         }
 
@@ -359,7 +365,7 @@ public class SpriteMobEntity extends MobEntity {
         AnimatedTexture anim = new AnimatedTexture(frames, delays);
         spriteAnimation.setAction(SpriteAnimation.ActionState.IDLE, anim);
 
-        // Use native dimensions (SCALE=1)
+        // Set scaled dimensions
         this.spriteWidth = w;
         this.spriteHeight = h;
     }
@@ -497,17 +503,17 @@ public class SpriteMobEntity extends MobEntity {
         // Set dimensions based on body type
         switch (type) {
             case QUADRUPED:
-                // 64x64 pixels - wide four-legged creatures
+                // 64x64 base → 128x128 scaled - wide four-legged creatures
                 this.spriteWidth = 64 * SCALE;
                 this.spriteHeight = 64 * SCALE;
-                this.hitboxWidth = (int)(spriteWidth * 0.8);  // 51px wide
-                this.hitboxHeight = (int)(spriteHeight * 0.7); // 44px tall
+                this.hitboxWidth = (int)(spriteWidth * 0.8);  // ~102px wide
+                this.hitboxHeight = (int)(spriteHeight * 0.7); // ~90px tall
                 this.hitboxOffsetX = -hitboxWidth / 2;
                 this.hitboxOffsetY = -hitboxHeight;
                 this.isHumanoid = false;
                 break;
             case SMALL:
-                // 16x16 pixels - tiny creatures
+                // 16x16 base → 32x32 scaled - tiny creatures
                 this.spriteWidth = 16 * SCALE;
                 this.spriteHeight = 16 * SCALE;
                 this.hitboxWidth = (int)(spriteWidth * 0.8);
@@ -517,7 +523,7 @@ public class SpriteMobEntity extends MobEntity {
                 this.isHumanoid = false;
                 break;
             case LARGE:
-                // 64x96 pixels - large boss creatures
+                // 64x96 base → 128x192 scaled - large boss creatures
                 this.spriteWidth = 64 * SCALE;
                 this.spriteHeight = 96 * SCALE;
                 this.hitboxWidth = (int)(spriteWidth * 0.7);
@@ -528,11 +534,11 @@ public class SpriteMobEntity extends MobEntity {
                 break;
             case HUMANOID:
             default:
-                // 32x64 pixels - tall bipedal creatures
+                // 32x64 base → 64x128 scaled - matches player size
                 this.spriteWidth = 32 * SCALE;
                 this.spriteHeight = 64 * SCALE;
-                this.hitboxWidth = (int)(spriteWidth * 0.8);  // 25px wide
-                this.hitboxHeight = (int)(spriteHeight * 0.9); // 57px tall
+                this.hitboxWidth = (int)(spriteWidth * 0.8);  // ~51px wide
+                this.hitboxHeight = (int)(spriteHeight * 0.9); // ~115px tall
                 this.hitboxOffsetX = -hitboxWidth / 2;
                 this.hitboxOffsetY = -hitboxHeight;
                 this.isHumanoid = true;
@@ -574,6 +580,96 @@ public class SpriteMobEntity extends MobEntity {
      */
     public List<Item> getInventory() {
         return new ArrayList<>(inventory);
+    }
+
+    /**
+     * Drops all items from inventory and equipment when the mob dies.
+     * Creates ItemEntity objects that can be picked up by the player.
+     */
+    protected void dropAllItems() {
+        if (hasDroppedItems) return;  // Only drop once
+        hasDroppedItems = true;
+
+        // Drop equipped weapon
+        if (equippedWeapon != null) {
+            ItemEntity dropped = createDroppedItem(equippedWeapon);
+            if (dropped != null) {
+                pendingDroppedItems.add(dropped);
+            }
+            equippedWeapon = null;
+        }
+
+        // Drop equipped armor
+        if (equippedArmor != null) {
+            ItemEntity dropped = createDroppedItem(equippedArmor);
+            if (dropped != null) {
+                pendingDroppedItems.add(dropped);
+            }
+            equippedArmor = null;
+        }
+
+        // Drop all inventory items
+        for (Item item : inventory) {
+            ItemEntity dropped = createDroppedItem(item);
+            if (dropped != null) {
+                pendingDroppedItems.add(dropped);
+            }
+        }
+        inventory.clear();
+    }
+
+    /**
+     * Creates an ItemEntity from an Item for dropping.
+     * Adds random scatter to drop position.
+     */
+    private ItemEntity createDroppedItem(Item item) {
+        if (item == null) return null;
+
+        // Find registry ID by item name
+        String registryId = ItemRegistry.findIdByName(item.getName());
+
+        // Random scatter offset
+        int scatterX = (int)(Math.random() * 60 - 30);  // -30 to +30 pixels
+        int dropX = (int)posX + scatterX;
+        int dropY = (int)posY - 20;  // Slightly above ground
+
+        if (registryId != null) {
+            return new ItemEntity(dropX, dropY, registryId);
+        } else {
+            // Fallback: create with name and type
+            return new ItemEntity(dropX, dropY, null, item.getName(),
+                item.getCategory().name().toLowerCase());
+        }
+    }
+
+    /**
+     * Gets and clears any pending dropped items.
+     * Call this from GameScene to add dropped items to the world.
+     */
+    public List<ItemEntity> collectDroppedItems() {
+        List<ItemEntity> items = new ArrayList<>(pendingDroppedItems);
+        pendingDroppedItems.clear();
+        return items;
+    }
+
+    /**
+     * Checks if there are pending dropped items to collect.
+     */
+    public boolean hasPendingDroppedItems() {
+        return !pendingDroppedItems.isEmpty();
+    }
+
+    /**
+     * Override to drop items when entering DEAD state.
+     */
+    @Override
+    protected void changeState(AIState newState) {
+        super.changeState(newState);
+
+        // Drop items when dying
+        if (newState == AIState.DEAD) {
+            dropAllItems();
+        }
     }
 
     /**
