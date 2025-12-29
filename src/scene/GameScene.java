@@ -240,6 +240,8 @@ public class GameScene implements Scene {
             }
             // Apply saved character customization (clothing overlays)
             SpriteCharacterCustomization.applyToPlayer(spriteAnimPlayer);
+            // Set camera reference for mouse-aimed projectiles
+            spriteAnimPlayer.setCamera(camera);
             player = spriteAnimPlayer;
             System.out.println("GameScene: Using sprite-animated player from " + levelData.spriteAnimationDir);
         } else if (levelData.useBoneAnimation) {

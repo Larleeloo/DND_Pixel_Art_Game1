@@ -3,7 +3,7 @@ package input;
 import java.awt.event.*;
 import java.util.HashSet;
 
-public class InputManager implements KeyListener, MouseWheelListener, MouseListener {
+public class InputManager implements KeyListener, MouseWheelListener, MouseListener, MouseMotionListener {
 
     private HashSet<Character> pressed = new HashSet<>();
     private HashSet<Character> justPressed = new HashSet<>();
@@ -177,5 +177,19 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     @Override
     public void mouseExited(MouseEvent e) {
         // Not needed
+    }
+
+    // ========== MouseMotionListener Implementation ==========
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        mouseX = e.getX();
+        mouseY = e.getY();
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        mouseX = e.getX();
+        mouseY = e.getY();
     }
 }
