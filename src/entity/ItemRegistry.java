@@ -68,14 +68,16 @@ public class ItemRegistry {
         registerRangedWeapon("wooden_bow", "Wooden Bow", 8, 12.0f, ProjectileType.ARROW,
                 ItemRarity.COMMON, "A simple hunting bow")
                 .setAmmoItemName("arrow");
-        // Make bows chargeable: 2 sec charge, 15 mana at full, 2x damage
-        templates.get("wooden_bow").setChargeable(true, 2.0f, 15, 2.0f);
+        // Make bows chargeable: 2 sec charge, NO mana cost (uses arrows), 2x damage
+        templates.get("wooden_bow").setChargeable(true, 2.0f, 0, 2.0f);
+        templates.get("wooden_bow").setChargeSpeedMultiplier(1.5f);  // Faster arrows when charged
 
         registerRangedWeapon("longbow", "Longbow", 15, 18.0f, ProjectileType.ARROW,
                 ItemRarity.UNCOMMON, "Greater range and power")
                 .setAmmoItemName("arrow");
-        // Longbow: 2.5 sec charge, 20 mana, 2.5x damage
-        templates.get("longbow").setChargeable(true, 2.5f, 20, 2.5f);
+        // Longbow: 2.5 sec charge, NO mana cost (uses arrows), 2.5x damage
+        templates.get("longbow").setChargeable(true, 2.5f, 0, 2.5f);
+        templates.get("longbow").setChargeSpeedMultiplier(1.8f);  // Even faster arrows
 
         registerRangedWeapon("crossbow", "Crossbow", 20, 20.0f, ProjectileType.BOLT,
                 ItemRarity.UNCOMMON, "Powerful but slow to reload")

@@ -843,6 +843,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     /**
      * Fires a charged projectile with damage/speed scaled by charge level.
+     * Handles both mana-based weapons (staffs) and ammo-based weapons (bows) differently:
+     * - Mana weapons: consume mana, scale projectile size
+     * - Ammo weapons: consume arrows/bolts, arrows do NOT scale in size
      */
     private void fireChargedProjectile(ArrayList<Entity> entities) {
         if (!isCharging || heldItem == null) {
@@ -856,20 +859,35 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             return;
         }
 
-        // Calculate mana cost based on charge level
-        int manaCost = heldItem.getManaCostForCharge((float)chargePercent);
+        // Determine if this weapon uses mana or physical ammo
+        String ammoType = heldItem.getAmmoItemName();
+        boolean usesMana = "mana".equalsIgnoreCase(ammoType);
 
-        // Check mana
-        if (currentMana < manaCost) {
-            cancelCharge();
-            if (audioManager != null) {
-                // Could play a "no mana" sound here
+        // Check and consume resources based on weapon type
+        int bonusDamage = 0;
+
+        if (usesMana) {
+            // Magic weapons consume mana based on charge level
+            int manaCost = heldItem.getManaCostForCharge((float)chargePercent);
+            if (currentMana < manaCost) {
+                cancelCharge();
+                return;
             }
-            return;
+            currentMana -= manaCost;
+        } else if (ammoType != null && !ammoType.isEmpty()) {
+            // Physical weapons (bows) consume ammo from inventory
+            ItemEntity consumedAmmo = inventory.consumeAmmo(ammoType);
+            if (consumedAmmo == null) {
+                // No ammo available - can't fire
+                cancelCharge();
+                return;
+            }
+            // Check if ammo provides bonus damage
+            Item ammoItem = consumedAmmo.getLinkedItem();
+            if (ammoItem != null) {
+                bonusDamage = ammoItem.getDamage();
+            }
         }
-
-        // Consume mana
-        currentMana -= manaCost;
 
         // Calculate damage and speed multipliers
         float damageMultiplier = heldItem.getDamageMultiplierForCharge((float)chargePercent);
@@ -898,9 +916,17 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         );
 
         if (projectile != null) {
-            // Scale projectile size based on charge (visual effect)
-            float sizeMultiplier = 1.0f + (heldItem.getChargeSizeMultiplier() - 1.0f) * (float)chargePercent;
-            projectile.setScale(sizeMultiplier);
+            // Apply bonus damage from ammo
+            if (bonusDamage > 0) {
+                projectile.setDamage(projectile.getDamage() + bonusDamage);
+            }
+
+            // Only scale projectile size for magic weapons, NOT for arrows/bolts
+            if (usesMana) {
+                float sizeMultiplier = 1.0f + (heldItem.getChargeSizeMultiplier() - 1.0f) * (float)chargePercent;
+                projectile.setScale(sizeMultiplier);
+            }
+            // Arrows/bolts stay at normal size regardless of charge
 
             projectile.setSource(this);
             activeProjectiles.add(projectile);
