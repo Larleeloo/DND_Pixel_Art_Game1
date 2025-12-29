@@ -1,5 +1,6 @@
-package entity.mob;
+package entity.mob.old;
 import entity.*;
+import entity.mob.MobEntity;
 import entity.player.*;
 import block.*;
 import animation.*;
@@ -10,6 +11,8 @@ import java.awt.*;
 import java.util.List;
 
 /**
+ * [DEPRECATED - Use SpriteMobEntity instead]
+ *
  * A humanoid mob entity using the standard 15-bone humanoid skeleton.
  * Can be configured for different enemy types: Zombie, Skeleton, Goblin, etc.
  *

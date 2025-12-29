@@ -1,4 +1,4 @@
-package entity.mob;
+package entity.mob.old;
 import entity.*;
 import entity.player.*;
 import block.*;
@@ -10,6 +10,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
+ * [DEPRECATED - Use SpriteMobEntity instead]
+ *
  * Factory class for creating humanoid skeleton variants.
  * Provides different enemy types: Zombie, Skeleton, Goblin, Orc, etc.
  *
