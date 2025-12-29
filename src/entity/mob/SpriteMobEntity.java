@@ -42,16 +42,17 @@ public class SpriteMobEntity extends MobEntity {
     protected long lastUpdateTime;
 
     // Visual dimensions (from sprite)
+    // Note: Final sizes should be humanoid=32x64, quadruped=64x64 per game spec
     protected int spriteWidth;
     protected int spriteHeight;
-    protected static final int SCALE = 2;
+    protected static final int SCALE = 1;  // No scaling - use native GIF dimensions
 
-    // Mob type for different body shapes
+    // Mob type for different body shapes (dimensions are final sizes, no scaling)
     public enum MobBodyType {
-        HUMANOID,   // 32x64 base (64x128 scaled) - bipedal creatures
-        QUADRUPED,  // 64x64 base (128x128 scaled) - four-legged creatures
-        SMALL,      // 16x16 base (32x32 scaled) - tiny creatures
-        LARGE       // 64x96 base (128x192 scaled) - large creatures
+        HUMANOID,   // 32x64 pixels - bipedal creatures (zombies, skeletons, knights, etc.)
+        QUADRUPED,  // 64x64 pixels - four-legged creatures (wolves, bears, etc.)
+        SMALL,      // 16x16 pixels - tiny creatures (slimes, bugs, etc.)
+        LARGE       // 64x96 pixels - large creatures (giants, bosses, etc.)
     }
     protected MobBodyType bodyType = MobBodyType.HUMANOID;
 
@@ -106,27 +107,9 @@ public class SpriteMobEntity extends MobEntity {
         this.spriteAnimation = new SpriteAnimation();
         loadAnimations(spriteDir);
 
-        // Set dimensions based on body type (if sprite loading failed or has wrong dimensions)
-        int baseWidth = spriteAnimation.getBaseWidth();
-        int baseHeight = spriteAnimation.getBaseHeight();
-
-        // If sprite loaded with valid dimensions, use them; otherwise use body type defaults
-        if (baseWidth > 0 && baseHeight > 0) {
-            this.spriteWidth = baseWidth * SCALE;
-            this.spriteHeight = baseHeight * SCALE;
-        } else {
-            // Use body type defaults
-            applyBodyTypeDimensions();
-        }
-
-        // Set hitbox based on sprite size (slightly smaller for better gameplay feel)
-        this.hitboxWidth = (int)(spriteWidth * 0.8);
-        this.hitboxHeight = (int)(spriteHeight * 0.9);
-        this.hitboxOffsetX = -hitboxWidth / 2;
-        this.hitboxOffsetY = -hitboxHeight;
-
-        // Larger sprites need larger attack range
-        this.attackRange = Math.max(60, spriteWidth);
+        // Apply body type dimensions (humanoid: 32x64, quadruped: 64x64, etc.)
+        // This sets correct sprite size and hitbox for each body type
+        setBodyType(bodyType);
 
         // Initialize equipment overlay for humanoid mobs
         this.equipmentOverlay = new EquipmentOverlay();
@@ -181,25 +164,26 @@ public class SpriteMobEntity extends MobEntity {
 
     /**
      * Applies dimensions based on body type.
+     * Humanoid: 32x64, Quadruped: 64x64, Small: 16x16, Large: 64x96
      */
     private void applyBodyTypeDimensions() {
         switch (bodyType) {
             case QUADRUPED:
-                this.spriteWidth = 64 * SCALE;
-                this.spriteHeight = 64 * SCALE;
+                this.spriteWidth = 64;  // Wide for four-legged creatures
+                this.spriteHeight = 64;
                 break;
             case SMALL:
-                this.spriteWidth = 16 * SCALE;
-                this.spriteHeight = 16 * SCALE;
+                this.spriteWidth = 16;
+                this.spriteHeight = 16;
                 break;
             case LARGE:
-                this.spriteWidth = 64 * SCALE;
-                this.spriteHeight = 96 * SCALE;
+                this.spriteWidth = 64;
+                this.spriteHeight = 96;
                 break;
             case HUMANOID:
             default:
-                this.spriteWidth = 32 * SCALE;
-                this.spriteHeight = 64 * SCALE;
+                this.spriteWidth = 32;  // Narrow for bipedal creatures
+                this.spriteHeight = 64;
                 break;
         }
     }
@@ -244,13 +228,14 @@ public class SpriteMobEntity extends MobEntity {
 
     /**
      * Creates a placeholder sprite for testing based on body type and mob name.
+     * Humanoid: 32x64, Quadruped: 64x64, Small: 16x16, Large: 64x96
      */
     protected void createPlaceholderSprite() {
-        // Determine dimensions based on body type
+        // Determine dimensions based on body type (native sizes, no scaling)
         int w, h;
         switch (bodyType) {
             case QUADRUPED:
-                w = 64; h = 64;
+                w = 64; h = 64;  // Wide for four-legged creatures
                 break;
             case SMALL:
                 w = 16; h = 16;
@@ -260,7 +245,7 @@ public class SpriteMobEntity extends MobEntity {
                 break;
             case HUMANOID:
             default:
-                w = 32; h = 64;
+                w = 32; h = 64;  // Narrow for bipedal creatures
                 break;
         }
 
@@ -374,8 +359,9 @@ public class SpriteMobEntity extends MobEntity {
         AnimatedTexture anim = new AnimatedTexture(frames, delays);
         spriteAnimation.setAction(SpriteAnimation.ActionState.IDLE, anim);
 
-        this.spriteWidth = w * SCALE;
-        this.spriteHeight = h * SCALE;
+        // Use native dimensions (SCALE=1)
+        this.spriteWidth = w;
+        this.spriteHeight = h;
     }
 
     /**
@@ -511,17 +497,17 @@ public class SpriteMobEntity extends MobEntity {
         // Set dimensions based on body type
         switch (type) {
             case QUADRUPED:
-                // 64x64 base, scaled to 128x128
+                // 64x64 pixels - wide four-legged creatures
                 this.spriteWidth = 64 * SCALE;
                 this.spriteHeight = 64 * SCALE;
-                this.hitboxWidth = (int)(spriteWidth * 0.8);
-                this.hitboxHeight = (int)(spriteHeight * 0.7);
+                this.hitboxWidth = (int)(spriteWidth * 0.8);  // 51px wide
+                this.hitboxHeight = (int)(spriteHeight * 0.7); // 44px tall
                 this.hitboxOffsetX = -hitboxWidth / 2;
                 this.hitboxOffsetY = -hitboxHeight;
                 this.isHumanoid = false;
                 break;
             case SMALL:
-                // 16x16 base, scaled to 32x32
+                // 16x16 pixels - tiny creatures
                 this.spriteWidth = 16 * SCALE;
                 this.spriteHeight = 16 * SCALE;
                 this.hitboxWidth = (int)(spriteWidth * 0.8);
@@ -531,7 +517,7 @@ public class SpriteMobEntity extends MobEntity {
                 this.isHumanoid = false;
                 break;
             case LARGE:
-                // 64x96 base, scaled to 128x192
+                // 64x96 pixels - large boss creatures
                 this.spriteWidth = 64 * SCALE;
                 this.spriteHeight = 96 * SCALE;
                 this.hitboxWidth = (int)(spriteWidth * 0.7);
@@ -542,11 +528,11 @@ public class SpriteMobEntity extends MobEntity {
                 break;
             case HUMANOID:
             default:
-                // 32x64 base, scaled to 64x128
+                // 32x64 pixels - tall bipedal creatures
                 this.spriteWidth = 32 * SCALE;
                 this.spriteHeight = 64 * SCALE;
-                this.hitboxWidth = (int)(spriteWidth * 0.8);
-                this.hitboxHeight = (int)(spriteHeight * 0.9);
+                this.hitboxWidth = (int)(spriteWidth * 0.8);  // 25px wide
+                this.hitboxHeight = (int)(spriteHeight * 0.9); // 57px tall
                 this.hitboxOffsetX = -hitboxWidth / 2;
                 this.hitboxOffsetY = -hitboxHeight;
                 this.isHumanoid = true;
