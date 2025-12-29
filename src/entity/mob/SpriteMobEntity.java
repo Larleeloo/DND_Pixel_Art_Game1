@@ -118,6 +118,12 @@ public class SpriteMobEntity extends MobEntity {
     protected Color effectTintColor = null;     // Tint overlay color
     protected float effectTintAlpha = 0.4f;     // Tint transparency
 
+    // Particle overlay GIFs for status effects
+    protected static AnimatedTexture fireParticles = null;
+    protected static AnimatedTexture iceParticles = null;
+    protected static AnimatedTexture poisonParticles = null;
+    protected static boolean particlesLoaded = false;
+
     /**
      * Creates a sprite-based mob entity.
      *
@@ -143,7 +149,42 @@ public class SpriteMobEntity extends MobEntity {
         // Initialize equipment overlay for humanoid mobs
         this.equipmentOverlay = new EquipmentOverlay();
 
+        // Load particle overlay GIFs (once for all mobs)
+        loadParticleOverlays();
+
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Loads the particle overlay GIFs for status effects.
+     * Only loads once (static), shared across all SpriteMobEntity instances.
+     */
+    protected static void loadParticleOverlays() {
+        if (particlesLoaded) return;
+        particlesLoaded = true;
+
+        try {
+            // Load fire particles
+            AssetLoader.ImageAsset fireAsset = AssetLoader.load("assets/particles/fire_particles.gif");
+            if (fireAsset.animatedTexture != null) {
+                fireParticles = fireAsset.animatedTexture;
+            }
+
+            // Load ice particles
+            AssetLoader.ImageAsset iceAsset = AssetLoader.load("assets/particles/ice_particles.gif");
+            if (iceAsset.animatedTexture != null) {
+                iceParticles = iceAsset.animatedTexture;
+            }
+
+            // Load poison particles
+            AssetLoader.ImageAsset poisonAsset = AssetLoader.load("assets/particles/poison_particles.gif");
+            if (poisonAsset.animatedTexture != null) {
+                poisonParticles = poisonAsset.animatedTexture;
+            }
+        } catch (Exception e) {
+            // Fallback to procedural particles if loading fails
+            System.err.println("Warning: Could not load particle GIFs: " + e.getMessage());
+        }
     }
 
     /**
@@ -1398,10 +1439,56 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
-     * Draws particle effects for status effects (fire sparks, ice crystals, poison bubbles).
+     * Draws particle effects for status effects using GIF overlays.
+     * Falls back to procedural drawing if GIF not available.
      */
     protected void drawStatusEffectParticles(Graphics2D g2d, int drawX, int drawY) {
-        // Use effect timer to animate particles
+        AnimatedTexture particles = null;
+
+        switch (activeEffect) {
+            case BURNING:
+                particles = fireParticles;
+                break;
+            case FROZEN:
+                particles = iceParticles;
+                break;
+            case POISONED:
+                particles = poisonParticles;
+                break;
+            default:
+                return;
+        }
+
+        // If we have a particle GIF, draw it as overlay
+        if (particles != null) {
+            // Update particle animation
+            long elapsed = System.currentTimeMillis() % 1000;
+            particles.update(elapsed);
+
+            java.awt.image.BufferedImage particleFrame = particles.getCurrentFrame();
+            if (particleFrame != null) {
+                // Draw particle overlay scaled to mob size
+                // Use semi-transparency for overlay effect
+                java.awt.Composite originalComposite = g2d.getComposite();
+                g2d.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 0.85f));
+
+                // Scale and position particle overlay to match mob sprite
+                g2d.drawImage(particleFrame,
+                    drawX, drawY, spriteWidth, spriteHeight, null);
+
+                g2d.setComposite(originalComposite);
+            }
+        } else {
+            // Fallback to procedural particles if GIF not loaded
+            drawProceduralParticles(g2d, drawX, drawY);
+        }
+    }
+
+    /**
+     * Fallback procedural particle drawing for status effects.
+     */
+    protected void drawProceduralParticles(Graphics2D g2d, int drawX, int drawY) {
         double animTime = System.currentTimeMillis() / 100.0;
 
         switch (activeEffect) {
@@ -1413,7 +1500,6 @@ public class SpriteMobEntity extends MobEntity {
                     int sparkY = drawY + spriteHeight - (int)(offset * spriteHeight / 3);
                     int sparkSize = 3 + (int)(Math.random() * 3);
 
-                    // Orange-yellow gradient
                     int red = 255;
                     int green = 150 + (int)(Math.random() * 100);
                     int alpha = (int)(200 * (1.0 - offset / 4.0));
@@ -1430,10 +1516,8 @@ public class SpriteMobEntity extends MobEntity {
                     int iceY = drawY + (int)(offset * spriteHeight / 2);
                     int iceSize = 4 + (int)(Math.random() * 3);
 
-                    // Light blue crystals
                     int alpha = (int)(180 * (1.0 - offset / 3.0));
                     g2d.setColor(new Color(200, 230, 255, Math.max(0, alpha)));
-                    // Draw simple crystal shape
                     g2d.drawLine(iceX, iceY - iceSize/2, iceX, iceY + iceSize/2);
                     g2d.drawLine(iceX - iceSize/2, iceY, iceX + iceSize/2, iceY);
                     g2d.drawLine(iceX - iceSize/3, iceY - iceSize/3, iceX + iceSize/3, iceY + iceSize/3);
@@ -1448,7 +1532,6 @@ public class SpriteMobEntity extends MobEntity {
                     int bubbleY = drawY + spriteHeight - (int)(offset * spriteHeight / 2.5);
                     int bubbleSize = 4 + (int)(Math.sin(animTime + i) * 2);
 
-                    // Green bubbles
                     int alpha = (int)(150 * (1.0 - offset / 3.5));
                     g2d.setColor(new Color(100, 200, 50, Math.max(0, alpha)));
                     g2d.fillOval(bubbleX, bubbleY, bubbleSize, bubbleSize);
