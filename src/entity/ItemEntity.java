@@ -12,8 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import java.util.Iterator;
+import org.w3c.dom.NodeList;
 
 /**
  * Represents a collectible item in the game world.
@@ -43,11 +46,12 @@ public class ItemEntity extends Entity {
     private int stackCount = 1;
     private int maxStackSize = 1;
 
-    // Animation support for GIFs
+    // Animation support for GIFs (full 32-bit color with per-frame timing)
     private List<BufferedImage> animationFrames;
+    private List<Integer> frameDelays; // Per-frame delays in milliseconds
     private int currentFrame = 0;
     private long lastFrameTime = 0;
-    private int frameDelay = 120; // milliseconds per frame
+    private int defaultFrameDelay = 100; // Default if not specified in GIF
     private boolean isAnimated = false;
 
     public static final int SCALE = 3;
@@ -164,31 +168,121 @@ public class ItemEntity extends Entity {
     }
 
     /**
-     * Loads all frames from an animated GIF file.
+     * Loads all frames from an animated GIF file with full 32-bit color support.
+     * Reads frame timing from GIF metadata for accurate playback.
+     * Properly composites frames to handle transparency and disposal methods.
      */
     private List<BufferedImage> loadGifFrames(java.io.File file) {
         List<BufferedImage> frames = new ArrayList<>();
+        List<Integer> delays = new ArrayList<>();
+
         try {
             ImageInputStream stream = ImageIO.createImageInputStream(file);
             Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("gif");
-            if (!readers.hasNext()) return null;
+            if (!readers.hasNext()) {
+                stream.close();
+                return null;
+            }
 
             ImageReader reader = readers.next();
             reader.setInput(stream);
 
             int numFrames = reader.getNumImages(true);
+
+            // Get dimensions from first frame for the master canvas
+            BufferedImage firstFrame = reader.read(0);
+            int width = firstFrame.getWidth();
+            int height = firstFrame.getHeight();
+
+            // Create a master canvas for compositing (full 32-bit ARGB)
+            BufferedImage master = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D masterG = master.createGraphics();
+
             for (int i = 0; i < numFrames; i++) {
-                BufferedImage frame = reader.read(i);
-                if (frame != null) {
-                    frames.add(scaleToIconSize(frame));
+                // Read frame image
+                BufferedImage frameImage = reader.read(i);
+
+                // Read frame metadata for timing and positioning
+                IIOMetadata metadata = reader.getImageMetadata(i);
+                int frameDelay = defaultFrameDelay;
+                int frameX = 0, frameY = 0;
+                String disposalMethod = "none";
+
+                if (metadata != null) {
+                    String formatName = metadata.getNativeMetadataFormatName();
+                    IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(formatName);
+
+                    // Get graphic control extension for timing
+                    NodeList gceNodes = root.getElementsByTagName("GraphicControlExtension");
+                    if (gceNodes.getLength() > 0) {
+                        IIOMetadataNode gce = (IIOMetadataNode) gceNodes.item(0);
+                        String delayStr = gce.getAttribute("delayTime");
+                        if (delayStr != null && !delayStr.isEmpty()) {
+                            // GIF delay is in 1/100ths of a second
+                            int delayCs = Integer.parseInt(delayStr);
+                            frameDelay = delayCs * 10; // Convert to milliseconds
+                            if (frameDelay < 20) frameDelay = 100; // Browser-like minimum
+                        }
+                        String disposal = gce.getAttribute("disposalMethod");
+                        if (disposal != null) {
+                            disposalMethod = disposal;
+                        }
+                    }
+
+                    // Get image descriptor for position
+                    NodeList descNodes = root.getElementsByTagName("ImageDescriptor");
+                    if (descNodes.getLength() > 0) {
+                        IIOMetadataNode desc = (IIOMetadataNode) descNodes.item(0);
+                        String leftStr = desc.getAttribute("imageLeftPosition");
+                        String topStr = desc.getAttribute("imageTopPosition");
+                        if (leftStr != null && !leftStr.isEmpty()) {
+                            frameX = Integer.parseInt(leftStr);
+                        }
+                        if (topStr != null && !topStr.isEmpty()) {
+                            frameY = Integer.parseInt(topStr);
+                        }
+                    }
                 }
+
+                // Draw frame onto master canvas at correct position
+                masterG.drawImage(frameImage, frameX, frameY, null);
+
+                // Create a copy of the current composited frame (full 32-bit ARGB)
+                BufferedImage compositedFrame = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g = compositedFrame.createGraphics();
+                g.drawImage(master, 0, 0, null);
+                g.dispose();
+
+                frames.add(scaleToIconSize(compositedFrame));
+                delays.add(frameDelay);
+
+                // Handle disposal method for next frame
+                if ("restoreToBackgroundColor".equals(disposalMethod)) {
+                    // Clear the area this frame occupied
+                    masterG.setComposite(AlphaComposite.Clear);
+                    masterG.fillRect(frameX, frameY, frameImage.getWidth(), frameImage.getHeight());
+                    masterG.setComposite(AlphaComposite.SrcOver);
+                } else if ("restoreToPrevious".equals(disposalMethod)) {
+                    // Restore to previous frame (simplified: just clear)
+                    masterG.setComposite(AlphaComposite.Clear);
+                    masterG.fillRect(frameX, frameY, frameImage.getWidth(), frameImage.getHeight());
+                    masterG.setComposite(AlphaComposite.SrcOver);
+                }
+                // "none" or "doNotDispose" - leave the frame as-is
             }
 
+            masterG.dispose();
             reader.dispose();
             stream.close();
+
+            // Store the frame delays
+            this.frameDelays = delays;
+
         } catch (Exception e) {
-            // Return whatever frames we got
+            // Return whatever frames we got, use default timing
+            if (frames.isEmpty()) return null;
         }
+
         return frames;
     }
 
@@ -209,12 +303,20 @@ public class ItemEntity extends Entity {
 
     /**
      * Updates the animation frame if this item has an animated sprite.
+     * Uses per-frame timing from the GIF metadata for accurate playback.
      */
     public void updateAnimation() {
         if (!isAnimated || animationFrames == null || animationFrames.size() <= 1) return;
 
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastFrameTime >= frameDelay) {
+
+        // Get the delay for the current frame (use default if not available)
+        int currentDelay = defaultFrameDelay;
+        if (frameDelays != null && currentFrame < frameDelays.size()) {
+            currentDelay = frameDelays.get(currentFrame);
+        }
+
+        if (currentTime - lastFrameTime >= currentDelay) {
             currentFrame = (currentFrame + 1) % animationFrames.size();
             sprite = animationFrames.get(currentFrame);
             lastFrameTime = currentTime;
