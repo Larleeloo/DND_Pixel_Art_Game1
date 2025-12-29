@@ -112,14 +112,48 @@ public class SpriteMobEntity extends MobEntity {
         this.spriteAnimation = new SpriteAnimation();
         loadAnimations(spriteDir);
 
-        // Apply body type dimensions (humanoid: 32x64, quadruped: 64x64, etc.)
-        // This sets correct sprite size and hitbox for each body type
-        setBodyType(bodyType);
+        // Apply body type dimensions using loaded sprite dimensions
+        // This matches how the player calculates its size
+        applyDimensionsFromLoadedSprite();
 
         // Initialize equipment overlay for humanoid mobs
         this.equipmentOverlay = new EquipmentOverlay();
 
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Applies dimensions from loaded sprite animation, matching player calculation.
+     * Uses actual GIF dimensions * SCALE, with hitbox matching full visual size.
+     */
+    private void applyDimensionsFromLoadedSprite() {
+        int baseWidth = spriteAnimation.getBaseWidth();
+        int baseHeight = spriteAnimation.getBaseHeight();
+
+        // If valid dimensions loaded from GIF, use them exactly like player does
+        if (baseWidth > 0 && baseHeight > 0) {
+            this.spriteWidth = baseWidth * SCALE;
+            this.spriteHeight = baseHeight * SCALE;
+
+            // For humanoid mobs, use full visual size as hitbox (like player)
+            // For other body types, use proportional hitbox
+            if (bodyType == MobBodyType.HUMANOID) {
+                // Match player: hitbox = full visual size
+                this.hitboxWidth = spriteWidth;
+                this.hitboxHeight = spriteHeight;
+            } else {
+                // Non-humanoids use proportional hitbox
+                this.hitboxWidth = (int)(spriteWidth * 0.8);
+                this.hitboxHeight = (int)(spriteHeight * 0.85);
+            }
+
+            this.hitboxOffsetX = -hitboxWidth / 2;
+            this.hitboxOffsetY = -hitboxHeight;
+            this.attackRange = Math.max(60, spriteWidth);
+        } else {
+            // Fallback to body type defaults if no valid sprite loaded
+            setBodyType(bodyType);
+        }
     }
 
     /**
@@ -534,11 +568,12 @@ public class SpriteMobEntity extends MobEntity {
                 break;
             case HUMANOID:
             default:
-                // 32x64 base → 64x128 scaled - matches player size
+                // 32x64 base → 64x128 scaled - matches player size exactly
                 this.spriteWidth = 32 * SCALE;
                 this.spriteHeight = 64 * SCALE;
-                this.hitboxWidth = (int)(spriteWidth * 0.8);  // ~51px wide
-                this.hitboxHeight = (int)(spriteHeight * 0.9); // ~115px tall
+                // Use full visual size as hitbox (matching player behavior)
+                this.hitboxWidth = spriteWidth;    // 64px (same as player)
+                this.hitboxHeight = spriteHeight;  // 128px (same as player)
                 this.hitboxOffsetX = -hitboxWidth / 2;
                 this.hitboxOffsetY = -hitboxHeight;
                 this.isHumanoid = true;
@@ -934,8 +969,9 @@ public class SpriteMobEntity extends MobEntity {
         // Update projectiles
         updateProjectiles(deltaTime, entities);
 
-        // Check for nearby items to pick up (humanoid mobs only)
-        if (isHumanoid && entities != null) {
+        // Check for nearby items to pick up (humanoid mobs only, not when dead)
+        // Dead mobs should not re-collect dropped items
+        if (isHumanoid && entities != null && currentState != AIState.DEAD) {
             checkForItemPickup(entities);
         }
 
