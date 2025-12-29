@@ -49,6 +49,7 @@ public class ProjectileEntity extends Entity {
     private int width;
     private int height;
     private static final int SCALE = 2;
+    private float scaleFactor = 1.0f;  // Additional scale for charged shots
 
     // Movement
     private double velX;
@@ -802,23 +803,29 @@ public class ProjectileEntity extends Entity {
         }
 
         if (frame == null) {
-            // Fallback drawing
+            // Fallback drawing with scale
+            int scaledWidth = (int)(width * scaleFactor);
+            int scaledHeight = (int)(height * scaleFactor);
             g2d.setColor(Color.YELLOW);
-            g2d.fillOval(x, y, width, height);
+            g2d.fillOval(x, y, scaledWidth, scaledHeight);
             return;
         }
+
+        // Calculate scaled dimensions
+        int scaledWidth = (int)(width * scaleFactor);
+        int scaledHeight = (int)(height * scaleFactor);
 
         // Save transform
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
 
         // Apply rotation
         if (rotateWithVelocity) {
-            g2d.translate(x + width/2, y + height/2);
+            g2d.translate(x + scaledWidth/2, y + scaledHeight/2);
             g2d.rotate(rotationAngle);
-            g2d.translate(-width/2, -height/2);
-            g2d.drawImage(frame, 0, 0, width, height, null);
+            g2d.translate(-scaledWidth/2, -scaledHeight/2);
+            g2d.drawImage(frame, 0, 0, scaledWidth, scaledHeight, null);
         } else {
-            g2d.drawImage(frame, x, y, width, height, null);
+            g2d.drawImage(frame, x, y, scaledWidth, scaledHeight, null);
         }
 
         // Restore transform
@@ -892,11 +899,13 @@ public class ProjectileEntity extends Entity {
 
     @Override
     public Rectangle getBounds() {
-        // Use scaled bounds for collision detection
+        // Use scaled bounds for collision detection (includes charge scale)
         // Ensure minimum size of 1x1 for visibility checking
-        int hitboxPadding = Math.min(4, Math.min(width, height) / 4);
-        int boundsWidth = Math.max(1, width - hitboxPadding * 2);
-        int boundsHeight = Math.max(1, height - hitboxPadding * 2);
+        int scaledWidth = (int)(width * scaleFactor);
+        int scaledHeight = (int)(height * scaleFactor);
+        int hitboxPadding = Math.min(4, Math.min(scaledWidth, scaledHeight) / 4);
+        int boundsWidth = Math.max(1, scaledWidth - hitboxPadding * 2);
+        int boundsHeight = Math.max(1, scaledHeight - hitboxPadding * 2);
         return new Rectangle(
             x + hitboxPadding,
             y + hitboxPadding,
@@ -921,6 +930,23 @@ public class ProjectileEntity extends Entity {
 
     public void setDamage(int damage) {
         this.damage = damage;
+    }
+
+    /**
+     * Gets the current scale factor for this projectile.
+     */
+    public float getScale() {
+        return scaleFactor;
+    }
+
+    /**
+     * Sets the scale factor for this projectile (affects visual size and hitbox).
+     * Used for charged shots where larger projectiles indicate more power.
+     *
+     * @param scale Scale factor (1.0 = normal, 2.0 = double size, etc.)
+     */
+    public void setScale(float scale) {
+        this.scaleFactor = Math.max(0.5f, Math.min(3.0f, scale));
     }
 
     public double getVelX() {

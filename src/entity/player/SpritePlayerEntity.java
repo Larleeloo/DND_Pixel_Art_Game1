@@ -84,6 +84,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private static final int AIM_INDICATOR_LENGTH = 60;  // Length of aim line
     private static final int AIM_INDICATOR_WIDTH = 3;    // Thickness of aim line
 
+    // Charged shot system
+    private boolean isCharging = false;       // Currently charging a shot
+    private double chargeTimer = 0;           // Current charge time in seconds
+    private double chargePercent = 0;         // Current charge percentage (0.0 to 1.0)
+    private boolean chargeReady = false;      // Minimum charge reached for valid shot
+    private static final int CHARGE_BAR_WIDTH = 50;   // Width of charge bar
+    private static final int CHARGE_BAR_HEIGHT = 8;   // Height of charge bar
+
     // Item usage system
     private boolean isUsingItem = false;
     private double useItemTimer = 0;
@@ -396,22 +404,41 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Update targeted block
         updateTargetedBlock(entities);
 
+        // Handle charged shot system for ranged weapons
+        boolean leftMouseHeld = input.isMouseButtonPressed(java.awt.event.MouseEvent.BUTTON1);
+        boolean leftMouseJustPressed = input.isLeftMouseJustPressed();
+
         // E key or Left Mouse Click - mine block (use tool) or fire projectile
         // Also handle inventory auto-equip on left click when inventory is open
-        if (input.isLeftMouseJustPressed()) {
+        if (leftMouseJustPressed) {
             if (inventory.isOpen()) {
                 // Try auto-equip in open inventory
                 if (inventory.handleLeftClick(input.getMouseX(), input.getMouseY())) {
                     syncHeldItemWithInventory();
                 }
             } else if (heldItem != null && heldItem.isRangedWeapon()) {
-                // Fire projectile
-                fireProjectile(entities);
+                if (heldItem.isChargeable()) {
+                    // Start charging for chargeable weapons
+                    startCharging();
+                } else {
+                    // Fire immediately for non-chargeable weapons
+                    fireProjectile(entities);
+                }
             } else {
                 // Mine block
                 int direction = getMiningDirection();
                 tryMineBlock(entities, direction);
             }
+        }
+
+        // Update charging while left mouse is held
+        if (isCharging && leftMouseHeld) {
+            updateCharging(deltaSeconds);
+        }
+
+        // Fire charged shot when mouse is released
+        if (isCharging && !leftMouseHeld) {
+            fireChargedProjectile(entities);
         }
 
         // E key always fires or mines (not affected by inventory)
@@ -768,6 +795,129 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         }
     }
 
+    // ==================== Charged Shot System ====================
+
+    /**
+     * Starts charging a shot for a chargeable weapon.
+     */
+    private void startCharging() {
+        if (heldItem == null || !heldItem.isChargeable()) return;
+        if (fireTimer > 0) return; // On cooldown
+
+        isCharging = true;
+        chargeTimer = 0;
+        chargePercent = 0;
+        chargeReady = false;
+    }
+
+    /**
+     * Updates the charge timer while mouse is held.
+     */
+    private void updateCharging(double deltaSeconds) {
+        if (!isCharging || heldItem == null) return;
+
+        chargeTimer += deltaSeconds;
+        chargePercent = heldItem.getChargePercent((float)chargeTimer);
+
+        // Check if minimum charge reached
+        if (chargeTimer >= heldItem.getMinChargeTime()) {
+            chargeReady = true;
+        }
+
+        // Cap at max charge
+        if (chargeTimer > heldItem.getMaxChargeTime()) {
+            chargeTimer = heldItem.getMaxChargeTime();
+            chargePercent = 1.0;
+        }
+    }
+
+    /**
+     * Cancels the current charge without firing.
+     */
+    private void cancelCharge() {
+        isCharging = false;
+        chargeTimer = 0;
+        chargePercent = 0;
+        chargeReady = false;
+    }
+
+    /**
+     * Fires a charged projectile with damage/speed scaled by charge level.
+     */
+    private void fireChargedProjectile(ArrayList<Entity> entities) {
+        if (!isCharging || heldItem == null) {
+            cancelCharge();
+            return;
+        }
+
+        // Check if minimum charge was reached
+        if (!chargeReady) {
+            cancelCharge();
+            return;
+        }
+
+        // Calculate mana cost based on charge level
+        int manaCost = heldItem.getManaCostForCharge((float)chargePercent);
+
+        // Check mana
+        if (currentMana < manaCost) {
+            cancelCharge();
+            if (audioManager != null) {
+                // Could play a "no mana" sound here
+            }
+            return;
+        }
+
+        // Consume mana
+        currentMana -= manaCost;
+
+        // Calculate damage and speed multipliers
+        float damageMultiplier = heldItem.getDamageMultiplierForCharge((float)chargePercent);
+        float speedMultiplier = heldItem.getSpeedMultiplierForCharge((float)chargePercent);
+
+        // Create projectile
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 3;
+        int spawnOffset = 20;
+        int projX = playerCenterX + (int)(aimDirX * spawnOffset);
+        int projY = playerCenterY + (int)(aimDirY * spawnOffset);
+
+        // Calculate modified velocity
+        double baseSpeed = heldItem.getProjectileSpeed();
+        double chargedSpeed = baseSpeed * speedMultiplier;
+        double velX = aimDirX * chargedSpeed;
+        double velY = aimDirY * chargedSpeed;
+
+        // Create the projectile directly with modified stats
+        ProjectileEntity projectile = new ProjectileEntity(
+            projX, projY,
+            heldItem.getProjectileType(),
+            (int)(heldItem.getProjectileDamage() * damageMultiplier),
+            velX, velY,
+            true  // fromPlayer
+        );
+
+        if (projectile != null) {
+            // Scale projectile size based on charge (visual effect)
+            float sizeMultiplier = 1.0f + (heldItem.getChargeSizeMultiplier() - 1.0f) * (float)chargePercent;
+            projectile.setScale(sizeMultiplier);
+
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+            entities.add(projectile);
+
+            isFiring = true;
+            fireTimer = fireCooldown;
+
+            if (audioManager != null) {
+                audioManager.playSound("fire");
+            }
+        }
+
+        // Reset charging state
+        cancelCharge();
+    }
+
     /**
      * Updates active projectiles.
      */
@@ -973,6 +1123,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             g2d.drawRect(barX, barY, barWidth, barHeight);
         }
 
+        // Draw charge bar when charging a shot
+        if (isCharging) {
+            drawChargeBar(g2d);
+        }
+
         // Draw aim indicator when holding a ranged weapon
         if (heldItem != null && heldItem.isRangedWeapon()) {
             drawAimIndicator(g2d);
@@ -1038,6 +1193,79 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Restore original stroke
         g2d.setStroke(originalStroke);
+    }
+
+    /**
+     * Draws the charge bar above the player showing charge progress.
+     * The bar fills from left to right as the shot charges.
+     * Color changes from yellow to orange to red as charge increases.
+     */
+    private void drawChargeBar(Graphics2D g2d) {
+        int barX = x + (width - CHARGE_BAR_WIDTH) / 2;
+        int barY = y - 20;
+
+        // Background (dark gray)
+        g2d.setColor(new Color(40, 40, 40, 200));
+        g2d.fillRect(barX - 1, barY - 1, CHARGE_BAR_WIDTH + 2, CHARGE_BAR_HEIGHT + 2);
+
+        // Unfilled portion (darker)
+        g2d.setColor(new Color(60, 60, 60));
+        g2d.fillRect(barX, barY, CHARGE_BAR_WIDTH, CHARGE_BAR_HEIGHT);
+
+        // Calculate fill width
+        int fillWidth = (int)(CHARGE_BAR_WIDTH * chargePercent);
+
+        // Color gradient: Yellow -> Orange -> Red based on charge
+        Color chargeColor;
+        if (chargePercent < 0.5) {
+            // Yellow to orange (0% to 50%)
+            float t = (float)(chargePercent * 2);
+            chargeColor = new Color(
+                255,
+                (int)(255 - 55 * t),  // 255 -> 200
+                (int)(50 - 50 * t)    // 50 -> 0
+            );
+        } else {
+            // Orange to red (50% to 100%)
+            float t = (float)((chargePercent - 0.5) * 2);
+            chargeColor = new Color(
+                255,
+                (int)(200 - 150 * t),  // 200 -> 50
+                0
+            );
+        }
+
+        // Draw filled portion
+        g2d.setColor(chargeColor);
+        g2d.fillRect(barX, barY, fillWidth, CHARGE_BAR_HEIGHT);
+
+        // Glow effect at full charge
+        if (chargePercent >= 1.0) {
+            g2d.setColor(new Color(255, 255, 200, 100));
+            g2d.fillRect(barX - 2, barY - 2, CHARGE_BAR_WIDTH + 4, CHARGE_BAR_HEIGHT + 4);
+        }
+
+        // Border
+        g2d.setColor(chargeReady ? Color.WHITE : new Color(150, 150, 150));
+        g2d.drawRect(barX, barY, CHARGE_BAR_WIDTH, CHARGE_BAR_HEIGHT);
+
+        // Show charge percentage text for feedback
+        if (chargePercent > 0.1) {
+            int percent = (int)(chargePercent * 100);
+            String text = percent + "%";
+            g2d.setFont(new Font("Arial", Font.BOLD, 10));
+            FontMetrics fm = g2d.getFontMetrics();
+            int textX = barX + (CHARGE_BAR_WIDTH - fm.stringWidth(text)) / 2;
+            int textY = barY + CHARGE_BAR_HEIGHT + 12;
+
+            // Text shadow
+            g2d.setColor(Color.BLACK);
+            g2d.drawString(text, textX + 1, textY + 1);
+
+            // Text
+            g2d.setColor(chargeReady ? Color.WHITE : Color.GRAY);
+            g2d.drawString(text, textX, textY);
+        }
     }
 
     @Override
