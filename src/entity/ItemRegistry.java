@@ -68,10 +68,14 @@ public class ItemRegistry {
         registerRangedWeapon("wooden_bow", "Wooden Bow", 8, 12.0f, ProjectileType.ARROW,
                 ItemRarity.COMMON, "A simple hunting bow")
                 .setAmmoItemName("arrow");
+        // Make bows chargeable: 2 sec charge, 15 mana at full, 2x damage
+        templates.get("wooden_bow").setChargeable(true, 2.0f, 15, 2.0f);
 
         registerRangedWeapon("longbow", "Longbow", 15, 18.0f, ProjectileType.ARROW,
                 ItemRarity.UNCOMMON, "Greater range and power")
                 .setAmmoItemName("arrow");
+        // Longbow: 2.5 sec charge, 20 mana, 2.5x damage
+        templates.get("longbow").setChargeable(true, 2.5f, 20, 2.5f);
 
         registerRangedWeapon("crossbow", "Crossbow", 20, 20.0f, ProjectileType.BOLT,
                 ItemRarity.UNCOMMON, "Powerful but slow to reload")
@@ -90,16 +94,26 @@ public class ItemRegistry {
                 ItemRarity.RARE, "Launches explosive fireballs");
         templates.get("fire_staff").setSpecialEffect("Explosion on impact");
         templates.get("fire_staff").setAmmoItemName("mana");
+        // Fire staff: 3 sec charge, 30 mana, 3x damage, larger projectile
+        templates.get("fire_staff").setChargeable(true, 3.0f, 30, 3.0f);
+        templates.get("fire_staff").setChargeSizeMultiplier(2.5f);
 
         registerRangedWeapon("ice_staff", "Staff of Ice", 18, 14.0f, ProjectileType.ICEBALL,
                 ItemRarity.RARE, "Freezes enemies");
         templates.get("ice_staff").setSpecialEffect("Slow effect");
         templates.get("ice_staff").setAmmoItemName("mana");
+        // Ice staff: 2.5 sec charge, 25 mana, 2.5x damage
+        templates.get("ice_staff").setChargeable(true, 2.5f, 25, 2.5f);
+        templates.get("ice_staff").setChargeSizeMultiplier(2.0f);
 
         registerRangedWeapon("arcane_staff", "Arcane Staff", 35, 16.0f, ProjectileType.MAGIC_BOLT,
                 ItemRarity.EPIC, "Channels pure arcane energy");
         templates.get("arcane_staff").setCritChance(0.20f);
         templates.get("arcane_staff").setAmmoItemName("mana");
+        // Arcane staff: 4 sec charge for massive damage, 40 mana, 4x damage
+        templates.get("arcane_staff").setChargeable(true, 4.0f, 40, 4.0f);
+        templates.get("arcane_staff").setChargeSizeMultiplier(3.0f);
+        templates.get("arcane_staff").setChargeSpeedMultiplier(2.0f);
 
         // ==================== THROWING WEAPONS ====================
 

@@ -111,6 +111,16 @@ public class Item {
     private int currentAmmo = 0;
     private String ammoItemName;  // Required ammo item name
 
+    // ==================== Charged Shot Properties ====================
+
+    private boolean isChargeable = false;         // Can this weapon charge shots?
+    private float maxChargeTime = 2.0f;           // Maximum charge time in seconds (1-5)
+    private float minChargeTime = 0.3f;           // Minimum charge for a valid shot
+    private int chargeManaCost = 20;              // Mana cost at full charge
+    private float chargeDamageMultiplier = 3.0f;  // Damage multiplier at full charge (1x to 3x)
+    private float chargeSpeedMultiplier = 1.5f;   // Speed multiplier at full charge
+    private float chargeSizeMultiplier = 2.0f;    // Projectile size at full charge
+
     // ==================== Consumable Properties ====================
 
     private boolean isConsumable = false;
@@ -195,6 +205,13 @@ public class Item {
         this.ammoCapacity = original.ammoCapacity;
         this.currentAmmo = original.currentAmmo;
         this.ammoItemName = original.ammoItemName;
+        this.isChargeable = original.isChargeable;
+        this.maxChargeTime = original.maxChargeTime;
+        this.minChargeTime = original.minChargeTime;
+        this.chargeManaCost = original.chargeManaCost;
+        this.chargeDamageMultiplier = original.chargeDamageMultiplier;
+        this.chargeSpeedMultiplier = original.chargeSpeedMultiplier;
+        this.chargeSizeMultiplier = original.chargeSizeMultiplier;
         this.isConsumable = original.isConsumable;
         this.healthRestore = original.healthRestore;
         this.manaRestore = original.manaRestore;
@@ -504,6 +521,119 @@ public class Item {
 
     public void setAmmoItemName(String ammoItemName) {
         this.ammoItemName = ammoItemName;
+    }
+
+    // ==================== Charged Shot Getters/Setters ====================
+
+    public boolean isChargeable() {
+        return isChargeable;
+    }
+
+    /**
+     * Configures this weapon for charged shots.
+     *
+     * @param chargeable Whether this weapon can charge
+     * @param maxChargeTime Maximum charge time in seconds (1-5)
+     * @param chargeManaCost Mana cost at full charge
+     * @param damageMultiplier Damage multiplier at full charge (e.g., 3.0 = 3x damage)
+     */
+    public void setChargeable(boolean chargeable, float maxChargeTime, int chargeManaCost, float damageMultiplier) {
+        this.isChargeable = chargeable;
+        this.maxChargeTime = Math.max(1.0f, Math.min(5.0f, maxChargeTime));
+        this.chargeManaCost = chargeManaCost;
+        this.chargeDamageMultiplier = damageMultiplier;
+    }
+
+    public float getMaxChargeTime() {
+        return maxChargeTime;
+    }
+
+    public void setMaxChargeTime(float maxChargeTime) {
+        this.maxChargeTime = Math.max(1.0f, Math.min(5.0f, maxChargeTime));
+    }
+
+    public float getMinChargeTime() {
+        return minChargeTime;
+    }
+
+    public void setMinChargeTime(float minChargeTime) {
+        this.minChargeTime = minChargeTime;
+    }
+
+    public int getChargeManaCost() {
+        return chargeManaCost;
+    }
+
+    public void setChargeManaCost(int chargeManaCost) {
+        this.chargeManaCost = chargeManaCost;
+    }
+
+    public float getChargeDamageMultiplier() {
+        return chargeDamageMultiplier;
+    }
+
+    public void setChargeDamageMultiplier(float chargeDamageMultiplier) {
+        this.chargeDamageMultiplier = chargeDamageMultiplier;
+    }
+
+    public float getChargeSpeedMultiplier() {
+        return chargeSpeedMultiplier;
+    }
+
+    public void setChargeSpeedMultiplier(float chargeSpeedMultiplier) {
+        this.chargeSpeedMultiplier = chargeSpeedMultiplier;
+    }
+
+    public float getChargeSizeMultiplier() {
+        return chargeSizeMultiplier;
+    }
+
+    public void setChargeSizeMultiplier(float chargeSizeMultiplier) {
+        this.chargeSizeMultiplier = chargeSizeMultiplier;
+    }
+
+    /**
+     * Calculates the charge percentage based on charge time.
+     *
+     * @param chargeTime Current charge time in seconds
+     * @return Charge percentage from 0.0 to 1.0
+     */
+    public float getChargePercent(float chargeTime) {
+        if (!isChargeable || maxChargeTime <= 0) return 0;
+        return Math.min(1.0f, chargeTime / maxChargeTime);
+    }
+
+    /**
+     * Calculates the mana cost based on charge level.
+     * Scales linearly from base mana cost to full charge cost.
+     *
+     * @param chargePercent Charge percentage (0.0 to 1.0)
+     * @return Mana cost for this charge level
+     */
+    public int getManaCostForCharge(float chargePercent) {
+        // Base cost is 20% of full charge cost, scales up to full
+        int baseCost = Math.max(1, chargeManaCost / 5);
+        return baseCost + (int)((chargeManaCost - baseCost) * chargePercent);
+    }
+
+    /**
+     * Calculates the damage multiplier based on charge level.
+     *
+     * @param chargePercent Charge percentage (0.0 to 1.0)
+     * @return Damage multiplier (1.0 to chargeDamageMultiplier)
+     */
+    public float getDamageMultiplierForCharge(float chargePercent) {
+        return 1.0f + (chargeDamageMultiplier - 1.0f) * chargePercent;
+    }
+
+    /**
+     * Calculates the speed multiplier based on charge level.
+     *
+     * @param chargePercent Charge percentage (0.0 to 1.0)
+     * @return Speed multiplier (1.0 to chargeSpeedMultiplier)
+     */
+    public float getSpeedMultiplierForCharge(float chargePercent) {
+        return 1.0f + (chargeSpeedMultiplier - 1.0f) * chargePercent;
     }
 
     public boolean isConsumable() {
