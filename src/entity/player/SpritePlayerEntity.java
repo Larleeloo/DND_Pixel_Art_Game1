@@ -74,6 +74,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private double fireCooldown = 0.5;   // Seconds between shots
     private double fireDuration = 0.3;   // Animation duration
 
+    // Aim system for mouse-directed projectiles
+    private Camera camera;               // Reference for screen-to-world conversion
+    private double aimAngle = 0;         // Current aim angle in radians
+    private double aimDirX = 1.0;        // Normalized aim direction X
+    private double aimDirY = 0;          // Normalized aim direction Y
+    private int aimTargetWorldX = 0;     // Mouse position in world coordinates
+    private int aimTargetWorldY = 0;
+    private static final int AIM_INDICATOR_LENGTH = 60;  // Length of aim line
+    private static final int AIM_INDICATOR_WIDTH = 3;    // Thickness of aim line
+
     // Item usage system
     private boolean isUsingItem = false;
     private double useItemTimer = 0;
@@ -266,6 +276,65 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         this.audioManager = audioManager;
     }
 
+    /**
+     * Sets the camera reference for screen-to-world coordinate conversion.
+     * Required for mouse-aimed projectiles.
+     *
+     * @param camera The game camera
+     */
+    public void setCamera(Camera camera) {
+        this.camera = camera;
+    }
+
+    /**
+     * Updates the aim direction based on mouse position.
+     * Calculates angle from player center to mouse cursor in world coordinates.
+     */
+    private void updateAimDirection(InputManager input) {
+        if (camera == null) {
+            // No camera - use facing direction
+            aimDirX = facingRight ? 1.0 : -1.0;
+            aimDirY = 0;
+            aimAngle = facingRight ? 0 : Math.PI;
+            return;
+        }
+
+        // Get mouse position in screen coordinates
+        int mouseScreenX = input.getMouseX();
+        int mouseScreenY = input.getMouseY();
+
+        // Convert to world coordinates
+        aimTargetWorldX = camera.screenToWorldX(mouseScreenX);
+        aimTargetWorldY = camera.screenToWorldY(mouseScreenY);
+
+        // Calculate player center (where projectiles originate)
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 3;  // Aim from upper body
+
+        // Calculate direction vector
+        double dx = aimTargetWorldX - playerCenterX;
+        double dy = aimTargetWorldY - playerCenterY;
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            aimDirX = dx / length;
+            aimDirY = dy / length;
+            aimAngle = Math.atan2(dy, dx);
+
+            // Update facing direction based on aim (left/right of player)
+            if (dx > 0) {
+                facingRight = true;
+            } else if (dx < 0) {
+                facingRight = false;
+            }
+        } else {
+            // Mouse is on player - use facing direction
+            aimDirX = facingRight ? 1.0 : -1.0;
+            aimDirY = 0;
+            aimAngle = facingRight ? 0 : Math.PI;
+        }
+    }
+
     @Override
     public void update(InputManager input, ArrayList<Entity> entities) {
         // Calculate delta time for animation
@@ -281,6 +350,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Update action timers
         updateActionTimers(deltaSeconds);
+
+        // Update aim direction based on mouse position (for ranged weapons)
+        updateAimDirection(input);
 
         // Regenerate mana and stamina (use float for smooth regeneration)
         if (!isSprinting) {
@@ -668,11 +740,15 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         }
 
         // Create projectile using the saved item reference
-        int projX = facingRight ? x + width : x - 10;
-        int projY = y + height / 3;
-        double dirX = facingRight ? 1.0 : -1.0;
+        // Position projectile at player's upper body, offset in aim direction
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 3;
+        int spawnOffset = 20;  // Distance from player center to spawn projectile
+        int projX = playerCenterX + (int)(aimDirX * spawnOffset);
+        int projY = playerCenterY + (int)(aimDirY * spawnOffset);
 
-        ProjectileEntity projectile = itemForProjectile.createProjectile(projX, projY, dirX, 0, true);
+        // Use calculated aim direction for projectile trajectory
+        ProjectileEntity projectile = itemForProjectile.createProjectile(projX, projY, aimDirX, aimDirY, true);
         if (projectile != null) {
             // Apply bonus damage from ammo
             if (bonusDamage > 0) {
@@ -896,6 +972,72 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             g2d.setColor(Color.WHITE);
             g2d.drawRect(barX, barY, barWidth, barHeight);
         }
+
+        // Draw aim indicator when holding a ranged weapon
+        if (heldItem != null && heldItem.isRangedWeapon()) {
+            drawAimIndicator(g2d);
+        }
+    }
+
+    /**
+     * Draws the aim indicator showing projectile trajectory direction.
+     * Shows a line from the player toward the mouse cursor with a crosshair.
+     */
+    private void drawAimIndicator(Graphics2D g2d) {
+        // Calculate start position (where projectiles spawn)
+        int startX = x + width / 2;
+        int startY = y + height / 3;
+
+        // Calculate end position of aim line
+        int endX = startX + (int)(aimDirX * AIM_INDICATOR_LENGTH);
+        int endY = startY + (int)(aimDirY * AIM_INDICATOR_LENGTH);
+
+        // Save original stroke
+        Stroke originalStroke = g2d.getStroke();
+
+        // Draw outer glow/shadow for visibility
+        g2d.setStroke(new BasicStroke(AIM_INDICATOR_WIDTH + 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2d.setColor(new Color(0, 0, 0, 120));
+        g2d.drawLine(startX, startY, endX, endY);
+
+        // Draw main aim line with gradient effect based on fire readiness
+        boolean canFire = fireTimer <= 0;
+        Color aimColor = canFire ? new Color(255, 200, 50, 200) : new Color(150, 150, 150, 150);
+        g2d.setStroke(new BasicStroke(AIM_INDICATOR_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2d.setColor(aimColor);
+        g2d.drawLine(startX, startY, endX, endY);
+
+        // Draw crosshair at aim target
+        int crosshairSize = 8;
+        int crosshairX = aimTargetWorldX;
+        int crosshairY = aimTargetWorldY;
+
+        // Only draw crosshair if camera is available (world coordinates are valid)
+        if (camera != null) {
+            // Outer ring (black shadow)
+            g2d.setStroke(new BasicStroke(2));
+            g2d.setColor(new Color(0, 0, 0, 150));
+            g2d.drawOval(crosshairX - crosshairSize - 1, crosshairY - crosshairSize - 1,
+                        crosshairSize * 2 + 2, crosshairSize * 2 + 2);
+
+            // Inner crosshair
+            g2d.setColor(canFire ? new Color(255, 100, 50) : new Color(100, 100, 100));
+            g2d.drawOval(crosshairX - crosshairSize, crosshairY - crosshairSize,
+                        crosshairSize * 2, crosshairSize * 2);
+
+            // Cross lines
+            g2d.drawLine(crosshairX - crosshairSize - 3, crosshairY, crosshairX - 3, crosshairY);
+            g2d.drawLine(crosshairX + 3, crosshairY, crosshairX + crosshairSize + 3, crosshairY);
+            g2d.drawLine(crosshairX, crosshairY - crosshairSize - 3, crosshairX, crosshairY - 3);
+            g2d.drawLine(crosshairX, crosshairY + 3, crosshairX, crosshairY + crosshairSize + 3);
+
+            // Center dot
+            g2d.setColor(canFire ? Color.RED : Color.GRAY);
+            g2d.fillOval(crosshairX - 2, crosshairY - 2, 4, 4);
+        }
+
+        // Restore original stroke
+        g2d.setStroke(originalStroke);
     }
 
     @Override
