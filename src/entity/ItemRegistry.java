@@ -135,9 +135,17 @@ public class ItemRegistry {
 
         registerAmmo("fire_arrow", "Fire Arrow", 8, ProjectileType.ARROW,
                 ItemRarity.UNCOMMON, "Arrows that burn on impact");
+        // Fire arrows: 3 sec burn, 5 damage per tick (0.5s), 1.2x impact damage
+        templates.get("fire_arrow").setStatusEffect(
+            entity.ProjectileEntity.StatusEffectType.BURNING, 3.0, 5, 1.2f);
+        templates.get("fire_arrow").setSpecialEffect("Burns for 3 seconds");
 
         registerAmmo("ice_arrow", "Ice Arrow", 7, ProjectileType.ARROW,
                 ItemRarity.UNCOMMON, "Arrows that slow enemies");
+        // Ice arrows: 4 sec slow (60% speed), 3 damage per tick (1s), 1.1x impact damage
+        templates.get("ice_arrow").setStatusEffect(
+            entity.ProjectileEntity.StatusEffectType.FROZEN, 4.0, 3, 1.1f);
+        templates.get("ice_arrow").setSpecialEffect("Slows for 4 seconds");
 
         registerAmmo("bolt", "Bolt", 8, ProjectileType.BOLT,
                 ItemRarity.COMMON, "Standard crossbow ammunition");

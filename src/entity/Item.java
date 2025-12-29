@@ -135,6 +135,12 @@ public class Item {
     private boolean hasAreaEffect = false;
     private int areaEffectRadius = 0;
 
+    // Status effect properties (for special ammo like fire/ice arrows)
+    private ProjectileEntity.StatusEffectType statusEffectType = ProjectileEntity.StatusEffectType.NONE;
+    private double statusEffectDuration = 0;     // Duration in seconds
+    private int statusEffectDamagePerTick = 0;   // Damage per tick
+    private float statusEffectDamageMultiplier = 1.0f;  // Impact damage multiplier
+
     // ==================== Constructors ====================
 
     /**
@@ -220,6 +226,10 @@ public class Item {
         this.specialEffect = original.specialEffect;
         this.hasAreaEffect = original.hasAreaEffect;
         this.areaEffectRadius = original.areaEffectRadius;
+        this.statusEffectType = original.statusEffectType;
+        this.statusEffectDuration = original.statusEffectDuration;
+        this.statusEffectDamagePerTick = original.statusEffectDamagePerTick;
+        this.statusEffectDamageMultiplier = original.statusEffectDamageMultiplier;
     }
 
     // ==================== Animation Loading ====================
@@ -366,6 +376,12 @@ public class Item {
         ProjectileEntity projectile = new ProjectileEntity(
             x, y, projectileType, projectileDamage, velX, velY, fromPlayer
         );
+
+        // Apply status effect if this item has one
+        if (statusEffectType != ProjectileEntity.StatusEffectType.NONE) {
+            projectile.setStatusEffect(statusEffectType, statusEffectDuration,
+                                        statusEffectDamagePerTick, statusEffectDamageMultiplier);
+        }
 
         return projectile;
     }
@@ -695,6 +711,44 @@ public class Item {
 
     public int getAreaEffectRadius() {
         return areaEffectRadius;
+    }
+
+    // ==================== Status Effect Properties ====================
+
+    /**
+     * Sets the status effect this item applies on hit.
+     *
+     * @param effectType Type of status effect (BURNING, FROZEN, POISONED)
+     * @param duration Duration in seconds
+     * @param damagePerTick Damage per tick for DoT effects
+     * @param damageMultiplier Multiplier for impact damage
+     */
+    public void setStatusEffect(ProjectileEntity.StatusEffectType effectType, double duration,
+                                  int damagePerTick, float damageMultiplier) {
+        this.statusEffectType = effectType;
+        this.statusEffectDuration = duration;
+        this.statusEffectDamagePerTick = damagePerTick;
+        this.statusEffectDamageMultiplier = damageMultiplier;
+    }
+
+    public ProjectileEntity.StatusEffectType getStatusEffectType() {
+        return statusEffectType;
+    }
+
+    public double getStatusEffectDuration() {
+        return statusEffectDuration;
+    }
+
+    public int getStatusEffectDamagePerTick() {
+        return statusEffectDamagePerTick;
+    }
+
+    public float getStatusEffectDamageMultiplier() {
+        return statusEffectDamageMultiplier;
+    }
+
+    public boolean hasStatusEffect() {
+        return statusEffectType != ProjectileEntity.StatusEffectType.NONE;
     }
 
     /**

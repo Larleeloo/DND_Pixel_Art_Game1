@@ -2,6 +2,7 @@ package entity;
 
 import entity.player.*;
 import entity.mob.*;
+import entity.mob.SpriteMobEntity.StatusEffect;
 import block.*;
 import graphics.*;
 import animation.*;
@@ -80,6 +81,18 @@ public class ProjectileEntity extends Entity {
     private Color trailColor = Color.WHITE;
     private java.util.List<Point> trailPoints = new java.util.ArrayList<>();
     private int maxTrailLength = 10;
+
+    // Status effect properties (for special arrows/magic)
+    public enum StatusEffectType {
+        NONE,
+        BURNING,
+        FROZEN,
+        POISONED
+    }
+    private StatusEffectType statusEffect = StatusEffectType.NONE;
+    private double effectDuration = 0;      // Duration of effect in seconds
+    private int effectDamagePerTick = 0;    // Damage per tick for DoT effects
+    private float effectDamageMultiplier = 1.0f;  // Damage multiplier for impact
 
     // Explosion effect
     private boolean showExplosion = false;
@@ -659,9 +672,19 @@ public class ProjectileEntity extends Entity {
             if (fromPlayer && entity instanceof MobEntity) {
                 MobEntity mob = (MobEntity) entity;
                 if (bounds.intersects(mob.getBounds()) && mob.getCurrentHealth() > 0) {
+                    // Calculate damage with effect multiplier
+                    int finalDamage = (int)(damage * effectDamageMultiplier);
+
                     // Deal damage
                     double knockbackDir = velX > 0 ? 1 : -1;
-                    mob.takeDamage(damage, knockbackDir * knockbackForce, -knockbackForce / 2);
+                    mob.takeDamage(finalDamage, knockbackDir * knockbackForce, -knockbackForce / 2);
+
+                    // Apply status effect if this projectile has one
+                    if (statusEffect != StatusEffectType.NONE && mob instanceof SpriteMobEntity) {
+                        SpriteMobEntity spriteMob = (SpriteMobEntity) mob;
+                        StatusEffect effect = convertToMobStatusEffect(statusEffect);
+                        spriteMob.applyStatusEffect(effect, effectDuration, effectDamagePerTick, effectDamageMultiplier);
+                    }
 
                     // Handle piercing or deactivate
                     if (piercing && pierceCount < maxPierceCount) {
@@ -1019,6 +1042,42 @@ public class ProjectileEntity extends Entity {
 
     public void setRotateWithVelocity(boolean rotate) {
         this.rotateWithVelocity = rotate;
+    }
+
+    // ==================== Status Effect Methods ====================
+
+    /**
+     * Sets the status effect this projectile will apply on hit.
+     *
+     * @param effect Type of status effect
+     * @param duration Duration in seconds
+     * @param damagePerTick Damage dealt per tick (for DoT)
+     * @param damageMultiplier Multiplier for impact damage
+     */
+    public void setStatusEffect(StatusEffectType effect, double duration, int damagePerTick, float damageMultiplier) {
+        this.statusEffect = effect;
+        this.effectDuration = duration;
+        this.effectDamagePerTick = damagePerTick;
+        this.effectDamageMultiplier = damageMultiplier;
+    }
+
+    /**
+     * Gets the status effect type.
+     */
+    public StatusEffectType getStatusEffect() {
+        return statusEffect;
+    }
+
+    /**
+     * Converts projectile StatusEffectType to mob StatusEffect.
+     */
+    private StatusEffect convertToMobStatusEffect(StatusEffectType type) {
+        switch (type) {
+            case BURNING: return StatusEffect.BURNING;
+            case FROZEN: return StatusEffect.FROZEN;
+            case POISONED: return StatusEffect.POISONED;
+            default: return StatusEffect.NONE;
+        }
     }
 
     @Override

@@ -734,6 +734,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Check and consume resources
         int bonusDamage = 0;
+        Item consumedAmmoItem = null;  // For applying status effects from special arrows
 
         if (isThrowable) {
             // Throwables consume themselves - remove from current slot
@@ -759,10 +760,10 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 // No ammo available - can't fire
                 return;
             }
-            // Check if ammo provides bonus damage
-            Item ammoItem = consumedAmmo.getLinkedItem();
-            if (ammoItem != null) {
-                bonusDamage = ammoItem.getDamage();
+            // Check if ammo provides bonus damage and status effects
+            consumedAmmoItem = consumedAmmo.getLinkedItem();
+            if (consumedAmmoItem != null) {
+                bonusDamage = consumedAmmoItem.getDamage();
             }
         }
 
@@ -780,6 +781,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             // Apply bonus damage from ammo
             if (bonusDamage > 0) {
                 projectile.setDamage(projectile.getDamage() + bonusDamage);
+            }
+
+            // Apply status effect from special ammo (fire/ice arrows)
+            if (consumedAmmoItem != null && consumedAmmoItem.hasStatusEffect()) {
+                projectile.setStatusEffect(
+                    consumedAmmoItem.getStatusEffectType(),
+                    consumedAmmoItem.getStatusEffectDuration(),
+                    consumedAmmoItem.getStatusEffectDamagePerTick(),
+                    consumedAmmoItem.getStatusEffectDamageMultiplier()
+                );
             }
 
             projectile.setSource(this);
@@ -865,6 +876,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Check and consume resources based on weapon type
         int bonusDamage = 0;
+        Item consumedAmmoItem = null;  // For applying status effects from special arrows
 
         if (usesMana) {
             // Magic weapons consume mana based on charge level
@@ -882,10 +894,10 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 cancelCharge();
                 return;
             }
-            // Check if ammo provides bonus damage
-            Item ammoItem = consumedAmmo.getLinkedItem();
-            if (ammoItem != null) {
-                bonusDamage = ammoItem.getDamage();
+            // Check if ammo provides bonus damage and status effects
+            consumedAmmoItem = consumedAmmo.getLinkedItem();
+            if (consumedAmmoItem != null) {
+                bonusDamage = consumedAmmoItem.getDamage();
             }
         }
 
@@ -927,6 +939,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 projectile.setScale(sizeMultiplier);
             }
             // Arrows/bolts stay at normal size regardless of charge
+
+            // Apply status effect from special ammo (fire/ice arrows)
+            if (consumedAmmoItem != null && consumedAmmoItem.hasStatusEffect()) {
+                projectile.setStatusEffect(
+                    consumedAmmoItem.getStatusEffectType(),
+                    consumedAmmoItem.getStatusEffectDuration(),
+                    consumedAmmoItem.getStatusEffectDamagePerTick(),
+                    consumedAmmoItem.getStatusEffectDamageMultiplier()
+                );
+            }
 
             projectile.setSource(this);
             activeProjectiles.add(projectile);
