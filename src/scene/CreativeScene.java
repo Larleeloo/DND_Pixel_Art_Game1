@@ -101,8 +101,13 @@ public class CreativeScene implements Scene {
         NONE,           // No modal open
         CONFIRM_EXIT,   // Confirm exit dialog (Yes/No/Cancel)
         SAVE_FILENAME,  // Enter filename dialog
+        LOAD_LEVEL,     // Load level dialog
         NEW_LEVEL       // New level properties dialog
     }
+
+    // Available creative levels for loading
+    private List<String> availableLevels;
+    private int selectedLevelIndex = 0;
 
     // Block textures cache
     private Map<BlockType, BufferedImage> blockTextures;
@@ -112,6 +117,10 @@ public class CreativeScene implements Scene {
     private List<PaletteItem> itemPalette;
     private List<PaletteItem> mobPalette;
     private List<PaletteItem> lightPalette;
+    private List<PaletteItem> parallaxPalette;
+
+    // Parallax layers currently in use
+    private List<ParallaxLayerEntry> parallaxLayers;
 
     /**
      * Categories in the palette
@@ -120,7 +129,8 @@ public class CreativeScene implements Scene {
         BLOCKS("Blocks"),
         ITEMS("Items"),
         MOBS("Mobs"),
-        LIGHTS("Lights");
+        LIGHTS("Lights"),
+        PARALLAX("Parallax");
 
         private final String displayName;
 
@@ -174,6 +184,29 @@ public class CreativeScene implements Scene {
         }
     }
 
+    /**
+     * Represents a parallax layer in the level
+     */
+    private static class ParallaxLayerEntry {
+        String name;
+        String imagePath;
+        double scrollSpeedX;
+        int zOrder;
+        double scale;
+        double opacity;
+        BufferedImage icon;
+
+        ParallaxLayerEntry(String name, String imagePath, double scrollSpeedX, int zOrder, BufferedImage icon) {
+            this.name = name;
+            this.imagePath = imagePath;
+            this.scrollSpeedX = scrollSpeedX;
+            this.zOrder = zOrder;
+            this.scale = 1.0;
+            this.opacity = 1.0;
+            this.icon = icon;
+        }
+    }
+
     @Override
     public void init() {
         if (initialized) return;
@@ -183,6 +216,7 @@ public class CreativeScene implements Scene {
         placedItems = new ArrayList<>();
         placedMobs = new ArrayList<>();
         placedLights = new ArrayList<>();
+        parallaxLayers = new ArrayList<>();
         blockTextures = new HashMap<>();
 
         // Initialize palettes
@@ -197,6 +231,13 @@ public class CreativeScene implements Scene {
         levelData.playerSpawnX = 200;
         levelData.playerSpawnY = 850;
         levelData.scrollingEnabled = true;
+        levelData.verticalScrollEnabled = true;
+        levelData.tileBackgroundHorizontal = true;
+
+        // Use the proper sprite animation player (not demo player)
+        levelData.useSpriteAnimation = true;
+        levelData.spriteAnimationDir = "assets/player/sprites";
+        levelData.useBoneAnimation = false;
 
         // Initialize camera
         camera = new Camera(GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
@@ -281,6 +322,27 @@ public class CreativeScene implements Scene {
             String displayName = Character.toUpperCase(lightType.charAt(0)) + lightType.substring(1);
             lightPalette.add(new PaletteItem(lightType, displayName, icon, lightType));
         }
+
+        // Parallax palette - available background/foreground layers
+        parallaxPalette = new ArrayList<>();
+        String[][] parallaxOptions = {
+            {"sky", "Sky Background", "assets/parallax/sky.png", "-2", "0.1"},
+            {"buildings_far", "Distant Buildings", "assets/parallax/buildings_far.png", "-1", "0.3"},
+            {"buildings_mid", "Mid Buildings", "assets/parallax/buildings_mid.png", "0", "0.5"},
+            {"buildings_near", "Near Buildings", "assets/parallax/buildings_near.png", "1", "0.7"},
+            {"foreground", "Foreground", "assets/parallax/foreground.png", "2", "1.2"},
+            {"background", "Main Background", "assets/background.png", "-2", "0.2"}
+        };
+
+        for (String[] option : parallaxOptions) {
+            BufferedImage icon = createParallaxIcon(option[2]);
+            Map<String, String> data = new HashMap<>();
+            data.put("name", option[0]);
+            data.put("path", option[2]);
+            data.put("zOrder", option[3]);
+            data.put("scrollSpeed", option[4]);
+            parallaxPalette.add(new PaletteItem(option[0], option[1], icon, data));
+        }
     }
 
     /**
@@ -296,9 +358,20 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Create a placeholder icon for items
+     * Create an icon for items - tries to load actual sprite first, falls back to placeholder
      */
     private BufferedImage createItemIcon(String itemId) {
+        // Try to load actual item sprite from assets
+        String[] extensions = {".gif", ".png"};
+        for (String ext : extensions) {
+            String path = "assets/items/" + itemId + ext;
+            AssetLoader.ImageAsset asset = AssetLoader.load(path);
+            if (asset != null && asset.staticImage != null) {
+                return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+            }
+        }
+
+        // Fallback to placeholder icon
         BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = icon.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -345,9 +418,24 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Create a placeholder icon for mobs
+     * Create an icon for mobs - tries to load actual sprite first, falls back to placeholder
      */
     private BufferedImage createMobIcon(String mobType) {
+        // Try to load actual mob sprite from assets - check multiple paths
+        String[] paths = {
+            "assets/mobs/" + mobType + "/idle.gif",
+            "assets/mobs/" + mobType + "/sprites/idle.gif",
+            "assets/mobs/" + mobType + "/idle.png"
+        };
+
+        for (String path : paths) {
+            AssetLoader.ImageAsset asset = AssetLoader.load(path);
+            if (asset != null && asset.staticImage != null) {
+                return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+            }
+        }
+
+        // Fallback to placeholder icon
         BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = icon.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -427,6 +515,42 @@ public class CreativeScene implements Scene {
         return icon;
     }
 
+    /**
+     * Create an icon for parallax layers - loads and scales down the actual image
+     */
+    private BufferedImage createParallaxIcon(String imagePath) {
+        // Try to load the actual parallax image
+        AssetLoader.ImageAsset asset = AssetLoader.load(imagePath);
+        if (asset != null && asset.staticImage != null) {
+            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+        }
+
+        // Fallback to a gradient placeholder
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Create a gradient background
+        GradientPaint gradient = new GradientPaint(
+            0, 0, new Color(100, 150, 200),
+            0, PALETTE_ITEM_SIZE, new Color(50, 80, 120)
+        );
+        g.setPaint(gradient);
+        g.fillRoundRect(2, 2, PALETTE_ITEM_SIZE - 4, PALETTE_ITEM_SIZE - 4, 6, 6);
+
+        // Draw layer lines to indicate parallax
+        g.setColor(new Color(255, 255, 255, 100));
+        for (int i = 10; i < PALETTE_ITEM_SIZE - 10; i += 8) {
+            g.drawLine(4, i, PALETTE_ITEM_SIZE - 4, i);
+        }
+
+        g.setColor(Color.BLACK);
+        g.drawRoundRect(2, 2, PALETTE_ITEM_SIZE - 4, PALETTE_ITEM_SIZE - 4, 6, 6);
+
+        g.dispose();
+        return icon;
+    }
+
     @Override
     public void update(InputManager input) {
         if (!initialized) init();
@@ -488,6 +612,11 @@ public class CreativeScene implements Scene {
             saveLevel();
         }
 
+        // Ctrl+L or L to load level
+        if (input.isKeyJustPressed(KeyEvent.VK_L)) {
+            openLoadDialog();
+        }
+
         // Escape to return to menu (show confirmation dialog)
         if (input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
             if (modalState == ModalState.NONE) {
@@ -508,6 +637,16 @@ public class CreativeScene implements Scene {
         // Update world mouse position
         worldMouseX = mouseX + (int) cameraX;
         worldMouseY = mouseY + (int) cameraY;
+
+        // Right-click to delete entity at cursor
+        if (input.isRightMouseJustPressed() && mouseX >= PALETTE_WIDTH) {
+            removeEntityAt(worldMouseX, worldMouseY);
+        }
+
+        // Left-click to place (already handled in onMouseClicked, but also handle here for immediate feedback)
+        if (input.isLeftMouseJustPressed() && mouseX >= PALETTE_WIDTH) {
+            placeEntity();
+        }
 
         // Update hovered entity
         updateHoveredEntity();
@@ -588,6 +727,21 @@ public class CreativeScene implements Scene {
                 }
                 break;
 
+            case LOAD_LEVEL:
+                // Up/Down to navigate, Enter to load, Escape to cancel
+                if (availableLevels != null && !availableLevels.isEmpty()) {
+                    if (input.isKeyJustPressed(KeyEvent.VK_UP)) {
+                        selectedLevelIndex = Math.max(0, selectedLevelIndex - 1);
+                    } else if (input.isKeyJustPressed(KeyEvent.VK_DOWN)) {
+                        selectedLevelIndex = Math.min(availableLevels.size() - 1, selectedLevelIndex + 1);
+                    } else if (input.isKeyJustPressed(KeyEvent.VK_ENTER)) {
+                        String selectedPath = availableLevels.get(selectedLevelIndex);
+                        modalState = ModalState.NONE;
+                        loadLevel(selectedPath);
+                    }
+                }
+                break;
+
             case NEW_LEVEL:
                 // For now, just close on Escape (already handled)
                 break;
@@ -595,6 +749,40 @@ public class CreativeScene implements Scene {
             default:
                 break;
         }
+    }
+
+    /**
+     * Open the load level dialog
+     */
+    private void openLoadDialog() {
+        // Scan for available creative levels
+        availableLevels = new ArrayList<>();
+        File levelsDir = new File("levels");
+        if (levelsDir.exists() && levelsDir.isDirectory()) {
+            File[] files = levelsDir.listFiles((dir, name) ->
+                name.startsWith("creative_") && name.endsWith(".json"));
+            if (files != null) {
+                for (File f : files) {
+                    availableLevels.add(f.getPath());
+                }
+            }
+            // Also add other levels for reference
+            files = levelsDir.listFiles((dir, name) ->
+                name.endsWith(".json") && !name.startsWith("creative_"));
+            if (files != null) {
+                for (File f : files) {
+                    availableLevels.add(f.getPath());
+                }
+            }
+        }
+
+        if (availableLevels.isEmpty()) {
+            setStatus("No levels found to load");
+            return;
+        }
+
+        selectedLevelIndex = 0;
+        modalState = ModalState.LOAD_LEVEL;
     }
 
     /**
@@ -783,6 +971,63 @@ public class CreativeScene implements Scene {
                 g.drawString("[Esc] Cancel", dialogX + 120, dialogY + 185);
                 break;
 
+            case LOAD_LEVEL:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                title = "Load Level";
+                fm = g.getFontMetrics();
+                titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 40);
+
+                // Make dialog taller for list
+                int loadDialogHeight = 300;
+                g.setColor(new Color(50, 54, 62));
+                g.fillRoundRect(dialogX, dialogY, dialogWidth, loadDialogHeight, 15, 15);
+                g.setColor(new Color(100, 104, 112));
+                g.drawRoundRect(dialogX, dialogY, dialogWidth, loadDialogHeight, 15, 15);
+
+                // Redraw title
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                g.drawString(title, titleX, dialogY + 40);
+
+                // List background
+                g.setColor(new Color(30, 34, 42));
+                g.fillRoundRect(dialogX + 20, dialogY + 55, dialogWidth - 40, 190, 5, 5);
+
+                // Draw level list
+                g.setFont(new Font("Monospaced", Font.PLAIN, 14));
+                if (availableLevels != null) {
+                    int listY = dialogY + 75;
+                    int maxVisible = 8;
+                    int startIdx = Math.max(0, selectedLevelIndex - maxVisible / 2);
+                    startIdx = Math.min(startIdx, Math.max(0, availableLevels.size() - maxVisible));
+
+                    for (int i = startIdx; i < Math.min(startIdx + maxVisible, availableLevels.size()); i++) {
+                        String levelPath = availableLevels.get(i);
+                        String displayName = new File(levelPath).getName();
+
+                        if (i == selectedLevelIndex) {
+                            g.setColor(new Color(70, 130, 180));
+                            g.fillRoundRect(dialogX + 25, listY - 14, dialogWidth - 50, 20, 3, 3);
+                            g.setColor(Color.WHITE);
+                        } else {
+                            g.setColor(new Color(180, 180, 180));
+                        }
+                        g.drawString(displayName, dialogX + 30, listY);
+                        listY += 22;
+                    }
+                }
+
+                // Controls hint
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[Up/Down] Select", dialogX + 30, dialogY + 265);
+                g.drawString("[Enter] Load", dialogX + 150, dialogY + 265);
+                g.setColor(new Color(150, 150, 200));
+                g.drawString("[Esc] Cancel", dialogX + 250, dialogY + 265);
+                break;
+
             default:
                 break;
         }
@@ -794,15 +1039,31 @@ public class CreativeScene implements Scene {
     private void drawGrid(Graphics2D g) {
         g.setColor(new Color(100, 100, 100, 50));
 
-        int startX = -(int) cameraX % GRID_SIZE;
-        int startY = -(int) cameraY % GRID_SIZE;
+        // Calculate grid offset to align with world coordinates
+        // Grid lines should appear at screen positions where world coordinate is multiple of GRID_SIZE
+        int gridOffsetX = -((int) cameraX % GRID_SIZE);
+        int gridOffsetY = -((int) cameraY % GRID_SIZE);
 
-        // Vertical lines
-        for (int x = startX + PALETTE_WIDTH; x < GamePanel.SCREEN_WIDTH; x += GRID_SIZE) {
+        // Adjust for negative camera positions
+        if (gridOffsetX > 0) gridOffsetX -= GRID_SIZE;
+        if (gridOffsetY > 0) gridOffsetY -= GRID_SIZE;
+
+        // Find first grid line that appears after the palette
+        int startX = gridOffsetX;
+        while (startX < PALETTE_WIDTH) {
+            startX += GRID_SIZE;
+        }
+
+        // Vertical lines - aligned with world grid
+        for (int x = startX; x < GamePanel.SCREEN_WIDTH; x += GRID_SIZE) {
             g.drawLine(x, 0, x, GamePanel.SCREEN_HEIGHT);
         }
 
         // Horizontal lines
+        int startY = gridOffsetY;
+        while (startY < 0) {
+            startY += GRID_SIZE;
+        }
         for (int y = startY; y < GamePanel.SCREEN_HEIGHT; y += GRID_SIZE) {
             g.drawLine(PALETTE_WIDTH, y, GamePanel.SCREEN_WIDTH, y);
         }
@@ -982,6 +1243,25 @@ public class CreativeScene implements Scene {
                 g.drawImage(item.icon, itemX + 4, itemY + 4, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, null);
             }
 
+            // For parallax items, show checkmark if layer is active
+            if (currentCategory == PaletteCategory.PARALLAX) {
+                boolean isActive = false;
+                for (ParallaxLayerEntry layer : parallaxLayers) {
+                    if (layer.name.equals(item.id)) {
+                        isActive = true;
+                        break;
+                    }
+                }
+                if (isActive) {
+                    // Draw green checkmark overlay
+                    g.setColor(new Color(0, 255, 0, 180));
+                    g.fillOval(itemX + PALETTE_ITEM_SIZE - 4, itemY + 4, 12, 12);
+                    g.setColor(Color.WHITE);
+                    g.setFont(new Font("Arial", Font.BOLD, 10));
+                    g.drawString("✓", itemX + PALETTE_ITEM_SIZE - 1, itemY + 13);
+                }
+            }
+
             // Selection border
             if (isSelected) {
                 g.setColor(Color.WHITE);
@@ -1017,8 +1297,8 @@ public class CreativeScene implements Scene {
 
         // Controls help
         g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.PLAIN, 12));
-        g.drawString("WASD: Pan | Click: Place | Right-Click: Delete | Tab: Category | G: Grid | P: Play | Ctrl+S: Save | Esc: Menu",
+        g.setFont(new Font("Arial", Font.PLAIN, 11));
+        g.drawString("WASD: Pan | LClick: Place | RClick: Delete | Tab: Category | G: Grid | P: Play | Ctrl+S: Save | L: Load | Esc: Menu",
             PALETTE_WIDTH + 10, 25);
     }
 
@@ -1050,7 +1330,7 @@ public class CreativeScene implements Scene {
      */
     private void drawLevelInfo(Graphics2D g) {
         g.setColor(new Color(40, 44, 52, 200));
-        g.fillRect(GamePanel.SCREEN_WIDTH - 200, 50, 190, 100);
+        g.fillRect(GamePanel.SCREEN_WIDTH - 200, 50, 190, 120);
 
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -1064,6 +1344,8 @@ public class CreativeScene implements Scene {
         y += 18;
         g.drawString("Items: " + placedItems.size() + " Mobs: " + placedMobs.size(), GamePanel.SCREEN_WIDTH - 190, y);
         y += 18;
+        g.drawString("Parallax: " + parallaxLayers.size() + " layers", GamePanel.SCREEN_WIDTH - 190, y);
+        y += 18;
         g.drawString("Pos: " + (int)cameraX + ", " + (int)cameraY, GamePanel.SCREEN_WIDTH - 190, y);
     }
 
@@ -1076,6 +1358,7 @@ public class CreativeScene implements Scene {
             case ITEMS: return itemPalette;
             case MOBS: return mobPalette;
             case LIGHTS: return lightPalette;
+            case PARALLAX: return parallaxPalette;
             default: return blockPalette;
         }
     }
@@ -1278,6 +1561,42 @@ public class CreativeScene implements Scene {
                 placedLights.add(light);
                 setStatus("Placed light: " + selected.displayName);
                 break;
+
+            case PARALLAX:
+                // For parallax, clicking adds/removes the layer to the level
+                @SuppressWarnings("unchecked")
+                Map<String, String> parallaxData = (Map<String, String>) selected.data;
+                String layerName = parallaxData.get("name");
+
+                // Check if layer already exists
+                boolean exists = false;
+                for (ParallaxLayerEntry layer : parallaxLayers) {
+                    if (layer.name.equals(layerName)) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists) {
+                    // Remove the layer
+                    parallaxLayers.removeIf(l -> l.name.equals(layerName));
+                    setStatus("Removed parallax layer: " + selected.displayName);
+                } else {
+                    // Add the layer
+                    ParallaxLayerEntry newLayer = new ParallaxLayerEntry(
+                        layerName,
+                        parallaxData.get("path"),
+                        Double.parseDouble(parallaxData.get("scrollSpeed")),
+                        Integer.parseInt(parallaxData.get("zOrder")),
+                        selected.icon
+                    );
+                    parallaxLayers.add(newLayer);
+                    // Sort by z-order
+                    parallaxLayers.sort((a, b) -> Integer.compare(a.zOrder, b.zOrder));
+                    setStatus("Added parallax layer: " + selected.displayName);
+                }
+                levelData.parallaxEnabled = !parallaxLayers.isEmpty();
+                break;
         }
     }
 
@@ -1365,6 +1684,7 @@ public class CreativeScene implements Scene {
         levelData.items.clear();
         levelData.mobs.clear();
         levelData.lightSources.clear();
+        levelData.parallaxLayers.clear();
 
         // Add blocks
         for (PlacedEntity entity : placedBlocks) {
@@ -1405,6 +1725,19 @@ public class CreativeScene implements Scene {
                 entity.x, entity.y, (String) entity.data
             );
             levelData.lightSources.add(lightData);
+        }
+
+        // Add parallax layers
+        for (ParallaxLayerEntry layer : parallaxLayers) {
+            LevelData.ParallaxLayerData parallaxData = new LevelData.ParallaxLayerData();
+            parallaxData.name = layer.name;
+            parallaxData.imagePath = layer.imagePath;
+            parallaxData.scrollSpeedX = layer.scrollSpeedX;
+            parallaxData.zOrder = layer.zOrder;
+            parallaxData.scale = layer.scale;
+            parallaxData.opacity = layer.opacity;
+            parallaxData.tileHorizontal = true;
+            levelData.parallaxLayers.add(parallaxData);
         }
     }
 
@@ -1470,6 +1803,7 @@ public class CreativeScene implements Scene {
                 writer.println("  \"scrollingEnabled\": " + levelData.scrollingEnabled + ",");
                 writer.println("  \"tileBackgroundHorizontal\": " + levelData.tileBackgroundHorizontal + ",");
                 writer.println("  \"tileBackgroundVertical\": false,");
+                writer.println("  \"verticalScrollEnabled\": " + levelData.verticalScrollEnabled + ",");
                 writer.println();
 
                 // Lighting
@@ -1525,7 +1859,23 @@ public class CreativeScene implements Scene {
                 // Empty arrays
                 writer.println("  \"platforms\": [],");
                 writer.println("  \"triggers\": [],");
-                writer.println("  \"parallaxLayers\": []");
+                writer.println();
+
+                // Parallax layers
+                writer.println("  \"parallaxEnabled\": " + levelData.parallaxEnabled + ",");
+                writer.println("  \"parallaxLayers\": [");
+                for (int i = 0; i < levelData.parallaxLayers.size(); i++) {
+                    LevelData.ParallaxLayerData p = levelData.parallaxLayers.get(i);
+                    String comma = (i < levelData.parallaxLayers.size() - 1) ? "," : "";
+                    writer.println("    {\"name\": \"" + escapeJson(p.name) +
+                        "\", \"imagePath\": \"" + escapeJson(p.imagePath) +
+                        "\", \"scrollSpeedX\": " + p.scrollSpeedX +
+                        ", \"zOrder\": " + p.zOrder +
+                        ", \"scale\": " + p.scale +
+                        ", \"opacity\": " + p.opacity +
+                        ", \"tileHorizontal\": " + p.tileHorizontal + "}" + comma);
+                }
+                writer.println("  ]");
 
                 writer.println("}");
             }
@@ -1598,6 +1948,20 @@ public class CreativeScene implements Scene {
                 PlacedEntity entity = new PlacedEntity(l.x, l.y, "light", l.lightType, icon);
                 placedLights.add(entity);
             }
+
+            // Restore parallax layers
+            parallaxLayers.clear();
+            for (LevelData.ParallaxLayerData p : levelData.parallaxLayers) {
+                BufferedImage icon = createParallaxIcon(p.imagePath);
+                ParallaxLayerEntry entry = new ParallaxLayerEntry(
+                    p.name, p.imagePath, p.scrollSpeedX, p.zOrder, icon
+                );
+                entry.scale = p.scale;
+                entry.opacity = p.opacity;
+                parallaxLayers.add(entry);
+            }
+            // Sort by z-order
+            parallaxLayers.sort((a, b) -> Integer.compare(a.zOrder, b.zOrder));
 
             // Update camera bounds
             camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
