@@ -42,14 +42,38 @@ PROJECTILE SYSTEM (NEW)
   -Collision detection with entities and blocks
   -Configurable damage and knockback
   -Trail effects for visual polish
+  -Mouse-aimed projectile firing (projectiles fly toward cursor)
 -Multiple projectile types:
   -ARROW, BOLT (bows, crossbows)
   -MAGIC_BOLT, FIREBALL, ICEBALL (magic weapons)
   -THROWING_KNIFE, THROWING_AXE, ROCK (throwables)
   -POTION, BOMB (explosives)
+-Special arrows with status effects:
+  -Fire Arrow: Burns enemies for 3 seconds (5 damage/tick, 1.2x multiplier)
+  -Ice Arrow: Freezes/slows enemies for 4 seconds (3 damage/tick, 1.1x multiplier)
+-Charged shot system:
+  -Hold attack to charge bows and magic staffs
+  -Bows consume arrows (not mana), arrows don't scale in size
+  -Magic staffs consume mana, projectiles scale with charge level
+  -Visual feedback with growing projectile and particle effects
 -Mobs can fire projectiles with ranged attacks
   -Configurable projectile type, damage, speed, cooldown
   -AI switches between ranged and melee based on distance
+
+STATUS EFFECT SYSTEM (NEW)
+-Mobs can receive burning, frozen, and poisoned status effects
+  -BURNING: Fire damage over time, orange tint, fire particle overlay
+  -FROZEN: Ice damage, blue tint, slowed movement (50%), ice particle overlay
+  -POISONED: Poison damage over time, green tint, bubble particle overlay
+-GIF-based particle overlays in assets/particles/:
+  -fire_particles.gif: Rising flames and sparks
+  -ice_particles.gif: Falling snowflakes and crystals
+  -poison_particles.gif: Rising bubbles
+-Configurable effect properties:
+  -Duration, damage per tick, tick interval
+  -Movement slow multiplier
+  -Color tint with pulsing alpha
+-Fallback to procedural particle rendering if GIFs not available
 
 ITEM AND WEAPON SYSTEM (NEW)
 -Comprehensive Item class with categories and properties
@@ -103,8 +127,13 @@ src/                    - Game engine source code (organized by package)
     - ProjectileEntity.java - Projectile system for ranged attacks and thrown items
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
       - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
-    mob/                - Mob AI classes (MobEntity, SpriteMobEntity, HumanoidMobEntity, QuadrupedMobEntity)
-      - SpriteMobEntity.java - Mob with ranged attacks, sprint, and extended animations
+    mob/                - Mob AI classes
+      - MobEntity.java       - Base mob class with AI state machine
+      - SpriteMobEntity.java - GIF-based mob with status effects, auto-configured HP/stats
+      old/                - Deprecated bone-based mob classes (legacy)
+        - HumanoidMobEntity.java  - [DEPRECATED] Bone-based humanoid mobs
+        - HumanoidVariants.java   - [DEPRECATED] Humanoid variant configurations
+        - QuadrupedMobEntity.java - [DEPRECATED] Bone-based quadruped mobs
   block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
   animation/            - Animation system (SpriteAnimation, EquipmentOverlay, AnimatedTexture)
     - SpriteAnimation.java  - Extended with 16 action states (IDLE, WALK, RUN, SPRINT, JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL, ATTACK, FIRE, USE_ITEM, EAT, HURT, DEAD, BLOCK, CAST)
@@ -126,12 +155,23 @@ devtools/               - Development tools (texture generators, animation impor
   blockbench/             - Blockbench import tools (legacy bone animation support)
     - BoneTextureGenerator.java       - Generates simple bone textures
     - BlockbenchAnimationImporter.java - Imports Blockbench animation files
+tools/                  - Utility tools for asset generation
+  - StatusEffectSpriteGenerator.java - Generates burning.gif and frozen.gif for mobs
+  - ParticleGifGenerator.java        - Generates particle overlay GIFs for status effects
 assets/
   textures/
     humanoid/           - Humanoid character textures (player, orc, zombie, skeleton)
     quadruped/          - Animal textures (wolf, dog, cat, horse, etc.)
     blocks/             - Block textures (grass, dirt, stone, etc.)
+  particles/            - Status effect particle overlays
+    - fire_particles.gif   - Burning effect overlay
+    - ice_particles.gif    - Frozen effect overlay
+    - poison_particles.gif - Poisoned effect overlay
   parallax/             - Parallax background layers
+  mobs/                 - GIF-based mob sprites (zombie, skeleton, bandit, etc.)
+    [mob_name]/         - Each mob has its own folder with animation GIFs
+      - idle.gif, walk.gif, attack.gif, hurt.gif, death.gif
+      - burning.gif, frozen.gif (status effect variants)
 sounds/                 - All sound files (music, effects, footsteps)
 levels/                 - Level JSON files
 
@@ -345,3 +385,35 @@ RESOLVED ISSUES
   -> Health bar rendering and invincibility flash effects
   -> Debug mode for visualizing hitboxes and mob state
   -> Placeholder sprite generation for testing without assets
+
+[FIXED] Sprite-based mobs need automatic HP and stat configuration
+  -> Added configureMobStats() to SpriteMobEntity that auto-detects mob type from sprite directory
+  -> Mobs automatically get appropriate health (40-60), damage, and speed based on type
+  -> Supports: zombie, skeleton, goblin, orc, bandit, knight, mage, wolf, bear, and more
+  -> Default fallback stats for unknown mob types
+
+[FIXED] Special arrows should apply status effects to mobs
+  -> Added StatusEffect enum to SpriteMobEntity (BURNING, FROZEN, POISONED)
+  -> Fire arrows burn enemies for 3 seconds with damage-over-time
+  -> Ice arrows freeze enemies for 4 seconds with 50% movement slow
+  -> Status effects include color tint overlay and particle effects
+  -> Configurable duration, damage per tick, and damage multiplier
+
+[FIXED] Status effect particles should be GIF-based overlays
+  -> Created assets/particles/ folder with fire_particles.gif, ice_particles.gif, poison_particles.gif
+  -> ParticleGifGenerator tool creates animated particle overlays
+  -> SpriteMobEntity loads and renders particle GIFs as overlays on affected mobs
+  -> Fallback to procedural particle rendering if GIFs not available
+
+[FIXED] Charged shots for bows should consume arrows, not mana
+  -> Updated SpritePlayerEntity.fireChargedProjectile() to differentiate weapon types
+  -> Bows now consume arrows from inventory, not mana
+  -> Arrow projectiles don't scale in size when charged (only magic scales)
+  -> Magic staffs continue to consume mana and scale projectiles
+
+[FIXED] Bone-based mob classes should be moved to deprecated package
+  -> Created entity/mob/old/ package for deprecated bone-based mobs
+  -> Moved HumanoidMobEntity.java, HumanoidVariants.java, QuadrupedMobEntity.java
+  -> Added [DEPRECATED] markers to class documentation
+  -> Updated GameScene.java imports to use entity.mob.old.*
+  -> SpriteMobEntity is now the preferred approach for mob entities
