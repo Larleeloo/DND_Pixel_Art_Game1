@@ -89,6 +89,21 @@ public class CreativeScene implements Scene {
     private String statusMessage = "";
     private long statusMessageTime = 0;
 
+    // Modal dialog state (replaces JOptionPane to avoid threading issues)
+    private ModalState modalState = ModalState.NONE;
+    private String modalInputText = "";
+    private boolean saveAfterExit = false; // Flag for exit confirmation flow
+
+    /**
+     * Modal dialog states for in-game dialogs
+     */
+    private enum ModalState {
+        NONE,           // No modal open
+        CONFIRM_EXIT,   // Confirm exit dialog (Yes/No/Cancel)
+        SAVE_FILENAME,  // Enter filename dialog
+        NEW_LEVEL       // New level properties dialog
+    }
+
     // Block textures cache
     private Map<BlockType, BufferedImage> blockTextures;
 
@@ -473,20 +488,21 @@ public class CreativeScene implements Scene {
             saveLevel();
         }
 
-        // Escape to return to menu
+        // Escape to return to menu (show confirmation dialog)
         if (input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
-            // Ask to save first
-            int result = JOptionPane.showConfirmDialog(null,
-                "Save before exiting?", "Save Level",
-                JOptionPane.YES_NO_CANCEL_OPTION);
-
-            if (result == JOptionPane.YES_OPTION) {
-                saveLevel();
-                SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
-            } else if (result == JOptionPane.NO_OPTION) {
-                SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
+            if (modalState == ModalState.NONE) {
+                modalState = ModalState.CONFIRM_EXIT;
+            } else {
+                // Escape closes any open modal
+                modalState = ModalState.NONE;
+                modalInputText = "";
             }
-            // Cancel does nothing
+        }
+
+        // Handle modal dialog input
+        if (modalState != ModalState.NONE) {
+            handleModalInput(input);
+            return; // Don't process other input while modal is open
         }
 
         // Update world mouse position
@@ -495,6 +511,90 @@ public class CreativeScene implements Scene {
 
         // Update hovered entity
         updateHoveredEntity();
+    }
+
+    /**
+     * Handle input for modal dialogs
+     */
+    private void handleModalInput(InputManager input) {
+        switch (modalState) {
+            case CONFIRM_EXIT:
+                // Y = Yes (save and exit), N = No (exit without save), Escape = Cancel
+                if (input.isKeyJustPressed(KeyEvent.VK_Y)) {
+                    modalState = ModalState.NONE;
+                    saveAfterExit = true;
+                    // Trigger save flow, which will exit after save completes
+                    modalState = ModalState.SAVE_FILENAME;
+                    modalInputText = "";
+                } else if (input.isKeyJustPressed(KeyEvent.VK_N)) {
+                    modalState = ModalState.NONE;
+                    SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
+                }
+                // Escape already handled above, closes the modal
+                break;
+
+            case SAVE_FILENAME:
+                // Handle text input for filename
+                // Check for Enter to confirm
+                if (input.isKeyJustPressed(KeyEvent.VK_ENTER)) {
+                    String filename = modalInputText.trim();
+                    modalState = ModalState.NONE;
+                    if (!filename.isEmpty()) {
+                        performSave(filename);
+                        // If we were saving before exit, now exit
+                        if (saveAfterExit) {
+                            saveAfterExit = false;
+                            SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
+                        }
+                    } else {
+                        setStatus("Save cancelled - no filename entered");
+                        saveAfterExit = false;
+                    }
+                }
+                // Backspace to delete
+                else if (input.isKeyJustPressed(KeyEvent.VK_BACK_SPACE)) {
+                    if (modalInputText.length() > 0) {
+                        modalInputText = modalInputText.substring(0, modalInputText.length() - 1);
+                    }
+                }
+                // Handle regular character input
+                else {
+                    // Check for typed characters (a-z, 0-9, underscore, hyphen)
+                    for (char c = 'a'; c <= 'z'; c++) {
+                        if (input.isKeyJustPressed(c)) {
+                            if (modalInputText.length() < 30) {
+                                modalInputText += c;
+                            }
+                        }
+                    }
+                    for (char c = '0'; c <= '9'; c++) {
+                        if (input.isKeyJustPressed(c)) {
+                            if (modalInputText.length() < 30) {
+                                modalInputText += c;
+                            }
+                        }
+                    }
+                    if (input.isKeyJustPressed(KeyEvent.VK_MINUS)) {
+                        if (modalInputText.length() < 30) {
+                            modalInputText += "-";
+                        }
+                    }
+                    if (input.isKeyJustPressed(KeyEvent.VK_UNDERSCORE) ||
+                        (input.isKeyPressed(KeyEvent.VK_SHIFT) && input.isKeyJustPressed(KeyEvent.VK_MINUS))) {
+                        if (modalInputText.length() < 30) {
+                            modalInputText += "_";
+                        }
+                    }
+                }
+                break;
+
+            case NEW_LEVEL:
+                // For now, just close on Escape (already handled)
+                break;
+
+            default:
+                break;
+        }
     }
 
     /**
@@ -582,6 +682,110 @@ public class CreativeScene implements Scene {
 
         // Draw level info
         drawLevelInfo(g2);
+
+        // Draw modal dialogs on top of everything
+        if (modalState != ModalState.NONE) {
+            drawModalDialog(g2);
+        }
+    }
+
+    /**
+     * Draw modal dialog overlay
+     */
+    private void drawModalDialog(Graphics2D g) {
+        // Dim the background
+        g.setColor(new Color(0, 0, 0, 150));
+        g.fillRect(0, 0, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
+
+        // Dialog box dimensions
+        int dialogWidth = 500;
+        int dialogHeight = 200;
+        int dialogX = (GamePanel.SCREEN_WIDTH - dialogWidth) / 2;
+        int dialogY = (GamePanel.SCREEN_HEIGHT - dialogHeight) / 2;
+
+        // Dialog background
+        g.setColor(new Color(50, 54, 62));
+        g.fillRoundRect(dialogX, dialogY, dialogWidth, dialogHeight, 15, 15);
+
+        // Dialog border
+        g.setColor(new Color(100, 104, 112));
+        g.setStroke(new BasicStroke(2));
+        g.drawRoundRect(dialogX, dialogY, dialogWidth, dialogHeight, 15, 15);
+        g.setStroke(new BasicStroke(1));
+
+        g.setColor(Color.WHITE);
+
+        switch (modalState) {
+            case CONFIRM_EXIT:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                String title = "Exit Creative Mode?";
+                FontMetrics fm = g.getFontMetrics();
+                int titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 50);
+
+                // Message
+                g.setFont(new Font("Arial", Font.PLAIN, 16));
+                String msg = "Do you want to save before exiting?";
+                fm = g.getFontMetrics();
+                int msgX = dialogX + (dialogWidth - fm.stringWidth(msg)) / 2;
+                g.drawString(msg, msgX, dialogY + 90);
+
+                // Buttons hint
+                g.setFont(new Font("Arial", Font.BOLD, 14));
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[Y] Yes - Save & Exit", dialogX + 50, dialogY + 140);
+                g.setColor(new Color(200, 100, 100));
+                g.drawString("[N] No - Exit without saving", dialogX + 50, dialogY + 165);
+                g.setColor(new Color(150, 150, 200));
+                g.drawString("[Esc] Cancel", dialogX + 320, dialogY + 165);
+                break;
+
+            case SAVE_FILENAME:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                title = "Save Level";
+                fm = g.getFontMetrics();
+                titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 50);
+
+                // Instructions
+                g.setFont(new Font("Arial", Font.PLAIN, 14));
+                g.drawString("Enter filename (letters, numbers, - and _ only):", dialogX + 30, dialogY + 85);
+
+                // Text input box
+                g.setColor(new Color(30, 34, 42));
+                g.fillRoundRect(dialogX + 30, dialogY + 100, dialogWidth - 60, 40, 5, 5);
+                g.setColor(new Color(80, 130, 180));
+                g.drawRoundRect(dialogX + 30, dialogY + 100, dialogWidth - 60, 40, 5, 5);
+
+                // Input text with cursor
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Monospaced", Font.PLAIN, 18));
+                String displayText = modalInputText;
+                // Blinking cursor
+                if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                    displayText += "|";
+                }
+                g.drawString(displayText, dialogX + 40, dialogY + 128);
+
+                // Hint
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(150, 150, 150));
+                g.drawString("File will be saved as: levels/creative_" +
+                    (modalInputText.isEmpty() ? "<filename>" : modalInputText) + ".json",
+                    dialogX + 30, dialogY + 165);
+
+                // Buttons hint
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[Enter] Save", dialogX + 30, dialogY + 185);
+                g.setColor(new Color(150, 150, 200));
+                g.drawString("[Esc] Cancel", dialogX + 120, dialogY + 185);
+                break;
+
+            default:
+                break;
+        }
     }
 
     /**
@@ -1206,21 +1410,26 @@ public class CreativeScene implements Scene {
 
     /**
      * Save the level to a JSON file
+     * Opens the filename input modal if no filename provided
      */
     private void saveLevel() {
-        // Build the level data
-        buildLevelData();
+        // Show filename input modal
+        modalState = ModalState.SAVE_FILENAME;
+        modalInputText = "";
+        setStatus("Enter filename and press Enter to save");
+    }
 
-        // Get filename from user
-        String filename = JOptionPane.showInputDialog(null,
-            "Enter level filename (without .json):",
-            "Save Level",
-            JOptionPane.PLAIN_MESSAGE);
-
+    /**
+     * Actually perform the save with the given filename
+     */
+    private void performSave(String filename) {
         if (filename == null || filename.trim().isEmpty()) {
             setStatus("Save cancelled");
             return;
         }
+
+        // Build the level data
+        buildLevelData();
 
         // Ensure filename is valid
         filename = filename.replaceAll("[^a-zA-Z0-9_-]", "_");
@@ -1479,7 +1688,12 @@ public class CreativeScene implements Scene {
                 dialog.dispose();
                 setStatus("Created new level: " + levelData.name);
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "Please enter valid numbers for dimensions.");
+                // Reset fields to defaults and show error in status
+                widthField.setText("3840");
+                heightField.setText("1080");
+                groundField.setText("920");
+                // Show error via dialog title change (avoid JOptionPane)
+                dialog.setTitle("Error: Please enter valid numbers!");
             }
         });
 
