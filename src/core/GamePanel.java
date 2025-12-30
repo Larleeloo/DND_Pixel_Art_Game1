@@ -91,6 +91,7 @@ public class GamePanel extends JPanel implements Runnable {
         sceneManager.addScene("mainMenu", new MainMenuScene());
         sceneManager.addScene("levelSelection", new LevelSelectionScene());
         sceneManager.addScene("spriteCustomization", new SpriteCharacterCustomization());
+        sceneManager.addScene("overworld", new OverworldScene());
 
         // Start with main menu
         sceneManager.setScene("mainMenu");
