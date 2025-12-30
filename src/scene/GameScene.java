@@ -66,6 +66,30 @@ public class GameScene implements Scene {
         this.initialized = false;
     }
 
+    /**
+     * Default constructor - creates an empty GameScene.
+     * Use setLevelData() to set the level data before calling init().
+     */
+    public GameScene() {
+        this.levelPath = null;
+        this.levelData = null;
+        this.initialized = false;
+    }
+
+    /**
+     * Set the level data for this scene.
+     * Must be called before init() if using the default constructor.
+     * @param levelData The level data to use
+     */
+    public void setLevelData(LevelData levelData) {
+        this.levelData = levelData;
+        this.levelPath = null;
+        // Reset initialized flag so init() will reinitialize with new data
+        if (this.initialized) {
+            this.initialized = false;
+        }
+    }
+
     @Override
     public void init() {
         if (initialized) return;

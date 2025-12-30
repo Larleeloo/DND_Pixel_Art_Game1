@@ -113,10 +113,29 @@ public class MainMenuScene implements Scene {
         );
         buttons.add(customizeButton);
 
+        // Creative Mode button - opens the level editor
+        UIButton creativeButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY + spacing * 3,
+                buttonWidth,
+                buttonHeight,
+                "Creative Mode",
+                () -> {
+                    System.out.println("MainMenuScene: Opening creative mode");
+                    SceneManager.getInstance().setScene("creative", SceneManager.TRANSITION_FADE);
+                }
+        );
+        creativeButton.setColors(
+                new Color(180, 130, 50, 220),
+                new Color(210, 160, 80, 255),
+                Color.WHITE
+        );
+        buttons.add(creativeButton);
+
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing * 3,
+                startY + spacing * 4,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",
