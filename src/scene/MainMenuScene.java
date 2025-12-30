@@ -51,34 +51,53 @@ public class MainMenuScene implements Scene {
      */
     private void createMenuButtons() {
         int centerX = GamePanel.SCREEN_WIDTH / 2;
-        int startY = 400;
+        int startY = 340;
         int buttonWidth = 300;
         int buttonHeight = 60;
-        int spacing = 80;
+        int spacing = 75;
 
-        // Play button - goes to level selection
-        UIButton playButton = new UIButton(
+        // Overworld button - opens the overworld map for level selection
+        UIButton overworldButton = new UIButton(
                 centerX - buttonWidth / 2,
                 startY,
                 buttonWidth,
                 buttonHeight,
-                "Play",
+                "Adventure",
+                () -> {
+                    System.out.println("MainMenuScene: Opening overworld");
+                    SceneManager.getInstance().setScene("overworld", SceneManager.TRANSITION_FADE);
+                }
+        );
+        overworldButton.setColors(
+                new Color(70, 150, 100, 220),
+                new Color(100, 180, 130, 255),
+                Color.WHITE
+        );
+        buttons.add(overworldButton);
+
+        // Level Select button - goes to classic level selection list
+        UIButton levelSelectButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY + spacing,
+                buttonWidth,
+                buttonHeight,
+                "Level Select",
                 () -> {
                     System.out.println("MainMenuScene: Opening level selection");
                     SceneManager.getInstance().setScene("levelSelection", SceneManager.TRANSITION_FADE);
                 }
         );
-        playButton.setColors(
+        levelSelectButton.setColors(
                 new Color(70, 130, 180, 220),
                 new Color(100, 160, 210, 255),
                 Color.WHITE
         );
-        buttons.add(playButton);
+        buttons.add(levelSelectButton);
 
         // Customize button - opens sprite-based character customization
         UIButton customizeButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing,
+                startY + spacing * 2,
                 buttonWidth,
                 buttonHeight,
                 "Customize Character",
@@ -97,7 +116,7 @@ public class MainMenuScene implements Scene {
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing * 2,
+                startY + spacing * 3,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",
