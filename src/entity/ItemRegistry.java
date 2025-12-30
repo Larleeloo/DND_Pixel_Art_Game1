@@ -289,6 +289,356 @@ public class ItemRegistry {
         registerKey("skeleton_key", "Skeleton Key", ItemRarity.EPIC,
                 "Opens many locks");
 
+        // ==================== LEGENDARY WEAPONS (Discord Bot Items) ====================
+
+        registerMeleeWeapon("necromancers_blade", "Necromancer's Blade", 28, 1.1f, 70,
+                ItemRarity.EPIC, "A blade infused with dark energy")
+                .setSpecialEffect("Lifesteal on hit");
+
+        Item electrifiedKatana = registerMeleeWeapon("electrified_katana", "Electrified Katana", 32, 1.4f, 75,
+                ItemRarity.LEGENDARY, "Crackles with lightning energy");
+        electrifiedKatana.setSpecialEffect("Chain lightning on critical hits");
+        electrifiedKatana.setCritChance(0.20f);
+
+        Item etherealDragonslayer = registerMeleeWeapon("ethereal_dragonslayer", "Ethereal DragonSlayer Blade", 50, 0.8f, 90,
+                ItemRarity.MYTHIC, "Forged to slay ancient dragons");
+        etherealDragonslayer.setSpecialEffect("+200% damage to dragons");
+        etherealDragonslayer.setCritChance(0.25f);
+
+        registerMeleeWeapon("soulbound_dagger", "Soulbound Dagger", 15, 2.5f, 45,
+                ItemRarity.RARE, "Bound to your soul, returns when thrown")
+                .setSpecialEffect("Returns to owner");
+
+        // ==================== EPIC RANGED WEAPONS (Discord Bot Items) ====================
+
+        registerRangedWeapon("epic_bow", "Epic Bow", 22, 20.0f, ProjectileType.ARROW,
+                ItemRarity.EPIC, "A masterfully crafted bow")
+                .setAmmoItemName("arrow");
+        templates.get("epic_bow").setChargeable(true, 1.8f, 0, 2.8f);
+        templates.get("epic_bow").setChargeSpeedMultiplier(2.0f);
+        templates.get("epic_bow").setCritChance(0.15f);
+
+        registerRangedWeapon("summoning_rod", "Summoning Rod", 18, 10.0f, ProjectileType.MAGIC_BOLT,
+                ItemRarity.RARE, "Calls forth magical entities")
+                .setAmmoItemName("mana");
+        templates.get("summoning_rod").setSpecialEffect("Summons spectral allies");
+        templates.get("summoning_rod").setChargeable(true, 3.0f, 35, 2.5f);
+
+        registerRangedWeapon("lightning_rod", "Lightning Rod", 30, 25.0f, ProjectileType.MAGIC_BOLT,
+                ItemRarity.RARE, "Channels the power of storms")
+                .setAmmoItemName("mana");
+        templates.get("lightning_rod").setSpecialEffect("Chain lightning effect");
+        templates.get("lightning_rod").setChargeable(true, 2.0f, 20, 3.0f);
+
+        registerRangedWeapon("blazing_rod", "Blazing Rod", 25, 14.0f, ProjectileType.FIREBALL,
+                ItemRarity.RARE, "Burns with eternal flame")
+                .setAmmoItemName("mana");
+        templates.get("blazing_rod").setSpecialEffect("Sets enemies ablaze");
+        templates.get("blazing_rod").setChargeable(true, 2.5f, 25, 2.5f);
+
+        registerRangedWeapon("magic_fishing_rod", "Magic Fishing Rod", 8, 12.0f, ProjectileType.MAGIC_BOLT,
+                ItemRarity.UNCOMMON, "Catches fish and magic alike")
+                .setAmmoItemName("mana");
+        templates.get("magic_fishing_rod").setSpecialEffect("Pulls items toward you");
+
+        // ==================== SHIELDS & ARMOR (Discord Bot Items) ====================
+
+        registerArmor("steel_shield", "Steel Shield", 12,
+                ItemRarity.UNCOMMON, "A sturdy defensive shield")
+                .setSpecialEffect("Block incoming projectiles");
+
+        registerArmor("sentinel_gauntlets", "Sentinel Gauntlets", 8,
+                ItemRarity.UNCOMMON, "Gauntlets of a watchful guardian")
+                .setSpecialEffect("+5% attack speed");
+
+        registerArmor("gold_armor_helmet", "Gold Armor Helmet", 6,
+                ItemRarity.UNCOMMON, "Ornate golden headpiece");
+
+        registerArmor("gold_armor_chest", "Gold Armor Chestplate", 12,
+                ItemRarity.UNCOMMON, "Gleaming golden protection");
+
+        registerArmor("gold_armor_legs", "Gold Armor Leggings", 9,
+                ItemRarity.UNCOMMON, "Royal golden leg guards");
+
+        registerArmor("gold_armor_boots", "Gold Armor Boots", 5,
+                ItemRarity.UNCOMMON, "Shimmering golden footwear");
+
+        registerArmor("chainmail_armor", "Chainmail Armor", 8,
+                ItemRarity.COMMON, "Flexible chain protection");
+
+        registerArmor("dragon_scale_armor", "Dragon Scale Armor", 25,
+                ItemRarity.LEGENDARY, "Forged from dragon scales")
+                .setSpecialEffect("+50% fire resistance");
+
+        registerArmor("fancy_boots", "Fancy Boots", 3,
+                ItemRarity.UNCOMMON, "Stylish and somewhat protective")
+                .setSpecialEffect("+10% movement speed");
+
+        // ==================== CLOTHING (Discord Bot Items) ====================
+
+        registerClothing("green_dress", "Green Dress", ItemRarity.COMMON,
+                "An elegant green gown");
+
+        registerClothing("orange_dress", "Orange Dress", ItemRarity.COMMON,
+                "A vibrant orange dress");
+
+        registerClothing("black_dress", "Black Dress", ItemRarity.UNCOMMON,
+                "A sophisticated dark dress");
+
+        registerClothing("hat", "Hat", ItemRarity.COMMON,
+                "A simple but stylish hat");
+
+        registerClothing("pants", "Pants", ItemRarity.COMMON,
+                "Basic comfortable trousers");
+
+        registerClothing("shirt", "Shirt", ItemRarity.COMMON,
+                "A simple cloth shirt");
+
+        registerClothing("three_piece_suit", "3-Piece Suit", ItemRarity.UNCOMMON,
+                "Formal attire for special occasions");
+
+        registerClothing("swimwear", "Swimwear", ItemRarity.COMMON,
+                "Perfect for beach adventures");
+
+        registerClothing("yellow_cloak", "Yellow Cloak", ItemRarity.UNCOMMON,
+                "A bright flowing cloak");
+
+        registerClothing("chameleon_cloak", "Chameleon Cloak", ItemRarity.RARE,
+                "Changes color to blend in")
+                .setSpecialEffect("Partial invisibility");
+
+        registerClothing("witchs_hat", "Witch's Hat", ItemRarity.UNCOMMON,
+                "A pointy magical hat")
+                .setSpecialEffect("+5% magic damage");
+
+        registerClothing("gown_forgotten_verses", "Gown of Forgotten Verses", ItemRarity.EPIC,
+                "Whispers ancient incantations")
+                .setSpecialEffect("+20% mana regeneration");
+
+        // ==================== POTIONS (Discord Bot Items) ====================
+
+        registerPotion("lucky_potion", "Lucky Potion", 0, 0, 0,
+                ItemRarity.RARE, "Increases your fortune")
+                .setSpecialEffect("+25% drop rate for 60 seconds");
+
+        registerPotion("honey_potion", "Honey Potion", 25, 10, 20,
+                ItemRarity.COMMON, "Sweet and restorative");
+
+        registerPotion("brewed_potion", "Brewed Potion", 30, 15, 0,
+                ItemRarity.COMMON, "A carefully brewed elixir");
+
+        registerMaterial("mana_leaf", "Mana Leaf", ItemRarity.UNCOMMON,
+                "Restores mana when consumed");
+        templates.get("mana_leaf").setManaRestore(30);
+        templates.get("mana_leaf").setConsumeTime(1.0f);
+        templates.get("mana_leaf").setCategory(ItemCategory.POTION);
+
+        // ==================== FOOD (Discord Bot Items) ====================
+
+        registerFood("cake", "Cake", 35, 5, 15,
+                ItemRarity.UNCOMMON, "A delicious layered cake");
+
+        registerFood("cookies", "Cookies", 12, 0, 8,
+                ItemRarity.COMMON, "Freshly baked cookies");
+
+        registerFood("melon", "Melon", 18, 0, 10,
+                ItemRarity.COMMON, "A juicy refreshing melon");
+
+        registerFood("pumpkin", "Pumpkin", 15, 0, 5,
+                ItemRarity.COMMON, "A seasonal gourd");
+
+        registerFood("salmon", "Salmon", 25, 0, 12,
+                ItemRarity.COMMON, "Fresh caught fish");
+
+        registerFood("chicken_egg", "Chicken Egg", 8, 0, 5,
+                ItemRarity.COMMON, "A nutritious egg");
+
+        // ==================== MATERIALS & ORES (Discord Bot Items) ====================
+
+        registerMaterial("iron_ore", "Iron Ore", ItemRarity.COMMON,
+                "Raw iron ready for smelting");
+
+        registerMaterial("gold_coins", "Gold Coins", ItemRarity.COMMON,
+                "Currency of the realm");
+        templates.get("gold_coins").setStackable(true);
+        templates.get("gold_coins").setMaxStackSize(64);
+
+        registerMaterial("copper_ingots", "Copper Ingots", ItemRarity.COMMON,
+                "Refined copper metal");
+
+        registerMaterial("gold_bars", "Gold Bars", ItemRarity.UNCOMMON,
+                "Refined gold, highly valuable");
+
+        registerMaterial("iron_bars", "Iron Bars", ItemRarity.COMMON,
+                "Refined iron metal");
+
+        registerMaterial("leather", "Leather", ItemRarity.COMMON,
+                "Tanned animal hide");
+
+        registerMaterial("yarn", "Yarn", ItemRarity.COMMON,
+                "Spun wool or fiber");
+
+        registerMaterial("flour", "Flour", ItemRarity.COMMON,
+                "Ground grain for baking");
+
+        registerMaterial("mysterious_gemstone", "Mysterious Gemstone", ItemRarity.RARE,
+                "Pulses with unknown energy");
+
+        registerMaterial("dragon_egg", "Dragon Egg", ItemRarity.LEGENDARY,
+                "A dormant dragon embryo");
+        templates.get("dragon_egg").setStackable(false);
+
+        registerMaterial("bonemite", "Bonemeal", ItemRarity.COMMON,
+                "Ground bones for fertilizer");
+
+        registerMaterial("ink", "Ink", ItemRarity.COMMON,
+                "Used for writing and enchanting");
+
+        registerMaterial("planks", "Planks", ItemRarity.COMMON,
+                "Cut wooden boards");
+
+        registerMaterial("rocks", "Rocks", ItemRarity.COMMON,
+                "Simple stones");
+
+        registerMaterial("rope", "Rope", ItemRarity.COMMON,
+                "Strong fiber cord");
+
+        registerMaterial("sapling", "Sapling", ItemRarity.COMMON,
+                "A young tree ready to plant");
+
+        registerMaterial("machine_parts", "Machine Parts", ItemRarity.UNCOMMON,
+                "Gears and components");
+
+        registerMaterial("skull", "Skull", ItemRarity.UNCOMMON,
+                "A grim reminder of mortality");
+
+        // ==================== TOOLS (Discord Bot Items) ====================
+
+        registerTool("shears", "Shears", 2,
+                ItemRarity.COMMON, "For cutting wool and plants");
+
+        registerTool("fishing_rod", "Fishing Rod", 1,
+                ItemRarity.COMMON, "For catching fish");
+
+        registerTool("walking_stick", "Walking Stick", 3,
+                ItemRarity.COMMON, "Helps with long journeys")
+                .setSpecialEffect("+5% movement speed");
+
+        // ==================== COLLECTIBLES & MISC (Discord Bot Items) ====================
+
+        registerCollectible("orb", "Orb", ItemRarity.UNCOMMON,
+                "A mysterious glowing sphere");
+
+        registerCollectible("ancient_pottery", "Ancient Pottery", ItemRarity.UNCOMMON,
+                "A relic from ancient times");
+
+        registerCollectible("music_disc", "Music Disc", ItemRarity.UNCOMMON,
+                "Plays enchanting melodies");
+
+        registerCollectible("music_player", "Music Player", ItemRarity.RARE,
+                "A magical music box");
+
+        registerCollectible("journal", "Journal", ItemRarity.COMMON,
+                "A book for recording thoughts");
+
+        registerCollectible("painting_wolves", "Painting of 3 Wolves", ItemRarity.UNCOMMON,
+                "A beautiful wolf painting");
+
+        registerCollectible("painting_dog", "Painting of a Dog", ItemRarity.UNCOMMON,
+                "A loyal companion portrait");
+
+        registerCollectible("marbles", "Marbles", ItemRarity.COMMON,
+                "Colorful glass spheres");
+
+        registerCollectible("nametag", "Nametag", ItemRarity.UNCOMMON,
+                "Name anything you want");
+
+        registerCollectible("candle", "Candle", ItemRarity.COMMON,
+                "Provides light in darkness");
+
+        registerCollectible("mysterious_candle", "Mysterious Candle", ItemRarity.RARE,
+                "Burns with an ethereal flame");
+
+        registerCollectible("water_bottle", "Water Bottle", ItemRarity.COMMON,
+                "Clean drinking water");
+
+        registerCollectible("saddle", "Saddle", ItemRarity.UNCOMMON,
+                "For riding mounts");
+
+        registerCollectible("backpack", "Backpack", ItemRarity.UNCOMMON,
+                "Increases carrying capacity")
+                .setSpecialEffect("+8 inventory slots");
+
+        registerCollectible("personalized_banner", "Personalized Banner", ItemRarity.UNCOMMON,
+                "Your personal emblem");
+
+        registerCollectible("frog", "Frog", ItemRarity.COMMON,
+                "A small amphibian friend");
+
+        registerCollectible("jack_o_lantern", "Jack-O-Lantern", ItemRarity.UNCOMMON,
+                "A carved pumpkin that glows");
+
+        registerCollectible("rocket", "Rocket", ItemRarity.UNCOMMON,
+                "Launches into the sky");
+
+        registerCollectible("wind_charge", "Wind Charge", ItemRarity.UNCOMMON,
+                "A gust of captured wind");
+
+        registerCollectible("undead_scroll", "Undead Scroll", ItemRarity.RARE,
+                "Contains necromantic knowledge");
+
+        registerCollectible("trip_wire_trap", "Trip-Wire Trap", ItemRarity.UNCOMMON,
+                "Catches unsuspecting foes");
+
+        registerCollectible("magic_lantern", "Magic Lantern", ItemRarity.UNCOMMON,
+                "Never runs out of light");
+
+        registerCollectible("crucible", "Crucible", ItemRarity.UNCOMMON,
+                "For melting and mixing metals");
+
+        registerCollectible("mirror_realms", "Mirror to Other Realms", ItemRarity.EPIC,
+                "Glimpse into parallel worlds");
+
+        registerCollectible("rowboat", "Rowboat", ItemRarity.UNCOMMON,
+                "For crossing water");
+
+        // ==================== COMPANIONS (Discord Bot Items) ====================
+
+        registerCompanion("scarecrow_companion", "Scarecrow Companion", ItemRarity.RARE,
+                "A friendly scarecrow follows you");
+
+        registerCompanion("parrot_companion", "Parrot Companion", ItemRarity.RARE,
+                "A colorful bird companion");
+
+        registerCompanion("asteria_explorer", "Asteria the Explorer", ItemRarity.LEGENDARY,
+                "A legendary explorer companion")
+                .setSpecialEffect("Reveals hidden treasures");
+
+        registerCompanion("breaya_alchemist", "Breaya the Advanced Alchemist", ItemRarity.LEGENDARY,
+                "A master alchemist companion")
+                .setSpecialEffect("Doubles potion effectiveness");
+
+        registerCompanion("gipp", "Gipp", ItemRarity.EPIC,
+                "A mysterious magical companion");
+
+        registerCompanion("noctra_solen", "Noctra and Solen", ItemRarity.LEGENDARY,
+                "Twin spirits of night and day")
+                .setSpecialEffect("Bonus damage day/night");
+
+        registerCompanion("filvendor", "Filvendor Venrona", ItemRarity.EPIC,
+                "An ancient elven sage")
+                .setSpecialEffect("+15% experience gain");
+
+        // ==================== SPECIAL CRYSTAL EDITIONS ====================
+
+        registerCollectible("crystal_summer", "Crystal (Summer Edition)", ItemRarity.LEGENDARY,
+                "A crystal infused with summer's warmth")
+                .setSpecialEffect("Fire damage immunity");
+
+        registerCollectible("crystal_winter", "Crystal (Winter Edition)", ItemRarity.LEGENDARY,
+                "A crystal infused with winter's chill")
+                .setSpecialEffect("Ice damage immunity");
+
         initialized = true;
     }
 
@@ -419,6 +769,34 @@ public class ItemRegistry {
         item.setDescription(desc);
         item.setStackable(true);
         item.setMaxStackSize(16);
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerClothing(String id, String name, ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.CLOTHING);
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(false);
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerCollectible(String id, String name, ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.OTHER);
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(true);
+        item.setMaxStackSize(16);
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerCompanion(String id, String name, ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.ACCESSORY);
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(false);
         templates.put(id, item);
         return item;
     }
