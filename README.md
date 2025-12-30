@@ -180,7 +180,9 @@ Work on section 1.01 (Inventory and items)
 
 KNOWN ISSUES
 
-(All previously listed issues have been resolved - see RESOLVED ISSUES section)
+-Player triple jump not working as intended. Physics appear to do a double jump but animation indicates a triple when no third jump has been completed. 
+
+Player trip
 
 FUTURE FEATURES (ROADMAP)
 
