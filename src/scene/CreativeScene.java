@@ -201,7 +201,7 @@ public class CreativeScene implements Scene {
             this.imagePath = imagePath;
             this.scrollSpeedX = scrollSpeedX;
             this.zOrder = zOrder;
-            this.scale = 1.0;
+            this.scale = 10.0;  // Scale up to cover screen (matches LevelData default)
             this.opacity = 1.0;
             this.icon = icon;
         }
@@ -1455,12 +1455,9 @@ public class CreativeScene implements Scene {
         mouseX = x;
         mouseY = y;
 
-        // Left click in canvas area
-        if (x >= PALETTE_WIDTH) {
-            // Check for right click (remove) - handled via button check
-            // For now, assume left click places
-            placeEntity();
-        }
+        // Note: Entity placement is handled in update() via InputManager
+        // which properly distinguishes left vs right mouse button.
+        // This method is only used for forwarding to play mode.
     }
 
     /**
@@ -1734,9 +1731,10 @@ public class CreativeScene implements Scene {
             parallaxData.imagePath = layer.imagePath;
             parallaxData.scrollSpeedX = layer.scrollSpeedX;
             parallaxData.zOrder = layer.zOrder;
-            parallaxData.scale = layer.scale;
+            parallaxData.scale = layer.scale;  // Should be 10.0 for proper sizing
             parallaxData.opacity = layer.opacity;
             parallaxData.tileHorizontal = true;
+            parallaxData.anchorBottom = true;  // Anchor to bottom for proper positioning
             levelData.parallaxLayers.add(parallaxData);
         }
     }
@@ -1873,7 +1871,8 @@ public class CreativeScene implements Scene {
                         ", \"zOrder\": " + p.zOrder +
                         ", \"scale\": " + p.scale +
                         ", \"opacity\": " + p.opacity +
-                        ", \"tileHorizontal\": " + p.tileHorizontal + "}" + comma);
+                        ", \"tileHorizontal\": " + p.tileHorizontal +
+                        ", \"anchorBottom\": " + p.anchorBottom + "}" + comma);
                 }
                 writer.println("  ]");
 
