@@ -647,9 +647,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
      * Checks both space char and VK_SPACE keyCode for maximum responsiveness.
      */
     private void handleJumping(InputManager input) {
-        // Use both space char and VK_SPACE keyCode for reliable detection
-        boolean spacePressed = input.isKeyJustPressed(' ') ||
-                               input.isKeyJustPressed(java.awt.event.KeyEvent.VK_SPACE);
+        // Check both space char and VK_SPACE keyCode for reliable detection
+        // IMPORTANT: Must consume BOTH to prevent double-triggering since they're tracked separately
+        boolean spaceCharPressed = input.isKeyJustPressed(' ');
+        boolean spaceKeyPressed = input.isKeyJustPressed(java.awt.event.KeyEvent.VK_SPACE);
+        boolean spacePressed = spaceCharPressed || spaceKeyPressed;
 
         if (spacePressed && jumpsRemaining > 0) {
             if (onGround) {
