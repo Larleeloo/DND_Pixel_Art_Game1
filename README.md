@@ -180,18 +180,11 @@ Work on section 1.01 (Inventory and items)
 
 KNOWN ISSUES
 
--Player triple jump not working as intended. Physics appears to do a double jump but animation indicates a triple when no third jump has been completed. 
--Game window draws focus and mouse pointer back to window, preventing other applications from being used during gameplay
 -Companions are listed as items and instead should be moved to player character alternates
 -Base player customization (skin tone specifically) should be an available option in the customization menu
 -Belts should be included in the player customization menu
--Game window should be a borderless 1920x1080 window, not completely full screen to allow for different sized monitors
 -Block breaking system should be revisited. Blocks within a certain range of the player should be clickable. An arrow should appear to denote whether the player is breaking the block from above, below, left or right. This arrow's direction can be changed by using arrow keys
--Sensitivity of scroll wheel needs to be turned down
--UI elements should cancel out in-game clicking actions. For example, when toggling the music on/off button, the player should not also do 'use item' actions
 -Blocks are not placeable. Blocks should be placeable within a 3 block radius of the player via left click
-
-Player trip
 
 FUTURE FEATURES (ROADMAP)
 
@@ -428,3 +421,33 @@ RESOLVED ISSUES
   -> Added [DEPRECATED] markers to class documentation
   -> Updated GameScene.java imports to use entity.mob.old.*
   -> SpriteMobEntity is now the preferred approach for mob entities
+
+[FIXED] Game window should be a borderless 1920x1080 window, not completely full screen
+  -> Changed GameWindow from exclusive fullscreen to borderless 1920x1080 window
+  -> Window is now centered on screen using setLocationRelativeTo(null)
+  -> Works consistently across different monitor sizes
+  -> Game title changed to "The Amber Moon"
+
+[FIXED] Game window draws focus and mouse pointer back to window, preventing other applications
+  -> Removed aggressive always-on-top timer that kept stealing focus
+  -> Removed windowLostFocus handler that forced window back to front
+  -> Window now allows users to switch to other applications normally
+  -> Focus is only requested on initial window display
+
+[FIXED] Sensitivity of scroll wheel needs to be turned down
+  -> Added scroll accumulation threshold (SCROLL_THRESHOLD = 3.0)
+  -> Uses precise wheel rotation for smoother control
+  -> Multiple scroll ticks required to trigger hotbar/inventory scroll
+  -> Prevents accidental item switching during fast scrolling
+
+[FIXED] UI elements should cancel out in-game clicking actions
+  -> Added click consumption system to InputManager
+  -> UI buttons now consume clicks when handling them
+  -> Player entity checks if click was consumed by UI before processing game actions
+  -> Clicking music toggle or other buttons no longer triggers mining/attacks
+
+[FIXED] Player triple jump not working as intended
+  -> Fixed edge case where falling off ledge caused misaligned jump count
+  -> When player falls without jumping, first air press now properly applies velocity
+  -> Triple jump strength increased from -8 to -9 for consistent feel
+  -> Jump animation now correctly matches physics state

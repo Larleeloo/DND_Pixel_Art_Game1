@@ -31,6 +31,7 @@ public class SceneManager {
     private float transitionAlpha;
     private float transitionSpeed;
     private AudioManager audioManager;
+    private InputManager inputManager;
 
     // Transition types
     public static final int TRANSITION_NONE = 0;
@@ -68,6 +69,20 @@ public class SceneManager {
      */
     public AudioManager getAudioManager() {
         return audioManager;
+    }
+
+    /**
+     * Set the input manager for scenes to access.
+     */
+    public void setInputManager(InputManager inputManager) {
+        this.inputManager = inputManager;
+    }
+
+    /**
+     * Get the input manager.
+     */
+    public InputManager getInputManager() {
+        return inputManager;
     }
 
     /**
@@ -164,6 +179,11 @@ public class SceneManager {
      * @param input The input manager
      */
     public void update(InputManager input) {
+        // Reset UI click consumption flag at the start of each frame
+        if (input != null) {
+            input.resetClickConsumed();
+        }
+
         if (transitioning) {
             updateTransition();
         }

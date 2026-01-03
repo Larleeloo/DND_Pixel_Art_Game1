@@ -973,7 +973,14 @@ public class GameScene implements Scene {
     @Override
     public void onMouseClicked(int x, int y) {
         for (UIButton button : buttons) {
-            button.handleClick(x, y);
+            if (button.handleClick(x, y)) {
+                // UI button handled the click - consume it so game logic doesn't also respond
+                InputManager input = SceneManager.getInstance().getInputManager();
+                if (input != null) {
+                    input.consumeClick();
+                }
+                return;  // Stop processing after first button handles click
+            }
         }
     }
 

@@ -11,68 +11,42 @@ import javax.swing.*;
 
 public class GameWindow extends JFrame {
     private GamePanel panel;
-    private Timer alwaysOnTopTimer;
+
+    // Target window size - borderless 1920x1080 for consistent experience across monitors
+    private static final int WINDOW_WIDTH = 1920;
+    private static final int WINDOW_HEIGHT = 1080;
 
     public GameWindow() {
-        setTitle("My Game");
-        setUndecorated(true);
-        setAlwaysOnTop(true);
+        setTitle("The Amber Moon");
+        setUndecorated(true);  // Borderless window
+        setResizable(false);
 
         panel = new GamePanel();
         add(panel);
+
+        // Set preferred size for the panel and pack the window
+        panel.setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
         pack();
 
-        GraphicsDevice device = GraphicsEnvironment
-                .getLocalGraphicsEnvironment()
-                .getDefaultScreenDevice();
+        // Center the window on screen
+        setLocationRelativeTo(null);
 
-        try {
-            device.setFullScreenWindow(this);
-        } catch (Exception ignored) {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-        }
+        // Allow window to lose focus normally (don't force always-on-top)
+        setAlwaysOnTop(false);
 
         setVisible(true);
         panel.startGameLoop();
 
-        // Maintain always-on-top and request focus when focus is lost
+        // Request focus on startup, but don't aggressively grab it later
         addWindowFocusListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowGainedFocus(java.awt.event.WindowEvent e) {
                 panel.requestFocusInWindow();
             }
-
-            @Override
-            public void windowLostFocus(java.awt.event.WindowEvent e) {
-                // Re-request focus and ensure window stays on top
-                SwingUtilities.invokeLater(() -> {
-                    setAlwaysOnTop(false);
-                    setAlwaysOnTop(true);
-                    toFront();
-                    panel.requestFocusInWindow();
-                });
-            }
+            // Don't re-grab focus when lost - let user switch to other apps
         });
 
-        // Timer to ensure window stays on top even when other apps try to steal focus
-        alwaysOnTopTimer = new Timer(500, e -> {
-            if (!isFocused()) {
-                SwingUtilities.invokeLater(() -> {
-                    setAlwaysOnTop(false);
-                    setAlwaysOnTop(true);
-                    toFront();
-                });
-            }
-        });
-        alwaysOnTopTimer.start();
-
-        // Ensure focus on startup
-        SwingUtilities.invokeLater(() -> {
-            panel.requestFocusInWindow();
-        });
-
-        // Ensure focus setup is complete
-        panel.addNotify();
+        // Initial focus setup
         SwingUtilities.invokeLater(() -> {
             panel.requestFocusInWindow();
             panel.setFocusable(true);
