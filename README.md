@@ -180,7 +180,16 @@ Work on section 1.01 (Inventory and items)
 
 KNOWN ISSUES
 
--Player triple jump not working as intended. Physics appear to do a double jump but animation indicates a triple when no third jump has been completed. 
+-Player triple jump not working as intended. Physics appears to do a double jump but animation indicates a triple when no third jump has been completed. 
+-Game window draws focus and mouse pointer back to window, preventing other applications from being used during gameplay
+-Companions are listed as items and instead should be moved to player character alternates
+-Base player customization (skin tone specifically) should be an available option in the customization menu
+-Belts should be included in the player customization menu
+-Game window should be a borderless 1920x1080 window, not completely full screen to allow for different sized monitors
+-Block breaking system should be revisited. Blocks within a certain range of the player should be clickable. An arrow should appear to denote whether the player is breaking the block from above, below, left or right. This arrow's direction can be changed by using arrow keys
+-Sensitivity of scroll wheel needs to be turned down
+-UI elements should cancel out in-game clicking actions. For example, when toggling the music on/off button, the player should not also do 'use item' actions
+-Blocks are not placeable. Blocks should be placeable within a 3 block radius of the player via left click
 
 Player trip
 
