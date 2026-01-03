@@ -447,7 +447,8 @@ RESOLVED ISSUES
   -> Clicking music toggle or other buttons no longer triggers mining/attacks
 
 [FIXED] Player triple jump not working as intended
+  -> Fixed double-trigger bug: space char and keyCode were tracked separately
+  -> Single space press was triggering two jumps (char on frame 1, keyCode on frame 2)
+  -> Now both are consumed in same frame, preventing accidental double-jump
   -> Fixed edge case where falling off ledge caused misaligned jump count
-  -> When player falls without jumping, first air press now properly applies velocity
-  -> Triple jump strength increased from -8 to -9 for consistent feel
-  -> Jump animation now correctly matches physics state
+  -> Triple jump strength normalized to -9 for consistent feel
