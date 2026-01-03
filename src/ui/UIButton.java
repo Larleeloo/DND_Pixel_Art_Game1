@@ -43,10 +43,16 @@ public class UIButton {
         isHovered = contains(mouseX, mouseY);
     }
 
-    public void handleClick(int mouseX, int mouseY) {
+    /**
+     * Handle a click event.
+     * @return true if the button was clicked and handled the event
+     */
+    public boolean handleClick(int mouseX, int mouseY) {
         if (contains(mouseX, mouseY) && onClick != null) {
             onClick.run();
+            return true;
         }
+        return false;
     }
 
     public void draw(Graphics g) {

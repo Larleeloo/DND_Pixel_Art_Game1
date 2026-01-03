@@ -43,6 +43,7 @@ public class GamePanel extends JPanel implements Runnable {
         audioManager = new AudioManager();
         sceneManager = SceneManager.getInstance();
         sceneManager.setAudioManager(audioManager);
+        sceneManager.setInputManager(inputManager);
 
         addKeyListener(inputManager);
         addMouseWheelListener(inputManager);

@@ -58,7 +58,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private int jumpsRemaining = 3;
     private int currentJumpNumber = 0;  // 0 = not jumping, 1 = first jump, 2 = double, 3 = triple
     private double doubleJumpStrength = -9;
-    private double tripleJumpStrength = -8;
+    private double tripleJumpStrength = -9;  // Same as double for consistent feel
 
     // Sprint system
     private boolean isSprinting = false;
@@ -408,9 +408,13 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         boolean leftMouseHeld = input.isMouseButtonPressed(java.awt.event.MouseEvent.BUTTON1);
         boolean leftMouseJustPressed = input.isLeftMouseJustPressed();
 
+        // Check if UI consumed the click (e.g., clicking on a UI button)
+        boolean clickConsumedByUI = input.isClickConsumedByUI();
+
         // E key or Left Mouse Click - mine block (use tool) or fire projectile
         // Also handle inventory auto-equip on left click when inventory is open
-        if (leftMouseJustPressed) {
+        // Skip if click was consumed by UI elements
+        if (leftMouseJustPressed && !clickConsumedByUI) {
             if (inventory.isOpen()) {
                 // Try auto-equip in open inventory
                 if (inventory.handleLeftClick(input.getMouseX(), input.getMouseY())) {
@@ -660,12 +664,20 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 }
             } else if (jumpsRemaining > 0) {
                 // Air jump (double or triple)
-                currentJumpNumber++;
-
-                if (currentJumpNumber == 2) {
-                    velY = doubleJumpStrength;
-                } else if (currentJumpNumber == 3) {
-                    velY = tripleJumpStrength;
+                // Handle edge case: if player fell off ledge without jumping first,
+                // currentJumpNumber is 0 - treat this as consuming the first jump
+                if (currentJumpNumber == 0) {
+                    // Fell off a ledge - first air press gives a weaker "recovery" jump
+                    currentJumpNumber = 1;
+                    velY = doubleJumpStrength;  // Use double jump strength as recovery
+                } else {
+                    // Normal air jump sequence
+                    currentJumpNumber++;
+                    if (currentJumpNumber == 2) {
+                        velY = doubleJumpStrength;
+                    } else if (currentJumpNumber == 3) {
+                        velY = tripleJumpStrength;
+                    }
                 }
 
                 jumpsRemaining--;
