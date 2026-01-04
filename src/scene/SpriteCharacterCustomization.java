@@ -139,7 +139,7 @@ public class SpriteCharacterCustomization implements Scene {
 
     // Right Panel - Character Options (Skin Tone, Hair Color, Tint)
     private static final int RIGHT_PANEL_X = 1140;
-    private static final int RIGHT_PANEL_Y = 110;
+    private static final int RIGHT_PANEL_Y = 220;
     private static final int RIGHT_PANEL_WIDTH = 340;
 
     // Preview dimensions
@@ -958,7 +958,7 @@ public class SpriteCharacterCustomization implements Scene {
             greenSlider.getIntValue(),
             blueSlider.getIntValue()
         );
-        int boxX = RIGHT_PANEL_X + RIGHT_PANEL_WIDTH - 60;
+        int boxX = RIGHT_PANEL_X + RIGHT_PANEL_WIDTH - 45;
         int boxY = y + 40;
         g2d.setColor(currentTint);
         g2d.fillRoundRect(boxX, boxY, 40, 60, 5, 5);
