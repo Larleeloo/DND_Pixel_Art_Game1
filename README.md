@@ -489,11 +489,12 @@ RESOLVED ISSUES
   -> Companion selection is saved and persisted between sessions
 
 [FIXED] Block breaking system needs revisiting with directional arrow indicator
-  -> Simplified mining directions to 4 cardinal directions (up, right, down, left)
-  -> Arrow keys now change mining direction (up/down/left/right arrows)
-  -> Visual arrow indicator appears on targeted block showing mining direction
-  -> Arrow points in the direction the player is mining from
-  -> Blocks within range are clickable based on current direction
+  -> Blocks now work like UI elements - click to select a block within 3 block radius
+  -> Selected block is highlighted with yellow border and fill
+  -> Arrow keys change mining direction (up/down/left/right) on selected block
+  -> Visual arrow indicator shows which side of the block will be mined
+  -> Click selected block again (or press E) to mine from the chosen direction
+  -> Clicking elsewhere or moving out of range deselects the block
 
 [FIXED] Blocks are not placeable
   -> Added block placement system via left click

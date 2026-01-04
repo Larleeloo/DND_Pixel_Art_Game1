@@ -147,11 +147,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private BlockEntity lastBrokenBlock = null;
     private ItemEntity lastDroppedItem = null;
 
-    // Mining targeting system
+    // Mining targeting system - click-to-select blocks like UI elements
     // Directions: 0=up, 1=right, 2=down, 3=left (4 cardinal directions, controlled by arrow keys)
-    private int miningDirection = 1;  // Start facing right
-    private static final int NUM_DIRECTIONS = 4;
-    private BlockEntity targetedBlock = null;
+    private int miningDirection = 2;  // Start facing down
+    private BlockEntity selectedBlock = null;  // Currently selected block (clicked on)
+    private static final int MINING_RADIUS = 3;  // 3 block radius for mining/placement
 
     // Block placement system
     private static final int PLACEMENT_RADIUS = 3;  // 3 block radius for placement
@@ -416,19 +416,19 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             }
         }
 
-        // Arrow keys change mining direction
+        // Arrow keys change mining direction (only applies to selected block)
         if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
-            miningDirection = 0;  // Up
+            miningDirection = 0;  // Mine from above
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_RIGHT)) {
-            miningDirection = 1;  // Right
+            miningDirection = 1;  // Mine from right
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_DOWN)) {
-            miningDirection = 2;  // Down
+            miningDirection = 2;  // Mine from below
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_LEFT)) {
-            miningDirection = 3;  // Left
+            miningDirection = 3;  // Mine from left
         }
 
-        // Update targeted block
-        updateTargetedBlock(entities);
+        // Validate selected block is still valid (not broken, still in range)
+        validateSelectedBlock();
 
         // Handle charged shot system for ranged weapons
         boolean leftMouseHeld = input.isMouseButtonPressed(java.awt.event.MouseEvent.BUTTON1);
@@ -437,8 +437,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Check if UI consumed the click (e.g., clicking on a UI button)
         boolean clickConsumedByUI = input.isClickConsumedByUI();
 
-        // E key or Left Mouse Click - mine block (use tool), fire projectile, or place block
-        // Also handle inventory auto-equip on left click when inventory is open
+        // Left Mouse Click - click on blocks to select/mine them, fire projectile, or place block
+        // Blocks work like UI elements - click to select, arrow keys to choose direction, click again to mine
         // Skip if click was consumed by UI elements
         if (leftMouseJustPressed && !clickConsumedByUI) {
             if (inventory.isOpen()) {
@@ -458,9 +458,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                 // Try to place a block
                 tryPlaceBlock(entities, input);
             } else {
-                // Mine block
-                int direction = getMiningDirection();
-                tryMineBlock(entities, direction);
+                // Click-to-select block mining system
+                handleBlockClick(entities, input);
             }
         }
 
@@ -474,13 +473,13 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             fireChargedProjectile(entities);
         }
 
-        // E key always fires or mines (not affected by inventory)
+        // E key - fires ranged weapon or mines selected block
         if (input.isKeyJustPressed('e')) {
             if (heldItem != null && heldItem.isRangedWeapon()) {
                 fireProjectile(entities);
-            } else {
-                int direction = getMiningDirection();
-                tryMineBlock(entities, direction);
+            } else if (selectedBlock != null) {
+                // Mine the selected block from the current direction
+                mineSelectedBlock(entities);
             }
         }
 
@@ -1173,13 +1172,20 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         g2d.setStroke(new BasicStroke(2));
         g.drawRect(x, y, width, height);
 
-        // Draw directional arrow on targeted block showing mining direction
-        if (targetedBlock != null && !targetedBlock.isBroken()) {
-            Rectangle blockBounds = targetedBlock.getFullBounds();
+        // Draw selection highlight and directional arrow on selected block
+        if (selectedBlock != null && !selectedBlock.isBroken()) {
+            Rectangle blockBounds = selectedBlock.getFullBounds();
             int centerX = blockBounds.x + blockBounds.width / 2;
             int centerY = blockBounds.y + blockBounds.height / 2;
 
-            // Draw the directional arrow
+            // Draw selection highlight around the block
+            g2d.setColor(new Color(255, 255, 100, 80));
+            g2d.fillRect(blockBounds.x, blockBounds.y, blockBounds.width, blockBounds.height);
+            g2d.setColor(new Color(255, 255, 100, 200));
+            g2d.setStroke(new BasicStroke(3));
+            g2d.drawRect(blockBounds.x, blockBounds.y, blockBounds.width, blockBounds.height);
+
+            // Draw the directional arrow showing mining direction
             drawMiningArrow(g2d, centerX, centerY, miningDirection);
         }
 
@@ -1733,80 +1739,136 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         return BlockType.DIRT;  // Default
     }
 
-    private void tryMineBlock(ArrayList<Entity> entities, int direction) {
-        lastBrokenBlock = null;
-        lastDroppedItem = null;
+    /**
+     * Handles left-click on blocks - click to select, click again to mine.
+     * Blocks work like UI elements that can be clicked.
+     */
+    private void handleBlockClick(ArrayList<Entity> entities, InputManager input) {
+        if (camera == null) return;
 
-        Rectangle mineArea = getMiningArea(direction);
+        // Get click position in world coordinates
+        int mouseScreenX = input.getMouseX();
+        int mouseScreenY = input.getMouseY();
+        int worldX = camera.screenToWorldX(mouseScreenX);
+        int worldY = camera.screenToWorldY(mouseScreenY);
 
-        BlockEntity targetBlock = null;
-        double nearestDist = Double.MAX_VALUE;
-
+        // Find the block that was clicked on
+        BlockEntity clickedBlock = null;
         for (Entity e : entities) {
             if (e instanceof BlockEntity) {
                 BlockEntity block = (BlockEntity) e;
                 if (!block.isBroken()) {
-                    if (mineArea.intersects(block.getFullBounds())) {
-                        double dist = getDistanceToBlock(block, direction);
-                        if (dist < nearestDist) {
-                            nearestDist = dist;
-                            targetBlock = block;
-                        }
+                    Rectangle bounds = block.getFullBounds();
+                    if (bounds.contains(worldX, worldY)) {
+                        clickedBlock = block;
+                        break;
                     }
                 }
             }
         }
 
-        if (targetBlock != null) {
-            ToolType heldTool = inventory.getHeldToolType();
-            int layersToMine = heldTool.getLayersPerMine(targetBlock.getBlockType());
-
-            boolean fullyBroken = false;
-            for (int i = 0; i < layersToMine && !fullyBroken; i++) {
-                fullyBroken = targetBlock.mineLayer(direction);
+        if (clickedBlock != null) {
+            // Check if block is within mining radius
+            if (isBlockInRange(clickedBlock)) {
+                if (selectedBlock == clickedBlock) {
+                    // Clicking on already-selected block -> mine it
+                    mineSelectedBlock(entities);
+                } else {
+                    // Clicking on a new block -> select it
+                    selectedBlock = clickedBlock;
+                    selectedBlock.setTargeted(true);
+                    System.out.println("Selected block at (" + clickedBlock.x + "," + clickedBlock.y + ") - Use arrow keys to change direction, click again to mine");
+                }
+            } else {
+                // Block is out of range - deselect
+                deselectBlock();
+                System.out.println("Block too far away (max " + MINING_RADIUS + " blocks)");
             }
+        } else {
+            // Clicked on empty space - deselect block
+            deselectBlock();
+        }
+    }
 
-            if (audioManager != null) {
-                audioManager.playSound("drop");
-            }
-
-            if (fullyBroken) {
-                lastBrokenBlock = targetBlock;
-                lastDroppedItem = targetBlock.breakBlock(audioManager);
+    /**
+     * Validates that the selected block is still valid (not broken, still in range).
+     */
+    private void validateSelectedBlock() {
+        if (selectedBlock != null) {
+            if (selectedBlock.isBroken() || !isBlockInRange(selectedBlock)) {
+                deselectBlock();
             }
         }
     }
 
     /**
-     * Gets the mining area rectangle based on current direction.
-     * Blocks within this area can be mined.
+     * Deselects the currently selected block.
      */
-    private Rectangle getMiningArea(int damageDir) {
-        int reach = BlockRegistry.BLOCK_SIZE;
+    private void deselectBlock() {
+        if (selectedBlock != null) {
+            selectedBlock.setTargeted(false);
+            selectedBlock = null;
+        }
+    }
+
+    /**
+     * Checks if a block is within mining range of the player.
+     */
+    private boolean isBlockInRange(BlockEntity block) {
         int playerCenterX = x + width / 2;
         int playerCenterY = y + height / 2;
+        int blockCenterX = block.x + block.getSize() / 2;
+        int blockCenterY = block.y + block.getSize() / 2;
 
-        // 4 cardinal directions: 0=up, 1=right, 2=down, 3=left
-        switch (miningDirection) {
-            case 0:  // Up
-                return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
-            case 1:  // Right
-                return new Rectangle(x + width, playerCenterY - reach/2, reach, reach);
-            case 2:  // Down
-                return new Rectangle(playerCenterX - reach/2, y + height, reach, reach);
-            case 3:  // Left
-                return new Rectangle(x - reach, playerCenterY - reach/2, reach, reach);
-            default:
-                return new Rectangle(x, y, width, height);
+        double distance = Math.sqrt(
+            Math.pow(blockCenterX - playerCenterX, 2) +
+            Math.pow(blockCenterY - playerCenterY, 2)
+        );
+
+        // Distance in blocks
+        double distanceInBlocks = distance / BlockRegistry.BLOCK_SIZE;
+        return distanceInBlocks <= MINING_RADIUS;
+    }
+
+    /**
+     * Mines the currently selected block from the current direction.
+     */
+    private void mineSelectedBlock(ArrayList<Entity> entities) {
+        if (selectedBlock == null || selectedBlock.isBroken()) {
+            deselectBlock();
+            return;
+        }
+
+        lastBrokenBlock = null;
+        lastDroppedItem = null;
+
+        // Convert mining direction to block damage direction
+        int blockDamageDir = getBlockDamageDirection();
+
+        ToolType heldTool = inventory.getHeldToolType();
+        int layersToMine = heldTool.getLayersPerMine(selectedBlock.getBlockType());
+
+        boolean fullyBroken = false;
+        for (int i = 0; i < layersToMine && !fullyBroken; i++) {
+            fullyBroken = selectedBlock.mineLayer(blockDamageDir);
+        }
+
+        if (audioManager != null) {
+            audioManager.playSound("drop");
+        }
+
+        if (fullyBroken) {
+            lastBrokenBlock = selectedBlock;
+            lastDroppedItem = selectedBlock.breakBlock(audioManager);
+            deselectBlock();
         }
     }
 
     /**
      * Gets the block damage direction based on player mining direction.
-     * When mining from a direction, the block is damaged from the opposite side.
+     * 0=up, 1=right, 2=down, 3=left -> corresponding block damage direction
      */
-    private int getMiningDirection() {
-        // 0=up, 1=right, 2=down, 3=left -> block damaged from opposite side
+    private int getBlockDamageDirection() {
         switch (miningDirection) {
             case 0:  // Mining from above -> damage block from top
                 return BlockEntity.MINE_DOWN;
@@ -1817,40 +1879,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             case 3:  // Mining from left -> damage block from left
                 return BlockEntity.MINE_RIGHT;
             default:
-                return BlockEntity.MINE_LEFT;
+                return BlockEntity.MINE_DOWN;
         }
     }
 
-    private void updateTargetedBlock(ArrayList<Entity> entities) {
-        int direction = getMiningDirection();
-        Rectangle mineArea = getMiningArea(direction);
-
-        BlockEntity nearest = null;
-        double nearestDist = Double.MAX_VALUE;
-
-        for (Entity e : entities) {
-            if (e instanceof BlockEntity) {
-                BlockEntity block = (BlockEntity) e;
-                if (!block.isBroken()) {
-                    if (mineArea.intersects(block.getFullBounds())) {
-                        double dist = getDistanceToBlock(block, direction);
-                        if (dist < nearestDist) {
-                            nearestDist = dist;
-                            nearest = block;
-                        }
-                    }
-                }
-            }
-        }
-
-        targetedBlock = nearest;
-
-        if (targetedBlock != null) {
-            targetedBlock.setTargeted(true);
-        }
-    }
-
-    private double getDistanceToBlock(BlockEntity block, int direction) {
+    /**
+     * Gets the distance from player to a block.
+     */
+    private double getDistanceToBlock(BlockEntity block) {
         int playerCenterX = x + width / 2;
         int playerCenterY = y + height / 2;
         int blockCenterX = block.x + block.getSize() / 2;
