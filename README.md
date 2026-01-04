@@ -466,3 +466,19 @@ RESOLVED ISSUES
   -> Added "Belt" category tab to character customization menu
   -> Belt items load from assets/clothing/belt/ directory
   -> Adjusted category tab widths to fit all equipment types
+
+[FIXED] Hair customization should be available in the player customization menu
+  -> Added HAIR_FRONT and HAIR_BACK equipment slots to EquipmentOverlay
+  -> HAIR_BACK renders behind character (for ponytails, long hair)
+  -> HAIR_FRONT renders in front (for bangs, short styles)
+  -> Added "Hair" category tab as first equipment category
+  -> Added 13 preset hair colors with color selector UI
+  -> Hair items load from assets/clothing/hair/ directory with front/back layers
+
+[FIXED] Character customization UI elements bunched up and overlapping
+  -> Completely reorganized layout for 1920x1080 screen
+  -> Left panel (x=60): Character preview with 4x scale (was 3x)
+  -> Center panel (x=420): Category tabs and 6-column item grid
+  -> Right panel (x=1140): Skin tone, hair color, and tint controls
+  -> All UI elements now properly spaced with no overlapping
+  -> Larger item previews (90x90) for better visibility
