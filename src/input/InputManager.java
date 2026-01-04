@@ -17,7 +17,7 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     // Scroll wheel sensitivity - accumulate scroll before triggering action
     private double scrollAccumulator = 0;
-    private static final double SCROLL_THRESHOLD = 3.0;  // Units of scroll needed to trigger
+    private static final double SCROLL_THRESHOLD = 1.5;  // Units of scroll needed to trigger
 
     // Mouse button state tracking
     // Button 1 = left click, Button 2 = middle click, Button 3 = right click

@@ -37,7 +37,22 @@ public class SpriteCharacterCustomization implements Scene {
 
     // Equipment categories and items
     private static final String[] CATEGORIES = {
-        "Helmet", "Chest", "Legs", "Boots", "Gloves", "Necklace", "Wristwear"
+        "Helmet", "Chest", "Belt", "Legs", "Boots", "Gloves", "Necklace", "Wristwear"
+    };
+
+    // Preset skin tone colors
+    private static final Color[] SKIN_TONES = {
+        new Color(255, 224, 189),  // Light
+        new Color(241, 194, 155),  // Fair
+        new Color(224, 172, 130),  // Medium light
+        new Color(198, 134, 93),   // Medium
+        new Color(168, 109, 71),   // Medium dark
+        new Color(138, 85, 54),    // Dark
+        new Color(100, 60, 40),    // Deep
+        null                        // None (no tint)
+    };
+    private static final String[] SKIN_TONE_NAMES = {
+        "Light", "Fair", "Medium Light", "Medium", "Medium Dark", "Dark", "Deep", "None"
     };
 
     private Map<String, List<ClothingItem>> availableItems;
@@ -47,6 +62,10 @@ public class SpriteCharacterCustomization implements Scene {
     // Saved state (persists between scene visits)
     private static Map<String, ClothingItem> savedSelections = new HashMap<>();
     private static Map<String, Color> savedTints = new HashMap<>();
+    private static int savedSkinToneIndex = 7;  // Default to "None" (index 7)
+
+    // Current skin tone selection
+    private int selectedSkinToneIndex = 7;
 
     // UI State
     private int currentCategory = 0;
@@ -133,9 +152,11 @@ public class SpriteCharacterCustomization implements Scene {
         // Initialize selections from saved state
         selectedItems = new HashMap<>(savedSelections);
         itemTints = new HashMap<>(savedTints);
+        selectedSkinToneIndex = savedSkinToneIndex;
 
         // Apply saved selections to preview
         applySelectionsToPreview();
+        applySkinToneToPreview();
 
         // Create UI
         createUI();
@@ -157,6 +178,7 @@ public class SpriteCharacterCustomization implements Scene {
         Map<String, Object[]> categoryConfig = new LinkedHashMap<>();
         categoryConfig.put("Helmet", new Object[]{EquipmentOverlay.EquipmentSlot.HELMET, "helmet"});
         categoryConfig.put("Chest", new Object[]{EquipmentOverlay.EquipmentSlot.CHEST, "chest"});
+        categoryConfig.put("Belt", new Object[]{EquipmentOverlay.EquipmentSlot.BELT, "belt"});
         categoryConfig.put("Legs", new Object[]{EquipmentOverlay.EquipmentSlot.LEGS, "legs"});
         categoryConfig.put("Boots", new Object[]{EquipmentOverlay.EquipmentSlot.BOOTS, "boots"});
         categoryConfig.put("Gloves", new Object[]{EquipmentOverlay.EquipmentSlot.GLOVES, "gloves"});
@@ -255,7 +277,7 @@ public class SpriteCharacterCustomization implements Scene {
 
         // Category tabs
         categoryTabs = new UIButton[CATEGORIES.length];
-        int tabWidth = 100;
+        int tabWidth = 85;  // Smaller to fit more categories
         int tabHeight = 35;
         int tabStartX = ITEMS_X;
         int tabY = 130;
@@ -355,14 +377,35 @@ public class SpriteCharacterCustomization implements Scene {
     }
 
     /**
+     * Applies the current skin tone to the preview animation.
+     */
+    private void applySkinToneToPreview() {
+        Color skinTone = SKIN_TONES[selectedSkinToneIndex];
+        previewAnimation.setTint(skinTone);
+    }
+
+    /**
+     * Selects a skin tone by index.
+     */
+    private void selectSkinTone(int index) {
+        if (index >= 0 && index < SKIN_TONES.length) {
+            selectedSkinToneIndex = index;
+            applySkinToneToPreview();
+            System.out.println("Selected skin tone: " + SKIN_TONE_NAMES[index]);
+        }
+    }
+
+    /**
      * Called when Done button is clicked.
      */
     private void onDoneClicked() {
         // Save current selections
         savedSelections = new HashMap<>(selectedItems);
         savedTints = new HashMap<>(itemTints);
+        savedSkinToneIndex = selectedSkinToneIndex;
 
-        System.out.println("SpriteCharacterCustomization: Saved " + selectedItems.size() + " items");
+        System.out.println("SpriteCharacterCustomization: Saved " + selectedItems.size() + " items" +
+                           " with skin tone: " + SKIN_TONE_NAMES[selectedSkinToneIndex]);
 
         // Return to previous scene
         if (isOverlay && callingScene != null) {
@@ -388,7 +431,9 @@ public class SpriteCharacterCustomization implements Scene {
     private void onClearAllClicked() {
         selectedItems.clear();
         itemTints.clear();
+        selectedSkinToneIndex = 7;  // Reset to "None"
         applySelectionsToPreview();
+        applySkinToneToPreview();
     }
 
     /**
@@ -518,9 +563,72 @@ public class SpriteCharacterCustomization implements Scene {
         // Draw tint controls
         drawTintControls(g2d);
 
+        // Draw skin tone selector
+        drawSkinToneSelector(g2d);
+
         // Draw buttons
         doneButton.draw(g);
         clearAllButton.draw(g);
+    }
+
+    /**
+     * Draws the skin tone selection panel.
+     */
+    private void drawSkinToneSelector(Graphics2D g2d) {
+        int panelX = ITEMS_X + 400;
+        int panelY = ITEMS_Y;
+        int swatchSize = 35;
+        int padding = 5;
+
+        // Panel background
+        g2d.setColor(PANEL_COLOR);
+        g2d.fillRoundRect(panelX - 15, panelY - 35, 180, 160, 10, 10);
+
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(new Color(200, 200, 210));
+        g2d.drawString("Skin Tone", panelX, panelY - 15);
+
+        // Draw skin tone swatches in 2 rows of 4
+        for (int i = 0; i < SKIN_TONES.length; i++) {
+            int row = i / 4;
+            int col = i % 4;
+            int x = panelX + col * (swatchSize + padding);
+            int y = panelY + row * (swatchSize + padding + 15);
+
+            // Swatch background (for "None" option)
+            if (SKIN_TONES[i] == null) {
+                g2d.setColor(new Color(60, 60, 75));
+                g2d.fillRoundRect(x, y, swatchSize, swatchSize, 5, 5);
+                // Draw X for none
+                g2d.setColor(new Color(150, 100, 100));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawLine(x + 8, y + 8, x + swatchSize - 8, y + swatchSize - 8);
+                g2d.drawLine(x + swatchSize - 8, y + 8, x + 8, y + swatchSize - 8);
+            } else {
+                g2d.setColor(SKIN_TONES[i]);
+                g2d.fillRoundRect(x, y, swatchSize, swatchSize, 5, 5);
+            }
+
+            // Selection border
+            if (i == selectedSkinToneIndex) {
+                g2d.setColor(SELECTED_COLOR.brighter());
+                g2d.setStroke(new BasicStroke(3));
+            } else {
+                g2d.setColor(new Color(80, 80, 95));
+                g2d.setStroke(new BasicStroke(1));
+            }
+            g2d.drawRoundRect(x, y, swatchSize, swatchSize, 5, 5);
+
+            // Label below swatch
+            g2d.setFont(new Font("Arial", Font.PLAIN, 9));
+            g2d.setColor(Color.WHITE);
+            String name = SKIN_TONE_NAMES[i];
+            if (name.length() > 6) name = name.substring(0, 5) + "..";
+            FontMetrics fm = g2d.getFontMetrics();
+            int textX = x + (swatchSize - fm.stringWidth(name)) / 2;
+            g2d.drawString(name, textX, y + swatchSize + 10);
+        }
     }
 
     /**
@@ -702,6 +810,25 @@ public class SpriteCharacterCustomization implements Scene {
             tab.handleClick(x, y);
         }
 
+        // Check skin tone clicks
+        int skinPanelX = ITEMS_X + 400;
+        int skinPanelY = ITEMS_Y;
+        int swatchSize = 35;
+        int padding = 5;
+
+        for (int i = 0; i < SKIN_TONES.length; i++) {
+            int row = i / 4;
+            int col = i % 4;
+            int swatchX = skinPanelX + col * (swatchSize + padding);
+            int swatchY = skinPanelY + row * (swatchSize + padding + 15);
+
+            if (x >= swatchX && x < swatchX + swatchSize &&
+                y >= swatchY && y < swatchY + swatchSize) {
+                selectSkinTone(i);
+                return;
+            }
+        }
+
         // Check item clicks
         String category = CATEGORIES[currentCategory];
         List<ClothingItem> items = availableItems.get(category);
@@ -752,8 +879,18 @@ public class SpriteCharacterCustomization implements Scene {
      * Applies the saved customization to a SpritePlayerEntity.
      */
     public static void applyToPlayer(SpritePlayerEntity player) {
+        // Apply skin tone first
+        if (savedSkinToneIndex >= 0 && savedSkinToneIndex < SKIN_TONES.length) {
+            Color skinTone = SKIN_TONES[savedSkinToneIndex];
+            player.setSkinTone(skinTone);
+            if (skinTone != null) {
+                System.out.println("SpriteCharacterCustomization: Applied skin tone: " +
+                                   SKIN_TONE_NAMES[savedSkinToneIndex]);
+            }
+        }
+
         if (savedSelections.isEmpty()) {
-            System.out.println("SpriteCharacterCustomization: No saved selections to apply");
+            System.out.println("SpriteCharacterCustomization: No saved clothing selections to apply");
             return;
         }
 
