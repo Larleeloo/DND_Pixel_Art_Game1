@@ -1982,10 +1982,20 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         boolean isThrowableByName = lowerName.contains("throwing") || lowerName.contains("thrown") ||
                                      lowerName.contains("rock") || lowerName.contains("bomb");
 
+        // Detect block items by name (materials that can be placed)
+        boolean isBlockByName = lowerName.contains("dirt") || lowerName.contains("grass") ||
+                                 lowerName.contains("stone") || lowerName.contains("cobble") ||
+                                 lowerName.contains("wood") || lowerName.contains("plank") ||
+                                 lowerName.contains("brick") || lowerName.contains("sand") ||
+                                 lowerName.contains("glass") || lowerName.contains("leaves") ||
+                                 lowerName.contains("ore") || lowerName.contains("block");
+
         if (isRangedByName) {
             category = Item.ItemCategory.RANGED_WEAPON;
         } else if (isThrowableByName) {
             category = Item.ItemCategory.THROWABLE;
+        } else if (isBlockByName) {
+            category = Item.ItemCategory.BLOCK;
         } else {
             switch (type) {
                 case "weapon": category = Item.ItemCategory.WEAPON; break;
@@ -1996,6 +2006,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                 case "food": category = Item.ItemCategory.FOOD; break;
                 case "tool": category = Item.ItemCategory.TOOL; break;
                 case "throwable": category = Item.ItemCategory.THROWABLE; break;
+                case "block": category = Item.ItemCategory.BLOCK; break;
             }
         }
 
