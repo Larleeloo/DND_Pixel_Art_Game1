@@ -1867,17 +1867,18 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     /**
      * Gets the block damage direction based on player mining direction.
      * 0=up, 1=right, 2=down, 3=left -> corresponding block damage direction
+     * Fixed for reversed mining. Now mines away from arrow towards center.
      */
     private int getBlockDamageDirection() {
         switch (miningDirection) {
             case 0:  // Mining from above -> damage block from top
-                return BlockEntity.MINE_DOWN;
-            case 1:  // Mining from right -> damage block from right
-                return BlockEntity.MINE_LEFT;
-            case 2:  // Mining from below -> damage block from bottom
                 return BlockEntity.MINE_UP;
-            case 3:  // Mining from left -> damage block from left
+            case 1:  // Mining from right -> damage block from right
                 return BlockEntity.MINE_RIGHT;
+            case 2:  // Mining from below -> damage block from bottom
+                return BlockEntity.MINE_DOWN;
+            case 3:  // Mining from left -> damage block from left
+                return BlockEntity.MINE_LEFT;
             default:
                 return BlockEntity.MINE_DOWN;
         }
