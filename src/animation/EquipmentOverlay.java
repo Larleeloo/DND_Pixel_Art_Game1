@@ -35,16 +35,18 @@ public class EquipmentOverlay {
      */
     public enum EquipmentSlot {
         BACK(0),        // Capes, backpacks - drawn behind character
-        LEGS(1),        // Pants, greaves
-        BOOTS(2),       // Shoes, boots
-        BELT(3),        // Belts - drawn over legs, under chest
-        CHEST(4),       // Shirts, armor
-        NECKLACE(5),    // Necklaces, pendants - drawn over chest
-        GLOVES(6),      // Gloves, gauntlets
-        WRISTWEAR(7),   // Bracelets, wristbands
-        HELMET(8),      // Hats, helmets
-        WEAPON(9),      // Held items - drawn in front
-        ACCESSORY(10);  // Other jewelry, effects
+        HAIR_BACK(1),   // Hair that renders behind (ponytails, long hair)
+        LEGS(2),        // Pants, greaves
+        BOOTS(3),       // Shoes, boots
+        BELT(4),        // Belts - drawn over legs, under chest
+        CHEST(5),       // Shirts, armor
+        NECKLACE(6),    // Necklaces, pendants - drawn over chest
+        GLOVES(7),      // Gloves, gauntlets
+        WRISTWEAR(8),   // Bracelets, wristbands
+        HAIR_FRONT(9),  // Hair that renders in front (bangs, short styles)
+        HELMET(10),     // Hats, helmets - drawn over hair
+        WEAPON(11),     // Held items - drawn in front
+        ACCESSORY(12);  // Other jewelry, effects
 
         private final int renderOrder;
 
