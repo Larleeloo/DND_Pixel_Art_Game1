@@ -249,6 +249,17 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     }
 
     /**
+     * Sets the skin tone tint for the base player sprite.
+     *
+     * @param skinTone Color to tint the base sprite, or null for no tint
+     */
+    public void setSkinTone(Color skinTone) {
+        if (spriteAnimation != null) {
+            spriteAnimation.setTint(skinTone);
+        }
+    }
+
+    /**
      * Gets the sprite animation system.
      *
      * @return SpriteAnimation instance

@@ -37,13 +37,14 @@ public class EquipmentOverlay {
         BACK(0),        // Capes, backpacks - drawn behind character
         LEGS(1),        // Pants, greaves
         BOOTS(2),       // Shoes, boots
-        CHEST(3),       // Shirts, armor
-        NECKLACE(4),    // Necklaces, pendants - drawn over chest
-        GLOVES(5),      // Gloves, gauntlets
-        WRISTWEAR(6),   // Bracelets, wristbands
-        HELMET(7),      // Hats, helmets
-        WEAPON(8),      // Held items - drawn in front
-        ACCESSORY(9);   // Other jewelry, effects
+        BELT(3),        // Belts - drawn over legs, under chest
+        CHEST(4),       // Shirts, armor
+        NECKLACE(5),    // Necklaces, pendants - drawn over chest
+        GLOVES(6),      // Gloves, gauntlets
+        WRISTWEAR(7),   // Bracelets, wristbands
+        HELMET(8),      // Hats, helmets
+        WEAPON(9),      // Held items - drawn in front
+        ACCESSORY(10);  // Other jewelry, effects
 
         private final int renderOrder;
 

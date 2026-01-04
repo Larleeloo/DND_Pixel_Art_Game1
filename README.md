@@ -181,8 +181,6 @@ Work on section 1.01 (Inventory and items)
 KNOWN ISSUES
 
 -Companions are listed as items and instead should be moved to player character alternates
--Base player customization (skin tone specifically) should be an available option in the customization menu
--Belts should be included in the player customization menu
 -Block breaking system should be revisited. Blocks within a certain range of the player should be clickable. An arrow should appear to denote whether the player is breaking the block from above, below, left or right. This arrow's direction can be changed by using arrow keys
 -Blocks are not placeable. Blocks should be placeable within a 3 block radius of the player via left click
 
@@ -452,3 +450,19 @@ RESOLVED ISSUES
   -> Now both are consumed in same frame, preventing accidental double-jump
   -> Fixed edge case where falling off ledge caused misaligned jump count
   -> Triple jump strength normalized to -9 for consistent feel
+
+[FIXED] Scroll wheel sensitivity adjusted
+  -> Reduced SCROLL_THRESHOLD from 3.0 to 1.5 for faster response
+  -> Maintains accumulation to prevent accidental switching while being responsive
+
+[FIXED] Base player customization (skin tone) should be available in customization menu
+  -> Added skin tone selection panel with 8 preset options
+  -> Skin tones range from Light to Deep, plus a "None" option
+  -> Selected skin tone tints the base player sprite
+  -> Skin tone selection persists across levels and game sessions
+
+[FIXED] Belts should be included in the player customization menu
+  -> Added BELT equipment slot to EquipmentOverlay (renders over legs, under chest)
+  -> Added "Belt" category tab to character customization menu
+  -> Belt items load from assets/clothing/belt/ directory
+  -> Adjusted category tab widths to fit all equipment types
