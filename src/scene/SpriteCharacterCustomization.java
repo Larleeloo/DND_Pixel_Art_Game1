@@ -3,6 +3,8 @@ package scene;
 import core.*;
 import entity.*;
 import entity.player.*;
+import entity.CompanionRegistry;
+import entity.CompanionRegistry.CompanionData;
 import animation.*;
 import graphics.*;
 import input.*;
@@ -92,9 +94,15 @@ public class SpriteCharacterCustomization implements Scene {
     private int selectedSkinToneIndex = 7;
     private int selectedHairColorIndex = 12;
 
+    // Companion system
+    private static CompanionData savedCompanion = null;  // Saved selected companion
+    private CompanionData selectedCompanion = null;       // Current selection in menu
+    private List<CompanionData> availableCompanions;
+
     // UI State
     private int currentCategory = 0;
     private int scrollOffset = 0;
+    private int companionScrollOffset = 0;
 
     // UI Components
     private UIButton doneButton;
@@ -211,11 +219,15 @@ public class SpriteCharacterCustomization implements Scene {
         // Load available items
         loadAvailableItems();
 
+        // Load available companions
+        availableCompanions = CompanionRegistry.getUnlocked();
+
         // Initialize selections from saved state
         selectedItems = new HashMap<>(savedSelections);
         itemTints = new HashMap<>(savedTints);
         selectedSkinToneIndex = savedSkinToneIndex;
         selectedHairColorIndex = savedHairColorIndex;
+        selectedCompanion = savedCompanion;
 
         // Apply saved selections to preview
         applySelectionsToPreview();
@@ -512,10 +524,13 @@ public class SpriteCharacterCustomization implements Scene {
         savedTints = new HashMap<>(itemTints);
         savedSkinToneIndex = selectedSkinToneIndex;
         savedHairColorIndex = selectedHairColorIndex;
+        savedCompanion = selectedCompanion;
 
+        String companionName = selectedCompanion != null ? selectedCompanion.name : "None";
         System.out.println("SpriteCharacterCustomization: Saved " + selectedItems.size() + " items" +
                            " with skin tone: " + SKIN_TONE_NAMES[selectedSkinToneIndex] +
-                           " and hair color: " + HAIR_COLOR_NAMES[selectedHairColorIndex]);
+                           ", hair color: " + HAIR_COLOR_NAMES[selectedHairColorIndex] +
+                           ", companion: " + companionName);
 
         // Return to previous scene
         if (isOverlay && callingScene != null) {
@@ -543,6 +558,7 @@ public class SpriteCharacterCustomization implements Scene {
         itemTints.clear();
         selectedSkinToneIndex = 7;  // Reset to "None"
         selectedHairColorIndex = 12; // Reset to "None"
+        selectedCompanion = null;    // Reset companion
         applySelectionsToPreview();
         applySkinToneToPreview();
     }
@@ -703,9 +719,9 @@ public class SpriteCharacterCustomization implements Scene {
         String stateText = previewAnimation.getState().toString();
         g2d.drawString(stateText, LEFT_PANEL_X + LEFT_PANEL_WIDTH - 70, LEFT_PANEL_Y + 30);
 
-        // Calculate character position (centered in preview area)
+        // Calculate character position (centered in preview area, leaving room for companion panel)
         int charX = LEFT_PANEL_X + (LEFT_PANEL_WIDTH - CHAR_WIDTH) / 2;
-        int charY = LEFT_PANEL_Y + 50 + (LEFT_PANEL_HEIGHT - 100 - CHAR_HEIGHT) / 2;
+        int charY = LEFT_PANEL_Y + 50;
 
         SpriteAnimation.ActionState state = previewAnimation.getState();
 
@@ -722,7 +738,90 @@ public class SpriteCharacterCustomization implements Scene {
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
         g2d.setColor(new Color(120, 120, 140));
         String dirText = facingRight ? "Facing: Right →" : "← Facing: Left";
-        g2d.drawString(dirText, LEFT_PANEL_X + 20, LEFT_PANEL_Y + LEFT_PANEL_HEIGHT - 15);
+        g2d.drawString(dirText, LEFT_PANEL_X + 20, charY + CHAR_HEIGHT + 15);
+
+        // Draw companion selection panel below character
+        drawCompanionSelector(g2d, LEFT_PANEL_X + 10, charY + CHAR_HEIGHT + 40);
+    }
+
+    /**
+     * Draws the companion selector panel.
+     */
+    private void drawCompanionSelector(Graphics2D g2d, int panelX, int panelY) {
+        int panelWidth = LEFT_PANEL_WIDTH - 20;
+        int panelHeight = 160;
+
+        // Panel background
+        g2d.setColor(new Color(35, 35, 50, 200));
+        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+        g2d.setColor(new Color(80, 80, 100));
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(new Color(200, 200, 210));
+        g2d.drawString("Companion", panelX + 10, panelY + 20);
+
+        // "None" option
+        int optionY = panelY + 35;
+        int optionHeight = 24;
+        boolean noneSelected = selectedCompanion == null;
+
+        g2d.setColor(noneSelected ? SELECTED_COLOR : new Color(50, 50, 65));
+        g2d.fillRoundRect(panelX + 5, optionY, panelWidth - 10, optionHeight, 5, 5);
+        g2d.setColor(noneSelected ? SELECTED_COLOR.brighter() : new Color(70, 70, 85));
+        g2d.drawRoundRect(panelX + 5, optionY, panelWidth - 10, optionHeight, 5, 5);
+
+        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("None", panelX + 15, optionY + 16);
+
+        // Draw available companions (scrollable list)
+        int listY = optionY + optionHeight + 5;
+        int visibleCompanions = 3;
+
+        for (int i = companionScrollOffset; i < availableCompanions.size() && i < companionScrollOffset + visibleCompanions; i++) {
+            CompanionData companion = availableCompanions.get(i);
+            int yPos = listY + (i - companionScrollOffset) * (optionHeight + 3);
+
+            boolean isSelected = selectedCompanion != null && selectedCompanion.id.equals(companion.id);
+
+            g2d.setColor(isSelected ? SELECTED_COLOR : new Color(50, 50, 65));
+            g2d.fillRoundRect(panelX + 5, yPos, panelWidth - 10, optionHeight, 5, 5);
+            g2d.setColor(isSelected ? SELECTED_COLOR.brighter() : new Color(70, 70, 85));
+            g2d.drawRoundRect(panelX + 5, yPos, panelWidth - 10, optionHeight, 5, 5);
+
+            // Companion name with rarity color
+            g2d.setFont(new Font("Arial", Font.PLAIN, 11));
+            g2d.setColor(companion.getRarityColor());
+            String name = companion.name;
+            if (name.length() > 20) name = name.substring(0, 18) + "..";
+            g2d.drawString(name, panelX + 15, yPos + 16);
+        }
+
+        // Scroll indicators if needed
+        if (availableCompanions.size() > visibleCompanions) {
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.setColor(new Color(150, 150, 170));
+            if (companionScrollOffset > 0) {
+                g2d.drawString("▲", panelX + panelWidth - 20, listY - 2);
+            }
+            if (companionScrollOffset + visibleCompanions < availableCompanions.size()) {
+                g2d.drawString("▼", panelX + panelWidth - 20, listY + visibleCompanions * (optionHeight + 3) - 5);
+            }
+        }
+
+        // Selected companion info
+        if (selectedCompanion != null) {
+            g2d.setFont(new Font("Arial", Font.ITALIC, 9));
+            g2d.setColor(new Color(130, 130, 150));
+            String effect = selectedCompanion.specialEffect;
+            if (effect != null && effect.length() > 35) effect = effect.substring(0, 33) + "..";
+            if (effect != null) {
+                g2d.drawString(effect, panelX + 10, panelY + panelHeight - 8);
+            }
+        }
     }
 
     /**
@@ -1078,6 +1177,36 @@ public class SpriteCharacterCustomization implements Scene {
                 break;
             }
         }
+
+        // Check companion clicks
+        int charY = LEFT_PANEL_Y + 50;
+        int companionPanelX = LEFT_PANEL_X + 10;
+        int companionPanelY = charY + CHAR_HEIGHT + 40;
+        int panelWidth = LEFT_PANEL_WIDTH - 20;
+        int optionHeight = 24;
+        int optionY = companionPanelY + 35;
+        int listY = optionY + optionHeight + 5;
+
+        // Check "None" option
+        if (x >= companionPanelX + 5 && x < companionPanelX + panelWidth - 5 &&
+            y >= optionY && y < optionY + optionHeight) {
+            selectedCompanion = null;
+            System.out.println("Selected companion: None");
+            return;
+        }
+
+        // Check companion list items
+        int visibleCompanions = 3;
+        for (int i = companionScrollOffset; i < availableCompanions.size() && i < companionScrollOffset + visibleCompanions; i++) {
+            int yPos = listY + (i - companionScrollOffset) * (optionHeight + 3);
+
+            if (x >= companionPanelX + 5 && x < companionPanelX + panelWidth - 5 &&
+                y >= yPos && y < yPos + optionHeight) {
+                selectedCompanion = availableCompanions.get(i);
+                System.out.println("Selected companion: " + selectedCompanion.name);
+                return;
+            }
+        }
     }
 
     @Override
@@ -1167,6 +1296,21 @@ public class SpriteCharacterCustomization implements Scene {
      * Returns whether there are saved customizations.
      */
     public static boolean hasSavedCustomization() {
-        return !savedSelections.isEmpty() || savedSkinToneIndex != 7 || savedHairColorIndex != 12;
+        return !savedSelections.isEmpty() || savedSkinToneIndex != 7 || savedHairColorIndex != 12 || savedCompanion != null;
+    }
+
+    /**
+     * Gets the saved companion selection.
+     * @return The selected CompanionData, or null if no companion selected
+     */
+    public static CompanionData getSavedCompanion() {
+        return savedCompanion;
+    }
+
+    /**
+     * Checks if a companion is selected.
+     */
+    public static boolean hasCompanion() {
+        return savedCompanion != null;
     }
 }

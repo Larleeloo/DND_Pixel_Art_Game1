@@ -148,9 +148,13 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     private ItemEntity lastDroppedItem = null;
 
     // Mining targeting system
-    private int miningDirection = 1;
-    private static final int NUM_DIRECTIONS = 6;
+    // Directions: 0=up, 1=right, 2=down, 3=left (4 cardinal directions, controlled by arrow keys)
+    private int miningDirection = 1;  // Start facing right
+    private static final int NUM_DIRECTIONS = 4;
     private BlockEntity targetedBlock = null;
+
+    // Block placement system
+    private static final int PLACEMENT_RADIUS = 3;  // 3 block radius for placement
 
     // Timing for animation updates
     private long lastUpdateTime;
@@ -412,6 +416,17 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
             }
         }
 
+        // Arrow keys change mining direction
+        if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
+            miningDirection = 0;  // Up
+        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_RIGHT)) {
+            miningDirection = 1;  // Right
+        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_DOWN)) {
+            miningDirection = 2;  // Down
+        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_LEFT)) {
+            miningDirection = 3;  // Left
+        }
+
         // Update targeted block
         updateTargetedBlock(entities);
 
@@ -422,7 +437,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Check if UI consumed the click (e.g., clicking on a UI button)
         boolean clickConsumedByUI = input.isClickConsumedByUI();
 
-        // E key or Left Mouse Click - mine block (use tool) or fire projectile
+        // E key or Left Mouse Click - mine block (use tool), fire projectile, or place block
         // Also handle inventory auto-equip on left click when inventory is open
         // Skip if click was consumed by UI elements
         if (leftMouseJustPressed && !clickConsumedByUI) {
@@ -439,6 +454,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                     // Fire immediately for non-chargeable weapons
                     fireProjectile(entities);
                 }
+            } else if (heldItem != null && heldItem.getCategory() == Item.ItemCategory.BLOCK) {
+                // Try to place a block
+                tryPlaceBlock(entities, input);
             } else {
                 // Mine block
                 int direction = getMiningDirection();
@@ -1155,17 +1173,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         g2d.setStroke(new BasicStroke(2));
         g.drawRect(x, y, width, height);
 
-        // Draw crosshair on targeted block
+        // Draw directional arrow on targeted block showing mining direction
         if (targetedBlock != null && !targetedBlock.isBroken()) {
             Rectangle blockBounds = targetedBlock.getFullBounds();
-            int crosshairX = blockBounds.x + blockBounds.width / 2;
-            int crosshairY = blockBounds.y + blockBounds.height / 2;
-            int dotSize = 6;
+            int centerX = blockBounds.x + blockBounds.width / 2;
+            int centerY = blockBounds.y + blockBounds.height / 2;
 
-            g.setColor(Color.BLACK);
-            g.fillOval(crosshairX - dotSize/2 - 1, crosshairY - dotSize/2 - 1, dotSize + 2, dotSize + 2);
-            g.setColor(Color.WHITE);
-            g.fillOval(crosshairX - dotSize/2, crosshairY - dotSize/2, dotSize, dotSize);
+            // Draw the directional arrow
+            drawMiningArrow(g2d, centerX, centerY, miningDirection);
         }
 
         // Draw attack hitbox when attacking
@@ -1205,6 +1220,86 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         if (heldItem != null && heldItem.isRangedWeapon()) {
             drawAimIndicator(g2d);
         }
+    }
+
+    /**
+     * Draws a directional arrow on the targeted block showing mining direction.
+     * Arrow points in the direction the player is mining from.
+     *
+     * @param g2d Graphics context
+     * @param centerX Center X of the block
+     * @param centerY Center Y of the block
+     * @param direction 0=up, 1=right, 2=down, 3=left
+     */
+    private void drawMiningArrow(Graphics2D g2d, int centerX, int centerY, int direction) {
+        int arrowSize = 20;
+        int arrowWidth = 12;
+
+        // Save original stroke
+        Stroke originalStroke = g2d.getStroke();
+
+        // Calculate arrow points based on direction
+        int[] xPoints = new int[3];
+        int[] yPoints = new int[3];
+
+        switch (direction) {
+            case 0:  // Up - arrow points down into block
+                xPoints[0] = centerX;
+                yPoints[0] = centerY - arrowSize / 2;
+                xPoints[1] = centerX - arrowWidth / 2;
+                yPoints[1] = centerY - arrowSize / 2 - arrowSize;
+                xPoints[2] = centerX + arrowWidth / 2;
+                yPoints[2] = centerY - arrowSize / 2 - arrowSize;
+                break;
+            case 1:  // Right - arrow points left into block
+                xPoints[0] = centerX + arrowSize / 2;
+                yPoints[0] = centerY;
+                xPoints[1] = centerX + arrowSize / 2 + arrowSize;
+                yPoints[1] = centerY - arrowWidth / 2;
+                xPoints[2] = centerX + arrowSize / 2 + arrowSize;
+                yPoints[2] = centerY + arrowWidth / 2;
+                break;
+            case 2:  // Down - arrow points up into block
+                xPoints[0] = centerX;
+                yPoints[0] = centerY + arrowSize / 2;
+                xPoints[1] = centerX - arrowWidth / 2;
+                yPoints[1] = centerY + arrowSize / 2 + arrowSize;
+                xPoints[2] = centerX + arrowWidth / 2;
+                yPoints[2] = centerY + arrowSize / 2 + arrowSize;
+                break;
+            case 3:  // Left - arrow points right into block
+                xPoints[0] = centerX - arrowSize / 2;
+                yPoints[0] = centerY;
+                xPoints[1] = centerX - arrowSize / 2 - arrowSize;
+                yPoints[1] = centerY - arrowWidth / 2;
+                xPoints[2] = centerX - arrowSize / 2 - arrowSize;
+                yPoints[2] = centerY + arrowWidth / 2;
+                break;
+        }
+
+        // Draw arrow shadow
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillPolygon(new int[]{xPoints[0] + 2, xPoints[1] + 2, xPoints[2] + 2},
+                       new int[]{yPoints[0] + 2, yPoints[1] + 2, yPoints[2] + 2}, 3);
+
+        // Draw arrow fill
+        g2d.setColor(new Color(255, 220, 100));
+        g2d.fillPolygon(xPoints, yPoints, 3);
+
+        // Draw arrow outline
+        g2d.setColor(new Color(200, 150, 50));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawPolygon(xPoints, yPoints, 3);
+
+        // Draw center dot
+        int dotSize = 6;
+        g2d.setColor(Color.BLACK);
+        g2d.fillOval(centerX - dotSize/2 - 1, centerY - dotSize/2 - 1, dotSize + 2, dotSize + 2);
+        g2d.setColor(Color.WHITE);
+        g2d.fillOval(centerX - dotSize/2, centerY - dotSize/2, dotSize, dotSize);
+
+        // Restore original stroke
+        g2d.setStroke(originalStroke);
     }
 
     /**
@@ -1534,6 +1629,110 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
     // ==================== Block Mining System ====================
 
+    /**
+     * Attempts to place a block at the clicked location.
+     * Block must be within PLACEMENT_RADIUS blocks of the player and not overlap with existing blocks.
+     */
+    private void tryPlaceBlock(ArrayList<Entity> entities, InputManager input) {
+        if (heldItem == null || heldItem.getCategory() != Item.ItemCategory.BLOCK) {
+            return;
+        }
+
+        // Get mouse position in world coordinates
+        if (camera == null) return;
+
+        int mouseScreenX = input.getMouseX();
+        int mouseScreenY = input.getMouseY();
+        int worldX = camera.screenToWorldX(mouseScreenX);
+        int worldY = camera.screenToWorldY(mouseScreenY);
+
+        // Convert to grid coordinates
+        int gridX = BlockEntity.pixelToGrid(worldX);
+        int gridY = BlockEntity.pixelToGrid(worldY);
+        int pixelX = BlockEntity.gridToPixel(gridX);
+        int pixelY = BlockEntity.gridToPixel(gridY);
+
+        // Check if within placement radius
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 2;
+        int blockCenterX = pixelX + BlockRegistry.BLOCK_SIZE / 2;
+        int blockCenterY = pixelY + BlockRegistry.BLOCK_SIZE / 2;
+
+        double distance = Math.sqrt(
+            Math.pow(blockCenterX - playerCenterX, 2) +
+            Math.pow(blockCenterY - playerCenterY, 2)
+        );
+
+        // Distance in blocks (not pixels)
+        double distanceInBlocks = distance / BlockRegistry.BLOCK_SIZE;
+        if (distanceInBlocks > PLACEMENT_RADIUS) {
+            // Too far away
+            return;
+        }
+
+        // Check if there's already a block at this position
+        Rectangle newBlockBounds = new Rectangle(pixelX, pixelY, BlockRegistry.BLOCK_SIZE, BlockRegistry.BLOCK_SIZE);
+        for (Entity e : entities) {
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (!block.isBroken() && newBlockBounds.intersects(block.getFullBounds())) {
+                    // Block already exists here
+                    return;
+                }
+            }
+        }
+
+        // Check if the new block would overlap with the player
+        Rectangle playerBounds = new Rectangle(x, y, width, height);
+        if (newBlockBounds.intersects(playerBounds)) {
+            // Can't place block on player
+            return;
+        }
+
+        // Determine block type from held item name
+        BlockType blockType = getBlockTypeFromItem(heldItem);
+        if (blockType == null) {
+            blockType = BlockType.DIRT;  // Default
+        }
+
+        // Create and add the new block
+        BlockEntity newBlock = new BlockEntity(gridX, gridY, blockType, true);
+        newBlock.onPlace(audioManager);
+        entities.add(newBlock);
+
+        // Consume the block from inventory
+        int currentSlot = inventory.getSelectedSlot();
+        inventory.removeItemAtSlot(currentSlot);
+        syncHeldItemWithInventory();
+
+        System.out.println("Placed " + blockType.name() + " block at grid (" + gridX + "," + gridY + ")");
+    }
+
+    /**
+     * Converts a held item to a block type.
+     */
+    private BlockType getBlockTypeFromItem(Item item) {
+        if (item == null) return null;
+
+        String name = item.getName().toLowerCase();
+
+        if (name.contains("grass")) return BlockType.GRASS;
+        if (name.contains("dirt")) return BlockType.DIRT;
+        if (name.contains("stone") && !name.contains("cobble")) return BlockType.STONE;
+        if (name.contains("cobble")) return BlockType.COBBLESTONE;
+        if (name.contains("wood") || name.contains("plank")) return BlockType.WOOD;
+        if (name.contains("leaves") || name.contains("leaf")) return BlockType.LEAVES;
+        if (name.contains("brick")) return BlockType.BRICK;
+        if (name.contains("sand")) return BlockType.SAND;
+        if (name.contains("glass")) return BlockType.GLASS;
+        if (name.contains("coal")) return BlockType.COAL_ORE;
+        if (name.contains("iron") && name.contains("ore")) return BlockType.IRON_ORE;
+        if (name.contains("gold") && name.contains("ore")) return BlockType.GOLD_ORE;
+        if (name.contains("water")) return BlockType.WATER;
+
+        return BlockType.DIRT;  // Default
+    }
+
     private void tryMineBlock(ArrayList<Entity> entities, int direction) {
         lastBrokenBlock = null;
         lastDroppedItem = null;
@@ -1578,39 +1777,44 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         }
     }
 
+    /**
+     * Gets the mining area rectangle based on current direction.
+     * Blocks within this area can be mined.
+     */
     private Rectangle getMiningArea(int damageDir) {
         int reach = BlockRegistry.BLOCK_SIZE;
         int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 2;
 
+        // 4 cardinal directions: 0=up, 1=right, 2=down, 3=left
         switch (miningDirection) {
-            case 0:
+            case 0:  // Up
                 return new Rectangle(playerCenterX - reach/2, y - reach, reach, reach);
-            case 1:
-                return new Rectangle(x + width, y - reach/2, reach, reach);
-            case 2:
-                return new Rectangle(x + width, y + height - reach/2, reach, reach);
-            case 3:
+            case 1:  // Right
+                return new Rectangle(x + width, playerCenterY - reach/2, reach, reach);
+            case 2:  // Down
                 return new Rectangle(playerCenterX - reach/2, y + height, reach, reach);
-            case 4:
-                return new Rectangle(x - reach, y + height - reach/2, reach, reach);
-            case 5:
-                return new Rectangle(x - reach, y - reach/2, reach, reach);
+            case 3:  // Left
+                return new Rectangle(x - reach, playerCenterY - reach/2, reach, reach);
             default:
                 return new Rectangle(x, y, width, height);
         }
     }
 
+    /**
+     * Gets the block damage direction based on player mining direction.
+     * When mining from a direction, the block is damaged from the opposite side.
+     */
     private int getMiningDirection() {
+        // 0=up, 1=right, 2=down, 3=left -> block damaged from opposite side
         switch (miningDirection) {
-            case 0:
+            case 0:  // Mining from above -> damage block from top
                 return BlockEntity.MINE_DOWN;
-            case 1:
-            case 2:
+            case 1:  // Mining from right -> damage block from right
                 return BlockEntity.MINE_LEFT;
-            case 3:
+            case 2:  // Mining from below -> damage block from bottom
                 return BlockEntity.MINE_UP;
-            case 4:
-            case 5:
+            case 3:  // Mining from left -> damage block from left
                 return BlockEntity.MINE_RIGHT;
             default:
                 return BlockEntity.MINE_LEFT;
