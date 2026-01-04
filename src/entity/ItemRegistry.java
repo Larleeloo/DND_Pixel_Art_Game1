@@ -602,32 +602,37 @@ public class ItemRegistry {
         registerCollectible("rowboat", "Rowboat", ItemRarity.UNCOMMON,
                 "For crossing water");
 
-        // ==================== COMPANIONS (Discord Bot Items) ====================
+        // Companions have been moved to player character alternates in SpriteCharacterCustomization
+        // See CompanionRegistry for companion definitions
 
-        registerCompanion("scarecrow_companion", "Scarecrow Companion", ItemRarity.RARE,
-                "A friendly scarecrow follows you");
+        // ==================== BLOCKS (Placeable) ====================
 
-        registerCompanion("parrot_companion", "Parrot Companion", ItemRarity.RARE,
-                "A colorful bird companion");
+        registerBlock("dirt_block", "Dirt Block", ItemRarity.COMMON,
+                "A block of dirt");
 
-        registerCompanion("asteria_explorer", "Asteria the Explorer", ItemRarity.LEGENDARY,
-                "A legendary explorer companion")
-                .setSpecialEffect("Reveals hidden treasures");
+        registerBlock("grass_block", "Grass Block", ItemRarity.COMMON,
+                "A grass-covered dirt block");
 
-        registerCompanion("breaya_alchemist", "Breaya the Advanced Alchemist", ItemRarity.LEGENDARY,
-                "A master alchemist companion")
-                .setSpecialEffect("Doubles potion effectiveness");
+        registerBlock("stone_block", "Stone Block", ItemRarity.COMMON,
+                "A solid stone block");
 
-        registerCompanion("gipp", "Gipp", ItemRarity.EPIC,
-                "A mysterious magical companion");
+        registerBlock("cobblestone_block", "Cobblestone Block", ItemRarity.COMMON,
+                "A rough cobblestone block");
 
-        registerCompanion("noctra_solen", "Noctra and Solen", ItemRarity.LEGENDARY,
-                "Twin spirits of night and day")
-                .setSpecialEffect("Bonus damage day/night");
+        registerBlock("wood_block", "Wood Block", ItemRarity.COMMON,
+                "A wooden block");
 
-        registerCompanion("filvendor", "Filvendor Venrona", ItemRarity.EPIC,
-                "An ancient elven sage")
-                .setSpecialEffect("+15% experience gain");
+        registerBlock("brick_block", "Brick Block", ItemRarity.COMMON,
+                "A brick block");
+
+        registerBlock("sand_block", "Sand Block", ItemRarity.COMMON,
+                "A block of sand");
+
+        registerBlock("glass_block", "Glass Block", ItemRarity.UNCOMMON,
+                "A transparent glass block");
+
+        registerBlock("leaves_block", "Leaves Block", ItemRarity.COMMON,
+                "A cluster of leaves");
 
         // ==================== SPECIAL CRYSTAL EDITIONS ====================
 
@@ -792,11 +797,15 @@ public class ItemRegistry {
         return item;
     }
 
-    private static Item registerCompanion(String id, String name, ItemRarity rarity, String desc) {
-        Item item = new Item(name, ItemCategory.ACCESSORY);
+    // registerCompanion removed - companions are now player character alternates
+    // See CompanionRegistry for companion definitions
+
+    private static Item registerBlock(String id, String name, ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.BLOCK);
         item.setRarity(rarity);
         item.setDescription(desc);
-        item.setStackable(false);
+        item.setStackable(true);
+        item.setMaxStackSize(64);
         templates.put(id, item);
         return item;
     }

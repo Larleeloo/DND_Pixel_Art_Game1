@@ -180,9 +180,7 @@ Work on section 1.01 (Inventory and items)
 
 KNOWN ISSUES
 
--Companions are listed as items and instead should be moved to player character alternates
--Block breaking system should be revisited. Blocks within a certain range of the player should be clickable. An arrow should appear to denote whether the player is breaking the block from above, below, left or right. This arrow's direction can be changed by using arrow keys
--Blocks are not placeable. Blocks should be placeable within a 3 block radius of the player via left click
+(None - all known issues have been resolved)
 
 FUTURE FEATURES (ROADMAP)
 
@@ -482,3 +480,25 @@ RESOLVED ISSUES
   -> Right panel (x=1140): Skin tone, hair color, and tint controls
   -> All UI elements now properly spaced with no overlapping
   -> Larger item previews (90x90) for better visibility
+
+[FIXED] Companions are listed as items instead of player character alternates
+  -> Removed companion registration from ItemRegistry
+  -> Created CompanionRegistry class for managing companions as player character alternates
+  -> Added companion selection panel to SpriteCharacterCustomization
+  -> Companions can now be selected in character customization menu
+  -> Companion selection is saved and persisted between sessions
+
+[FIXED] Block breaking system needs revisiting with directional arrow indicator
+  -> Simplified mining directions to 4 cardinal directions (up, right, down, left)
+  -> Arrow keys now change mining direction (up/down/left/right arrows)
+  -> Visual arrow indicator appears on targeted block showing mining direction
+  -> Arrow points in the direction the player is mining from
+  -> Blocks within range are clickable based on current direction
+
+[FIXED] Blocks are not placeable
+  -> Added block placement system via left click
+  -> Blocks can be placed within 3 block radius of the player
+  -> Player must be holding a block item (ItemCategory.BLOCK)
+  -> Placement checks for existing blocks and player collision
+  -> Added block items to ItemRegistry (dirt, grass, stone, wood, brick, etc.)
+  -> Block type is determined from held item name
