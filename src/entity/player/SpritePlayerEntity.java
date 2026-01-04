@@ -1,6 +1,7 @@
 package entity.player;
 
 import entity.*;
+import entity.capabilities.*;
 import block.*;
 import animation.*;
 import audio.*;
@@ -23,6 +24,15 @@ import java.util.Iterator;
  * - Equipment overlay system for clothing/armor that syncs with base sprite
  * - Automatic action state transitions based on player movement
  * - Full compatibility with existing game systems (inventory, collision, etc.)
+ * - Block interaction (mining and placement) via BlockInteractionHandler
+ * - Resource management (mana, stamina) via ResourceManager
+ * - Combat capabilities via CombatCapable
+ *
+ * Block Interaction System:
+ * - Left-click on blocks to select them for mining
+ * - Arrow keys to change mining direction
+ * - Click again or press E to mine the selected block
+ * - Right-click on empty space to place blocks (when holding a block item)
  *
  * The animation system expects GIF files with matching frame counts for proper
  * synchronization between the base sprite and equipment overlays.
@@ -36,7 +46,8 @@ import java.util.Iterator;
  *   - walk.gif (5 frames recommended)
  *   - jump.gif (5 frames recommended)
  */
-public class SpritePlayerEntity extends Entity implements PlayerBase {
+public class SpritePlayerEntity extends Entity implements PlayerBase,
+        BlockInteractionHandler, ResourceManager, CombatCapable {
 
     // Animation system
     private SpriteAnimation spriteAnimation;
@@ -143,18 +154,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
     // Ground level
     private int groundY = 720;
 
-    // Block interaction
+    // Block interaction - uses helper for shared functionality
+    private BlockInteractionHelper blockHelper = new BlockInteractionHelper();
     private BlockEntity lastBrokenBlock = null;
     private ItemEntity lastDroppedItem = null;
 
-    // Mining targeting system - click-to-select blocks like UI elements
-    // Directions: 0=up, 1=right, 2=down, 3=left (4 cardinal directions, controlled by arrow keys)
-    private int miningDirection = 2;  // Start facing down
-    private BlockEntity selectedBlock = null;  // Currently selected block (clicked on)
-    private static final int MINING_RADIUS = 3;  // 3 block radius for mining/placement
-
-    // Block placement system
-    private static final int PLACEMENT_RADIUS = 3;  // 3 block radius for placement
+    // Block placement preview state
+    private boolean showPlacementPreview = false;
+    private int previewGridX = 0;
+    private int previewGridY = 0;
+    private boolean previewCanPlace = false;
 
     // Timing for animation updates
     private long lastUpdateTime;
@@ -418,17 +427,20 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
 
         // Arrow keys change mining direction (only applies to selected block)
         if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
-            miningDirection = 0;  // Mine from above
+            blockHelper.setMiningDirection(0);  // Mine from above
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_RIGHT)) {
-            miningDirection = 1;  // Mine from right
+            blockHelper.setMiningDirection(1);  // Mine from right
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_DOWN)) {
-            miningDirection = 2;  // Mine from below
+            blockHelper.setMiningDirection(2);  // Mine from below
         } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_LEFT)) {
-            miningDirection = 3;  // Mine from left
+            blockHelper.setMiningDirection(3);  // Mine from left
         }
 
         // Validate selected block is still valid (not broken, still in range)
         validateSelectedBlock();
+
+        // Update block placement preview when holding a block item
+        updatePlacementPreview(input, entities);
 
         // Handle charged shot system for ranged weapons
         boolean leftMouseHeld = input.isMouseButtonPressed(java.awt.event.MouseEvent.BUTTON1);
@@ -437,7 +449,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         // Check if UI consumed the click (e.g., clicking on a UI button)
         boolean clickConsumedByUI = input.isClickConsumedByUI();
 
-        // Left Mouse Click - click on blocks to select/mine them, fire projectile, or place block
+        // Left Mouse Click - click on blocks to select/mine them or fire projectiles
         // Blocks work like UI elements - click to select, arrow keys to choose direction, click again to mine
         // Skip if click was consumed by UI elements
         if (leftMouseJustPressed && !clickConsumedByUI) {
@@ -454,9 +466,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
                     // Fire immediately for non-chargeable weapons
                     fireProjectile(entities);
                 }
-            } else if (heldItem != null && heldItem.getCategory() == Item.ItemCategory.BLOCK) {
-                // Try to place a block
-                tryPlaceBlock(entities, input);
             } else {
                 // Click-to-select block mining system
                 handleBlockClick(entities, input);
@@ -477,19 +486,49 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         if (input.isKeyJustPressed('e')) {
             if (heldItem != null && heldItem.isRangedWeapon()) {
                 fireProjectile(entities);
-            } else if (selectedBlock != null) {
+            } else if (blockHelper.getSelectedBlock() != null) {
                 // Mine the selected block from the current direction
                 mineSelectedBlock(entities);
             }
         }
 
-        // Right Mouse Click or F key - attack or use item
-        if (input.isRightMouseJustPressed() || input.isKeyJustPressed('f')) {
+        // Right Mouse Click - place block, attack, or use item
+        // Priority: Block placement > Consumable > Attack
+        if (input.isRightMouseJustPressed() && !clickConsumedByUI) {
+            boolean actionTaken = false;
+
+            // First priority: Place block if holding a block item
+            if (heldItem != null && heldItem.getCategory() == Item.ItemCategory.BLOCK) {
+                if (camera != null) {
+                    int worldX = camera.screenToWorldX(input.getMouseX());
+                    int worldY = camera.screenToWorldY(input.getMouseY());
+                    actionTaken = tryPlaceBlock(entities, worldX, worldY);
+                }
+            }
+
+            // Second priority: Consume item
+            if (!actionTaken && heldItem != null && heldItem.isConsumable()) {
+                startEating();
+                actionTaken = true;
+            }
+
+            // Third priority: Attack
+            if (!actionTaken && attack()) {
+                Rectangle attackBounds = getAttackBounds();
+                if (attackBounds != null) {
+                    EntityPhysics.checkPlayerAttack(this, attackBounds, getAttackDamage(), 8.0, entities);
+                    if (audioManager != null) {
+                        audioManager.playSound("attack");
+                    }
+                }
+            }
+        }
+
+        // F key - attack only (separate from right-click for dedicated combat key)
+        if (input.isKeyJustPressed('f')) {
             if (heldItem != null && heldItem.isConsumable()) {
-                // Start eating/using consumable
                 startEating();
             } else if (attack()) {
-                // Attack started - check for mob hits
                 Rectangle attackBounds = getAttackBounds();
                 if (attackBounds != null) {
                     EntityPhysics.checkPlayerAttack(this, attackBounds, getAttackDamage(), 8.0, entities);
@@ -1173,20 +1212,22 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         g.drawRect(x, y, width, height);
 
         // Draw selection highlight and directional arrow on selected block
+        BlockEntity selectedBlock = blockHelper.getSelectedBlock();
         if (selectedBlock != null && !selectedBlock.isBroken()) {
             Rectangle blockBounds = selectedBlock.getFullBounds();
             int centerX = blockBounds.x + blockBounds.width / 2;
             int centerY = blockBounds.y + blockBounds.height / 2;
 
             // Draw selection highlight around the block
-            g2d.setColor(new Color(255, 255, 100, 80));
-            g2d.fillRect(blockBounds.x, blockBounds.y, blockBounds.width, blockBounds.height);
-            g2d.setColor(new Color(255, 255, 100, 200));
-            g2d.setStroke(new BasicStroke(3));
-            g2d.drawRect(blockBounds.x, blockBounds.y, blockBounds.width, blockBounds.height);
+            drawSelectionHighlight(g2d, blockBounds);
 
             // Draw the directional arrow showing mining direction
-            drawMiningArrow(g2d, centerX, centerY, miningDirection);
+            drawMiningArrow(g2d, centerX, centerY, blockHelper.getMiningDirection());
+        }
+
+        // Draw block placement preview when holding a block item
+        if (showPlacementPreview) {
+            drawPlacementPreview(g2d, previewGridX, previewGridY, previewCanPlace);
         }
 
         // Draw attack hitbox when attacking
@@ -1226,86 +1267,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         if (heldItem != null && heldItem.isRangedWeapon()) {
             drawAimIndicator(g2d);
         }
-    }
-
-    /**
-     * Draws a directional arrow on the targeted block showing mining direction.
-     * Arrow points in the direction the player is mining from.
-     *
-     * @param g2d Graphics context
-     * @param centerX Center X of the block
-     * @param centerY Center Y of the block
-     * @param direction 0=up, 1=right, 2=down, 3=left
-     */
-    private void drawMiningArrow(Graphics2D g2d, int centerX, int centerY, int direction) {
-        int arrowSize = 20;
-        int arrowWidth = 12;
-
-        // Save original stroke
-        Stroke originalStroke = g2d.getStroke();
-
-        // Calculate arrow points based on direction
-        int[] xPoints = new int[3];
-        int[] yPoints = new int[3];
-
-        switch (direction) {
-            case 0:  // Up - arrow points down into block
-                xPoints[0] = centerX;
-                yPoints[0] = centerY - arrowSize / 2;
-                xPoints[1] = centerX - arrowWidth / 2;
-                yPoints[1] = centerY - arrowSize / 2 - arrowSize;
-                xPoints[2] = centerX + arrowWidth / 2;
-                yPoints[2] = centerY - arrowSize / 2 - arrowSize;
-                break;
-            case 1:  // Right - arrow points left into block
-                xPoints[0] = centerX + arrowSize / 2;
-                yPoints[0] = centerY;
-                xPoints[1] = centerX + arrowSize / 2 + arrowSize;
-                yPoints[1] = centerY - arrowWidth / 2;
-                xPoints[2] = centerX + arrowSize / 2 + arrowSize;
-                yPoints[2] = centerY + arrowWidth / 2;
-                break;
-            case 2:  // Down - arrow points up into block
-                xPoints[0] = centerX;
-                yPoints[0] = centerY + arrowSize / 2;
-                xPoints[1] = centerX - arrowWidth / 2;
-                yPoints[1] = centerY + arrowSize / 2 + arrowSize;
-                xPoints[2] = centerX + arrowWidth / 2;
-                yPoints[2] = centerY + arrowSize / 2 + arrowSize;
-                break;
-            case 3:  // Left - arrow points right into block
-                xPoints[0] = centerX - arrowSize / 2;
-                yPoints[0] = centerY;
-                xPoints[1] = centerX - arrowSize / 2 - arrowSize;
-                yPoints[1] = centerY - arrowWidth / 2;
-                xPoints[2] = centerX - arrowSize / 2 - arrowSize;
-                yPoints[2] = centerY + arrowWidth / 2;
-                break;
-        }
-
-        // Draw arrow shadow
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillPolygon(new int[]{xPoints[0] + 2, xPoints[1] + 2, xPoints[2] + 2},
-                       new int[]{yPoints[0] + 2, yPoints[1] + 2, yPoints[2] + 2}, 3);
-
-        // Draw arrow fill
-        g2d.setColor(new Color(255, 220, 100));
-        g2d.fillPolygon(xPoints, yPoints, 3);
-
-        // Draw arrow outline
-        g2d.setColor(new Color(200, 150, 50));
-        g2d.setStroke(new BasicStroke(2));
-        g2d.drawPolygon(xPoints, yPoints, 3);
-
-        // Draw center dot
-        int dotSize = 6;
-        g2d.setColor(Color.BLACK);
-        g2d.fillOval(centerX - dotSize/2 - 1, centerY - dotSize/2 - 1, dotSize + 2, dotSize + 2);
-        g2d.setColor(Color.WHITE);
-        g2d.fillOval(centerX - dotSize/2, centerY - dotSize/2, dotSize, dotSize);
-
-        // Restore original stroke
-        g2d.setStroke(originalStroke);
     }
 
     /**
@@ -1633,269 +1594,132 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         return baseAttackRange;
     }
 
-    // ==================== Block Mining System ====================
+    // ==================== BlockInteractionHandler Implementation ====================
 
-    /**
-     * Attempts to place a block at the clicked location.
-     * Block must be within PLACEMENT_RADIUS blocks of the player and not overlap with existing blocks.
-     */
-    private void tryPlaceBlock(ArrayList<Entity> entities, InputManager input) {
-        if (heldItem == null || heldItem.getCategory() != Item.ItemCategory.BLOCK) {
-            return;
+    @Override
+    public BlockEntity getSelectedBlock() {
+        return blockHelper.getSelectedBlock();
+    }
+
+    @Override
+    public void selectBlock(BlockEntity block) {
+        blockHelper.selectBlock(block);
+    }
+
+    @Override
+    public void deselectBlock() {
+        blockHelper.deselectBlock();
+    }
+
+    @Override
+    public int getMiningDirection() {
+        return blockHelper.getMiningDirection();
+    }
+
+    @Override
+    public void setMiningDirection(int direction) {
+        blockHelper.setMiningDirection(direction);
+    }
+
+    @Override
+    public boolean isBlockInRange(BlockEntity block) {
+        return blockHelper.isBlockInRange(block, getCenterX(), getCenterY());
+    }
+
+    @Override
+    public void validateSelectedBlock() {
+        blockHelper.validateSelectedBlock(getCenterX(), getCenterY());
+    }
+
+    @Override
+    public boolean mineSelectedBlock(ArrayList<Entity> entities) {
+        boolean broken = blockHelper.mineSelectedBlock(entities, getEquippedToolType(), audioManager);
+        if (broken) {
+            lastBrokenBlock = blockHelper.getLastBrokenBlock();
+            lastDroppedItem = blockHelper.getLastDroppedItem();
         }
+        return broken;
+    }
 
-        // Get mouse position in world coordinates
-        if (camera == null) return;
-
-        int mouseScreenX = input.getMouseX();
-        int mouseScreenY = input.getMouseY();
-        int worldX = camera.screenToWorldX(mouseScreenX);
-        int worldY = camera.screenToWorldY(mouseScreenY);
-
-        // Convert to grid coordinates
-        int gridX = BlockEntity.pixelToGrid(worldX);
-        int gridY = BlockEntity.pixelToGrid(worldY);
-        int pixelX = BlockEntity.gridToPixel(gridX);
-        int pixelY = BlockEntity.gridToPixel(gridY);
-
-        // Check if within placement radius
-        int playerCenterX = x + width / 2;
-        int playerCenterY = y + height / 2;
-        int blockCenterX = pixelX + BlockRegistry.BLOCK_SIZE / 2;
-        int blockCenterY = pixelY + BlockRegistry.BLOCK_SIZE / 2;
-
-        double distance = Math.sqrt(
-            Math.pow(blockCenterX - playerCenterX, 2) +
-            Math.pow(blockCenterY - playerCenterY, 2)
-        );
-
-        // Distance in blocks (not pixels)
-        double distanceInBlocks = distance / BlockRegistry.BLOCK_SIZE;
-        if (distanceInBlocks > PLACEMENT_RADIUS) {
-            // Too far away
-            return;
-        }
-
-        // Check if there's already a block at this position
-        Rectangle newBlockBounds = new Rectangle(pixelX, pixelY, BlockRegistry.BLOCK_SIZE, BlockRegistry.BLOCK_SIZE);
-        for (Entity e : entities) {
-            if (e instanceof BlockEntity) {
-                BlockEntity block = (BlockEntity) e;
-                if (!block.isBroken() && newBlockBounds.intersects(block.getFullBounds())) {
-                    // Block already exists here
-                    return;
-                }
-            }
-        }
-
-        // Check if the new block would overlap with the player
-        Rectangle playerBounds = new Rectangle(x, y, width, height);
-        if (newBlockBounds.intersects(playerBounds)) {
-            // Can't place block on player
-            return;
-        }
-
-        // Determine block type from held item name
-        BlockType blockType = getBlockTypeFromItem(heldItem);
-        if (blockType == null) {
-            blockType = BlockType.DIRT;  // Default
-        }
-
-        // Create and add the new block
-        BlockEntity newBlock = new BlockEntity(gridX, gridY, blockType, true);
-        newBlock.onPlace(audioManager);
-        entities.add(newBlock);
-
-        // Consume the block from inventory
-        int currentSlot = inventory.getSelectedSlot();
-        inventory.removeItemAtSlot(currentSlot);
-        syncHeldItemWithInventory();
-
-        System.out.println("Placed " + blockType.name() + " block at grid (" + gridX + "," + gridY + ")");
+    @Override
+    public boolean handleBlockClick(ArrayList<Entity> entities, int worldX, int worldY) {
+        return blockHelper.handleBlockClick(entities, worldX, worldY,
+                getCenterX(), getCenterY(), getEquippedToolType(), audioManager);
     }
 
     /**
-     * Converts a held item to a block type.
-     */
-    private BlockType getBlockTypeFromItem(Item item) {
-        if (item == null) return null;
-
-        String name = item.getName().toLowerCase();
-
-        if (name.contains("grass")) return BlockType.GRASS;
-        if (name.contains("dirt")) return BlockType.DIRT;
-        if (name.contains("stone") && !name.contains("cobble")) return BlockType.STONE;
-        if (name.contains("cobble")) return BlockType.COBBLESTONE;
-        if (name.contains("wood") || name.contains("plank")) return BlockType.WOOD;
-        if (name.contains("leaves") || name.contains("leaf")) return BlockType.LEAVES;
-        if (name.contains("brick")) return BlockType.BRICK;
-        if (name.contains("sand")) return BlockType.SAND;
-        if (name.contains("glass")) return BlockType.GLASS;
-        if (name.contains("coal")) return BlockType.COAL_ORE;
-        if (name.contains("iron") && name.contains("ore")) return BlockType.IRON_ORE;
-        if (name.contains("gold") && name.contains("ore")) return BlockType.GOLD_ORE;
-        if (name.contains("water")) return BlockType.WATER;
-
-        return BlockType.DIRT;  // Default
-    }
-
-    /**
-     * Handles left-click on blocks - click to select, click again to mine.
-     * Blocks work like UI elements that can be clicked.
+     * Handles left-click on blocks using screen coordinates from InputManager.
      */
     private void handleBlockClick(ArrayList<Entity> entities, InputManager input) {
         if (camera == null) return;
 
-        // Get click position in world coordinates
-        int mouseScreenX = input.getMouseX();
-        int mouseScreenY = input.getMouseY();
-        int worldX = camera.screenToWorldX(mouseScreenX);
-        int worldY = camera.screenToWorldY(mouseScreenY);
+        int worldX = camera.screenToWorldX(input.getMouseX());
+        int worldY = camera.screenToWorldY(input.getMouseY());
+        handleBlockClick(entities, worldX, worldY);
+    }
 
-        // Find the block that was clicked on
-        BlockEntity clickedBlock = null;
-        for (Entity e : entities) {
-            if (e instanceof BlockEntity) {
-                BlockEntity block = (BlockEntity) e;
-                if (!block.isBroken()) {
-                    Rectangle bounds = block.getFullBounds();
-                    if (bounds.contains(worldX, worldY)) {
-                        clickedBlock = block;
-                        break;
-                    }
-                }
-            }
+    @Override
+    public boolean canPlaceBlockAt(int worldX, int worldY, ArrayList<Entity> entities) {
+        return blockHelper.canPlaceBlockAt(worldX, worldY, entities,
+                getCenterX(), getCenterY(), getBounds());
+    }
+
+    @Override
+    public boolean tryPlaceBlock(ArrayList<Entity> entities, int worldX, int worldY) {
+        boolean placed = blockHelper.tryPlaceBlock(entities, worldX, worldY,
+                heldItem, inventory, audioManager,
+                getCenterX(), getCenterY(), getBounds());
+        if (placed) {
+            syncHeldItemWithInventory();
+            System.out.println("Placed block at world (" + worldX + "," + worldY + ")");
         }
+        return placed;
+    }
 
-        if (clickedBlock != null) {
-            // Check if block is within mining radius
-            if (isBlockInRange(clickedBlock)) {
-                if (selectedBlock == clickedBlock) {
-                    // Clicking on already-selected block -> mine it
-                    mineSelectedBlock(entities);
-                } else {
-                    // Clicking on a new block -> select it
-                    selectedBlock = clickedBlock;
-                    selectedBlock.setTargeted(true);
-                    System.out.println("Selected block at (" + clickedBlock.x + "," + clickedBlock.y + ") - Use arrow keys to change direction, click again to mine");
-                }
-            } else {
-                // Block is out of range - deselect
-                deselectBlock();
-                System.out.println("Block too far away (max " + MINING_RADIUS + " blocks)");
-            }
+    @Override
+    public ToolType getEquippedToolType() {
+        return inventory.getHeldToolType();
+    }
+
+    @Override
+    public AudioManager getAudioManager() {
+        return audioManager;
+    }
+
+    @Override
+    public Camera getCamera() {
+        return camera;
+    }
+
+    @Override
+    public int getCenterX() {
+        return x + width / 2;
+    }
+
+    @Override
+    public int getCenterY() {
+        return y + height / 2;
+    }
+
+    @Override
+    public void drawMiningArrow(Graphics2D g2d, int centerX, int centerY, int direction) {
+        blockHelper.drawMiningArrow(g2d, centerX, centerY, direction);
+    }
+
+    /**
+     * Updates the block placement preview when holding a block item.
+     */
+    private void updatePlacementPreview(InputManager input, ArrayList<Entity> entities) {
+        if (camera != null && heldItem != null && heldItem.getCategory() == Item.ItemCategory.BLOCK) {
+            int worldX = camera.screenToWorldX(input.getMouseX());
+            int worldY = camera.screenToWorldY(input.getMouseY());
+            previewGridX = BlockEntity.pixelToGrid(worldX);
+            previewGridY = BlockEntity.pixelToGrid(worldY);
+            previewCanPlace = canPlaceBlockAt(worldX, worldY, entities);
+            showPlacementPreview = true;
         } else {
-            // Clicked on empty space - deselect block
-            deselectBlock();
+            showPlacementPreview = false;
         }
-    }
-
-    /**
-     * Validates that the selected block is still valid (not broken, still in range).
-     */
-    private void validateSelectedBlock() {
-        if (selectedBlock != null) {
-            if (selectedBlock.isBroken() || !isBlockInRange(selectedBlock)) {
-                deselectBlock();
-            }
-        }
-    }
-
-    /**
-     * Deselects the currently selected block.
-     */
-    private void deselectBlock() {
-        if (selectedBlock != null) {
-            selectedBlock.setTargeted(false);
-            selectedBlock = null;
-        }
-    }
-
-    /**
-     * Checks if a block is within mining range of the player.
-     */
-    private boolean isBlockInRange(BlockEntity block) {
-        int playerCenterX = x + width / 2;
-        int playerCenterY = y + height / 2;
-        int blockCenterX = block.x + block.getSize() / 2;
-        int blockCenterY = block.y + block.getSize() / 2;
-
-        double distance = Math.sqrt(
-            Math.pow(blockCenterX - playerCenterX, 2) +
-            Math.pow(blockCenterY - playerCenterY, 2)
-        );
-
-        // Distance in blocks
-        double distanceInBlocks = distance / BlockRegistry.BLOCK_SIZE;
-        return distanceInBlocks <= MINING_RADIUS;
-    }
-
-    /**
-     * Mines the currently selected block from the current direction.
-     */
-    private void mineSelectedBlock(ArrayList<Entity> entities) {
-        if (selectedBlock == null || selectedBlock.isBroken()) {
-            deselectBlock();
-            return;
-        }
-
-        lastBrokenBlock = null;
-        lastDroppedItem = null;
-
-        // Convert mining direction to block damage direction
-        int blockDamageDir = getBlockDamageDirection();
-
-        ToolType heldTool = inventory.getHeldToolType();
-        int layersToMine = heldTool.getLayersPerMine(selectedBlock.getBlockType());
-
-        boolean fullyBroken = false;
-        for (int i = 0; i < layersToMine && !fullyBroken; i++) {
-            fullyBroken = selectedBlock.mineLayer(blockDamageDir);
-        }
-
-        if (audioManager != null) {
-            audioManager.playSound("drop");
-        }
-
-        if (fullyBroken) {
-            lastBrokenBlock = selectedBlock;
-            lastDroppedItem = selectedBlock.breakBlock(audioManager);
-            deselectBlock();
-        }
-    }
-
-    /**
-     * Gets the block damage direction based on player mining direction.
-     * 0=up, 1=right, 2=down, 3=left -> corresponding block damage direction
-     * Fixed for reversed mining. Now mines away from arrow towards center.
-     */
-    private int getBlockDamageDirection() {
-        switch (miningDirection) {
-            case 0:  // Mining from above -> damage block from top
-                return BlockEntity.MINE_UP;
-            case 1:  // Mining from right -> damage block from right
-                return BlockEntity.MINE_RIGHT;
-            case 2:  // Mining from below -> damage block from bottom
-                return BlockEntity.MINE_DOWN;
-            case 3:  // Mining from left -> damage block from left
-                return BlockEntity.MINE_LEFT;
-            default:
-                return BlockEntity.MINE_DOWN;
-        }
-    }
-
-    /**
-     * Gets the distance from player to a block.
-     */
-    private double getDistanceToBlock(BlockEntity block) {
-        int playerCenterX = x + width / 2;
-        int playerCenterY = y + height / 2;
-        int blockCenterX = block.x + block.getSize() / 2;
-        int blockCenterY = block.y + block.getSize() / 2;
-
-        double dx = blockCenterX - playerCenterX;
-        double dy = blockCenterY - playerCenterY;
-        return Math.sqrt(dx * dx + dy * dy);
     }
 
     public BlockEntity getLastBrokenBlock() {
@@ -1908,6 +1732,156 @@ public class SpritePlayerEntity extends Entity implements PlayerBase {
         ItemEntity item = lastDroppedItem;
         lastDroppedItem = null;
         return item;
+    }
+
+    // ==================== ResourceManager Implementation ====================
+
+    @Override
+    public void setMana(int mana) {
+        this.currentMana = Math.max(0, Math.min(maxMana, mana));
+    }
+
+    @Override
+    public double getManaRegenRate() {
+        return manaRegenRate;
+    }
+
+    @Override
+    public void setManaRegenRate(double rate) {
+        this.manaRegenRate = rate;
+    }
+
+    @Override
+    public void setStamina(int stamina) {
+        this.currentStamina = Math.max(0, Math.min(maxStamina, stamina));
+        this.currentStaminaFloat = currentStamina;
+    }
+
+    @Override
+    public double getStaminaRegenRate() {
+        return staminaRegenRate;
+    }
+
+    @Override
+    public void setStaminaRegenRate(double rate) {
+        this.staminaRegenRate = rate;
+    }
+
+    @Override
+    public double getStaminaDrainRate() {
+        return staminaDrainRate;
+    }
+
+    @Override
+    public void setStaminaDrainRate(double rate) {
+        this.staminaDrainRate = rate;
+    }
+
+    @Override
+    public void setHealth(int health) {
+        this.currentHealth = Math.max(0, Math.min(maxHealth, health));
+    }
+
+    @Override
+    public void updateResourceRegeneration(double deltaSeconds) {
+        // Mana regeneration
+        currentMana = Math.min(maxMana, currentMana + (int)(manaRegenRate * deltaSeconds));
+
+        // Stamina regeneration (only when not sprinting)
+        if (!isSprinting) {
+            currentStaminaFloat = Math.min(maxStamina, currentStaminaFloat + staminaRegenRate * deltaSeconds);
+            currentStamina = (int) currentStaminaFloat;
+        }
+    }
+
+    // ==================== CombatCapable Implementation ====================
+
+    @Override
+    public int getBaseAttackDamage() {
+        return baseAttackDamage;
+    }
+
+    @Override
+    public void setBaseAttackDamage(int damage) {
+        this.baseAttackDamage = damage;
+    }
+
+    @Override
+    public int getAttackRange() {
+        return getEffectiveAttackRange();
+    }
+
+    @Override
+    public int getBaseAttackRange() {
+        return baseAttackRange;
+    }
+
+    @Override
+    public void setBaseAttackRange(int range) {
+        this.baseAttackRange = range;
+    }
+
+    @Override
+    public double getAttackCooldown() {
+        return attackCooldown;
+    }
+
+    @Override
+    public void setAttackCooldown(double cooldown) {
+        this.attackCooldown = cooldown;
+    }
+
+    @Override
+    public double getInvincibilityDuration() {
+        return invincibilityTime;
+    }
+
+    @Override
+    public void setInvincibilityDuration(double duration) {
+        this.invincibilityTime = duration;
+    }
+
+    @Override
+    public boolean canFireRanged() {
+        return heldItem != null && heldItem.isRangedWeapon() && fireTimer <= 0;
+    }
+
+    @Override
+    public boolean fireProjectile(ArrayList<Entity> entities, double dirX, double dirY) {
+        if (!canFireRanged()) return false;
+        // Store current aim direction and restore after
+        double oldAimDirX = aimDirX;
+        double oldAimDirY = aimDirY;
+        aimDirX = dirX;
+        aimDirY = dirY;
+        fireProjectile(entities);
+        aimDirX = oldAimDirX;
+        aimDirY = oldAimDirY;
+        return true;
+    }
+
+    @Override
+    public void updateCombatTimers(double deltaSeconds) {
+        // Attack timer
+        if (attackTimer > 0) {
+            attackTimer -= deltaSeconds;
+        }
+        if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
+            isAttacking = false;
+        }
+
+        // Fire timer
+        if (fireTimer > 0) {
+            fireTimer -= deltaSeconds;
+        }
+        if (isFiring && fireTimer <= fireCooldown - fireDuration) {
+            isFiring = false;
+        }
+
+        // Invincibility timer
+        if (invincibilityTimer > 0) {
+            invincibilityTimer -= deltaSeconds;
+        }
     }
 
     // ==================== Held Item System ====================
