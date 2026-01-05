@@ -189,6 +189,72 @@ public class AudioManager {
     }
 
     /**
+     * Get the current music volume (0.0 to 1.0)
+     */
+    public float getMusicVolume() {
+        return musicVolume;
+    }
+
+    /**
+     * Get the current SFX volume (0.0 to 1.0)
+     */
+    public float getSFXVolume() {
+        return sfxVolume;
+    }
+
+    /**
+     * Check if music is enabled.
+     */
+    public boolean isMusicEnabled() {
+        return musicEnabled;
+    }
+
+    /**
+     * Check if sound effects are enabled.
+     */
+    public boolean isSFXEnabled() {
+        return sfxEnabled;
+    }
+
+    /**
+     * Set music enabled state directly.
+     */
+    public void setMusicEnabled(boolean enabled) {
+        if (musicEnabled != enabled) {
+            musicEnabled = enabled;
+            if (musicEnabled) {
+                playMusic();
+            } else {
+                stopMusic();
+            }
+            System.out.println("Music " + (musicEnabled ? "enabled" : "disabled"));
+        }
+    }
+
+    /**
+     * Set SFX enabled state directly.
+     */
+    public void setSFXEnabled(boolean enabled) {
+        sfxEnabled = enabled;
+        System.out.println("Sound effects " + (sfxEnabled ? "enabled" : "disabled"));
+    }
+
+    /**
+     * Mute or unmute all audio.
+     */
+    public void setMuteAll(boolean muted) {
+        setMusicEnabled(!muted);
+        setSFXEnabled(!muted);
+    }
+
+    /**
+     * Check if all audio is muted.
+     */
+    public boolean isMuted() {
+        return !musicEnabled && !sfxEnabled;
+    }
+
+    /**
      * Helper method to set volume on a clip
      */
     private void setVolume(Clip clip, float volume) {

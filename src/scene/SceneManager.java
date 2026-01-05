@@ -12,6 +12,7 @@ import input.*;
 import ui.*;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ public class SceneManager {
     private float transitionSpeed;
     private AudioManager audioManager;
     private InputManager inputManager;
+    private SettingsOverlay settingsOverlay;
 
     // Transition types
     public static final int TRANSITION_NONE = 0;
@@ -62,6 +64,8 @@ public class SceneManager {
      */
     public void setAudioManager(AudioManager audioManager) {
         this.audioManager = audioManager;
+        // Create the settings overlay now that we have an audio manager
+        this.settingsOverlay = new SettingsOverlay(audioManager);
     }
 
     /**
@@ -83,6 +87,29 @@ public class SceneManager {
      */
     public InputManager getInputManager() {
         return inputManager;
+    }
+
+    /**
+     * Get the settings overlay.
+     */
+    public SettingsOverlay getSettingsOverlay() {
+        return settingsOverlay;
+    }
+
+    /**
+     * Toggle the settings overlay visibility.
+     */
+    public void toggleSettings() {
+        if (settingsOverlay != null) {
+            settingsOverlay.toggle();
+        }
+    }
+
+    /**
+     * Check if the settings overlay is open.
+     */
+    public boolean isSettingsOpen() {
+        return settingsOverlay != null && settingsOverlay.isVisible();
     }
 
     /**
@@ -184,11 +211,24 @@ public class SceneManager {
             input.resetClickConsumed();
         }
 
+        // Handle ESC key for settings toggle (only when not in settings already)
+        if (input != null && input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
+            if (settingsOverlay != null) {
+                if (settingsOverlay.isVisible()) {
+                    settingsOverlay.hide();
+                } else {
+                    settingsOverlay.show();
+                }
+                return; // Don't process other input this frame
+            }
+        }
+
         if (transitioning) {
             updateTransition();
         }
 
-        if (currentScene != null && !transitioning) {
+        // Don't update scene if settings overlay is open
+        if (currentScene != null && !transitioning && !isSettingsOpen()) {
             currentScene.update(input);
         }
     }
@@ -265,6 +305,11 @@ public class SceneManager {
             g2d.setColor(new Color(0, 0, 0, (int)(transitionAlpha * 255)));
             g2d.fillRect(0, 0, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
         }
+
+        // Draw settings overlay on top of everything
+        if (settingsOverlay != null) {
+            settingsOverlay.draw(g);
+        }
     }
 
     /**
@@ -290,30 +335,58 @@ public class SceneManager {
 
     // Mouse event forwarding
     public void onMousePressed(int x, int y) {
+        // Handle settings overlay first
+        if (settingsOverlay != null && settingsOverlay.handleMousePressed(x, y)) {
+            return; // Event consumed by settings
+        }
+
         if (currentScene != null && !transitioning) {
             currentScene.onMousePressed(x, y);
         }
     }
 
     public void onMouseReleased(int x, int y) {
+        // Handle settings overlay first
+        if (settingsOverlay != null && settingsOverlay.isVisible()) {
+            settingsOverlay.handleMouseReleased(x, y);
+            return;
+        }
+
         if (currentScene != null && !transitioning) {
             currentScene.onMouseReleased(x, y);
         }
     }
 
     public void onMouseDragged(int x, int y) {
+        // Handle settings overlay first
+        if (settingsOverlay != null && settingsOverlay.isVisible()) {
+            settingsOverlay.handleMouseDragged(x, y);
+            return;
+        }
+
         if (currentScene != null && !transitioning) {
             currentScene.onMouseDragged(x, y);
         }
     }
 
     public void onMouseMoved(int x, int y) {
+        // Handle settings overlay first
+        if (settingsOverlay != null && settingsOverlay.isVisible()) {
+            settingsOverlay.handleMouseMoved(x, y);
+            return;
+        }
+
         if (currentScene != null && !transitioning) {
             currentScene.onMouseMoved(x, y);
         }
     }
 
     public void onMouseClicked(int x, int y) {
+        // Handle settings overlay first
+        if (settingsOverlay != null && settingsOverlay.handleMouseClicked(x, y)) {
+            return; // Event consumed by settings
+        }
+
         if (currentScene != null && !transitioning) {
             currentScene.onMouseClicked(x, y);
         }
