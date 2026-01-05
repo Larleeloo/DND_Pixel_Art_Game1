@@ -265,6 +265,14 @@ public class AnimatedTexture {
     }
 
     /**
+     * Checks whether the animation is set to loop.
+     * @return true if looping, false if stops at last frame
+     */
+    public boolean isLooping() {
+        return looping;
+    }
+
+    /**
      * Checks if this is an animated texture (more than one frame).
      * @return true if animated
      */
