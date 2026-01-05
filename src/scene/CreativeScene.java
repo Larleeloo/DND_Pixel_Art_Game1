@@ -71,6 +71,7 @@ public class CreativeScene implements Scene {
     private static final int PALETTE_WIDTH = 200;
     private static final int PALETTE_ITEM_SIZE = 48;
     private static final int PALETTE_ITEMS_PER_ROW = 3;
+    private static final int PALETTE_VISIBLE_ROWS = 8; // Max rows visible in palette area
 
     // Grid
     private static final int GRID_SIZE = BlockRegistry.BLOCK_SIZE; // 64 pixels
@@ -601,6 +602,19 @@ public class CreativeScene implements Scene {
             selectedPaletteIndex = 0;
             paletteScrollOffset = 0;
             setStatus("Category: " + currentCategory.getDisplayName());
+        }
+
+        // Handle palette scrolling with mouse wheel when mouse is over palette area
+        if (mouseX < PALETTE_WIDTH) {
+            int scroll = input.getScrollDirection();
+            if (scroll != 0) {
+                List<PaletteItem> palette = getCurrentPalette();
+                int totalRows = (int) Math.ceil((double) palette.size() / PALETTE_ITEMS_PER_ROW);
+                int maxScroll = Math.max(0, totalRows - PALETTE_VISIBLE_ROWS);
+
+                paletteScrollOffset += scroll;
+                paletteScrollOffset = Math.max(0, Math.min(paletteScrollOffset, maxScroll));
+            }
         }
 
         // P to toggle play mode
@@ -1231,13 +1245,16 @@ public class CreativeScene implements Scene {
             tabY += tabHeight + 5;
         }
 
-        // Draw palette items
+        // Draw palette items with scrolling
         List<PaletteItem> currentPalette = getCurrentPalette();
+        int startIndex = paletteScrollOffset * PALETTE_ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + PALETTE_VISIBLE_ROWS * PALETTE_ITEMS_PER_ROW, currentPalette.size());
+
         int itemY = tabY + 20;
         int itemX = 10;
         int col = 0;
 
-        for (int i = 0; i < currentPalette.size(); i++) {
+        for (int i = startIndex; i < endIndex; i++) {
             PaletteItem item = currentPalette.get(i);
             boolean isSelected = i == selectedPaletteIndex;
 
@@ -1283,6 +1300,31 @@ public class CreativeScene implements Scene {
                 itemX = 10;
                 itemY += PALETTE_ITEM_SIZE + 12;
             }
+        }
+
+        // Draw scroll indicators if needed
+        int totalRows = (int) Math.ceil((double) currentPalette.size() / PALETTE_ITEMS_PER_ROW);
+        if (totalRows > PALETTE_VISIBLE_ROWS) {
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+
+            // Scroll up indicator
+            if (paletteScrollOffset > 0) {
+                g.setColor(new Color(150, 200, 255));
+                g.drawString("▲ Scroll Up", 50, tabY + 10);
+            }
+
+            // Scroll down indicator
+            int maxScroll = Math.max(0, totalRows - PALETTE_VISIBLE_ROWS);
+            if (paletteScrollOffset < maxScroll) {
+                g.setColor(new Color(150, 200, 255));
+                g.drawString("▼ Scroll Down", 45, GamePanel.SCREEN_HEIGHT - 60);
+            }
+
+            // Scroll position indicator
+            g.setFont(new Font("Arial", Font.PLAIN, 10));
+            g.setColor(new Color(180, 180, 200));
+            String scrollInfo = (paletteScrollOffset + 1) + "-" + Math.min(paletteScrollOffset + PALETTE_VISIBLE_ROWS, totalRows) + " of " + totalRows + " rows";
+            g.drawString(scrollInfo, 10, GamePanel.SCREEN_HEIGHT - 75);
         }
 
         // Draw selected item name
@@ -1484,13 +1526,15 @@ public class CreativeScene implements Scene {
             tabY += tabHeight + 5;
         }
 
-        // Check palette items
+        // Check palette items (account for scroll offset)
         int itemY = tabY + 20;
         int itemX = 10;
         int col = 0;
         List<PaletteItem> palette = getCurrentPalette();
+        int startIndex = paletteScrollOffset * PALETTE_ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + PALETTE_VISIBLE_ROWS * PALETTE_ITEMS_PER_ROW, palette.size());
 
-        for (int i = 0; i < palette.size(); i++) {
+        for (int i = startIndex; i < endIndex; i++) {
             Rectangle itemRect = new Rectangle(itemX, itemY, PALETTE_ITEM_SIZE + 8, PALETTE_ITEM_SIZE + 8);
             if (itemRect.contains(x, y)) {
                 selectedPaletteIndex = i;
