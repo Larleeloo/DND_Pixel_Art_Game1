@@ -588,7 +588,7 @@ public class TriggeredAnimationManager {
 
             if (texture != null) {
                 BufferedImage frame = tint != null
-                    ? texture.getTintedFrame(tint)
+                    ? texture.getCurrentFrame(tint)
                     : texture.getCurrentFrame();
 
                 if (frame != null) {
