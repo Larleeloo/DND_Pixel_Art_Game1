@@ -1,11 +1,17 @@
 package entity;
 
+import animation.ItemAnimationState;
+import animation.TriggeredAnimationManager;
 import entity.Item.ItemCategory;
 import entity.Item.ItemRarity;
 import entity.ProjectileEntity.ProjectileType;
+import graphics.AnimatedTexture;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * ItemRegistry provides access to predefined item templates.
@@ -15,6 +21,16 @@ import java.util.Map;
  * - Predefined weapons, ranged weapons, tools, armor, food, potions
  * - Consistent item stats and properties
  * - Easy creation of item instances
+ * - Support for animation folders with multiple states per item
+ *
+ * Animation Folder Structure:
+ *   assets/items/{item_id}/idle.gif
+ *   assets/items/{item_id}/draw.gif  (for bows)
+ *   assets/items/{item_id}/fire.gif
+ *   assets/items/{item_id}/attack.gif
+ *
+ * Legacy Support:
+ *   assets/items/{item_id}.gif (single animation fallback)
  *
  * Usage:
  *   Item sword = ItemRegistry.create("iron_sword");
@@ -23,7 +39,12 @@ import java.util.Map;
 public class ItemRegistry {
 
     private static final Map<String, Item> templates = new HashMap<>();
+    private static final Set<String> itemsWithAnimationFolders = new HashSet<>();
     private static boolean initialized = false;
+
+    // Base paths for assets
+    private static final String ITEMS_BASE_PATH = "assets/items/";
+    private static final String BLOCKS_BASE_PATH = "assets/textures/blocks/";
 
     /**
      * Initializes all item templates.
@@ -795,11 +816,19 @@ public class ItemRegistry {
 
     /**
      * Loads GIF textures for all registered items.
-     * Texture path format: assets/items/{item_id}.gif
+     *
+     * New folder structure (preferred):
+     *   assets/items/{item_id}/idle.gif (icon/default)
+     *   assets/items/{item_id}/draw.gif (bow charging)
+     *   assets/items/{item_id}/fire.gif (projectile release)
+     *   etc.
+     *
+     * Legacy structure (fallback):
+     *   assets/items/{item_id}.gif
      */
     private static void loadAllItemTextures() {
-        String basePath = "assets/items/";
         int loaded = 0;
+        int loadedWithAnimations = 0;
         int missing = 0;
 
         for (Map.Entry<String, Item> entry : templates.entrySet()) {
@@ -808,32 +837,189 @@ public class ItemRegistry {
 
             // Skip blocks - they use different textures
             if (item.getCategory() == ItemCategory.BLOCK) {
+                loadBlockTextures(id, item);
                 continue;
             }
 
-            String texturePath = basePath + id + ".gif";
-            java.io.File textureFile = new java.io.File(texturePath);
+            // First, check for animation folder structure
+            String folderPath = ITEMS_BASE_PATH + id;
+            File folder = new File(folderPath);
+
+            if (folder.exists() && folder.isDirectory()) {
+                // New folder structure - load animations
+                boolean loadedAny = loadItemAnimationFolder(id, item, folderPath);
+                if (loadedAny) {
+                    itemsWithAnimationFolders.add(id);
+                    loadedWithAnimations++;
+                    loaded++;
+                    continue;
+                }
+            }
+
+            // Fallback: try legacy single file structure
+            String texturePath = ITEMS_BASE_PATH + id + ".gif";
+            File textureFile = new File(texturePath);
 
             if (textureFile.exists()) {
                 item.loadIcon(texturePath);
+                item.setAnimationFolderPath(null); // No folder, single file
                 loaded++;
             } else {
                 // Try PNG as fallback
-                String pngPath = basePath + id + ".png";
-                java.io.File pngFile = new java.io.File(pngPath);
+                String pngPath = ITEMS_BASE_PATH + id + ".png";
+                File pngFile = new File(pngPath);
                 if (pngFile.exists()) {
                     item.loadIcon(pngPath);
                     item.setTexturePath(texturePath);  // Still record intended GIF path
+                    item.setAnimationFolderPath(null);
                     loaded++;
                 } else {
                     // Record the expected path even if file is missing
                     item.setTexturePath(texturePath);
+                    item.setAnimationFolderPath(folderPath); // Expected folder path
                     missing++;
                 }
             }
         }
 
-        System.out.println("ItemRegistry: Loaded " + loaded + " item textures, " + missing + " missing");
+        System.out.println("ItemRegistry: Loaded " + loaded + " item textures (" +
+            loadedWithAnimations + " with animation folders), " + missing + " missing");
+    }
+
+    /**
+     * Loads animations from an item's animation folder.
+     *
+     * @param id Item registry ID
+     * @param item Item to load animations for
+     * @param folderPath Path to the animation folder
+     * @return true if any animations were loaded
+     */
+    private static boolean loadItemAnimationFolder(String id, Item item, String folderPath) {
+        File folder = new File(folderPath);
+        if (!folder.exists() || !folder.isDirectory()) {
+            return false;
+        }
+
+        boolean loadedAny = false;
+
+        // Look for idle.gif first (this becomes the icon)
+        String idlePath = folderPath + "/idle.gif";
+        File idleFile = new File(idlePath);
+        if (idleFile.exists()) {
+            item.loadIcon(idlePath);
+            loadedAny = true;
+        }
+
+        // Set the animation folder path for the Item
+        item.setAnimationFolderPath(folderPath);
+
+        // Load all animation states
+        for (ItemAnimationState state : ItemAnimationState.values()) {
+            String statePath = state.getFilePath(folderPath);
+            File stateFile = new File(statePath);
+            if (stateFile.exists()) {
+                item.loadTriggeredAnimation(state, statePath);
+                loadedAny = true;
+            }
+        }
+
+        // If no idle was found but folder exists, use first available animation as icon
+        if (!idleFile.exists() && loadedAny) {
+            File[] gifs = folder.listFiles((dir, name) -> name.endsWith(".gif"));
+            if (gifs != null && gifs.length > 0) {
+                item.loadIcon(gifs[0].getPath());
+            }
+        }
+
+        return loadedAny;
+    }
+
+    /**
+     * Loads textures for a block item.
+     *
+     * @param id Block item registry ID
+     * @param item Block item
+     */
+    private static void loadBlockTextures(String id, Item item) {
+        // Remove "_block" suffix for folder lookup if present
+        String blockId = id.replace("_block", "");
+
+        // Check for animation folder
+        String folderPath = BLOCKS_BASE_PATH + blockId;
+        File folder = new File(folderPath);
+
+        if (folder.exists() && folder.isDirectory()) {
+            item.setAnimationFolderPath(folderPath);
+
+            // Load idle/default texture
+            String idlePath = folderPath + "/idle.gif";
+            File idleFile = new File(idlePath);
+            if (idleFile.exists()) {
+                item.loadIcon(idlePath);
+            } else {
+                // Try any .gif or .png in folder
+                File[] files = folder.listFiles((dir, name) ->
+                    name.endsWith(".gif") || name.endsWith(".png"));
+                if (files != null && files.length > 0) {
+                    item.loadIcon(files[0].getPath());
+                }
+            }
+        } else {
+            // Fallback: look for single texture file
+            String[] possiblePaths = {
+                BLOCKS_BASE_PATH + blockId + ".gif",
+                BLOCKS_BASE_PATH + blockId + ".png",
+                "assets/textures/blocks/" + blockId + ".gif",
+                "assets/textures/blocks/" + blockId + ".png"
+            };
+
+            for (String path : possiblePaths) {
+                File file = new File(path);
+                if (file.exists()) {
+                    item.loadIcon(path);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if an item has an animation folder with multiple states.
+     *
+     * @param itemId Item registry ID
+     * @return true if the item has animation folder
+     */
+    public static boolean hasAnimationFolder(String itemId) {
+        initialize();
+        return itemsWithAnimationFolders.contains(itemId);
+    }
+
+    /**
+     * Gets the animation folder path for an item.
+     *
+     * @param itemId Item registry ID
+     * @return Folder path, or null if item uses legacy single file
+     */
+    public static String getAnimationFolderPath(String itemId) {
+        initialize();
+        Item template = templates.get(itemId);
+        return template != null ? template.getAnimationFolderPath() : null;
+    }
+
+    /**
+     * Preloads triggered animations for items that need them.
+     * Call this after initialization for better performance.
+     */
+    public static void preloadTriggeredAnimations() {
+        initialize();
+        TriggeredAnimationManager manager = TriggeredAnimationManager.getInstance();
+
+        for (String itemId : itemsWithAnimationFolders) {
+            manager.loadItemAnimations(itemId);
+        }
+
+        System.out.println("ItemRegistry: Preloaded animations for " +
+            itemsWithAnimationFolders.size() + " items");
     }
 
     // ==================== Registration Helpers ====================
