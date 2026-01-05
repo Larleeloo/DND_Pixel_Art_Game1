@@ -232,11 +232,11 @@ public class SettingsOverlay {
     }
 
     /**
-     * Handle key press for closing overlay with ESC.
+     * Handle key press for closing overlay with 'M'.
      * @return true if the key was handled
      */
     public boolean handleKeyPressed(int keyCode) {
-        if (visible && keyCode == KeyEvent.VK_ESCAPE) {
+        if (visible && (keyCode == KeyEvent.VK_M || keyCode == KeyEvent.VK_ESCAPE)) {
             hide();
             return true;
         }
@@ -291,7 +291,7 @@ public class SettingsOverlay {
         // Draw hint text at bottom
         g2d.setColor(new Color(150, 150, 160));
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        String hint = "Press ESC to close";
+        String hint = "Press M to close";
         fm = g2d.getFontMetrics();
         int hintX = panelX + (panelWidth - fm.stringWidth(hint)) / 2;
         g2d.drawString(hint, hintX, panelY + panelHeight - 15);
