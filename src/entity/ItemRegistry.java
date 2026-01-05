@@ -787,7 +787,53 @@ public class ItemRegistry {
                 ItemRarity.RARE, "Coated in deadly venom")
                 .setSpecialEffect("Poison damage over time");
 
+        // Load all item textures
+        loadAllItemTextures();
+
         initialized = true;
+    }
+
+    /**
+     * Loads GIF textures for all registered items.
+     * Texture path format: assets/items/{item_id}.gif
+     */
+    private static void loadAllItemTextures() {
+        String basePath = "assets/items/";
+        int loaded = 0;
+        int missing = 0;
+
+        for (Map.Entry<String, Item> entry : templates.entrySet()) {
+            String id = entry.getKey();
+            Item item = entry.getValue();
+
+            // Skip blocks - they use different textures
+            if (item.getCategory() == ItemCategory.BLOCK) {
+                continue;
+            }
+
+            String texturePath = basePath + id + ".gif";
+            java.io.File textureFile = new java.io.File(texturePath);
+
+            if (textureFile.exists()) {
+                item.loadIcon(texturePath);
+                loaded++;
+            } else {
+                // Try PNG as fallback
+                String pngPath = basePath + id + ".png";
+                java.io.File pngFile = new java.io.File(pngPath);
+                if (pngFile.exists()) {
+                    item.loadIcon(pngPath);
+                    item.setTexturePath(texturePath);  // Still record intended GIF path
+                    loaded++;
+                } else {
+                    // Record the expected path even if file is missing
+                    item.setTexturePath(texturePath);
+                    missing++;
+                }
+            }
+        }
+
+        System.out.println("ItemRegistry: Loaded " + loaded + " item textures, " + missing + " missing");
     }
 
     // ==================== Registration Helpers ====================
