@@ -132,10 +132,29 @@ public class MainMenuScene implements Scene {
         );
         buttons.add(creativeButton);
 
+        // Loot Game button - opens the loot chest mini-game
+        UIButton lootGameButton = new UIButton(
+                centerX - buttonWidth / 2,
+                startY + spacing * 4,
+                buttonWidth,
+                buttonHeight,
+                "Loot Game",
+                () -> {
+                    System.out.println("MainMenuScene: Opening Loot Game");
+                    SceneManager.getInstance().setScene("lootGame", SceneManager.TRANSITION_FADE);
+                }
+        );
+        lootGameButton.setColors(
+                new Color(200, 150, 50, 220),
+                new Color(255, 200, 100, 255),
+                Color.WHITE
+        );
+        buttons.add(lootGameButton);
+
         // Exit button
         UIButton exitButton = new UIButton(
                 centerX - buttonWidth / 2,
-                startY + spacing * 4,
+                startY + spacing * 5,
                 buttonWidth,
                 buttonHeight,
                 "Exit Game",

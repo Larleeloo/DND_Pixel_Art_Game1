@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
@@ -22,6 +23,7 @@ import org.w3c.dom.NodeList;
  * Represents a collectible item in the game world.
  * Can be linked to an Item from ItemRegistry for full properties.
  * Supports animated GIF sprites with automatic frame cycling.
+ * Features Borderlands-style rarity light beams and physics for loot drops.
  */
 public class ItemEntity extends Entity {
 
@@ -34,6 +36,23 @@ public class ItemEntity extends Entity {
     public boolean collected; // Made public so it can be reset when dropped
     private float bobOffset; // For floating animation
     private float bobSpeed;
+
+    // Physics properties for loot dropping
+    private double velocityX = 0;
+    private double velocityY = 0;
+    private double gravity = 0.5;
+    private boolean hasPhysics = false;
+    private boolean isGrounded = false;
+    private int groundY = 720; // Default ground level
+    private double bounceMultiplier = 0.6;
+    private int bounceCount = 0;
+    private int maxBounces = 3;
+
+    // Rarity light beam properties (Borderlands style)
+    private boolean showLightBeam = false;
+    private float lightBeamPhase = 0;
+    private float lightBeamSpeed = 0.03f;
+    private static final Random random = new Random();
 
     // Color mask fields for tinting items
     private int maskRed = 255;
@@ -835,8 +854,210 @@ public class ItemEntity extends Entity {
     @Override
     public void update(InputManager input) {
         if (!collected) {
-            // Bobbing animation - use milliseconds for smooth animation
-            bobOffset = (float)(Math.sin(System.currentTimeMillis() * 0.003) * 8);
+            // Update light beam animation
+            lightBeamPhase += lightBeamSpeed;
+            if (lightBeamPhase > Math.PI * 2) {
+                lightBeamPhase -= Math.PI * 2;
+            }
+
+            // Physics update for loot drops
+            if (hasPhysics && !isGrounded) {
+                // Apply gravity
+                velocityY += gravity;
+
+                // Update position
+                x += (int) velocityX;
+                y += (int) velocityY;
+
+                // Ground collision
+                if (y + height >= groundY) {
+                    y = groundY - height;
+                    bounceCount++;
+
+                    if (bounceCount >= maxBounces || Math.abs(velocityY) < 2) {
+                        // Stop bouncing
+                        isGrounded = true;
+                        velocityX = 0;
+                        velocityY = 0;
+                    } else {
+                        // Bounce
+                        velocityY = -velocityY * bounceMultiplier;
+                        velocityX *= 0.8; // Friction
+                    }
+                }
+
+                // Don't bob while physics is active
+                bobOffset = 0;
+            } else {
+                // Bobbing animation - use milliseconds for smooth animation
+                bobOffset = (float)(Math.sin(System.currentTimeMillis() * 0.003) * 8);
+            }
+        }
+    }
+
+    // ==================== Physics Methods ====================
+
+    /**
+     * Enables physics for this item (for loot drops).
+     * Item will fall and bounce until it settles.
+     */
+    public void enablePhysics(double velX, double velY, int groundLevel) {
+        this.hasPhysics = true;
+        this.velocityX = velX;
+        this.velocityY = velY;
+        this.groundY = groundLevel;
+        this.isGrounded = false;
+        this.bounceCount = 0;
+    }
+
+    /**
+     * Checks if the item has finished bouncing and is grounded.
+     */
+    public boolean isGrounded() {
+        return isGrounded;
+    }
+
+    /**
+     * Sets whether the item has physics enabled.
+     */
+    public void setHasPhysics(boolean hasPhysics) {
+        this.hasPhysics = hasPhysics;
+    }
+
+    /**
+     * Sets the ground level for physics calculations.
+     */
+    public void setGroundY(int groundY) {
+        this.groundY = groundY;
+    }
+
+    // ==================== Light Beam Methods ====================
+
+    /**
+     * Enables the rarity light beam effect (Borderlands style).
+     */
+    public void setShowLightBeam(boolean show) {
+        this.showLightBeam = show;
+    }
+
+    /**
+     * Gets the rarity color for the light beam.
+     * Common=White, Uncommon=Green, Rare=Blue, Epic=Purple, Legendary=Orange, Mythic=Cyan
+     */
+    public Color getRarityColor() {
+        if (linkedItem != null) {
+            return linkedItem.getRarity().getColor();
+        }
+        // Default to white (common) if no linked item
+        return Color.WHITE;
+    }
+
+    /**
+     * Draws the Borderlands-style rarity light beam.
+     * The beam fluctuates and glows based on rarity.
+     */
+    private void drawLightBeam(Graphics2D g2d) {
+        if (!showLightBeam || collected) return;
+
+        Color rarityColor = getRarityColor();
+        int beamHeight = height * 3; // Beam extends to about 3x item height
+
+        // Calculate beam fluctuation
+        float fluctuation = (float)(Math.sin(lightBeamPhase) * 0.3 + 0.7); // 0.4 to 1.0
+        float glowPulse = (float)(Math.sin(lightBeamPhase * 2) * 0.5 + 0.5); // Secondary pulse
+
+        int centerX = x + width / 2;
+        int beamBottom = y + (int)bobOffset + height;
+        int beamTop = beamBottom - beamHeight;
+
+        // Draw multiple layers for glow effect
+        for (int layer = 0; layer < 5; layer++) {
+            float layerAlpha = (0.15f - layer * 0.025f) * fluctuation;
+            int layerWidth = 20 + layer * 15;
+
+            // Create gradient for beam
+            Color beamColor = new Color(
+                rarityColor.getRed(),
+                rarityColor.getGreen(),
+                rarityColor.getBlue(),
+                (int)(layerAlpha * 255 * glowPulse)
+            );
+
+            // Draw beam as gradient polygon
+            int[] xPoints = {
+                centerX - layerWidth / 2,
+                centerX + layerWidth / 2,
+                centerX + 5,
+                centerX - 5
+            };
+            int[] yPoints = {
+                beamTop,
+                beamTop,
+                beamBottom,
+                beamBottom
+            };
+
+            g2d.setColor(beamColor);
+            g2d.fillPolygon(xPoints, yPoints, 4);
+        }
+
+        // Draw core beam (brightest)
+        int coreWidth = 10;
+        Color coreColor = new Color(
+            Math.min(255, rarityColor.getRed() + 50),
+            Math.min(255, rarityColor.getGreen() + 50),
+            Math.min(255, rarityColor.getBlue() + 50),
+            (int)(180 * fluctuation)
+        );
+
+        int[] coreX = {
+            centerX - coreWidth / 2,
+            centerX + coreWidth / 2,
+            centerX + 2,
+            centerX - 2
+        };
+        int[] coreY = {
+            beamTop,
+            beamTop,
+            beamBottom,
+            beamBottom
+        };
+        g2d.setColor(coreColor);
+        g2d.fillPolygon(coreX, coreY, 4);
+
+        // Draw sparkle particles
+        drawSparkles(g2d, centerX, beamTop, beamBottom, rarityColor, fluctuation);
+    }
+
+    /**
+     * Draws sparkle particles along the light beam.
+     */
+    private void drawSparkles(Graphics2D g2d, int centerX, int beamTop, int beamBottom, Color color, float intensity) {
+        long time = System.currentTimeMillis();
+        int numSparkles = 5;
+
+        for (int i = 0; i < numSparkles; i++) {
+            // Calculate sparkle position based on time and index
+            float sparklePhase = (time * 0.002f + i * 1.2f) % 1.0f;
+            int sparkleY = (int)(beamTop + (beamBottom - beamTop) * sparklePhase);
+            int sparkleX = centerX + (int)(Math.sin(time * 0.003 + i) * 15);
+
+            // Sparkle size varies
+            int sparkleSize = 3 + (int)(Math.sin(time * 0.005 + i * 2) * 2);
+
+            // Fade in/out at ends
+            float alpha = 1.0f - Math.abs(sparklePhase - 0.5f) * 2;
+            alpha *= intensity;
+
+            Color sparkleColor = new Color(
+                Math.min(255, color.getRed() + 100),
+                Math.min(255, color.getGreen() + 100),
+                Math.min(255, color.getBlue() + 100),
+                (int)(alpha * 200)
+            );
+
+            g2d.setColor(sparkleColor);
+            g2d.fillOval(sparkleX - sparkleSize / 2, sparkleY - sparkleSize / 2, sparkleSize, sparkleSize);
         }
     }
 
@@ -848,8 +1069,20 @@ public class ItemEntity extends Entity {
 
             Graphics2D g2d = (Graphics2D) g;
 
-            // Draw glow effect
-            g2d.setColor(new Color(255, 255, 100, 100));
+            // Draw rarity light beam (Borderlands style) - behind item
+            if (showLightBeam) {
+                drawLightBeam(g2d);
+            }
+
+            // Draw glow effect (use rarity color if light beam is enabled)
+            Color glowColor;
+            if (showLightBeam && linkedItem != null) {
+                Color rarityColor = linkedItem.getRarity().getColor();
+                glowColor = new Color(rarityColor.getRed(), rarityColor.getGreen(), rarityColor.getBlue(), 100);
+            } else {
+                glowColor = new Color(255, 255, 100, 100);
+            }
+            g2d.setColor(glowColor);
             g2d.fillOval(x - 5, y + (int)bobOffset - 5, width + 10, height + 10);
 
             // Draw sprite (use tinted version if color mask is applied)
@@ -862,12 +1095,35 @@ public class ItemEntity extends Entity {
                 g.fillRect(x, y + (int)bobOffset, width, height);
             }
 
-            // Draw item name below
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.PLAIN, 12));
+            // Draw item name below (with rarity color if available)
+            Color textColor = Color.WHITE;
+            if (showLightBeam && linkedItem != null) {
+                textColor = linkedItem.getRarity().getColor();
+            }
+            g.setColor(textColor);
+            g.setFont(new Font("Arial", Font.BOLD, 12));
             FontMetrics fm = g.getFontMetrics();
             int textX = x + (width - fm.stringWidth(itemName)) / 2;
+
+            // Draw text shadow
+            g.setColor(Color.BLACK);
+            g.drawString(itemName, textX + 1, y + height + (int)bobOffset + 16);
+
+            // Draw text
+            g.setColor(textColor);
             g.drawString(itemName, textX, y + height + (int)bobOffset + 15);
+
+            // Draw rarity label if showing light beam
+            if (showLightBeam && linkedItem != null) {
+                String rarityName = linkedItem.getRarity().getDisplayName();
+                g.setFont(new Font("Arial", Font.ITALIC, 10));
+                fm = g.getFontMetrics();
+                int rarityX = x + (width - fm.stringWidth(rarityName)) / 2;
+                g.setColor(new Color(0, 0, 0, 150));
+                g.drawString(rarityName, rarityX + 1, y + height + (int)bobOffset + 28);
+                g.setColor(linkedItem.getRarity().getColor());
+                g.drawString(rarityName, rarityX, y + height + (int)bobOffset + 27);
+            }
         }
     }
 

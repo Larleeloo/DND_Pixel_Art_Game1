@@ -269,24 +269,31 @@ public class CreativeScene implements Scene {
             }
         }
 
-        // Item palette - common items from ItemRegistry
+        // Item palette - ALL items from ItemRegistry (for LOOT GAME functionality)
         itemPalette = new ArrayList<>();
-        String[] commonItems = {
-            "wooden_sword", "iron_sword", "steel_sword", "fire_sword", "ice_sword",
-            "wooden_bow", "longbow", "crossbow", "magic_wand", "fire_staff",
-            "health_potion", "mana_potion", "greater_health_potion",
-            "arrow", "fire_arrow", "ice_arrow", "bolt",
-            "throwing_knife", "throwing_axe", "bomb",
-            "apple", "bread", "cooked_meat", "cake",
-            "gold_coins", "iron_ore", "leather"
-        };
+        ItemRegistry.initialize();
 
-        for (String itemId : commonItems) {
-            BufferedImage icon = createItemIcon(itemId);
-            String displayName = itemId.replace("_", " ");
-            displayName = Character.toUpperCase(displayName.charAt(0)) + displayName.substring(1);
-            itemPalette.add(new PaletteItem(itemId, displayName, icon, itemId));
+        // Get all items and sort them by rarity for better organization
+        java.util.Set<String> allItemIds = ItemRegistry.getAllItemIds();
+        java.util.List<String> sortedItems = new ArrayList<>(allItemIds);
+
+        // Sort by rarity (Mythic first, then Legendary, Epic, Rare, Uncommon, Common)
+        sortedItems.sort((a, b) -> {
+            Item itemA = ItemRegistry.getTemplate(a);
+            Item itemB = ItemRegistry.getTemplate(b);
+            if (itemA == null || itemB == null) return 0;
+            // Reverse order so mythic comes first
+            return itemB.getRarity().ordinal() - itemA.getRarity().ordinal();
+        });
+
+        for (String itemId : sortedItems) {
+            Item template = ItemRegistry.getTemplate(itemId);
+            if (template != null) {
+                BufferedImage icon = createItemIcon(itemId);
+                itemPalette.add(new PaletteItem(itemId, template.getName(), icon, itemId));
+            }
         }
+        System.out.println("CreativeScene: Loaded " + itemPalette.size() + " items into palette");
 
         // Mob palette
         mobPalette = new ArrayList<>();
