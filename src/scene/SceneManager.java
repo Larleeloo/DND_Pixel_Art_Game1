@@ -12,7 +12,6 @@ import input.*;
 import ui.*;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -211,8 +210,8 @@ public class SceneManager {
             input.resetClickConsumed();
         }
 
-        // Handle ESC key for settings toggle (only when not in settings already)
-        if (input != null && input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
+        // Handle 'M' key for settings toggle
+        if (input != null && input.isKeyJustPressed('m')) {
             if (settingsOverlay != null) {
                 if (settingsOverlay.isVisible()) {
                     settingsOverlay.hide();
