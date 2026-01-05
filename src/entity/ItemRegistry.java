@@ -644,6 +644,149 @@ public class ItemRegistry {
                 "A crystal infused with winter's chill")
                 .setSpecialEffect("Ice damage immunity");
 
+        // ==================== MYTHIC WEAPONS (Ultimate Loot) ====================
+
+        Item voidBlade = registerMeleeWeapon("void_blade", "Void Blade", 65, 1.3f, 85,
+                ItemRarity.MYTHIC, "Forged in the heart of a black hole");
+        voidBlade.setSpecialEffect("Absorbs enemy souls");
+        voidBlade.setCritChance(0.30f);
+
+        Item celestialBow = registerRangedWeapon("celestial_bow", "Celestial Bow", 45, 30.0f, ProjectileType.ARROW,
+                ItemRarity.MYTHIC, "Fires arrows of pure starlight");
+        celestialBow.setAmmoItemName("arrow");
+        celestialBow.setChargeable(true, 1.5f, 0, 4.0f);
+        celestialBow.setChargeSpeedMultiplier(3.0f);
+        celestialBow.setCritChance(0.25f);
+
+        Item infinityStaff = registerRangedWeapon("infinity_staff", "Staff of Infinity", 55, 20.0f, ProjectileType.MAGIC_BOLT,
+                ItemRarity.MYTHIC, "Contains the power of infinity");
+        infinityStaff.setAmmoItemName("mana");
+        infinityStaff.setChargeable(true, 5.0f, 50, 5.0f);
+        infinityStaff.setChargeSizeMultiplier(4.0f);
+        infinityStaff.setSpecialEffect("Reality-bending damage");
+
+        Item soulReaver = registerMeleeWeapon("soul_reaver", "Soul Reaver", 45, 1.0f, 75,
+                ItemRarity.MYTHIC, "Devours the souls of the fallen");
+        soulReaver.setSpecialEffect("100% lifesteal on kill");
+        soulReaver.setCritChance(0.20f);
+
+        Item timeWarp = registerMeleeWeapon("time_warp_blade", "Chrono Blade", 40, 2.0f, 70,
+                ItemRarity.MYTHIC, "Bends time around its wielder");
+        timeWarp.setSpecialEffect("Slows time on hit");
+
+        // ==================== LEGENDARY WEAPONS ====================
+
+        Item phoenixBow = registerRangedWeapon("phoenix_bow", "Phoenix Bow", 35, 22.0f, ProjectileType.ARROW,
+                ItemRarity.LEGENDARY, "Rises from the ashes");
+        phoenixBow.setAmmoItemName("arrow");
+        phoenixBow.setChargeable(true, 2.0f, 0, 3.5f);
+        phoenixBow.setSpecialEffect("Fire arrows that resurrect");
+
+        Item frostmourne = registerMeleeWeapon("frostmourne", "Frostmourne", 42, 0.9f, 80,
+                ItemRarity.LEGENDARY, "Hungers for souls");
+        frostmourne.setSpecialEffect("Freezes enemies solid");
+        frostmourne.setCritChance(0.18f);
+
+        Item thunderHammer = registerMeleeWeapon("thunder_hammer", "Thunder Hammer", 55, 0.6f, 90,
+                ItemRarity.LEGENDARY, "Strikes with the fury of storms");
+        thunderHammer.setSpecialEffect("Chain lightning on hit");
+        thunderHammer.setCritChance(0.12f);
+
+        Item shadowDagger = registerMeleeWeapon("shadow_dagger", "Shadow Dagger", 28, 3.0f, 40,
+                ItemRarity.LEGENDARY, "Strikes from the shadows");
+        shadowDagger.setSpecialEffect("Invisible for 2 seconds after backstab");
+        shadowDagger.setCritChance(0.35f);
+
+        // ==================== EPIC ARMOR ====================
+
+        registerArmor("phoenix_crown", "Phoenix Crown", 15,
+                ItemRarity.EPIC, "Blazes with eternal fire")
+                .setSpecialEffect("+100% fire resistance, auto-revive once");
+
+        registerArmor("void_armor", "Void Armor", 35,
+                ItemRarity.LEGENDARY, "Woven from the fabric of space")
+                .setSpecialEffect("+30% damage reduction, +15% evasion");
+
+        registerArmor("celestial_robes", "Celestial Robes", 20,
+                ItemRarity.MYTHIC, "Garments of the gods")
+                .setSpecialEffect("+50% mana, +30% magic damage");
+
+        registerArmor("titan_gauntlets", "Titan Gauntlets", 18,
+                ItemRarity.LEGENDARY, "Worn by ancient giants")
+                .setSpecialEffect("+40% melee damage, ground slam ability");
+
+        // ==================== MYTHIC ACCESSORIES ====================
+
+        registerCollectible("heart_of_eternity", "Heart of Eternity", ItemRarity.MYTHIC,
+                "The crystallized essence of time itself")
+                .setSpecialEffect("Immortality for 10 seconds per day");
+
+        registerCollectible("eye_of_cosmos", "Eye of the Cosmos", ItemRarity.MYTHIC,
+                "See all that was, is, and will be")
+                .setSpecialEffect("Reveal all secrets and treasures");
+
+        registerCollectible("philosophers_stone", "Philosopher's Stone", ItemRarity.MYTHIC,
+                "The legendary alchemical creation")
+                .setSpecialEffect("Transmute any material to gold");
+
+        registerCollectible("ankh_of_rebirth", "Ankh of Rebirth", ItemRarity.LEGENDARY,
+                "Symbol of eternal life")
+                .setSpecialEffect("Auto-revive with full health");
+
+        // ==================== LEGENDARY POTIONS ====================
+
+        registerPotion("elixir_of_immortality", "Elixir of Immortality", 0, 0, 0,
+                ItemRarity.MYTHIC, "Grants temporary invincibility")
+                .setSpecialEffect("Immune to all damage for 30 seconds");
+
+        registerPotion("potion_of_ascension", "Potion of Ascension", 100, 100, 100,
+                ItemRarity.LEGENDARY, "Transcend mortal limits")
+                .setSpecialEffect("Double all stats for 60 seconds");
+
+        registerPotion("essence_of_dragon", "Essence of Dragon", 0, 50, 0,
+                ItemRarity.LEGENDARY, "Contains a dragon's power")
+                .setSpecialEffect("Breathe fire for 30 seconds");
+
+        // ==================== EPIC COLLECTIBLES ====================
+
+        registerCollectible("ancient_crown", "Ancient Crown", ItemRarity.EPIC,
+                "A crown worn by forgotten kings")
+                .setSpecialEffect("+20% to all stats");
+
+        registerCollectible("demon_horn", "Demon Horn", ItemRarity.EPIC,
+                "Torn from a greater demon")
+                .setSpecialEffect("+25% dark damage");
+
+        registerCollectible("angel_feather", "Angel Feather", ItemRarity.EPIC,
+                "A feather from divine wings")
+                .setSpecialEffect("+25% holy damage, slow fall");
+
+        registerCollectible("void_shard", "Void Shard", ItemRarity.LEGENDARY,
+                "A fragment of the void itself")
+                .setSpecialEffect("Phase through walls briefly");
+
+        registerCollectible("lucky_coin", "Lucky Coin", ItemRarity.RARE,
+                "Fortune favors the brave")
+                .setSpecialEffect("+15% drop rate");
+
+        registerCollectible("treasure_map", "Ancient Treasure Map", ItemRarity.RARE,
+                "Marks the location of hidden riches")
+                .setSpecialEffect("Reveals secret areas");
+
+        // ==================== RARE WEAPONS ====================
+
+        registerMeleeWeapon("crystal_sword", "Crystal Sword", 22, 1.1f, 65,
+                ItemRarity.RARE, "Made of pure crystal")
+                .setSpecialEffect("Reflects magic");
+
+        registerMeleeWeapon("vampiric_blade", "Vampiric Blade", 20, 1.0f, 60,
+                ItemRarity.RARE, "Thirsts for blood")
+                .setSpecialEffect("10% lifesteal");
+
+        registerMeleeWeapon("poison_dagger", "Poison Dagger", 12, 2.2f, 45,
+                ItemRarity.RARE, "Coated in deadly venom")
+                .setSpecialEffect("Poison damage over time");
+
         initialized = true;
     }
 

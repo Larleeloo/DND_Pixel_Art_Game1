@@ -5,6 +5,7 @@ import entity.player.*;
 import input.*;
 import audio.*;
 import graphics.*;
+import save.SaveManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -94,6 +95,7 @@ public class GamePanel extends JPanel implements Runnable {
         sceneManager.addScene("spriteCustomization", new SpriteCharacterCustomization());
         sceneManager.addScene("overworld", new OverworldScene());
         sceneManager.addScene("creative", new CreativeScene());
+        sceneManager.addScene("lootGame", new LootGameScene());
 
         // Start with main menu
         sceneManager.setScene("mainMenu");
