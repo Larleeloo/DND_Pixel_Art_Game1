@@ -25,6 +25,7 @@ public class SaveManager {
     private int totalItemsCollected;
     private int legendaryItemsFound;
     private int mythicItemsFound;
+    private boolean developerMode; // When true, resets chest cooldowns on each launch
 
     // Cooldowns in milliseconds
     public static final long DAILY_COOLDOWN = 24 * 60 * 60 * 1000L; // 24 hours
@@ -50,6 +51,7 @@ public class SaveManager {
         totalItemsCollected = 0;
         legendaryItemsFound = 0;
         mythicItemsFound = 0;
+        developerMode = false;
     }
 
     public static SaveManager getInstance() {
@@ -168,6 +170,31 @@ public class SaveManager {
     }
 
     /**
+     * Checks if developer mode is enabled.
+     * When enabled, chest cooldowns are reset on each game launch.
+     */
+    public boolean isDeveloperMode() {
+        return developerMode;
+    }
+
+    /**
+     * Sets developer mode.
+     * When enabled, chest cooldowns are reset on each game launch.
+     */
+    public void setDeveloperMode(boolean enabled) {
+        this.developerMode = enabled;
+        save();
+        System.out.println("SaveManager: Developer mode " + (enabled ? "ENABLED" : "DISABLED"));
+    }
+
+    /**
+     * Toggles developer mode on/off.
+     */
+    public void toggleDeveloperMode() {
+        setDeveloperMode(!developerMode);
+    }
+
+    /**
      * Formats time remaining as a readable string
      */
     public static String formatTimeRemaining(long millis) {
@@ -202,6 +229,7 @@ public class SaveManager {
 
             StringBuilder json = new StringBuilder();
             json.append("{\n");
+            json.append("  \"developerMode\": ").append(developerMode).append(",\n");
             json.append("  \"dailyChestLastOpened\": ").append(dailyChestLastOpened).append(",\n");
             json.append("  \"monthlyChestLastOpened\": ").append(monthlyChestLastOpened).append(",\n");
             json.append("  \"totalItemsCollected\": ").append(totalItemsCollected).append(",\n");
@@ -246,6 +274,15 @@ public class SaveManager {
             parseJson(content);
             System.out.println("SaveManager: Game data loaded successfully");
 
+            // If developer mode is enabled, reset chest cooldowns on launch
+            if (developerMode) {
+                System.out.println("SaveManager: Developer mode active - resetting chest cooldowns");
+                dailyChestLastOpened = 0;
+                monthlyChestLastOpened = 0;
+                // Don't call save() here to preserve the developer mode flag
+                // Cooldowns will be saved naturally when chests are opened
+            }
+
         } catch (IOException e) {
             System.err.println("SaveManager: Error loading game data: " + e.getMessage());
         }
@@ -258,7 +295,10 @@ public class SaveManager {
         // Remove whitespace and newlines for easier parsing
         json = json.trim();
 
-        // Parse dailyChestLastOpened
+        // Parse developerMode
+        developerMode = parseBoolean(json, "developerMode");
+
+        // Parse numeric values
         dailyChestLastOpened = parseLong(json, "dailyChestLastOpened");
         monthlyChestLastOpened = parseLong(json, "monthlyChestLastOpened");
         totalItemsCollected = (int) parseLong(json, "totalItemsCollected");
@@ -304,6 +344,27 @@ public class SaveManager {
             }
         }
         return 0;
+    }
+
+    private boolean parseBoolean(String json, String key) {
+        String search = "\"" + key + "\":";
+        int start = json.indexOf(search);
+        if (start < 0) {
+            search = "\"" + key + "\" :";
+            start = json.indexOf(search);
+        }
+        if (start >= 0) {
+            start += search.length();
+            // Skip whitespace
+            while (start < json.length() && Character.isWhitespace(json.charAt(start))) {
+                start++;
+            }
+            // Check for "true" or "false"
+            if (start + 4 <= json.length() && json.substring(start, start + 4).equalsIgnoreCase("true")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void parseInventoryItems(String arrayContent) {
@@ -372,6 +433,17 @@ public class SaveManager {
         totalItemsCollected = 0;
         legendaryItemsFound = 0;
         mythicItemsFound = 0;
+        // Note: Does NOT reset developerMode - that's intentional
         save();
+    }
+
+    /**
+     * Resets chest cooldowns only (not inventory or stats)
+     */
+    public void resetChestCooldowns() {
+        dailyChestLastOpened = 0;
+        monthlyChestLastOpened = 0;
+        save();
+        System.out.println("SaveManager: Chest cooldowns reset");
     }
 }

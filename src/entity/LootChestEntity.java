@@ -127,12 +127,20 @@ public class LootChestEntity extends Entity {
             item.update(input);
         }
 
-        // Check for interaction (E key)
+        // Note: E key handling is done in LootGameScene to ensure proper input priority
+    }
+
+    /**
+     * Attempts to open the chest if conditions are met.
+     * Called externally from LootGameScene when player presses E.
+     * @return true if chest was opened, false otherwise
+     */
+    public boolean tryOpen() {
         if (playerNearby && !isOpen && !isOpening && canOpen) {
-            if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
-                open();
-            }
+            open();
+            return true;
         }
+        return false;
     }
 
     /**
