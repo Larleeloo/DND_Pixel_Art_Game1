@@ -88,6 +88,7 @@ public class Item {
     // Item icon for inventory display
     private BufferedImage icon;
     private AnimatedTexture iconAnimation;
+    private String texturePath;  // Path to the GIF texture file
 
     // Held item animations (for when item is equipped and held)
     private Map<SpriteAnimation.ActionState, AnimatedTexture> heldAnimations;
@@ -197,6 +198,7 @@ public class Item {
         this.maxStackSize = original.maxStackSize;
         this.icon = original.icon;
         this.iconAnimation = original.iconAnimation;
+        this.texturePath = original.texturePath;
         this.heldAnimations = new HashMap<>(original.heldAnimations);
         this.damage = original.damage;
         this.defense = original.defense;
@@ -238,6 +240,7 @@ public class Item {
      * Loads the item icon from a file.
      */
     public void loadIcon(String path) {
+        this.texturePath = path;  // Store the path
         try {
             AssetLoader.ImageAsset asset = AssetLoader.load(path);
             if (asset.animatedTexture != null) {
@@ -249,6 +252,20 @@ public class Item {
         } catch (Exception e) {
             System.err.println("Item: Failed to load icon: " + path);
         }
+    }
+
+    /**
+     * Sets the texture path without loading (for reference).
+     */
+    public void setTexturePath(String path) {
+        this.texturePath = path;
+    }
+
+    /**
+     * Gets the texture path for this item.
+     */
+    public String getTexturePath() {
+        return texturePath;
     }
 
     /**
