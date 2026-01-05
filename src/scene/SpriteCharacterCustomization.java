@@ -103,6 +103,8 @@ public class SpriteCharacterCustomization implements Scene {
     private int currentCategory = 0;
     private int scrollOffset = 0;
     private int companionScrollOffset = 0;
+    private int mouseX = 0;
+    private int mouseY = 0;
 
     // UI Components
     private UIButton doneButton;
@@ -642,6 +644,44 @@ public class SpriteCharacterCustomization implements Scene {
         if (input.isKeyJustPressed('\u001B')) { // ESC key
             onDoneClicked();
         }
+
+        // Handle scroll wheel for items grid or companion list
+        int scroll = input.getScrollDirection();
+        if (scroll != 0) {
+            // Calculate items grid area
+            int gridWidth = ITEMS_PER_ROW * (ITEM_SIZE + 10) + 20;
+            int gridHeight = ITEMS_VISIBLE_ROWS * (ITEM_SIZE + 10) + 20;
+
+            // Check if mouse is over items grid
+            if (mouseX >= ITEMS_X - 20 && mouseX < ITEMS_X - 20 + gridWidth &&
+                mouseY >= ITEMS_Y - 10 && mouseY < ITEMS_Y - 10 + gridHeight) {
+
+                String category = CATEGORIES[currentCategory];
+                List<ClothingItem> items = availableItems.get(category);
+                if (items != null) {
+                    int totalRows = (int) Math.ceil((double) items.size() / ITEMS_PER_ROW);
+                    int maxScroll = Math.max(0, totalRows - ITEMS_VISIBLE_ROWS);
+
+                    scrollOffset += scroll;
+                    scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+                }
+            }
+
+            // Check if mouse is over companion panel
+            int charY = LEFT_PANEL_Y + 50;
+            int companionPanelX = LEFT_PANEL_X + 10;
+            int companionPanelY = charY + CHAR_HEIGHT + 40;
+            int panelWidth = LEFT_PANEL_WIDTH - 20;
+            int panelHeight = 160;
+
+            if (mouseX >= companionPanelX && mouseX < companionPanelX + panelWidth &&
+                mouseY >= companionPanelY && mouseY < companionPanelY + panelHeight) {
+
+                int maxCompanionScroll = Math.max(0, availableCompanions.size() - 3);
+                companionScrollOffset += scroll;
+                companionScrollOffset = Math.max(0, Math.min(companionScrollOffset, maxCompanionScroll));
+            }
+        }
     }
 
     @Override
@@ -845,17 +885,24 @@ public class SpriteCharacterCustomization implements Scene {
         g2d.setStroke(new BasicStroke(1));
         g2d.drawRoundRect(ITEMS_X - 20, ITEMS_Y - 10, gridWidth, gridHeight, 10, 10);
 
-        // Category label
+        // Category label with item count
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
         g2d.setColor(new Color(200, 200, 210));
-        g2d.drawString(category + " Options", ITEMS_X - 10, ITEMS_Y + 5);
+        g2d.drawString(category + " Options (" + items.size() + ")", ITEMS_X - 10, ITEMS_Y + 5);
 
-        // Draw items
+        // Calculate scroll range
+        int totalRows = (int) Math.ceil((double) items.size() / ITEMS_PER_ROW);
+        int maxScroll = Math.max(0, totalRows - ITEMS_VISIBLE_ROWS);
+        int startIndex = scrollOffset * ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + ITEMS_PER_ROW * ITEMS_VISIBLE_ROWS, items.size());
+
+        // Draw items with scroll offset applied
         int startY = ITEMS_Y + 20;
-        for (int i = 0; i < items.size() && i < ITEMS_PER_ROW * ITEMS_VISIBLE_ROWS; i++) {
+        for (int i = startIndex; i < endIndex; i++) {
             ClothingItem item = items.get(i);
-            int row = i / ITEMS_PER_ROW;
-            int col = i % ITEMS_PER_ROW;
+            int displayIndex = i - startIndex;
+            int row = displayIndex / ITEMS_PER_ROW;
+            int col = displayIndex % ITEMS_PER_ROW;
 
             int x = ITEMS_X + col * (ITEM_SIZE + 10);
             int y = startY + row * (ITEM_SIZE + 10);
@@ -900,6 +947,29 @@ public class SpriteCharacterCustomization implements Scene {
             FontMetrics fm = g2d.getFontMetrics();
             int textX = x + (ITEM_SIZE - fm.stringWidth(displayName)) / 2;
             g2d.drawString(displayName, textX, y + ITEM_SIZE - 5);
+        }
+
+        // Draw scroll indicators if needed
+        if (totalRows > ITEMS_VISIBLE_ROWS) {
+            g2d.setFont(new Font("Arial", Font.BOLD, 14));
+
+            // Scroll up indicator
+            if (scrollOffset > 0) {
+                g2d.setColor(new Color(150, 200, 255));
+                g2d.drawString("▲ Scroll Up", ITEMS_X + gridWidth / 2 - 50, ITEMS_Y + 10);
+            }
+
+            // Scroll down indicator
+            if (scrollOffset < maxScroll) {
+                g2d.setColor(new Color(150, 200, 255));
+                g2d.drawString("▼ Scroll Down", ITEMS_X + gridWidth / 2 - 55, ITEMS_Y + gridHeight - 15);
+            }
+
+            // Scroll position indicator
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.setColor(new Color(180, 180, 200));
+            String scrollInfo = "Row " + (scrollOffset + 1) + "-" + Math.min(scrollOffset + ITEMS_VISIBLE_ROWS, totalRows) + " of " + totalRows;
+            g2d.drawString(scrollInfo, ITEMS_X + gridWidth - 100, ITEMS_Y + 5);
         }
     }
 
@@ -1089,6 +1159,8 @@ public class SpriteCharacterCustomization implements Scene {
 
     @Override
     public void onMouseMoved(int x, int y) {
+        mouseX = x;
+        mouseY = y;
         doneButton.handleMouseMove(x, y);
         clearAllButton.handleMouseMove(x, y);
         for (UIButton tab : categoryTabs) {
@@ -1145,15 +1217,19 @@ public class SpriteCharacterCustomization implements Scene {
             }
         }
 
-        // Check item clicks
+        // Check item clicks (account for scroll offset)
         String category = CATEGORIES[currentCategory];
         List<ClothingItem> items = availableItems.get(category);
         if (items == null) return;
 
+        int startIndex = scrollOffset * ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + ITEMS_PER_ROW * ITEMS_VISIBLE_ROWS, items.size());
         int startY = ITEMS_Y + 20;
-        for (int i = 0; i < items.size() && i < ITEMS_PER_ROW * ITEMS_VISIBLE_ROWS; i++) {
-            int row = i / ITEMS_PER_ROW;
-            int col = i % ITEMS_PER_ROW;
+
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
+            int row = displayIndex / ITEMS_PER_ROW;
+            int col = displayIndex % ITEMS_PER_ROW;
 
             int itemX = ITEMS_X + col * (ITEM_SIZE + 10);
             int itemY = startY + row * (ITEM_SIZE + 10);
