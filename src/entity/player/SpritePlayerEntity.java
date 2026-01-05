@@ -4,6 +4,9 @@ import entity.*;
 import entity.capabilities.*;
 import block.*;
 import animation.*;
+import animation.ItemAnimationState;
+import animation.ParticleAnimationState;
+import animation.TriggeredAnimationManager;
 import audio.*;
 import input.*;
 import ui.*;
@@ -168,6 +171,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     // Timing for animation updates
     private long lastUpdateTime;
 
+    // Triggered animation system
+    private TriggeredAnimationManager triggeredAnimManager;
+    private double sprintParticleTimer = 0;
+    private double jumpParticleTimer = 0;
+    private boolean wasOnGround = true;
+    private static final double SPRINT_PARTICLE_INTERVAL = 0.15; // Seconds between sprint particles
+    private static final double JUMP_PARTICLE_COOLDOWN = 0.3; // Cooldown after landing before particles
+
     /**
      * Creates a SpritePlayerEntity with animations loaded from a directory.
      *
@@ -193,6 +204,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         this.inventory = new Inventory(10);
         this.lastUpdateTime = System.currentTimeMillis();
 
+        // Initialize triggered animation manager
+        this.triggeredAnimManager = TriggeredAnimationManager.getInstance();
     }
 
     /**
@@ -214,6 +227,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         this.inventory = new Inventory(10);
         this.lastUpdateTime = System.currentTimeMillis();
 
+        // Initialize triggered animation manager
+        this.triggeredAnimManager = TriggeredAnimationManager.getInstance();
     }
 
     /**
@@ -705,7 +720,73 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                     spriteAnimation.getCurrentFrameIndex(),
                     spriteAnimation.getState()
             );
+
+            // Update triggered item animations
+            heldItem.triggerAnimationForAction(
+                spriteAnimation.getState(),
+                isCharging,
+                (float) chargePercent
+            );
+            heldItem.updateTriggeredAnimation(deltaMs);
         }
+
+        // Update triggered animation manager
+        triggeredAnimManager.update(deltaMs);
+
+        // Trigger sprint particles
+        updateSprintParticles(deltaSeconds, isMoving);
+
+        // Trigger jump/land particles
+        updateJumpParticles(deltaSeconds);
+    }
+
+    /**
+     * Updates sprint particle effects.
+     */
+    private void updateSprintParticles(double deltaSeconds, boolean isMoving) {
+        if (isSprinting && isMoving && onGround) {
+            sprintParticleTimer += deltaSeconds;
+            if (sprintParticleTimer >= SPRINT_PARTICLE_INTERVAL) {
+                sprintParticleTimer = 0;
+
+                // Spawn sprint particle behind player
+                int particleX = facingRight ? x - 10 : x + width;
+                int particleY = y + height - 20;
+
+                triggeredAnimManager.triggerParticle(
+                    ParticleAnimationState.SPRINT_LINES,
+                    particleX, particleY, 30, 20, null, 0.25, false
+                );
+
+                // Also spawn dust at feet
+                triggeredAnimManager.triggerParticle(
+                    ParticleAnimationState.RUN_DUST,
+                    x + width / 2 - 10, y + height - 10, 20, 15, null, 0.3, false
+                );
+            }
+        } else {
+            sprintParticleTimer = 0;
+        }
+    }
+
+    /**
+     * Updates jump and landing particle effects.
+     */
+    private void updateJumpParticles(double deltaSeconds) {
+        // Update cooldown timer
+        if (jumpParticleTimer > 0) {
+            jumpParticleTimer -= deltaSeconds;
+        }
+
+        // Landing effect - transition from air to ground
+        if (onGround && !wasOnGround && jumpParticleTimer <= 0) {
+            // Trigger landing dust
+            triggeredAnimManager.triggerLandDust(x + width / 2, y + height);
+            jumpParticleTimer = JUMP_PARTICLE_COOLDOWN;
+        }
+
+        // Track ground state for next frame
+        wasOnGround = onGround;
     }
 
     /**
@@ -728,6 +809,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                 jumpsRemaining--;
                 currentJumpNumber = 1;
 
+                // Trigger jump dust particles
+                triggeredAnimManager.triggerJumpDust(x + width / 2, y + height);
+
                 if (audioManager != null) {
                     audioManager.playSound("jump");
                 }
@@ -748,6 +832,13 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                         velY = tripleJumpStrength;
                     }
                 }
+
+                // Trigger multi-jump magic effect
+                triggeredAnimManager.triggerParticle(
+                    ParticleAnimationState.MULTI_JUMP,
+                    x + width / 2 - 20, y + height / 2 - 10,
+                    40, 20, null, 0.4, false
+                );
 
                 jumpsRemaining--;
 
@@ -1267,6 +1358,14 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         if (heldItem != null && heldItem.isRangedWeapon()) {
             drawAimIndicator(g2d);
         }
+
+        // Draw triggered item animations (if held item has them)
+        if (heldItem != null && heldItem.hasAnimationFolder()) {
+            heldItem.drawTriggeredAnimation(g, x, y, width, height, facingRight);
+        }
+
+        // Draw particles from the triggered animation manager
+        triggeredAnimManager.drawParticles(g);
     }
 
     /**

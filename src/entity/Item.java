@@ -1,6 +1,7 @@
 package entity;
 
 import animation.*;
+import animation.ItemAnimationState;
 import graphics.*;
 
 import java.awt.*;
@@ -93,6 +94,11 @@ public class Item {
     // Held item animations (for when item is equipped and held)
     private Map<SpriteAnimation.ActionState, AnimatedTexture> heldAnimations;
 
+    // Triggered animation system (new folder-based structure)
+    private String animationFolderPath;  // Path to folder containing animation states
+    private Map<ItemAnimationState, AnimatedTexture> triggeredAnimations;
+    private ItemAnimationState currentTriggeredState = ItemAnimationState.IDLE;
+
     // ==================== Combat Properties ====================
 
     private int damage = 0;
@@ -153,6 +159,7 @@ public class Item {
         this.rarity = ItemRarity.COMMON;
         this.description = "";
         this.heldAnimations = new HashMap<>();
+        this.triggeredAnimations = new HashMap<>();
 
         // Set defaults based on category
         switch (category) {
@@ -200,6 +207,9 @@ public class Item {
         this.iconAnimation = original.iconAnimation;
         this.texturePath = original.texturePath;
         this.heldAnimations = new HashMap<>(original.heldAnimations);
+        this.animationFolderPath = original.animationFolderPath;
+        this.triggeredAnimations = new HashMap<>(original.triggeredAnimations);
+        this.currentTriggeredState = original.currentTriggeredState;
         this.damage = original.damage;
         this.defense = original.defense;
         this.attackSpeed = original.attackSpeed;
@@ -367,6 +377,203 @@ public class Item {
         } else {
             g2d.drawImage(frame, x + width, y, -width, height, null);
         }
+    }
+
+    // ==================== Triggered Animation System ====================
+
+    /**
+     * Sets the animation folder path for this item.
+     * Animation folders contain multiple GIF files for different states.
+     *
+     * @param folderPath Path to the animation folder (e.g., "assets/items/bow/")
+     */
+    public void setAnimationFolderPath(String folderPath) {
+        this.animationFolderPath = folderPath;
+    }
+
+    /**
+     * Gets the animation folder path for this item.
+     *
+     * @return Folder path, or null if using legacy single-file texture
+     */
+    public String getAnimationFolderPath() {
+        return animationFolderPath;
+    }
+
+    /**
+     * Checks if this item has an animation folder with multiple states.
+     *
+     * @return true if the item uses folder-based animations
+     */
+    public boolean hasAnimationFolder() {
+        return animationFolderPath != null;
+    }
+
+    /**
+     * Loads a triggered animation for a specific state.
+     *
+     * @param state The animation state
+     * @param path Path to the animation GIF
+     */
+    public void loadTriggeredAnimation(ItemAnimationState state, String path) {
+        try {
+            AssetLoader.ImageAsset asset = AssetLoader.load(path);
+            if (asset.animatedTexture != null) {
+                triggeredAnimations.put(state, asset.animatedTexture);
+            } else if (asset.staticImage != null) {
+                AnimatedTexture singleFrame = new AnimatedTexture(asset.staticImage);
+                triggeredAnimations.put(state, singleFrame);
+            }
+        } catch (Exception e) {
+            System.err.println("Item: Failed to load triggered animation: " + path);
+        }
+    }
+
+    /**
+     * Gets the triggered animation for a specific state.
+     *
+     * @param state The animation state
+     * @return The AnimatedTexture, or null if not available
+     */
+    public AnimatedTexture getTriggeredAnimation(ItemAnimationState state) {
+        AnimatedTexture anim = triggeredAnimations.get(state);
+        if (anim == null && state != ItemAnimationState.IDLE) {
+            // Fallback to idle if specific state not found
+            anim = triggeredAnimations.get(ItemAnimationState.IDLE);
+        }
+        return anim;
+    }
+
+    /**
+     * Checks if this item has a triggered animation for the given state.
+     *
+     * @param state The animation state
+     * @return true if the animation exists
+     */
+    public boolean hasTriggeredAnimation(ItemAnimationState state) {
+        return triggeredAnimations.containsKey(state);
+    }
+
+    /**
+     * Gets all loaded triggered animations.
+     *
+     * @return Map of states to animations
+     */
+    public Map<ItemAnimationState, AnimatedTexture> getTriggeredAnimations() {
+        return triggeredAnimations;
+    }
+
+    /**
+     * Sets the current triggered animation state.
+     * This controls which animation is currently playing.
+     *
+     * @param state The animation state to set
+     */
+    public void setTriggeredAnimationState(ItemAnimationState state) {
+        if (state != currentTriggeredState) {
+            currentTriggeredState = state;
+            AnimatedTexture anim = getTriggeredAnimation(state);
+            if (anim != null) {
+                anim.reset();
+            }
+        }
+    }
+
+    /**
+     * Gets the current triggered animation state.
+     *
+     * @return The current state
+     */
+    public ItemAnimationState getTriggeredAnimationState() {
+        return currentTriggeredState;
+    }
+
+    /**
+     * Updates the current triggered animation.
+     *
+     * @param deltaMs Milliseconds since last update
+     */
+    public void updateTriggeredAnimation(long deltaMs) {
+        AnimatedTexture anim = getTriggeredAnimation(currentTriggeredState);
+        if (anim != null) {
+            anim.update(deltaMs);
+        }
+    }
+
+    /**
+     * Draws the current triggered animation.
+     *
+     * @param g Graphics context
+     * @param x X position
+     * @param y Y position
+     * @param width Render width
+     * @param height Render height
+     * @param facingRight Direction facing
+     */
+    public void drawTriggeredAnimation(Graphics g, int x, int y, int width, int height, boolean facingRight) {
+        AnimatedTexture anim = getTriggeredAnimation(currentTriggeredState);
+        if (anim == null) return;
+
+        BufferedImage frame = anim.getCurrentFrame();
+        if (frame == null) return;
+
+        Graphics2D g2d = (Graphics2D) g;
+        if (facingRight) {
+            g2d.drawImage(frame, x, y, width, height, null);
+        } else {
+            g2d.drawImage(frame, x + width, y, -width, height, null);
+        }
+    }
+
+    /**
+     * Gets the appropriate triggered animation state based on entity action.
+     *
+     * @param entityAction The entity's current action
+     * @return The appropriate item animation state
+     */
+    public ItemAnimationState getAppropriateTriggeredState(SpriteAnimation.ActionState entityAction) {
+        // Map entity actions to item animation states
+        ItemAnimationState mapped = ItemAnimationState.fromEntityAction(entityAction);
+
+        // For ranged weapons, check for charging vs firing
+        if (isRangedWeapon && entityAction == SpriteAnimation.ActionState.FIRE) {
+            boolean isMagic = projectileType == ProjectileEntity.ProjectileType.MAGIC_BOLT ||
+                              projectileType == ProjectileEntity.ProjectileType.FIREBALL ||
+                              projectileType == ProjectileEntity.ProjectileType.ICEBALL;
+
+            if (isChargeable) {
+                // During charge, use DRAW for bows or CHARGE for magic
+                return ItemAnimationState.getChargingState(true, isMagic);
+            } else {
+                return ItemAnimationState.getFiringState(true, isMagic);
+            }
+        }
+
+        return mapped;
+    }
+
+    /**
+     * Triggers the appropriate item animation based on entity state.
+     *
+     * @param entityAction The entity's current action
+     * @param isCharging Whether the weapon is currently charging
+     * @param chargePercent Charge percentage (0.0 to 1.0)
+     */
+    public void triggerAnimationForAction(SpriteAnimation.ActionState entityAction,
+                                           boolean isCharging, float chargePercent) {
+        ItemAnimationState newState;
+
+        if (isCharging && isChargeable) {
+            // Determine if magic or physical ranged
+            boolean isMagic = projectileType == ProjectileEntity.ProjectileType.MAGIC_BOLT ||
+                              projectileType == ProjectileEntity.ProjectileType.FIREBALL ||
+                              projectileType == ProjectileEntity.ProjectileType.ICEBALL;
+            newState = ItemAnimationState.getChargingState(isRangedWeapon, isMagic);
+        } else {
+            newState = getAppropriateTriggeredState(entityAction);
+        }
+
+        setTriggeredAnimationState(newState);
     }
 
     // ==================== Projectile Firing ====================
