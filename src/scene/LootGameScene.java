@@ -161,9 +161,23 @@ public class LootGameScene implements Scene {
         );
         buttons.add(menuButton);
 
+        // Developer Mode toggle button
+        UIButton devModeButton = new UIButton(20, 80, 150, 40, getDevModeButtonText(), () -> {
+            SaveManager.getInstance().toggleDeveloperMode();
+            // Reinitialize to apply changes
+            initialized = false;
+            init();
+        });
+        devModeButton.setColors(
+            SaveManager.getInstance().isDeveloperMode() ? new Color(80, 150, 80, 220) : new Color(80, 80, 80, 220),
+            SaveManager.getInstance().isDeveloperMode() ? new Color(100, 180, 100, 240) : new Color(100, 100, 100, 240),
+            Color.WHITE
+        );
+        buttons.add(devModeButton);
+
         // Reset button (for testing)
         UIButton resetButton = new UIButton(GamePanel.SCREEN_WIDTH - 170, 20, 150, 50, "Reset Chests", () -> {
-            SaveManager.getInstance().resetAllData();
+            SaveManager.getInstance().resetChestCooldowns();
             // Reinitialize the scene to reset chest states
             initialized = false;
             init();
@@ -176,9 +190,47 @@ public class LootGameScene implements Scene {
         buttons.add(resetButton);
     }
 
+    /**
+     * Gets the developer mode button text based on current state.
+     */
+    private String getDevModeButtonText() {
+        return "Dev Mode: " + (SaveManager.getInstance().isDeveloperMode() ? "ON" : "OFF");
+    }
+
     @Override
     public void update(InputManager input) {
         if (!initialized) return;
+
+        // Check chest interaction BEFORE updating entities to ensure 'E' key isn't consumed
+        if (player != null) {
+            Rectangle playerBounds = player.getBounds();
+
+            // Update daily chest proximity
+            if (dailyChest.isInInteractionZone(playerBounds)) {
+                dailyChest.setPlayerNearby(true);
+            } else {
+                dailyChest.setPlayerNearby(false);
+            }
+
+            // Update monthly chest proximity
+            if (monthlyChest.isInInteractionZone(playerBounds)) {
+                monthlyChest.setPlayerNearby(true);
+            } else {
+                monthlyChest.setPlayerNearby(false);
+            }
+
+            // Handle 'E' key press for chest opening (check before entities consume the key)
+            if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+                // Try to open whichever chest the player is near
+                if (!dailyChest.tryOpen()) {
+                    monthlyChest.tryOpen();
+                }
+            }
+
+            // Collect dropped items when player touches them
+            collectDroppedItems(dailyChest, playerBounds);
+            collectDroppedItems(monthlyChest, playerBounds);
+        }
 
         // Update all entities
         entityManager.updateAll(input);
@@ -186,29 +238,6 @@ public class LootGameScene implements Scene {
         // Update camera
         if (camera != null) {
             camera.update();
-        }
-
-        // Check chest interaction
-        if (player != null) {
-            Rectangle playerBounds = player.getBounds();
-
-            // Daily chest interaction
-            if (dailyChest.isInInteractionZone(playerBounds)) {
-                dailyChest.setPlayerNearby(true);
-            } else {
-                dailyChest.setPlayerNearby(false);
-            }
-
-            // Monthly chest interaction
-            if (monthlyChest.isInInteractionZone(playerBounds)) {
-                monthlyChest.setPlayerNearby(true);
-            } else {
-                monthlyChest.setPlayerNearby(false);
-            }
-
-            // Collect dropped items when player touches them
-            collectDroppedItems(dailyChest, playerBounds);
-            collectDroppedItems(monthlyChest, playerBounds);
         }
 
         // Update stats from save manager
