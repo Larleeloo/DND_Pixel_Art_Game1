@@ -612,9 +612,27 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             x = newX;
         }
 
-        // Apply push forces
+        // Apply push forces (with collision check to prevent being pushed into blocks)
         if (Math.abs(pushX) > 0.1) {
-            x += (int) pushX;
+            int pushAmount = (int) pushX;
+            Rectangle pushedBounds = new Rectangle(x + pushAmount, y, width, height);
+            boolean pushBlocked = false;
+
+            // Check if push would put us inside a solid block
+            for (Entity e : entities) {
+                if (e == this) continue;
+                if (e instanceof BlockEntity) {
+                    BlockEntity block = (BlockEntity) e;
+                    if (block.isSolid() && !block.isBroken() && pushedBounds.intersects(block.getBounds())) {
+                        pushBlocked = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!pushBlocked) {
+                x += pushAmount;
+            }
             pushX *= 0.8; // Decay push force
         } else {
             pushX = 0;
