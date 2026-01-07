@@ -96,6 +96,12 @@ public abstract class MobEntity extends Entity {
     protected double wanderMinX;
     protected double wanderMaxX;
 
+    // Obstacle jumping AI
+    protected boolean blockedByObstacle = false;    // Set when hitting a horizontal obstacle
+    protected double obstacleJumpCooldown = 0;      // Cooldown between jump attempts
+    protected double jumpStrength = -10.0;          // Jump velocity
+    protected static final double OBSTACLE_JUMP_COOLDOWN = 0.3; // Time between jump attempts
+
     // Target tracking
     protected PlayerBase target;
     protected double targetLastX;
@@ -233,6 +239,7 @@ public abstract class MobEntity extends Entity {
         // Update timers
         attackTimer = Math.max(0, attackTimer - deltaTime);
         invincibilityTimer = Math.max(0, invincibilityTimer - deltaTime);
+        obstacleJumpCooldown = Math.max(0, obstacleJumpCooldown - deltaTime);
         stateTimer += deltaTime;
 
         // Don't process AI if dead
@@ -464,6 +471,9 @@ public abstract class MobEntity extends Entity {
         facingRight = dx > 0;
         velocityX = facingRight ? wanderSpeed : -wanderSpeed;
 
+        // Try to jump over obstacles while wandering
+        tryObstacleJump();
+
         if (stateTimer > wanderDuration) {
             changeState(AIState.IDLE);
         }
@@ -478,6 +488,9 @@ public abstract class MobEntity extends Entity {
         double dx = target.getX() - posX;
         facingRight = dx > 0;
         velocityX = facingRight ? chaseSpeed : -chaseSpeed;
+
+        // Try to jump over obstacles while chasing
+        tryObstacleJump();
     }
 
     protected void updateAttackState(double deltaTime) {
@@ -502,6 +515,9 @@ public abstract class MobEntity extends Entity {
         double dx = target.getX() - posX;
         facingRight = dx < 0; // Face away
         velocityX = facingRight ? chaseSpeed : -chaseSpeed;
+
+        // Try to jump over obstacles while fleeing
+        tryObstacleJump();
 
         // Stop fleeing after some time
         if (stateTimer > 3.0) {
@@ -583,30 +599,65 @@ public abstract class MobEntity extends Entity {
             double newX = posX + stepX;
             double newY = posY + stepY;
 
-            // Check horizontal collision with solid blocks
+            // Check horizontal collision with solid blocks and obstacle entities
             if (entities != null && stepX != 0) {
-                int feetMargin = 10;
+                // Use a smaller margin to properly detect side collisions
+                // We exclude only a small area at the feet to avoid getting stuck on block edges we're standing on
+                int topMargin = 4;    // Small margin at top to avoid head catching on ceilings
+                int bottomMargin = 8; // Margin at bottom to avoid catching on blocks we're standing on
+
                 Rectangle futureXBounds = new Rectangle(
                     (int)newX + hitboxOffsetX,
-                    (int)posY + hitboxOffsetY + feetMargin,  // Start below top
+                    (int)posY + hitboxOffsetY + topMargin,
                     hitboxWidth,
-                    Math.max(hitboxHeight - feetMargin * 2, 1) // Exclude feet and head area
+                    Math.max(hitboxHeight - topMargin - bottomMargin, 1)
                 );
 
                 boolean xCollision = false;
-                BlockEntity collidedBlock = null;
+                Entity collidedEntity = null;
+                Rectangle collidedBounds = null;
+
                 for (Entity e : entities) {
+                    // Check collision with solid blocks
                     if (e instanceof BlockEntity) {
                         BlockEntity block = (BlockEntity) e;
                         if (block.isSolid() && !block.isBroken() && futureXBounds.intersects(block.getBounds())) {
                             Rectangle blockBounds = block.getBounds();
                             int mobBottom = (int)posY + hitboxOffsetY + hitboxHeight;
+                            int mobTop = (int)posY + hitboxOffsetY;
                             int blockTop = blockBounds.y;
+                            int blockBottom = blockBounds.y + blockBounds.height;
 
-                            // True side collision - block is beside us, not beneath
-                            if (mobBottom <= blockTop + feetMargin + 5) {
+                            // True side collision - verify the mob overlaps vertically with the block
+                            // The mob is beside the block (not on top or below) if there's vertical overlap
+                            boolean verticalOverlap = mobBottom > blockTop + bottomMargin && mobTop < blockBottom - topMargin;
+                            if (verticalOverlap) {
                                 xCollision = true;
-                                collidedBlock = block;
+                                collidedEntity = block;
+                                collidedBounds = blockBounds;
+                                break;
+                            }
+                        }
+                    }
+                    // Check collision with other mobs (as obstacles)
+                    else if (e instanceof MobEntity && e != this) {
+                        MobEntity otherMob = (MobEntity) e;
+                        // Don't collide with dead mobs
+                        if (otherMob.getState() == AIState.DEAD) continue;
+
+                        Rectangle otherBounds = otherMob.getBounds();
+                        if (futureXBounds.intersects(otherBounds)) {
+                            int mobBottom = (int)posY + hitboxOffsetY + hitboxHeight;
+                            int mobTop = (int)posY + hitboxOffsetY;
+                            int otherTop = otherBounds.y;
+                            int otherBottom = otherBounds.y + otherBounds.height;
+
+                            // True side collision - verify vertical overlap
+                            boolean verticalOverlap = mobBottom > otherTop + bottomMargin && mobTop < otherBottom - topMargin;
+                            if (verticalOverlap) {
+                                xCollision = true;
+                                collidedEntity = otherMob;
+                                collidedBounds = otherBounds;
                                 break;
                             }
                         }
@@ -616,17 +667,24 @@ public abstract class MobEntity extends Entity {
                 if (!xCollision) {
                     posX = newX;
                 } else {
-                    // Stop and snap to block edge
+                    // Flag that we hit a horizontal obstacle (for AI jumping)
+                    if (collidedEntity instanceof BlockEntity) {
+                        onHorizontalCollision((BlockEntity) collidedEntity);
+                    } else {
+                        // For non-block obstacles, still trigger jump behavior
+                        blockedByObstacle = true;
+                    }
+
+                    // Stop and snap to obstacle edge
                     velocityX = 0;
                     stepX = 0;
-                    if (collidedBlock != null) {
-                        Rectangle blockBounds = collidedBlock.getBounds();
+                    if (collidedBounds != null) {
                         if (moveX > 0) {
-                            // Moving right, snap to left edge of block
-                            posX = blockBounds.x - hitboxWidth / 2 - 1;
+                            // Moving right, snap to left edge of obstacle
+                            posX = collidedBounds.x - hitboxWidth / 2 - 1;
                         } else {
-                            // Moving left, snap to right edge of block
-                            posX = blockBounds.x + blockBounds.width + hitboxWidth / 2 + 1;
+                            // Moving left, snap to right edge of obstacle
+                            posX = collidedBounds.x + collidedBounds.width + hitboxWidth / 2 + 1;
                         }
                     }
                 }
@@ -711,6 +769,33 @@ public abstract class MobEntity extends Entity {
                 facingRight = false;
             }
         }
+    }
+
+    /**
+     * Called when the mob collides horizontally with a block.
+     * Override in subclasses to implement obstacle jumping behavior.
+     *
+     * @param block The block that was hit
+     */
+    protected void onHorizontalCollision(BlockEntity block) {
+        // Mark that we hit an obstacle for AI to handle
+        blockedByObstacle = true;
+    }
+
+    /**
+     * Attempts to jump over an obstacle if the mob is blocked and on the ground.
+     * Called by AI state updates when movement is needed.
+     */
+    protected void tryObstacleJump() {
+        // Only jump if blocked, on ground, and cooldown expired
+        if (blockedByObstacle && onGround && obstacleJumpCooldown <= 0) {
+            // Perform jump
+            velocityY = jumpStrength;
+            onGround = false;
+            obstacleJumpCooldown = OBSTACLE_JUMP_COOLDOWN;
+        }
+        // Reset blocked flag each frame (will be set again if still blocked)
+        blockedByObstacle = false;
     }
 
     /**
