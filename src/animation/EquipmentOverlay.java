@@ -385,7 +385,8 @@ public class EquipmentOverlay {
     }
 
     /**
-     * Draws items that should render in front of the character (all except BACK).
+     * Draws items that should render in front of the character (all except BACK and WEAPON).
+     * WEAPON slot is excluded because held items are drawn at hand position, not as overlays.
      *
      * @param g Graphics context
      * @param x X position
@@ -404,6 +405,7 @@ public class EquipmentOverlay {
         for (EquippedItem item : renderOrder) {
             if (!item.isVisible()) continue;
             if (item.getSlot() == EquipmentSlot.BACK) continue; // Already drawn behind
+            if (item.getSlot() == EquipmentSlot.WEAPON) continue; // Drawn at hand position, not as overlay
 
             BufferedImage frame = item.getCurrentFrame(state);
             if (frame == null) continue;
