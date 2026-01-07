@@ -332,12 +332,77 @@ public class LevelLoader {
                 }
             }
 
+            // Parse doors (interactive door entities)
+            if (root.containsKey("doors")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> doorList = (List<Map<String, Object>>) root.get("doors");
+                for (Map<String, Object> d : doorList) {
+                    // Skip comment entries
+                    if (d.containsKey("_comment")) continue;
+
+                    LevelData.DoorData door = new LevelData.DoorData();
+                    door.x = toInt(d.get("x"));
+                    door.y = toInt(d.get("y"));
+                    if (d.containsKey("width")) door.width = toInt(d.get("width"));
+                    if (d.containsKey("height")) door.height = toInt(d.get("height"));
+                    if (d.containsKey("texturePath")) door.texturePath = (String) d.get("texturePath");
+                    if (d.containsKey("linkId")) door.linkId = (String) d.get("linkId");
+                    if (d.containsKey("startsOpen")) door.startsOpen = toBool(d.get("startsOpen"));
+                    if (d.containsKey("locked")) door.locked = toBool(d.get("locked"));
+                    if (d.containsKey("keyItemId")) door.keyItemId = (String) d.get("keyItemId");
+                    if (d.containsKey("actionType")) door.actionType = (String) d.get("actionType");
+                    if (d.containsKey("actionTarget")) door.actionTarget = (String) d.get("actionTarget");
+                    if (d.containsKey("animationSpeed")) door.animationSpeed = (float) toDouble(d.get("animationSpeed"));
+                    data.doors.add(door);
+                }
+            }
+
+            // Parse buttons (interactive button/switch entities)
+            if (root.containsKey("buttons")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> buttonList = (List<Map<String, Object>>) root.get("buttons");
+                for (Map<String, Object> b : buttonList) {
+                    // Skip comment entries
+                    if (b.containsKey("_comment")) continue;
+
+                    LevelData.ButtonData button = new LevelData.ButtonData();
+                    button.x = toInt(b.get("x"));
+                    button.y = toInt(b.get("y"));
+                    if (b.containsKey("width")) button.width = toInt(b.get("width"));
+                    if (b.containsKey("height")) button.height = toInt(b.get("height"));
+                    if (b.containsKey("texturePath")) button.texturePath = (String) b.get("texturePath");
+                    if (b.containsKey("linkId")) button.linkId = (String) b.get("linkId");
+                    if (b.containsKey("buttonType")) button.buttonType = (String) b.get("buttonType");
+                    if (b.containsKey("activatedByPlayer")) button.activatedByPlayer = toBool(b.get("activatedByPlayer"));
+                    if (b.containsKey("activatedByMobs")) button.activatedByMobs = toBool(b.get("activatedByMobs"));
+                    if (b.containsKey("requiresInteraction")) button.requiresInteraction = toBool(b.get("requiresInteraction"));
+                    if (b.containsKey("timedDuration")) button.timedDuration = toInt(b.get("timedDuration"));
+                    if (b.containsKey("actionType")) button.actionType = (String) b.get("actionType");
+                    if (b.containsKey("actionTarget")) button.actionTarget = (String) b.get("actionTarget");
+                    if (b.containsKey("animationSpeed")) button.animationSpeed = (float) toDouble(b.get("animationSpeed"));
+
+                    // Parse linked door IDs array
+                    if (b.containsKey("linkedDoorIds")) {
+                        @SuppressWarnings("unchecked")
+                        List<Object> doorIdList = (List<Object>) b.get("linkedDoorIds");
+                        button.linkedDoorIds = new String[doorIdList.size()];
+                        for (int i = 0; i < doorIdList.size(); i++) {
+                            button.linkedDoorIds[i] = (String) doorIdList.get(i);
+                        }
+                    }
+
+                    data.buttons.add(button);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
                     data.triggers.size() + " triggers, " +
                     data.blocks.size() + " blocks, " +
                     data.mobs.size() + " mobs, " +
+                    data.doors.size() + " doors, " +
+                    data.buttons.size() + " buttons, " +
                     data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {
