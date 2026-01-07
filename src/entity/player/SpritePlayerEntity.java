@@ -1285,16 +1285,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             // Draw base sprite
             spriteAnimation.draw(g, x, y, width, height, facingRight);
 
-            // Draw equipment in front (armor, weapons, etc.)
+            // Draw equipment in front (armor, etc.) - excludes held items
             equipmentOverlay.drawInFront(g, x, y, width, height, facingRight, currentState);
 
-            // Draw held item overlay (if animated overlay exists)
-            if (heldItem != null) {
-                heldItem.drawHeld(g, x, y, width, height, facingRight, currentState);
-            }
-
-            // Draw mini held item icon in player's hand
-            drawHeldItemIcon(g2d);
+            // Draw held item at hand position (animated GIF)
+            drawHeldItemAtHand(g2d, currentState);
         }
 
         // Debug: draw bounds
@@ -1357,11 +1352,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         // Draw aim indicator when holding a ranged weapon
         if (heldItem != null && heldItem.isRangedWeapon()) {
             drawAimIndicator(g2d);
-        }
-
-        // Draw triggered item animations (if held item has them)
-        if (heldItem != null && heldItem.hasAnimationFolder()) {
-            heldItem.drawTriggeredAnimation(g, x, y, width, height, facingRight);
         }
 
         // Draw particles from the triggered animation manager
@@ -1986,43 +1976,98 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     // ==================== Held Item System ====================
 
     /**
-     * Draws a mini icon of the held item near the player's hand.
+     * Draws the held item at the player's hand position using animated GIF textures.
+     * Items are drawn at hand position, not as full-sprite overlays.
+     *
+     * @param g2d Graphics context
+     * @param currentState Current player animation state
      */
-    private void drawHeldItemIcon(Graphics2D g2d) {
+    private void drawHeldItemAtHand(Graphics2D g2d, SpriteAnimation.ActionState currentState) {
         ItemEntity heldEntity = inventory.getHeldItem();
         if (heldEntity == null) return;
 
-        // Get the item sprite from the inventory slot
+        // Get the animated sprite frame from ItemEntity (uses GIF animation)
         Image itemSprite = heldEntity.getSprite();
         if (itemSprite == null) return;
 
-        // Calculate position near player's hand
-        int iconSize = 24; // Mini icon size
-        int handOffsetX = facingRight ? width - 8 : -iconSize + 8;
-        int handOffsetY = height / 2 - 10;
+        // Item size at hand (larger than old mini icon)
+        int itemSize = 32;
 
-        // Adjust position based on animation state
-        SpriteAnimation.ActionState currentState = spriteAnimation.getState();
-        if (currentState == SpriteAnimation.ActionState.ATTACK ||
-            currentState == SpriteAnimation.ActionState.FIRE) {
-            // Extend arm during attack/fire
-            handOffsetX = facingRight ? width + 10 : -iconSize - 10;
+        // Calculate hand position based on player facing and animation state
+        int handOffsetX;
+        int handOffsetY = height / 2 - itemSize / 2;  // Centered vertically at mid-body
+
+        // Base hand position
+        if (facingRight) {
+            handOffsetX = width - 12;  // Right side of player
+        } else {
+            handOffsetX = -itemSize + 12;  // Left side of player
         }
 
-        int iconX = x + handOffsetX;
-        int iconY = y + handOffsetY;
+        // Adjust position based on animation state for natural movement
+        switch (currentState) {
+            case ATTACK:
+                // Extend arm forward during attack
+                handOffsetX = facingRight ? width + 8 : -itemSize - 8;
+                handOffsetY = height / 2 - itemSize / 2 - 4;  // Slightly raised
+                break;
+            case FIRE:
+                // Extended arm for ranged attack
+                handOffsetX = facingRight ? width + 4 : -itemSize - 4;
+                break;
+            case USE_ITEM:
+            case EAT:
+                // Bring item closer to face
+                handOffsetX = facingRight ? width / 2 : -itemSize / 2;
+                handOffsetY = height / 3 - itemSize / 2;  // Raised to face level
+                break;
+            case RUN:
+            case SPRINT:
+                // Slight bob during running
+                int runBob = (int)(Math.sin(System.currentTimeMillis() * 0.01) * 2);
+                handOffsetY += runBob;
+                break;
+            case JUMP:
+            case DOUBLE_JUMP:
+            case TRIPLE_JUMP:
+            case FALL:
+                // Arm raised during jump/fall
+                handOffsetY = height / 3 - itemSize / 2;
+                break;
+            default:
+                // IDLE, WALK - use base positions
+                break;
+        }
 
-        // Draw with slight rotation for held appearance
+        int itemX = x + handOffsetX;
+        int itemY = y + handOffsetY;
+
+        // Save transform for restoration
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
 
+        // Apply rotation based on state for natural held appearance
+        double rotation = 0;
+        if (currentState == SpriteAnimation.ActionState.ATTACK) {
+            // Swing rotation during attack
+            rotation = facingRight ? Math.toRadians(-30) : Math.toRadians(30);
+        } else if (heldItem != null && heldItem.isRangedWeapon()) {
+            // Slight angle for bows/crossbows pointing toward aim
+            rotation = facingRight ? Math.toRadians(-15) : Math.toRadians(15);
+        }
+
+        // Draw the item
         if (!facingRight) {
-            // Flip for left-facing
-            g2d.translate(iconX + iconSize/2, iconY + iconSize/2);
+            // Flip horizontally for left-facing
+            g2d.translate(itemX + itemSize / 2.0, itemY + itemSize / 2.0);
+            g2d.rotate(rotation);
             g2d.scale(-1, 1);
-            g2d.translate(-iconSize/2, -iconSize/2);
-            g2d.drawImage(itemSprite, 0, 0, iconSize, iconSize, null);
+            g2d.translate(-itemSize / 2.0, -itemSize / 2.0);
+            g2d.drawImage(itemSprite, 0, 0, itemSize, itemSize, null);
         } else {
-            g2d.drawImage(itemSprite, iconX, iconY, iconSize, iconSize, null);
+            g2d.translate(itemX + itemSize / 2.0, itemY + itemSize / 2.0);
+            g2d.rotate(rotation);
+            g2d.translate(-itemSize / 2.0, -itemSize / 2.0);
+            g2d.drawImage(itemSprite, 0, 0, itemSize, itemSize, null);
         }
 
         g2d.setTransform(oldTransform);

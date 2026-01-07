@@ -134,13 +134,20 @@ public class ItemEntity extends Entity {
      * Attempts to load a sprite from assets, falls back to procedural generation.
      * Prefers GIF files (animated) over PNG files.
      * For GIFs, loads all frames for animation support.
+     *
+     * Folder structure (preferred):
+     *   assets/items/{itemId}/idle.gif
+     *
+     * Legacy structure (fallback):
+     *   assets/items/{itemId}.gif
      */
     private BufferedImage loadOrGenerateSprite(String itemId, String type, String name) {
-        // Try loading from assets/items/{itemId}.gif first (animated), then .png
+        // Try loading from assets/items/{itemId}/idle.gif first (new folder structure)
         if (itemId != null && !itemId.isEmpty()) {
             String[] gifPaths = {
-                "assets/items/" + itemId + ".gif",
-                "assets/items/" + type + "/" + itemId + ".gif"
+                "assets/items/" + itemId + "/idle.gif",  // New folder structure
+                "assets/items/" + itemId + ".gif",       // Legacy single file
+                "assets/items/" + type + "/" + itemId + ".gif"  // Type-based fallback
             };
 
             // Try GIF files first (with animation support)
@@ -161,8 +168,9 @@ public class ItemEntity extends Entity {
                 }
             }
 
-            // Try PNG files (static)
+            // Try PNG files as static fallback (for backgrounds/static items only)
             String[] pngPaths = {
+                "assets/items/" + itemId + "/idle.png",
                 "assets/items/" + itemId + ".png",
                 "assets/items/" + type + "/" + itemId + ".png"
             };
