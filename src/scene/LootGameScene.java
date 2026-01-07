@@ -42,6 +42,9 @@ public class LootGameScene implements Scene {
     private LootChestEntity dailyChest;
     private LootChestEntity monthlyChest;
 
+    // Secret room door
+    private DoorEntity secretRoomDoor;
+
     // UI
     private List<UIButton> buttons;
 
@@ -143,7 +146,16 @@ public class LootGameScene implements Scene {
             LootChestEntity.ChestType.MONTHLY, GROUND_Y);
         entityManager.addEntity(monthlyChest);
 
-        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide");
+        // Create Secret Room Door (on the far left)
+        int doorX = 200;
+        int doorY = GROUND_Y - 128;
+        secretRoomDoor = new DoorEntity(doorX, doorY, 64, 128,
+            "assets/doors/iron_door.gif", "secret_room_door");
+        secretRoomDoor.setActionType(DoorEntity.ActionType.LEVEL_TRANSITION);
+        secretRoomDoor.setActionTarget("levels/loot_game_room.json");
+        entityManager.addEntity(secretRoomDoor);
+
+        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide, with secret room door");
     }
 
     /**
@@ -201,7 +213,7 @@ public class LootGameScene implements Scene {
     public void update(InputManager input) {
         if (!initialized) return;
 
-        // Check chest interaction BEFORE updating entities to ensure 'E' key isn't consumed
+        // Check chest and door interaction BEFORE updating entities to ensure 'E' key isn't consumed
         if (player != null) {
             Rectangle playerBounds = player.getBounds();
 
@@ -219,10 +231,28 @@ public class LootGameScene implements Scene {
                 monthlyChest.setPlayerNearby(false);
             }
 
-            // Handle 'E' key press for chest opening (check before entities consume the key)
+            // Update secret room door proximity
+            if (secretRoomDoor != null && secretRoomDoor.isInInteractionZone(playerBounds)) {
+                secretRoomDoor.setPlayerNearby(true);
+            } else if (secretRoomDoor != null) {
+                secretRoomDoor.setPlayerNearby(false);
+            }
+
+            // Handle 'E' key press for chest/door interaction
             if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+                // Try secret room door first
+                if (secretRoomDoor != null && secretRoomDoor.isPlayerNearby()) {
+                    secretRoomDoor.open();
+                    // Execute door action (level transition)
+                    if (secretRoomDoor.getActionType() == DoorEntity.ActionType.LEVEL_TRANSITION) {
+                        String targetLevel = secretRoomDoor.getActionTarget();
+                        if (targetLevel != null && !targetLevel.isEmpty()) {
+                            SceneManager.getInstance().loadLevel(targetLevel, SceneManager.TRANSITION_FADE);
+                        }
+                    }
+                }
                 // Try to open whichever chest the player is near
-                if (!dailyChest.tryOpen()) {
+                else if (!dailyChest.tryOpen()) {
                     monthlyChest.tryOpen();
                 }
             }
@@ -450,7 +480,7 @@ public class LootGameScene implements Scene {
         g.setFont(new Font("Arial", Font.PLAIN, 14));
         g.setColor(new Color(255, 255, 255, 180));
 
-        String controls = "A/D: Move | SPACE: Jump | E: Open Chest | Walk to items to collect | ESC: Menu";
+        String controls = "A/D: Move | SPACE: Jump | E: Open Chest/Door | Walk to items to collect | ESC: Menu";
         FontMetrics fm = g.getFontMetrics();
         int textX = GamePanel.SCREEN_WIDTH / 2 - fm.stringWidth(controls) / 2;
         int textY = GamePanel.SCREEN_HEIGHT - 20;
@@ -472,6 +502,7 @@ public class LootGameScene implements Scene {
         player = null;
         dailyChest = null;
         monthlyChest = null;
+        secretRoomDoor = null;
         camera = null;
     }
 

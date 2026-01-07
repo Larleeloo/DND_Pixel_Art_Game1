@@ -103,7 +103,9 @@ public class CreativeScene implements Scene {
         CONFIRM_EXIT,   // Confirm exit dialog (Yes/No/Cancel)
         SAVE_FILENAME,  // Enter filename dialog
         LOAD_LEVEL,     // Load level dialog
-        NEW_LEVEL       // New level properties dialog
+        NEW_LEVEL,      // New level properties dialog
+        CONFIG_DOOR,    // Configure door action (W key near door)
+        CONFIG_BUTTON   // Configure button action (E key near button)
     }
 
     // Available creative levels for loading
@@ -118,7 +120,16 @@ public class CreativeScene implements Scene {
     private List<PaletteItem> itemPalette;
     private List<PaletteItem> mobPalette;
     private List<PaletteItem> lightPalette;
+    private List<PaletteItem> interactivePalette;
     private List<PaletteItem> parallaxPalette;
+
+    // Placed interactive entities (doors and buttons)
+    private List<PlacedEntity> placedDoors;
+    private List<PlacedEntity> placedButtons;
+
+    // For door/button configuration modal
+    private PlacedEntity entityBeingConfigured = null;
+    private String configInputText = "";
 
     // Parallax layers currently in use
     private List<ParallaxLayerEntry> parallaxLayers;
@@ -131,6 +142,7 @@ public class CreativeScene implements Scene {
         ITEMS("Items"),
         MOBS("Mobs"),
         LIGHTS("Lights"),
+        INTERACTIVE("Interactive"),
         PARALLAX("Parallax");
 
         private final String displayName;
@@ -217,6 +229,8 @@ public class CreativeScene implements Scene {
         placedItems = new ArrayList<>();
         placedMobs = new ArrayList<>();
         placedLights = new ArrayList<>();
+        placedDoors = new ArrayList<>();
+        placedButtons = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
         blockTextures = new HashMap<>();
 
@@ -330,6 +344,47 @@ public class CreativeScene implements Scene {
             String displayName = Character.toUpperCase(lightType.charAt(0)) + lightType.substring(1);
             lightPalette.add(new PaletteItem(lightType, displayName, icon, lightType));
         }
+
+        // Interactive palette - doors and buttons
+        interactivePalette = new ArrayList<>();
+
+        // Doors
+        String[][] doorTypes = {
+            {"wooden_door", "Wooden Door", "assets/doors/wooden_door.gif"},
+            {"iron_door", "Iron Door", "assets/doors/iron_door.gif"},
+            {"stone_door", "Stone Door", "assets/doors/stone_door.gif"}
+        };
+        for (String[] door : doorTypes) {
+            BufferedImage icon = createDoorIcon(door[2]);
+            Map<String, Object> doorData = new HashMap<>();
+            doorData.put("type", "door");
+            doorData.put("texturePath", door[2]);
+            doorData.put("linkId", "");
+            doorData.put("actionType", "none");
+            doorData.put("actionTarget", "");
+            interactivePalette.add(new PaletteItem(door[0], door[1], icon, doorData));
+        }
+
+        // Buttons
+        String[][] buttonTypes = {
+            {"stone_button", "Stone Button", "assets/buttons/stone_button.gif"},
+            {"wooden_button", "Wooden Button", "assets/buttons/wooden_button.gif"},
+            {"pressure_plate", "Pressure Plate", "assets/buttons/pressure_plate.gif"}
+        };
+        for (String[] button : buttonTypes) {
+            BufferedImage icon = createButtonIcon(button[2]);
+            Map<String, Object> buttonData = new HashMap<>();
+            buttonData.put("type", "button");
+            buttonData.put("texturePath", button[2]);
+            buttonData.put("linkId", "");
+            buttonData.put("linkedDoorIds", new ArrayList<String>());
+            buttonData.put("buttonType", button[0].contains("pressure") ? "momentary" : "toggle");
+            buttonData.put("actionType", "none");
+            buttonData.put("actionTarget", "");
+            interactivePalette.add(new PaletteItem(button[0], button[1], icon, buttonData));
+        }
+
+        System.out.println("CreativeScene: Loaded " + interactivePalette.size() + " interactive elements into palette");
 
         // Parallax palette - available background/foreground layers
         parallaxPalette = new ArrayList<>();
@@ -559,6 +614,69 @@ public class CreativeScene implements Scene {
         return icon;
     }
 
+    /**
+     * Create an icon for doors - loads from GIF or creates placeholder
+     */
+    private BufferedImage createDoorIcon(String texturePath) {
+        // Try to load actual texture
+        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
+        if (asset != null && asset.staticImage != null) {
+            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+        }
+
+        // Fallback placeholder
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Door body
+        g.setColor(new Color(139, 90, 43));
+        g.fillRect(12, 4, 24, 40);
+
+        // Door frame
+        g.setColor(new Color(101, 67, 33));
+        g.setStroke(new BasicStroke(2));
+        g.drawRect(12, 4, 24, 40);
+
+        // Door handle
+        g.setColor(new Color(255, 215, 0));
+        g.fillOval(30, 22, 4, 4);
+
+        g.dispose();
+        return icon;
+    }
+
+    /**
+     * Create an icon for buttons - loads from GIF or creates placeholder
+     */
+    private BufferedImage createButtonIcon(String texturePath) {
+        // Try to load actual texture
+        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
+        if (asset != null && asset.staticImage != null) {
+            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+        }
+
+        // Fallback placeholder
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Button base
+        g.setColor(new Color(80, 80, 80));
+        g.fillRoundRect(8, 20, 32, 12, 4, 4);
+
+        // Button top
+        g.setColor(new Color(120, 120, 120));
+        g.fillRoundRect(10, 18, 28, 10, 4, 4);
+
+        // Highlight
+        g.setColor(new Color(160, 160, 160));
+        g.fillRoundRect(12, 20, 24, 4, 2, 2);
+
+        g.dispose();
+        return icon;
+    }
+
     @Override
     public void update(InputManager input) {
         if (!initialized) init();
@@ -636,6 +754,28 @@ public class CreativeScene implements Scene {
         // Ctrl+L or L to load level
         if (input.isKeyJustPressed(KeyEvent.VK_L)) {
             openLoadDialog();
+        }
+
+        // W key to configure door near cursor (level transition)
+        if (input.isKeyJustPressed(KeyEvent.VK_W)) {
+            PlacedEntity nearbyDoor = findNearbyDoor(worldMouseX, worldMouseY);
+            if (nearbyDoor != null) {
+                entityBeingConfigured = nearbyDoor;
+                configInputText = "";
+                modalState = ModalState.CONFIG_DOOR;
+                setStatus("Configure door level transition");
+            }
+        }
+
+        // E key to configure button near cursor (action/spawn)
+        if (input.isKeyJustPressed(KeyEvent.VK_E)) {
+            PlacedEntity nearbyButton = findNearbyButton(worldMouseX, worldMouseY);
+            if (nearbyButton != null) {
+                entityBeingConfigured = nearbyButton;
+                configInputText = "";
+                modalState = ModalState.CONFIG_BUTTON;
+                setStatus("Configure button action");
+            }
         }
 
         // Escape to return to menu (show confirmation dialog)
@@ -767,8 +907,97 @@ public class CreativeScene implements Scene {
                 // For now, just close on Escape (already handled)
                 break;
 
+            case CONFIG_DOOR:
+                // Handle text input for door level path
+                if (input.isKeyJustPressed(KeyEvent.VK_ENTER)) {
+                    String levelPath = configInputText.trim();
+                    if (entityBeingConfigured != null && !levelPath.isEmpty()) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> doorData = (Map<String, Object>) entityBeingConfigured.data;
+                        doorData.put("actionType", "level_transition");
+                        doorData.put("actionTarget", levelPath);
+                        setStatus("Door configured to load: " + levelPath);
+                    }
+                    modalState = ModalState.NONE;
+                    entityBeingConfigured = null;
+                    configInputText = "";
+                } else if (input.isKeyJustPressed(KeyEvent.VK_BACK_SPACE)) {
+                    if (configInputText.length() > 0) {
+                        configInputText = configInputText.substring(0, configInputText.length() - 1);
+                    }
+                } else {
+                    // Handle character input
+                    handleConfigTextInput(input);
+                }
+                break;
+
+            case CONFIG_BUTTON:
+                // Handle text input for button action (spawn mob type)
+                if (input.isKeyJustPressed(KeyEvent.VK_ENTER)) {
+                    String actionTarget = configInputText.trim();
+                    if (entityBeingConfigured != null && !actionTarget.isEmpty()) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> buttonData = (Map<String, Object>) entityBeingConfigured.data;
+                        buttonData.put("actionType", "spawn_entity");
+                        buttonData.put("actionTarget", actionTarget);
+                        setStatus("Button configured to spawn: " + actionTarget);
+                    }
+                    modalState = ModalState.NONE;
+                    entityBeingConfigured = null;
+                    configInputText = "";
+                } else if (input.isKeyJustPressed(KeyEvent.VK_BACK_SPACE)) {
+                    if (configInputText.length() > 0) {
+                        configInputText = configInputText.substring(0, configInputText.length() - 1);
+                    }
+                } else {
+                    // Handle character input
+                    handleConfigTextInput(input);
+                }
+                break;
+
             default:
                 break;
+        }
+    }
+
+    /**
+     * Handle text input for configuration modals
+     */
+    private void handleConfigTextInput(InputManager input) {
+        // Check for typed characters (a-z, 0-9, underscore, hyphen, dot, slash)
+        for (char c = 'a'; c <= 'z'; c++) {
+            if (input.isKeyJustPressed(c)) {
+                if (configInputText.length() < 60) {
+                    configInputText += c;
+                }
+            }
+        }
+        for (char c = '0'; c <= '9'; c++) {
+            if (input.isKeyJustPressed(c)) {
+                if (configInputText.length() < 60) {
+                    configInputText += c;
+                }
+            }
+        }
+        if (input.isKeyJustPressed(KeyEvent.VK_MINUS)) {
+            if (configInputText.length() < 60) {
+                configInputText += "-";
+            }
+        }
+        if (input.isKeyJustPressed(KeyEvent.VK_PERIOD)) {
+            if (configInputText.length() < 60) {
+                configInputText += ".";
+            }
+        }
+        if (input.isKeyJustPressed(KeyEvent.VK_SLASH)) {
+            if (configInputText.length() < 60) {
+                configInputText += "/";
+            }
+        }
+        if (input.isKeyPressed(KeyEvent.VK_SHIFT) && input.isKeyJustPressed(KeyEvent.VK_MINUS)) {
+            if (configInputText.length() < 60) {
+                configInputText += "_";
+            }
         }
     }
 
@@ -807,6 +1036,36 @@ public class CreativeScene implements Scene {
     }
 
     /**
+     * Find a door near the given world coordinates
+     */
+    private PlacedEntity findNearbyDoor(int worldX, int worldY) {
+        int searchRadius = 100;
+        for (PlacedEntity door : placedDoors) {
+            Rectangle bounds = new Rectangle(door.x - searchRadius/2, door.y - searchRadius/2,
+                64 + searchRadius, 128 + searchRadius);
+            if (bounds.contains(worldX, worldY)) {
+                return door;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find a button near the given world coordinates
+     */
+    private PlacedEntity findNearbyButton(int worldX, int worldY) {
+        int searchRadius = 80;
+        for (PlacedEntity button : placedButtons) {
+            Rectangle bounds = new Rectangle(button.x - searchRadius/2, button.y - searchRadius/2,
+                32 + searchRadius, 16 + searchRadius);
+            if (bounds.contains(worldX, worldY)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Update which entity the mouse is hovering over
      */
     private void updateHoveredEntity() {
@@ -842,6 +1101,24 @@ public class CreativeScene implements Scene {
         // Check lights
         for (PlacedEntity entity : placedLights) {
             if (entity.getBounds().contains(worldMouseX, worldMouseY)) {
+                hoveredEntity = entity;
+                return;
+            }
+        }
+
+        // Check doors
+        for (PlacedEntity entity : placedDoors) {
+            Rectangle bounds = new Rectangle(entity.x, entity.y, 64, 128);
+            if (bounds.contains(worldMouseX, worldMouseY)) {
+                hoveredEntity = entity;
+                return;
+            }
+        }
+
+        // Check buttons
+        for (PlacedEntity entity : placedButtons) {
+            Rectangle bounds = new Rectangle(entity.x, entity.y, 32, 16);
+            if (bounds.contains(worldMouseX, worldMouseY)) {
                 hoveredEntity = entity;
                 return;
             }
@@ -1049,6 +1326,78 @@ public class CreativeScene implements Scene {
                 g.drawString("[Esc] Cancel", dialogX + 250, dialogY + 265);
                 break;
 
+            case CONFIG_DOOR:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                title = "Configure Door";
+                fm = g.getFontMetrics();
+                titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 50);
+
+                // Instructions
+                g.setFont(new Font("Arial", Font.PLAIN, 14));
+                g.drawString("Enter the level path to load when this door is used:", dialogX + 30, dialogY + 85);
+                g.drawString("(e.g., levels/loot_game_room.json)", dialogX + 30, dialogY + 102);
+
+                // Text input box
+                g.setColor(new Color(30, 34, 42));
+                g.fillRoundRect(dialogX + 30, dialogY + 115, dialogWidth - 60, 40, 5, 5);
+                g.setColor(new Color(80, 130, 180));
+                g.drawRoundRect(dialogX + 30, dialogY + 115, dialogWidth - 60, 40, 5, 5);
+
+                // Input text with cursor
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Monospaced", Font.PLAIN, 16));
+                displayText = configInputText;
+                if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                    displayText += "|";
+                }
+                g.drawString(displayText, dialogX + 40, dialogY + 142);
+
+                // Buttons hint
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[Enter] Confirm", dialogX + 30, dialogY + 185);
+                g.setColor(new Color(150, 150, 200));
+                g.drawString("[Esc] Cancel", dialogX + 130, dialogY + 185);
+                break;
+
+            case CONFIG_BUTTON:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 24));
+                title = "Configure Button";
+                fm = g.getFontMetrics();
+                titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 50);
+
+                // Instructions
+                g.setFont(new Font("Arial", Font.PLAIN, 14));
+                g.drawString("Enter mob type to spawn when button is pressed:", dialogX + 30, dialogY + 85);
+                g.drawString("(e.g., bear, wolf, zombie, skeleton)", dialogX + 30, dialogY + 102);
+
+                // Text input box
+                g.setColor(new Color(30, 34, 42));
+                g.fillRoundRect(dialogX + 30, dialogY + 115, dialogWidth - 60, 40, 5, 5);
+                g.setColor(new Color(80, 130, 180));
+                g.drawRoundRect(dialogX + 30, dialogY + 115, dialogWidth - 60, 40, 5, 5);
+
+                // Input text with cursor
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Monospaced", Font.PLAIN, 16));
+                displayText = configInputText;
+                if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                    displayText += "|";
+                }
+                g.drawString(displayText, dialogX + 40, dialogY + 142);
+
+                // Buttons hint
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[Enter] Confirm", dialogX + 30, dialogY + 185);
+                g.setColor(new Color(150, 150, 200));
+                g.drawString("[Esc] Cancel", dialogX + 130, dialogY + 185);
+                break;
+
             default:
                 break;
         }
@@ -1176,6 +1525,92 @@ public class CreativeScene implements Scene {
                 if (entity == hoveredEntity) {
                     g.setColor(new Color(255, 255, 0, 100));
                     g.fillRect(screenX, screenY, 32, 32);
+                }
+            }
+        }
+
+        // Draw doors
+        for (PlacedEntity entity : placedDoors) {
+            int screenX = entity.x - (int) cameraX;
+            int screenY = entity.y - (int) cameraY;
+
+            if (screenX + 64 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+                screenY + 128 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, screenX, screenY, 64, 128, null);
+                } else {
+                    // Fallback drawing
+                    g.setColor(new Color(139, 90, 43));
+                    g.fillRect(screenX, screenY, 64, 128);
+                    g.setColor(new Color(101, 67, 33));
+                    g.drawRect(screenX, screenY, 64, 128);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(screenX, screenY, 64, 128);
+                }
+
+                // Draw configuration indicator
+                @SuppressWarnings("unchecked")
+                Map<String, Object> doorData = (Map<String, Object>) entity.data;
+                String actionTarget = (String) doorData.get("actionTarget");
+                if (actionTarget != null && !actionTarget.isEmpty()) {
+                    g.setColor(new Color(100, 255, 100, 200));
+                    g.fillOval(screenX + 54, screenY + 4, 10, 10);
+                    g.setFont(new Font("Arial", Font.BOLD, 8));
+                    g.setColor(Color.WHITE);
+                    g.drawString("L", screenX + 57, screenY + 12);
+                }
+
+                // Draw "W" hint if hovered
+                if (entity == hoveredEntity) {
+                    g.setFont(new Font("Arial", Font.BOLD, 12));
+                    g.setColor(Color.YELLOW);
+                    g.drawString("Press W to configure", screenX, screenY - 5);
+                }
+            }
+        }
+
+        // Draw buttons
+        for (PlacedEntity entity : placedButtons) {
+            int screenX = entity.x - (int) cameraX;
+            int screenY = entity.y - (int) cameraY;
+
+            if (screenX + 32 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+                screenY + 16 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, screenX, screenY, 32, 16, null);
+                } else {
+                    // Fallback drawing
+                    g.setColor(new Color(100, 100, 100));
+                    g.fillRoundRect(screenX, screenY, 32, 16, 4, 4);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(screenX, screenY, 32, 16);
+                }
+
+                // Draw configuration indicator
+                @SuppressWarnings("unchecked")
+                Map<String, Object> buttonData = (Map<String, Object>) entity.data;
+                String actionTarget = (String) buttonData.get("actionTarget");
+                if (actionTarget != null && !actionTarget.isEmpty()) {
+                    g.setColor(new Color(100, 255, 100, 200));
+                    g.fillOval(screenX + 26, screenY - 4, 8, 8);
+                    g.setFont(new Font("Arial", Font.BOLD, 6));
+                    g.setColor(Color.WHITE);
+                    g.drawString("A", screenX + 28, screenY + 2);
+                }
+
+                // Draw "E" hint if hovered
+                if (entity == hoveredEntity) {
+                    g.setFont(new Font("Arial", Font.BOLD, 12));
+                    g.setColor(Color.YELLOW);
+                    g.drawString("Press E to configure", screenX, screenY - 5);
                 }
             }
         }
@@ -1407,6 +1842,7 @@ public class CreativeScene implements Scene {
             case ITEMS: return itemPalette;
             case MOBS: return mobPalette;
             case LIGHTS: return lightPalette;
+            case INTERACTIVE: return interactivePalette;
             case PARALLAX: return parallaxPalette;
             default: return blockPalette;
         }
@@ -1610,6 +2046,34 @@ public class CreativeScene implements Scene {
                 setStatus("Placed light: " + selected.displayName);
                 break;
 
+            case INTERACTIVE:
+                @SuppressWarnings("unchecked")
+                Map<String, Object> interactiveData = (Map<String, Object>) selected.data;
+                String interactiveType = (String) interactiveData.get("type");
+
+                if ("door".equals(interactiveType)) {
+                    // Place door (snap to grid vertically, free horizontal)
+                    placeX = worldMouseX - 32;
+                    placeY = (worldMouseY / GRID_SIZE) * GRID_SIZE;
+
+                    Map<String, Object> doorData = new HashMap<>(interactiveData);
+                    doorData.put("linkId", "door_" + System.currentTimeMillis());
+                    PlacedEntity door = new PlacedEntity(placeX, placeY, "door", doorData, selected.icon);
+                    placedDoors.add(door);
+                    setStatus("Placed door - Press W near it to configure level transition");
+                } else if ("button".equals(interactiveType)) {
+                    // Place button
+                    placeX = worldMouseX - 16;
+                    placeY = worldMouseY - 8;
+
+                    Map<String, Object> buttonData = new HashMap<>(interactiveData);
+                    buttonData.put("linkId", "button_" + System.currentTimeMillis());
+                    PlacedEntity button = new PlacedEntity(placeX, placeY, "button", buttonData, selected.icon);
+                    placedButtons.add(button);
+                    setStatus("Placed button - Press E near it to configure action");
+                }
+                break;
+
             case PARALLAX:
                 // For parallax, clicking adds/removes the layer to the level
                 @SuppressWarnings("unchecked")
@@ -1692,6 +2156,30 @@ public class CreativeScene implements Scene {
                 return;
             }
         }
+
+        // Check doors
+        iter = placedDoors.iterator();
+        while (iter.hasNext()) {
+            PlacedEntity entity = iter.next();
+            Rectangle bounds = new Rectangle(entity.x, entity.y, 64, 128);
+            if (bounds.contains(worldX, worldY)) {
+                iter.remove();
+                setStatus("Removed door");
+                return;
+            }
+        }
+
+        // Check buttons
+        iter = placedButtons.iterator();
+        while (iter.hasNext()) {
+            PlacedEntity entity = iter.next();
+            Rectangle bounds = new Rectangle(entity.x, entity.y, 32, 16);
+            if (bounds.contains(worldX, worldY)) {
+                iter.remove();
+                setStatus("Removed button");
+                return;
+            }
+        }
     }
 
     /**
@@ -1733,6 +2221,8 @@ public class CreativeScene implements Scene {
         levelData.mobs.clear();
         levelData.lightSources.clear();
         levelData.parallaxLayers.clear();
+        levelData.doors.clear();
+        levelData.buttons.clear();
 
         // Add blocks
         for (PlacedEntity entity : placedBlocks) {
@@ -1787,6 +2277,39 @@ public class CreativeScene implements Scene {
             parallaxData.tileHorizontal = true;
             parallaxData.anchorBottom = true;  // Anchor to bottom for proper positioning
             levelData.parallaxLayers.add(parallaxData);
+        }
+
+        // Add doors
+        for (PlacedEntity entity : placedDoors) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> doorInfo = (Map<String, Object>) entity.data;
+            LevelData.DoorData doorData = new LevelData.DoorData();
+            doorData.x = entity.x;
+            doorData.y = entity.y;
+            doorData.width = 64;
+            doorData.height = 128;
+            doorData.texturePath = (String) doorInfo.get("texturePath");
+            doorData.linkId = (String) doorInfo.get("linkId");
+            doorData.actionType = (String) doorInfo.getOrDefault("actionType", "none");
+            doorData.actionTarget = (String) doorInfo.getOrDefault("actionTarget", "");
+            levelData.doors.add(doorData);
+        }
+
+        // Add buttons
+        for (PlacedEntity entity : placedButtons) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> buttonInfo = (Map<String, Object>) entity.data;
+            LevelData.ButtonData buttonData = new LevelData.ButtonData();
+            buttonData.x = entity.x;
+            buttonData.y = entity.y;
+            buttonData.width = 32;
+            buttonData.height = 16;
+            buttonData.texturePath = (String) buttonInfo.get("texturePath");
+            buttonData.linkId = (String) buttonInfo.get("linkId");
+            buttonData.buttonType = (String) buttonInfo.getOrDefault("buttonType", "toggle");
+            buttonData.actionType = (String) buttonInfo.getOrDefault("actionType", "none");
+            buttonData.actionTarget = (String) buttonInfo.getOrDefault("actionTarget", "");
+            levelData.buttons.add(buttonData);
         }
     }
 
@@ -1925,6 +2448,37 @@ public class CreativeScene implements Scene {
                         ", \"tileHorizontal\": " + p.tileHorizontal +
                         ", \"anchorBottom\": " + p.anchorBottom + "}" + comma);
                 }
+                writer.println("  ],");
+                writer.println();
+
+                // Doors
+                writer.println("  \"doors\": [");
+                for (int i = 0; i < levelData.doors.size(); i++) {
+                    LevelData.DoorData d = levelData.doors.get(i);
+                    String comma = (i < levelData.doors.size() - 1) ? "," : "";
+                    writer.println("    {\"x\": " + d.x + ", \"y\": " + d.y +
+                        ", \"width\": " + d.width + ", \"height\": " + d.height +
+                        ", \"texturePath\": \"" + escapeJson(d.texturePath) +
+                        "\", \"linkId\": \"" + escapeJson(d.linkId) +
+                        "\", \"actionType\": \"" + escapeJson(d.actionType) +
+                        "\", \"actionTarget\": \"" + escapeJson(d.actionTarget) + "\"}" + comma);
+                }
+                writer.println("  ],");
+                writer.println();
+
+                // Buttons
+                writer.println("  \"buttons\": [");
+                for (int i = 0; i < levelData.buttons.size(); i++) {
+                    LevelData.ButtonData b = levelData.buttons.get(i);
+                    String comma = (i < levelData.buttons.size() - 1) ? "," : "";
+                    writer.println("    {\"x\": " + b.x + ", \"y\": " + b.y +
+                        ", \"width\": " + b.width + ", \"height\": " + b.height +
+                        ", \"texturePath\": \"" + escapeJson(b.texturePath) +
+                        "\", \"linkId\": \"" + escapeJson(b.linkId) +
+                        "\", \"buttonType\": \"" + escapeJson(b.buttonType) +
+                        "\", \"actionType\": \"" + escapeJson(b.actionType) +
+                        "\", \"actionTarget\": \"" + escapeJson(b.actionTarget) + "\"}" + comma);
+                }
                 writer.println("  ]");
 
                 writer.println("}");
@@ -2013,10 +2567,43 @@ public class CreativeScene implements Scene {
             // Sort by z-order
             parallaxLayers.sort((a, b) -> Integer.compare(a.zOrder, b.zOrder));
 
+            // Load doors
+            placedDoors.clear();
+            for (LevelData.DoorData d : levelData.doors) {
+                Map<String, Object> doorData = new HashMap<>();
+                doorData.put("type", "door");
+                doorData.put("texturePath", d.texturePath);
+                doorData.put("linkId", d.linkId);
+                doorData.put("actionType", d.actionType);
+                doorData.put("actionTarget", d.actionTarget);
+                BufferedImage icon = createDoorIcon(d.texturePath);
+                PlacedEntity entity = new PlacedEntity(d.x, d.y, "door", doorData, icon);
+                placedDoors.add(entity);
+            }
+
+            // Load buttons
+            placedButtons.clear();
+            for (LevelData.ButtonData b : levelData.buttons) {
+                Map<String, Object> buttonData = new HashMap<>();
+                buttonData.put("type", "button");
+                buttonData.put("texturePath", b.texturePath);
+                buttonData.put("linkId", b.linkId);
+                buttonData.put("buttonType", b.buttonType);
+                buttonData.put("actionType", b.actionType);
+                buttonData.put("actionTarget", b.actionTarget);
+                BufferedImage icon = createButtonIcon(b.texturePath);
+                PlacedEntity entity = new PlacedEntity(b.x, b.y, "button", buttonData, icon);
+                placedButtons.add(entity);
+            }
+
             // Update camera bounds
             camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
 
-            setStatus("Loaded level: " + filepath);
+            setStatus("Loaded level: " + filepath + " (" +
+                placedBlocks.size() + " blocks, " +
+                placedMobs.size() + " mobs, " +
+                placedDoors.size() + " doors, " +
+                placedButtons.size() + " buttons)");
 
         } catch (Exception e) {
             setStatus("Error loading level: " + e.getMessage());
@@ -2097,6 +2684,8 @@ public class CreativeScene implements Scene {
                 placedItems.clear();
                 placedMobs.clear();
                 placedLights.clear();
+                placedDoors.clear();
+                placedButtons.clear();
 
                 showPropertiesDialog = false;
                 dialog.dispose();

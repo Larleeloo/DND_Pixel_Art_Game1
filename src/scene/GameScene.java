@@ -898,7 +898,13 @@ public class GameScene implements Scene {
             case LEVEL_TRANSITION:
                 String target = door.getActionTarget();
                 if (target != null && !target.isEmpty()) {
-                    SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                    // Check if it's a special scene transition (scene:sceneName)
+                    if (target.startsWith("scene:")) {
+                        String sceneName = target.substring(6); // Remove "scene:" prefix
+                        SceneManager.getInstance().setScene(sceneName, SceneManager.TRANSITION_FADE);
+                    } else {
+                        SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                    }
                 }
                 break;
 
@@ -938,7 +944,13 @@ public class GameScene implements Scene {
             case LEVEL_TRANSITION:
                 String target = button.getActionTarget();
                 if (target != null && !target.isEmpty()) {
-                    SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                    // Check if it's a special scene transition (scene:sceneName)
+                    if (target.startsWith("scene:")) {
+                        String sceneName = target.substring(6); // Remove "scene:" prefix
+                        SceneManager.getInstance().setScene(sceneName, SceneManager.TRANSITION_FADE);
+                    } else {
+                        SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                    }
                 }
                 break;
 
@@ -947,7 +959,17 @@ public class GameScene implements Scene {
                 break;
 
             case SPAWN_ENTITY:
-                System.out.println("GameScene: Button spawn entity triggered: " + button.getActionTarget());
+                String mobType = button.getActionTarget();
+                if (mobType != null && !mobType.isEmpty()) {
+                    // Spawn mob near the button
+                    int spawnX = (int)(button.getBounds().getCenterX());
+                    int spawnY = (int)(button.getBounds().getY()) - 100;
+                    SpriteMobEntity spawnedMob = createSpawnedMob(mobType, spawnX, spawnY);
+                    if (spawnedMob != null) {
+                        entityManager.addEntity(spawnedMob);
+                        System.out.println("GameScene: Spawned " + mobType + " at (" + spawnX + ", " + spawnY + ")");
+                    }
+                }
                 break;
 
             case PLAY_SOUND:
@@ -1367,6 +1389,30 @@ public class GameScene implements Scene {
      */
     public Camera getCamera() {
         return camera;
+    }
+
+    /**
+     * Creates a sprite mob entity for button-triggered spawns.
+     *
+     * @param mobType The type of mob to spawn (e.g., "bear", "wolf", "zombie")
+     * @param x Spawn X position
+     * @param y Spawn Y position
+     * @return A SpriteMobEntity instance, or null if type is unknown
+     */
+    private SpriteMobEntity createSpawnedMob(String mobType, int x, int y) {
+        if (mobType == null) return null;
+
+        String type = mobType.toLowerCase();
+
+        // Try to create a sprite-based mob
+        String spriteDir = "assets/mobs/" + type;
+
+        // Create mob (body type is auto-detected from sprite directory)
+        SpriteMobEntity mob = new SpriteMobEntity(x, y, spriteDir);
+        mob.setGroundY(levelData.groundY);
+
+        System.out.println("GameScene: Created spawned " + type + " mob at (" + x + ", " + y + ")");
+        return mob;
     }
 
     /**
