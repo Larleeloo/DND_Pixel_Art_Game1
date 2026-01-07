@@ -1,0 +1,159 @@
+{
+  "name": "Loot Game - Secret Room",
+  "description": "A secret room within the Loot Game with a bear-spawning button",
+
+  "useSpriteAnimation": true,
+  "spriteAnimationDir": "assets/textures/sprite_player",
+
+  "playerSpawnX": 200,
+  "playerSpawnY": 650,
+
+  "levelWidth": 1920,
+  "levelHeight": 1080,
+  "groundY": 750,
+
+  "scrollingEnabled": false,
+
+  "nightMode": true,
+  "ambientLightLevel": 0.3,
+  "playerLightRadius": 300,
+  "playerLightIntensity": 0.9,
+
+  "platforms": [],
+  "triggers": [],
+
+  "blocks": [
+    {"_comment": "Floor - stone bricks"},
+    {"x": 0, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 1, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 2, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 3, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 4, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 5, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 6, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 7, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 8, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 9, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 10, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 11, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 12, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 13, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 14, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 15, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 16, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 17, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 18, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 19, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 20, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 21, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 22, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 23, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 24, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 25, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 26, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 27, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 28, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 11, "blockType": "stone_brick", "useGridCoords": true},
+
+    {"_comment": "Left wall"},
+    {"x": 0, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 1, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 2, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 3, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 4, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 5, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 6, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 7, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 8, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 9, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 0, "y": 10, "blockType": "stone_brick", "useGridCoords": true},
+
+    {"_comment": "Right wall"},
+    {"x": 29, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 1, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 2, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 3, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 4, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 5, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 6, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 7, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 8, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 9, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 29, "y": 10, "blockType": "stone_brick", "useGridCoords": true},
+
+    {"_comment": "Ceiling"},
+    {"x": 1, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 2, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 3, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 4, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 5, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 6, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 7, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 8, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 9, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 10, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 11, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 12, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 13, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 14, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 15, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 16, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 17, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 18, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 19, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 20, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 21, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 22, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 23, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 24, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 25, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 26, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 27, "y": 0, "blockType": "stone_brick", "useGridCoords": true},
+    {"x": 28, "y": 0, "blockType": "stone_brick", "useGridCoords": true}
+  ],
+
+  "items": [],
+
+  "mobs": [],
+
+  "lightSources": [
+    {"x": 960, "y": 400, "lightType": "torch", "radius": 350, "intensity": 0.8},
+    {"x": 200, "y": 600, "lightType": "torch", "radius": 200, "intensity": 0.6},
+    {"x": 1700, "y": 600, "lightType": "torch", "radius": 200, "intensity": 0.6}
+  ],
+
+  "parallaxEnabled": false,
+  "parallaxLayers": [],
+
+  "doors": [
+    {
+      "_comment": "Exit door back to Loot Game",
+      "x": 100,
+      "y": 622,
+      "width": 64,
+      "height": 128,
+      "texturePath": "assets/doors/iron_door.gif",
+      "linkId": "exit_door",
+      "actionType": "level_transition",
+      "actionTarget": "scene:lootGame"
+    }
+  ],
+
+  "buttons": [
+    {
+      "_comment": "Bear spawn button in center",
+      "x": 944,
+      "y": 734,
+      "width": 32,
+      "height": 16,
+      "texturePath": "assets/buttons/stone_button.gif",
+      "linkId": "bear_spawn_button",
+      "buttonType": "toggle",
+      "activatedByPlayer": true,
+      "activatedByMobs": false,
+      "requiresInteraction": true,
+      "actionType": "spawn_entity",
+      "actionTarget": "bear"
+    }
+  ]
+}
