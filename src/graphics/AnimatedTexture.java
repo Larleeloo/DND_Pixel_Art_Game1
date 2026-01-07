@@ -351,4 +351,27 @@ public class AnimatedTexture {
     public BufferedImage getStaticImage() {
         return frames.get(0);
     }
+
+    /**
+     * Calculates the scale factor needed to render this texture at a target display size.
+     * This allows higher-resolution textures (32x32, 48x48, etc.) to appear at the
+     * same in-game size as lower-resolution textures (16x16).
+     *
+     * @param targetSize The desired display size (e.g., 16 for standard item size)
+     * @return Scale factor (1.0 for matching size, 0.5 for 2x texture, etc.)
+     */
+    public double getScaleFactorForSize(int targetSize) {
+        if (width <= 0) return 1.0;
+        return (double) targetSize / width;
+    }
+
+    /**
+     * Gets the scale factor relative to the standard 16x16 base size.
+     * Convenience method for common item rendering.
+     *
+     * @return Scale factor relative to 16x16 base (1.0 for 16x16, 0.5 for 32x32, etc.)
+     */
+    public double getBaseScaleFactor() {
+        return getScaleFactorForSize(16);
+    }
 }
