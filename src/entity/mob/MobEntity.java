@@ -684,10 +684,10 @@ public abstract class MobEntity extends Entity {
                             posX = collidedBlockBounds.x + collidedBlockBounds.width + hitboxWidth / 2 + 1;
                         }
                     } else {
-                        // Mob-to-mob collision: just stop movement, let EntityPhysics handle separation
-                        velocityX = 0;
+                        // Mob-to-mob collision: skip this step's movement but don't zero velocity
+                        // AI will keep trying to move, EntityPhysics handles separation
                         stepX = 0;
-                        // Don't change position or trigger jumping - avoid teleportation and infinite jumps
+                        // Don't change position or velocity - mobs should keep trying to move
                     }
                 }
             } else if (stepX != 0) {
