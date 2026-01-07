@@ -706,22 +706,34 @@ public abstract class MobEntity extends Entity {
 
                 boolean yCollision = false;
                 double landingY = groundY;
+                int mobCurrentBottom = (int)posY + hitboxOffsetY + hitboxHeight;
+                int mobCurrentTop = (int)posY + hitboxOffsetY;
 
                 for (Entity e : entities) {
                     if (e instanceof BlockEntity) {
                         BlockEntity block = (BlockEntity) e;
                         if (block.isSolid() && !block.isBroken() && futureYBounds.intersects(block.getBounds())) {
                             Rectangle blockBounds = block.getBounds();
-                            yCollision = true;
+                            int blockTop = blockBounds.y;
+                            int blockBottom = blockBounds.y + blockBounds.height;
 
                             if (velocityY > 0) {
-                                // Falling down - land on top of block
-                                landingY = Math.min(landingY, blockBounds.y);
+                                // Falling down - only land on blocks whose top is below our current bottom
+                                // (blocks we're falling onto, not blocks we're inside of)
+                                if (blockTop >= mobCurrentBottom - 4) {
+                                    yCollision = true;
+                                    landingY = Math.min(landingY, blockTop);
+                                }
                             } else if (velocityY < 0) {
-                                // Jumping up - hit head on bottom of block
-                                newY = blockBounds.y + blockBounds.height - hitboxOffsetY;
-                                velocityY = 0;
-                                stepY = 0;
+                                // Jumping up - only hit head on blocks whose bottom is above our current top
+                                // (actual ceilings, not the block we're standing on)
+                                if (blockBottom <= mobCurrentTop + 4) {
+                                    yCollision = true;
+                                    // Stop upward movement at the ceiling
+                                    newY = blockBottom - hitboxOffsetY;
+                                    velocityY = 0;
+                                    stepY = 0;
+                                }
                             }
                         }
                     }
