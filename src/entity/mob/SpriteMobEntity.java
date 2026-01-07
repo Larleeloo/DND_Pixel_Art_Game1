@@ -64,6 +64,10 @@ public class SpriteMobEntity extends MobEntity {
     protected double doubleJumpStrength = -8;
     protected double tripleJumpStrength = -7;
 
+    // Track if mob is currently jumping/falling for animations
+    protected boolean isJumping = false;
+    protected boolean isFalling = false;
+
     // Sprint system
     protected boolean isSprinting = false;
     protected double sprintSpeed = 0;      // Set by subclasses
@@ -727,6 +731,39 @@ public class SpriteMobEntity extends MobEntity {
         this.sprintSpeed = speed;
     }
 
+    /**
+     * Override to implement multi-jump support for sprite mobs.
+     * Tracks jump number for proper animation selection.
+     */
+    @Override
+    protected void tryObstacleJump() {
+        // Can jump if blocked, on ground (or have remaining air jumps), and cooldown expired
+        if (blockedByObstacle && obstacleJumpCooldown <= 0) {
+            if (onGround) {
+                // First jump from ground
+                velocityY = jumpStrength;
+                onGround = false;
+                currentJumpNumber = 1;
+                jumpsRemaining = maxJumps - 1;
+                obstacleJumpCooldown = OBSTACLE_JUMP_COOLDOWN;
+            } else if (jumpsRemaining > 0 && maxJumps > 1) {
+                // Air jump (double/triple jump)
+                currentJumpNumber++;
+                jumpsRemaining--;
+
+                // Use appropriate jump strength for multi-jumps
+                if (currentJumpNumber == 2) {
+                    velocityY = doubleJumpStrength;
+                } else if (currentJumpNumber >= 3) {
+                    velocityY = tripleJumpStrength;
+                }
+                obstacleJumpCooldown = OBSTACLE_JUMP_COOLDOWN;
+            }
+        }
+        // Reset blocked flag each frame (will be set again if still blocked)
+        blockedByObstacle = false;
+    }
+
     // ==================== Inventory and Equipment ====================
 
     /**
@@ -1286,17 +1323,39 @@ public class SpriteMobEntity extends MobEntity {
         // Determine if sprinting (when chasing and has sprint speed set)
         isSprinting = (currentState == AIState.CHASE && sprintSpeed > 0);
 
+        // Track jump/fall state before physics update
+        boolean wasOnGround = onGround;
+
         // Update sprite animation
         spriteAnimation.update(elapsed);
 
         // Update status effects (burning, frozen, etc.)
         updateStatusEffect(deltaTime);
 
-        // Update animation state based on AI state
-        updateAnimationFromAIState();
-
         // Call parent update for AI and physics
         super.update(deltaTime, entities);
+
+        // Update jumping/falling state after physics
+        if (!onGround) {
+            if (velocityY < 0) {
+                isJumping = true;
+                isFalling = false;
+            } else {
+                isJumping = false;
+                isFalling = true;
+            }
+        } else {
+            // Landed - reset jump state
+            if (wasOnGround == false) {
+                jumpsRemaining = maxJumps;
+                currentJumpNumber = 0;
+            }
+            isJumping = false;
+            isFalling = false;
+        }
+
+        // Update animation state based on AI state (after physics so we know if jumping)
+        updateAnimationFromAIState();
 
         // Update projectiles
         updateProjectiles(deltaTime, entities);
@@ -1429,6 +1488,22 @@ public class SpriteMobEntity extends MobEntity {
         // Priority: eating > firing > special states
         if (isEating) {
             setAnimationState("eat");
+            return;
+        }
+
+        // Jumping/falling takes priority over ground animations
+        if (isJumping) {
+            if (currentJumpNumber == 2 && spriteAnimation.hasAnimation(SpriteAnimation.ActionState.DOUBLE_JUMP)) {
+                setAnimationState("double_jump");
+            } else if (currentJumpNumber == 3 && spriteAnimation.hasAnimation(SpriteAnimation.ActionState.TRIPLE_JUMP)) {
+                setAnimationState("triple_jump");
+            } else {
+                setAnimationState("jump");
+            }
+            return;
+        }
+        if (isFalling) {
+            setAnimationState("fall");
             return;
         }
 
