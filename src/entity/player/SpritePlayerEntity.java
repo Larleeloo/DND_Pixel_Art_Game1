@@ -2055,7 +2055,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             rotation = facingRight ? Math.toRadians(-15) : Math.toRadians(15);
         }
 
-        // Draw the item
+        // Draw the item - use nearest-neighbor interpolation to preserve pixel art quality
+        // This supports variable texture sizes (16x16, 32x32, etc.) while maintaining
+        // consistent display size. Higher resolution textures provide more detail.
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
         if (!facingRight) {
             // Flip horizontally for left-facing
             g2d.translate(itemX + itemSize / 2.0, itemY + itemSize / 2.0);

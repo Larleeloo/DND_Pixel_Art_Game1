@@ -74,7 +74,11 @@ public class ItemEntity extends Entity {
     private boolean isAnimated = false;
 
     public static final int SCALE = 3;
-    private static final int ICON_SIZE = 16;  // Base icon size
+    private static final int BASE_ICON_SIZE = 16;  // Reference icon size for scaling
+
+    // Original texture dimensions (preserved from GIF/PNG source)
+    private int textureWidth = BASE_ICON_SIZE;
+    private int textureHeight = BASE_ICON_SIZE;
 
     public ItemEntity(int x, int y, String spritePath, String itemName, String itemType) {
         super(x, y);
@@ -90,13 +94,18 @@ public class ItemEntity extends Entity {
         AssetLoader.ImageAsset asset = AssetLoader.load(spritePath);
         if (asset.staticImage != null && asset.width > 1) {
             this.sprite = asset.staticImage;
-            this.width = Math.max(1, asset.width) * SCALE;
-            this.height = Math.max(1, asset.height) * SCALE;
+            this.textureWidth = asset.width;
+            this.textureHeight = asset.height;
+            // Display size remains constant regardless of texture resolution
+            this.width = BASE_ICON_SIZE * SCALE;
+            this.height = BASE_ICON_SIZE * SCALE;
         } else {
             // Generate a colored icon based on item type
             this.sprite = generateItemIcon(itemType, itemName);
-            this.width = ICON_SIZE * SCALE;
-            this.height = ICON_SIZE * SCALE;
+            this.textureWidth = BASE_ICON_SIZE;
+            this.textureHeight = BASE_ICON_SIZE;
+            this.width = BASE_ICON_SIZE * SCALE;
+            this.height = BASE_ICON_SIZE * SCALE;
         }
     }
 
@@ -126,8 +135,9 @@ public class ItemEntity extends Entity {
 
         // Try to load sprite from assets, fall back to procedural generation
         this.sprite = loadOrGenerateSprite(itemId, itemType, itemName);
-        this.width = ICON_SIZE * SCALE;
-        this.height = ICON_SIZE * SCALE;
+        // Display size remains constant regardless of texture resolution
+        this.width = BASE_ICON_SIZE * SCALE;
+        this.height = BASE_ICON_SIZE * SCALE;
     }
 
     /**
@@ -181,7 +191,10 @@ public class ItemEntity extends Entity {
                     if (file.exists()) {
                         BufferedImage loaded = ImageIO.read(file);
                         if (loaded != null) {
-                            return scaleToIconSize(loaded);
+                            // Preserve original texture dimensions for PNG files too
+                            this.textureWidth = loaded.getWidth();
+                            this.textureHeight = loaded.getHeight();
+                            return loaded;
                         }
                     }
                 } catch (Exception e) {
@@ -190,7 +203,9 @@ public class ItemEntity extends Entity {
             }
         }
 
-        // Fall back to procedural generation
+        // Fall back to procedural generation (always BASE_ICON_SIZE)
+        this.textureWidth = BASE_ICON_SIZE;
+        this.textureHeight = BASE_ICON_SIZE;
         return generateItemIcon(type, name);
     }
 
@@ -275,12 +290,13 @@ public class ItemEntity extends Entity {
                 masterG.drawImage(frameImage, frameX, frameY, null);
 
                 // Create a copy of the current composited frame (full 32-bit ARGB)
+                // Preserve original texture dimensions - do NOT scale here
                 BufferedImage compositedFrame = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = compositedFrame.createGraphics();
                 g.drawImage(master, 0, 0, null);
                 g.dispose();
 
-                frames.add(scaleToIconSize(compositedFrame));
+                frames.add(compositedFrame);
                 delays.add(frameDelay);
 
                 // Handle disposal method for next frame
@@ -305,6 +321,12 @@ public class ItemEntity extends Entity {
             // Store the frame delays
             this.frameDelays = delays;
 
+            // Store original texture dimensions from the first frame
+            if (!frames.isEmpty()) {
+                this.textureWidth = frames.get(0).getWidth();
+                this.textureHeight = frames.get(0).getHeight();
+            }
+
         } catch (Exception e) {
             // Return whatever frames we got, use default timing
             if (frames.isEmpty()) return null;
@@ -314,16 +336,17 @@ public class ItemEntity extends Entity {
     }
 
     /**
-     * Scales an image to ICON_SIZE if needed.
+     * Scales an image to BASE_ICON_SIZE if needed (used only for PNG fallback loading).
+     * Note: GIF textures preserve their original dimensions for higher-res support.
      */
-    private BufferedImage scaleToIconSize(BufferedImage img) {
-        if (img.getWidth() == ICON_SIZE && img.getHeight() == ICON_SIZE) {
+    private BufferedImage scaleToBaseSize(BufferedImage img) {
+        if (img.getWidth() == BASE_ICON_SIZE && img.getHeight() == BASE_ICON_SIZE) {
             return img;
         }
-        BufferedImage scaled = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage scaled = new BufferedImage(BASE_ICON_SIZE, BASE_ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = scaled.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-        g.drawImage(img, 0, 0, ICON_SIZE, ICON_SIZE, null);
+        g.drawImage(img, 0, 0, BASE_ICON_SIZE, BASE_ICON_SIZE, null);
         g.dispose();
         return scaled;
     }
@@ -354,7 +377,7 @@ public class ItemEntity extends Entity {
      * Generates a colored icon based on item type with unique variations based on name.
      */
     private BufferedImage generateItemIcon(String type, String name) {
-        BufferedImage icon = new BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage icon = new BufferedImage(BASE_ICON_SIZE, BASE_ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = icon.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -1094,9 +1117,15 @@ public class ItemEntity extends Entity {
             g2d.fillOval(x - 5, y + (int)bobOffset - 5, width + 10, height + 10);
 
             // Draw sprite (use tinted version if color mask is applied)
+            // Use nearest-neighbor interpolation to preserve pixel art quality
+            // This supports variable texture sizes (16x16, 32x32, etc.) while maintaining
+            // consistent display size (BASE_ICON_SIZE * SCALE)
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
             Image spriteToDraw = (hasColorMask && tintedSprite != null) ? tintedSprite : sprite;
             if (spriteToDraw != null) {
-                g.drawImage(spriteToDraw, x, y + (int)bobOffset, width, height, null);
+                g2d.drawImage(spriteToDraw, x, y + (int)bobOffset, width, height, null);
             } else {
                 // Fallback
                 g.setColor(Color.YELLOW);
@@ -1155,6 +1184,48 @@ public class ItemEntity extends Entity {
         // Update animation frame when sprite is accessed (for inventory display)
         updateAnimation();
         return sprite;
+    }
+
+    /**
+     * Gets the original texture width (before any display scaling).
+     * This allows textures to be any multiple of 16 (16, 32, 48, etc.)
+     * while maintaining consistent in-game display size.
+     *
+     * @return Texture width in pixels
+     */
+    public int getTextureWidth() {
+        return textureWidth;
+    }
+
+    /**
+     * Gets the original texture height (before any display scaling).
+     *
+     * @return Texture height in pixels
+     */
+    public int getTextureHeight() {
+        return textureHeight;
+    }
+
+    /**
+     * Gets the base icon size used as reference for scaling calculations.
+     * A 32x32 texture should render at the same display size as a 16x16 texture.
+     *
+     * @return Reference size (16 pixels)
+     */
+    public static int getBaseIconSize() {
+        return BASE_ICON_SIZE;
+    }
+
+    /**
+     * Calculates the scale factor to render this texture at the standard display size.
+     * Higher resolution textures (32x32, 48x48) will be scaled down to match
+     * the display size of a 16x16 texture.
+     *
+     * @return Scale factor (1.0 for 16x16, 0.5 for 32x32, etc.)
+     */
+    public double getTextureScaleFactor() {
+        if (textureWidth <= 0) return 1.0;
+        return (double) BASE_ICON_SIZE / textureWidth;
     }
 
     /**

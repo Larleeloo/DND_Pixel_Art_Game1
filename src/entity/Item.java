@@ -362,6 +362,8 @@ public class Item {
 
     /**
      * Draws the held item overlay.
+     * Supports variable texture sizes (16x16, 32x32, etc.) - textures are scaled
+     * to the specified display size while preserving pixel art quality.
      */
     public void drawHeld(Graphics g, int x, int y, int width, int height,
                          boolean facingRight, SpriteAnimation.ActionState state) {
@@ -372,6 +374,10 @@ public class Item {
         if (frame == null) return;
 
         Graphics2D g2d = (Graphics2D) g;
+        // Use nearest-neighbor interpolation to preserve pixel art quality
+        g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                            java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
         if (facingRight) {
             g2d.drawImage(frame, x, y, width, height, null);
         } else {
@@ -502,6 +508,8 @@ public class Item {
 
     /**
      * Draws the current triggered animation.
+     * Supports variable texture sizes (16x16, 32x32, etc.) - textures are scaled
+     * to the specified display size while preserving pixel art quality.
      *
      * @param g Graphics context
      * @param x X position
@@ -518,6 +526,10 @@ public class Item {
         if (frame == null) return;
 
         Graphics2D g2d = (Graphics2D) g;
+        // Use nearest-neighbor interpolation to preserve pixel art quality
+        g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                            java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
         if (facingRight) {
             g2d.drawImage(frame, x, y, width, height, null);
         } else {
