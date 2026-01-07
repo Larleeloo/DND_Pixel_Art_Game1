@@ -16,6 +16,8 @@ import ui.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Scene implementation for actual gameplay.
@@ -28,6 +30,10 @@ public class GameScene implements Scene {
     private EntityManager entityManager;
     private ArrayList<UIButton> buttons;
     private ArrayList<TriggerEntity> triggers;
+    private ArrayList<DoorEntity> doors;
+    private ArrayList<ButtonEntity> interactiveButtons;
+    private Map<String, DoorEntity> doorsByLinkId;
+    private Map<String, ButtonEntity> buttonsByLinkId;
     private PlayerBase player;
     private boolean initialized;
 
@@ -100,6 +106,10 @@ public class GameScene implements Scene {
             entityManager = new EntityManager();
             buttons = new ArrayList<>();
             triggers = new ArrayList<>();
+            doors = new ArrayList<>();
+            interactiveButtons = new ArrayList<>();
+            doorsByLinkId = new HashMap<>();
+            buttonsByLinkId = new HashMap<>();
 
             // Load level data if we have a path
             if (levelPath != null && levelData == null) {
@@ -139,6 +149,10 @@ public class GameScene implements Scene {
             if (entityManager == null) entityManager = new EntityManager();
             if (buttons == null) buttons = new ArrayList<>();
             if (triggers == null) triggers = new ArrayList<>();
+            if (doors == null) doors = new ArrayList<>();
+            if (interactiveButtons == null) interactiveButtons = new ArrayList<>();
+            if (doorsByLinkId == null) doorsByLinkId = new HashMap<>();
+            if (buttonsByLinkId == null) buttonsByLinkId = new HashMap<>();
 
             // Mark as initialized anyway so we can at least draw something
             initialized = true;
@@ -250,6 +264,79 @@ public class GameScene implements Scene {
             }
         }
         System.out.println("GameScene: Added " + mobsAdded + " mobs to level");
+
+        // Add doors (interactive door entities)
+        int doorsAdded = 0;
+        for (LevelData.DoorData d : levelData.doors) {
+            DoorEntity door = new DoorEntity(d.x, d.y, d.width, d.height, d.texturePath, d.linkId);
+
+            // Configure door properties
+            if (d.startsOpen) {
+                door.setOpen();
+            }
+            if (d.locked) {
+                door.setLocked(true);
+                door.setRequiredKeyId(d.keyItemId);
+            }
+            if (d.hasAction()) {
+                door.setActionType(DoorEntity.ActionType.valueOf(d.actionType.toUpperCase()));
+                door.setActionTarget(d.actionTarget);
+            }
+            door.setAnimationSpeed(d.animationSpeed);
+
+            // Track door for interaction
+            doors.add(door);
+            if (d.linkId != null && !d.linkId.isEmpty()) {
+                doorsByLinkId.put(d.linkId, door);
+            }
+            entityManager.addEntity(door);
+            doorsAdded++;
+        }
+        System.out.println("GameScene: Added " + doorsAdded + " doors to level");
+
+        // Add buttons (interactive button/switch entities)
+        int buttonsAdded = 0;
+        for (LevelData.ButtonData b : levelData.buttons) {
+            ButtonEntity button = new ButtonEntity(b.x, b.y, b.width, b.height, b.texturePath, b.linkId);
+
+            // Configure button properties
+            try {
+                button.setButtonType(ButtonEntity.ButtonType.valueOf(b.buttonType.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                System.err.println("GameScene: Unknown button type: " + b.buttonType);
+            }
+            button.setActivatedByPlayer(b.activatedByPlayer);
+            button.setActivatedByMobs(b.activatedByMobs);
+            button.setRequiresInteraction(b.requiresInteraction);
+            button.setTimedDuration(b.timedDuration);
+            button.setAnimationSpeed(b.animationSpeed);
+
+            // Set up linked doors
+            if (b.hasLinkedDoors()) {
+                for (String doorId : b.linkedDoorIds) {
+                    button.addLinkedDoor(doorId);
+                }
+            }
+
+            // Configure action if specified
+            if (b.hasAction()) {
+                try {
+                    button.setActionType(ButtonEntity.ActionType.valueOf(b.actionType.toUpperCase()));
+                    button.setActionTarget(b.actionTarget);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("GameScene: Unknown button action type: " + b.actionType);
+                }
+            }
+
+            // Track button for interaction
+            interactiveButtons.add(button);
+            if (b.linkId != null && !b.linkId.isEmpty()) {
+                buttonsByLinkId.put(b.linkId, button);
+            }
+            entityManager.addEntity(button);
+            buttonsAdded++;
+        }
+        System.out.println("GameScene: Added " + buttonsAdded + " buttons to level");
 
         // Add player - choose animation system based on level settings
         // Priority: useSpriteAnimation > useBoneAnimation > default (PlayerEntity)
@@ -579,6 +666,9 @@ public class GameScene implements Scene {
             }
         }
 
+        // Handle door and button interactions
+        handleDoorButtonInteractions(input);
+
         // Update lighting system
         if (lightingSystem != null) {
             lightingSystem.update(deltaTime);
@@ -667,6 +757,271 @@ public class GameScene implements Scene {
                 entityManager.addEntity(droppedItem);
             }
         }
+    }
+
+    /**
+     * Handles door and button interactions.
+     * Includes player E key interactions, button-to-door linking, and pressure plate mechanics.
+     */
+    private void handleDoorButtonInteractions(InputManager input) {
+        if (player == null) return;
+
+        Rectangle playerBounds = player.getBounds();
+
+        // Update door proximity detection
+        for (DoorEntity door : doors) {
+            boolean wasNearby = door.isPlayerNearby();
+            boolean isNearby = door.isInInteractionZone(playerBounds);
+            door.setPlayerNearby(isNearby);
+        }
+
+        // Handle E key interactions with doors and buttons
+        if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+            // Try to interact with nearby doors
+            for (DoorEntity door : doors) {
+                if (door.isPlayerNearby()) {
+                    // Check if door is locked and player has key
+                    if (door.isLocked()) {
+                        String keyId = door.getRequiredKeyId();
+                        if (playerHasKey(keyId)) {
+                            door.tryUnlock(keyId);
+                            removeKeyFromInventory(keyId);
+                            door.toggle();
+                            executeDoorAction(door);
+                        } else {
+                            System.out.println("GameScene: Door requires key: " + keyId);
+                        }
+                    } else {
+                        door.toggle();
+                        executeDoorAction(door);
+                    }
+                    break;  // Only interact with one door at a time
+                }
+            }
+
+            // Try to interact with nearby buttons (that require interaction)
+            for (ButtonEntity button : interactiveButtons) {
+                if (button.requiresInteraction() && button.isInActivationZone(playerBounds)) {
+                    if (button.activate(true)) {
+                        handleButtonActivation(button);
+                    }
+                    break;  // Only interact with one button at a time
+                }
+            }
+        }
+
+        // Handle pressure plate (non-interaction) buttons
+        for (ButtonEntity button : interactiveButtons) {
+            if (!button.requiresInteraction()) {
+                boolean wasOnButton = button.isActivated();
+                boolean isOnButton = button.isEntityOnButton(playerBounds);
+
+                if (isOnButton && !wasOnButton) {
+                    button.onEntityEnter(true);
+                    if (button.isActivated()) {
+                        handleButtonActivation(button);
+                    }
+                } else if (!isOnButton && wasOnButton) {
+                    button.onEntityExit();
+                    if (!button.isActivated()) {
+                        handleButtonDeactivation(button);
+                    }
+                }
+            }
+        }
+
+        // Check if mobs activate pressure plates
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity instanceof MobEntity) {
+                MobEntity mob = (MobEntity) entity;
+                Rectangle mobBounds = mob.getBounds();
+
+                for (ButtonEntity button : interactiveButtons) {
+                    if (!button.requiresInteraction() && button.isActivatedByMobs()) {
+                        if (button.isEntityOnButton(mobBounds)) {
+                            if (!button.isActivated()) {
+                                button.onEntityEnter(false);
+                                if (button.isActivated()) {
+                                    handleButtonActivation(button);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles button activation - triggers linked doors and actions.
+     */
+    private void handleButtonActivation(ButtonEntity button) {
+        System.out.println("GameScene: Button " + button.getLinkId() + " activated");
+
+        // Toggle linked doors
+        for (String doorId : button.getLinkedDoorIds()) {
+            DoorEntity linkedDoor = doorsByLinkId.get(doorId);
+            if (linkedDoor != null) {
+                linkedDoor.toggle();
+                System.out.println("GameScene: Toggled door " + doorId);
+            }
+        }
+
+        // Execute button action if configured
+        executeButtonAction(button);
+    }
+
+    /**
+     * Handles button deactivation (for momentary buttons).
+     */
+    private void handleButtonDeactivation(ButtonEntity button) {
+        System.out.println("GameScene: Button " + button.getLinkId() + " deactivated");
+
+        // For momentary buttons, close linked doors when released
+        if (button.getButtonType() == ButtonEntity.ButtonType.MOMENTARY) {
+            for (String doorId : button.getLinkedDoorIds()) {
+                DoorEntity linkedDoor = doorsByLinkId.get(doorId);
+                if (linkedDoor != null && linkedDoor.isOpen()) {
+                    linkedDoor.close();
+                }
+            }
+        }
+    }
+
+    /**
+     * Executes door-specific actions (level transitions, events, etc.).
+     */
+    private void executeDoorAction(DoorEntity door) {
+        if (door.getActionType() == DoorEntity.ActionType.NONE) return;
+
+        switch (door.getActionType()) {
+            case LEVEL_TRANSITION:
+                String target = door.getActionTarget();
+                if (target != null && !target.isEmpty()) {
+                    SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                }
+                break;
+
+            case EVENT:
+                System.out.println("GameScene: Door event triggered: " + door.getActionTarget());
+                // Custom event handling can be added here
+                break;
+
+            case TELEPORT:
+                // Parse coordinates from actionTarget (format: "x,y")
+                try {
+                    String[] coords = door.getActionTarget().split(",");
+                    if (coords.length >= 2) {
+                        int teleportX = Integer.parseInt(coords[0].trim());
+                        int teleportY = Integer.parseInt(coords[1].trim());
+                        player.getBounds().setLocation(teleportX, teleportY);
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("GameScene: Invalid teleport coordinates: " + door.getActionTarget());
+                }
+                break;
+
+            case SPAWN_ENTITY:
+                System.out.println("GameScene: Spawn entity triggered: " + door.getActionTarget());
+                // Entity spawning can be implemented here
+                break;
+        }
+    }
+
+    /**
+     * Executes button-specific actions.
+     */
+    private void executeButtonAction(ButtonEntity button) {
+        if (button.getActionType() == ButtonEntity.ActionType.NONE) return;
+
+        switch (button.getActionType()) {
+            case LEVEL_TRANSITION:
+                String target = button.getActionTarget();
+                if (target != null && !target.isEmpty()) {
+                    SceneManager.getInstance().loadLevel(target, SceneManager.TRANSITION_FADE);
+                }
+                break;
+
+            case EVENT:
+                System.out.println("GameScene: Button event triggered: " + button.getActionTarget());
+                break;
+
+            case SPAWN_ENTITY:
+                System.out.println("GameScene: Button spawn entity triggered: " + button.getActionTarget());
+                break;
+
+            case PLAY_SOUND:
+                AudioManager audio = SceneManager.getInstance().getAudioManager();
+                if (audio != null && button.getActionTarget() != null) {
+                    audio.playSoundFromPath(button.getActionTarget());
+                }
+                break;
+        }
+    }
+
+    /**
+     * Checks if the player has a specific key item in their inventory.
+     */
+    private boolean playerHasKey(String keyId) {
+        if (keyId == null || keyId.isEmpty()) return true;
+
+        Inventory inventory = player.getInventory();
+        int originalSlot = inventory.getSelectedSlot();
+
+        for (int i = 0; i < inventory.getMaxSlots(); i++) {
+            inventory.setSelectedSlot(i);
+            ItemEntity item = inventory.getHeldItem();
+            if (item != null) {
+                Item linkedItem = item.getLinkedItem();
+                if (linkedItem != null && keyId.equals(linkedItem.getName())) {
+                    inventory.setSelectedSlot(originalSlot);
+                    return true;
+                }
+                // Also check by item name as fallback
+                if (item.getItemName() != null &&
+                    item.getItemName().toLowerCase().contains(keyId.toLowerCase())) {
+                    inventory.setSelectedSlot(originalSlot);
+                    return true;
+                }
+            }
+        }
+
+        inventory.setSelectedSlot(originalSlot);
+        return false;
+    }
+
+    /**
+     * Removes a key item from the player's inventory after use.
+     */
+    private void removeKeyFromInventory(String keyId) {
+        if (keyId == null || keyId.isEmpty()) return;
+
+        Inventory inventory = player.getInventory();
+        int originalSlot = inventory.getSelectedSlot();
+
+        for (int i = 0; i < inventory.getMaxSlots(); i++) {
+            inventory.setSelectedSlot(i);
+            ItemEntity item = inventory.getHeldItem();
+            if (item != null) {
+                Item linkedItem = item.getLinkedItem();
+                boolean matches = false;
+
+                if (linkedItem != null && keyId.equals(linkedItem.getName())) {
+                    matches = true;
+                } else if (item.getItemName() != null &&
+                           item.getItemName().toLowerCase().contains(keyId.toLowerCase())) {
+                    matches = true;
+                }
+
+                if (matches) {
+                    inventory.removeItemAtSlot(i);
+                    System.out.println("GameScene: Used key: " + keyId);
+                    break;
+                }
+            }
+        }
+
+        inventory.setSelectedSlot(originalSlot);
     }
 
     @Override
@@ -927,6 +1282,10 @@ public class GameScene implements Scene {
         entityManager = null;
         buttons = null;
         triggers = null;
+        doors = null;
+        interactiveButtons = null;
+        doorsByLinkId = null;
+        buttonsByLinkId = null;
         player = null;
         levelData = null;
         camera = null;

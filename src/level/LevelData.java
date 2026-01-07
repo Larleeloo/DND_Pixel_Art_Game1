@@ -68,6 +68,8 @@ public class LevelData {
     public List<LightSourceData> lightSources;  // Static light sources in the level
     public List<ParallaxLayerData> parallaxLayers; // Parallax background layers
     public List<MobData> mobs;  // AI-controlled mobs (creatures/enemies)
+    public List<DoorData> doors;  // Interactive doors
+    public List<ButtonData> buttons;  // Interactive buttons/switches
 
     // Parallax settings
     public boolean parallaxEnabled = false;  // If true, use parallax background system
@@ -83,6 +85,8 @@ public class LevelData {
         lightSources = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
         mobs = new ArrayList<>();
+        doors = new ArrayList<>();
+        buttons = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -448,6 +452,97 @@ public class LevelData {
     }
 
     /**
+     * Data class for interactive door entities.
+     * Doors can be linked to buttons and trigger actions when used.
+     */
+    public static class DoorData {
+        public int x;
+        public int y;
+        public int width = 64;
+        public int height = 128;
+        public String texturePath = "assets/doors/wooden_door.gif";
+        public String linkId = "";              // ID for button linking
+        public boolean startsOpen = false;      // Initial state
+        public boolean locked = false;          // Whether door requires a key
+        public String keyItemId = "";           // Item ID of required key
+        public String actionType = "none";      // Action on use: none, level_transition, event, teleport
+        public String actionTarget = "";        // Target for action (level path, event name, etc.)
+        public float animationSpeed = 0.05f;    // Animation speed (0.0-1.0)
+
+        public DoorData() {}
+
+        public DoorData(int x, int y, String linkId) {
+            this.x = x;
+            this.y = y;
+            this.linkId = linkId;
+        }
+
+        public DoorData(int x, int y, int width, int height, String texturePath, String linkId) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.texturePath = texturePath;
+            this.linkId = linkId;
+        }
+
+        public boolean hasKey() {
+            return keyItemId != null && !keyItemId.isEmpty();
+        }
+
+        public boolean hasAction() {
+            return actionType != null && !actionType.equals("none") && !actionType.isEmpty();
+        }
+    }
+
+    /**
+     * Data class for interactive button/switch entities.
+     * Buttons can control doors and trigger actions.
+     */
+    public static class ButtonData {
+        public int x;
+        public int y;
+        public int width = 32;
+        public int height = 16;
+        public String texturePath = "assets/buttons/stone_button.gif";
+        public String linkId = "";                          // This button's ID
+        public String[] linkedDoorIds = new String[0];      // IDs of doors to control
+        public String buttonType = "toggle";                // toggle, momentary, one_shot, timed
+        public boolean activatedByPlayer = true;            // Can player activate
+        public boolean activatedByMobs = true;              // Can mobs activate
+        public boolean requiresInteraction = true;          // If false, acts as pressure plate
+        public int timedDuration = 3000;                    // Duration for timed buttons (ms)
+        public String actionType = "none";                  // Action: none, level_transition, event, spawn_entity
+        public String actionTarget = "";                    // Target for action
+        public float animationSpeed = 0.1f;                 // Animation speed
+
+        public ButtonData() {}
+
+        public ButtonData(int x, int y, String linkId) {
+            this.x = x;
+            this.y = y;
+            this.linkId = linkId;
+        }
+
+        public ButtonData(int x, int y, int width, int height, String texturePath, String linkId) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.texturePath = texturePath;
+            this.linkId = linkId;
+        }
+
+        public boolean hasLinkedDoors() {
+            return linkedDoorIds != null && linkedDoorIds.length > 0;
+        }
+
+        public boolean hasAction() {
+            return actionType != null && !actionType.equals("none") && !actionType.isEmpty();
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -748,6 +843,75 @@ public class LevelData {
             return this;
         }
 
+        /**
+         * Add a door at the specified position.
+         * @param x X position
+         * @param y Y position
+         * @param linkId ID for button linking
+         */
+        public Builder addDoor(int x, int y, String linkId) {
+            DoorData door = new DoorData(x, y, linkId);
+            data.doors.add(door);
+            return this;
+        }
+
+        /**
+         * Add a door with custom dimensions and texture.
+         */
+        public Builder addDoor(int x, int y, int width, int height, String texturePath, String linkId) {
+            DoorData door = new DoorData(x, y, width, height, texturePath, linkId);
+            data.doors.add(door);
+            return this;
+        }
+
+        /**
+         * Add a locked door that requires a key.
+         */
+        public Builder addLockedDoor(int x, int y, String linkId, String keyItemId) {
+            DoorData door = new DoorData(x, y, linkId);
+            door.locked = true;
+            door.keyItemId = keyItemId;
+            data.doors.add(door);
+            return this;
+        }
+
+        /**
+         * Add a button at the specified position.
+         * @param x X position
+         * @param y Y position
+         * @param linkId This button's ID
+         * @param linkedDoorIds IDs of doors to control
+         */
+        public Builder addButton(int x, int y, String linkId, String... linkedDoorIds) {
+            ButtonData button = new ButtonData(x, y, linkId);
+            button.linkedDoorIds = linkedDoorIds;
+            data.buttons.add(button);
+            return this;
+        }
+
+        /**
+         * Add a button with custom dimensions and texture.
+         */
+        public Builder addButton(int x, int y, int width, int height, String texturePath,
+                                String linkId, String... linkedDoorIds) {
+            ButtonData button = new ButtonData(x, y, width, height, texturePath, linkId);
+            button.linkedDoorIds = linkedDoorIds;
+            data.buttons.add(button);
+            return this;
+        }
+
+        /**
+         * Add a pressure plate (momentary button that activates on contact).
+         */
+        public Builder addPressurePlate(int x, int y, String linkId, String... linkedDoorIds) {
+            ButtonData button = new ButtonData(x, y, linkId);
+            button.linkedDoorIds = linkedDoorIds;
+            button.buttonType = "momentary";
+            button.requiresInteraction = false;
+            data.buttons.add(button);
+            return this;
+        }
+
         public LevelData build() {
             return data;
         }
@@ -762,6 +926,8 @@ public class LevelData {
                 ", triggers=" + triggers.size() +
                 ", blocks=" + blocks.size() +
                 ", mobs=" + mobs.size() +
+                ", doors=" + doors.size() +
+                ", buttons=" + buttons.size() +
                 '}';
     }
 }
