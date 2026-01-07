@@ -614,8 +614,8 @@ public abstract class MobEntity extends Entity {
                 );
 
                 boolean xCollision = false;
-                Entity collidedEntity = null;
-                Rectangle collidedBounds = null;
+                boolean isBlockCollision = false;
+                Rectangle collidedBlockBounds = null;
 
                 for (Entity e : entities) {
                     // Check collision with solid blocks
@@ -633,13 +633,14 @@ public abstract class MobEntity extends Entity {
                             boolean verticalOverlap = mobBottom > blockTop + bottomMargin && mobTop < blockBottom - topMargin;
                             if (verticalOverlap) {
                                 xCollision = true;
-                                collidedEntity = block;
-                                collidedBounds = blockBounds;
+                                isBlockCollision = true;
+                                collidedBlockBounds = blockBounds;
                                 break;
                             }
                         }
                     }
-                    // Check collision with other mobs (as obstacles)
+                    // Check collision with other mobs (soft collision - no snap, no jumping)
+                    // EntityPhysics handles mob-to-mob separation with push forces
                     else if (e instanceof MobEntity && e != this) {
                         MobEntity otherMob = (MobEntity) e;
                         // Don't collide with dead mobs
@@ -655,9 +656,9 @@ public abstract class MobEntity extends Entity {
                             // True side collision - verify vertical overlap
                             boolean verticalOverlap = mobBottom > otherTop + bottomMargin && mobTop < otherBottom - topMargin;
                             if (verticalOverlap) {
+                                // Soft collision with other mobs - just stop movement, don't snap or jump
                                 xCollision = true;
-                                collidedEntity = otherMob;
-                                collidedBounds = otherBounds;
+                                // Don't set isBlockCollision - we don't want to snap or trigger jumping
                                 break;
                             }
                         }
@@ -667,25 +668,26 @@ public abstract class MobEntity extends Entity {
                 if (!xCollision) {
                     posX = newX;
                 } else {
-                    // Flag that we hit a horizontal obstacle (for AI jumping)
-                    if (collidedEntity instanceof BlockEntity) {
-                        onHorizontalCollision((BlockEntity) collidedEntity);
-                    } else {
-                        // For non-block obstacles, still trigger jump behavior
-                        blockedByObstacle = true;
-                    }
+                    // Only trigger jump behavior and snap for block collisions
+                    if (isBlockCollision && collidedBlockBounds != null) {
+                        // Notify subclasses of block collision (sets blockedByObstacle flag)
+                        onHorizontalCollision(null);
 
-                    // Stop and snap to obstacle edge
-                    velocityX = 0;
-                    stepX = 0;
-                    if (collidedBounds != null) {
+                        // Stop and snap to block edge
+                        velocityX = 0;
+                        stepX = 0;
                         if (moveX > 0) {
-                            // Moving right, snap to left edge of obstacle
-                            posX = collidedBounds.x - hitboxWidth / 2 - 1;
+                            // Moving right, snap to left edge of block
+                            posX = collidedBlockBounds.x - hitboxWidth / 2 - 1;
                         } else {
-                            // Moving left, snap to right edge of obstacle
-                            posX = collidedBounds.x + collidedBounds.width + hitboxWidth / 2 + 1;
+                            // Moving left, snap to right edge of block
+                            posX = collidedBlockBounds.x + collidedBlockBounds.width + hitboxWidth / 2 + 1;
                         }
+                    } else {
+                        // Mob-to-mob collision: just stop movement, let EntityPhysics handle separation
+                        velocityX = 0;
+                        stepX = 0;
+                        // Don't change position or trigger jumping - avoid teleportation and infinite jumps
                     }
                 }
             } else if (stepX != 0) {
