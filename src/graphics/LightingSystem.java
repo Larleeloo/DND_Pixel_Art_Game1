@@ -192,6 +192,11 @@ public class LightingSystem {
             double innerRadius = light.getRadius() / renderScale;
             double outerRadius = light.getFalloffRadius() / renderScale;
 
+            // Ensure outerRadius is always at least as large as innerRadius
+            if (outerRadius < innerRadius) {
+                outerRadius = innerRadius * 2.0;
+            }
+
             // Skip if completely off screen
             if (screenX + outerRadius < 0 || screenX - outerRadius > bufferWidth ||
                 screenY + outerRadius < 0 || screenY - outerRadius > bufferHeight) {
