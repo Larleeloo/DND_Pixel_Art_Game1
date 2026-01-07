@@ -615,7 +615,6 @@ public abstract class MobEntity extends Entity {
 
                 boolean xCollision = false;
                 boolean isBlockCollision = false;
-                Rectangle collidedBlockBounds = null;
 
                 for (Entity e : entities) {
                     // Check collision with solid blocks
@@ -634,7 +633,6 @@ public abstract class MobEntity extends Entity {
                             if (verticalOverlap) {
                                 xCollision = true;
                                 isBlockCollision = true;
-                                collidedBlockBounds = blockBounds;
                                 break;
                             }
                         }
@@ -656,10 +654,19 @@ public abstract class MobEntity extends Entity {
                             // True side collision - verify vertical overlap
                             boolean verticalOverlap = mobBottom > otherTop + bottomMargin && mobTop < otherBottom - topMargin;
                             if (verticalOverlap) {
-                                // Soft collision with other mobs - just stop movement, don't snap or jump
-                                xCollision = true;
-                                // Don't set isBlockCollision - we don't want to snap or trigger jumping
-                                break;
+                                // Check if we're moving TOWARD or AWAY from the other mob
+                                double otherCenterX = otherBounds.x + otherBounds.width / 2.0;
+                                double ourCenterX = posX;
+                                boolean movingToward = (stepX > 0 && otherCenterX > ourCenterX) ||
+                                                       (stepX < 0 && otherCenterX < ourCenterX);
+
+                                // Only block if moving toward the other mob
+                                // Allow moving away so overlapping mobs can separate
+                                if (movingToward) {
+                                    xCollision = true;
+                                    // Don't set isBlockCollision - we don't want to trigger jumping
+                                    break;
+                                }
                             }
                         }
                     }
@@ -668,21 +675,15 @@ public abstract class MobEntity extends Entity {
                 if (!xCollision) {
                     posX = newX;
                 } else {
-                    // Only trigger jump behavior and snap for block collisions
-                    if (isBlockCollision && collidedBlockBounds != null) {
+                    // Only trigger jump behavior for block collisions
+                    if (isBlockCollision) {
                         // Notify subclasses of block collision (sets blockedByObstacle flag)
                         onHorizontalCollision(null);
 
-                        // Stop and snap to block edge
+                        // Stop movement but don't snap position (snapping can cause teleportation)
                         velocityX = 0;
                         stepX = 0;
-                        if (moveX > 0) {
-                            // Moving right, snap to left edge of block
-                            posX = collidedBlockBounds.x - hitboxWidth / 2 - 1;
-                        } else {
-                            // Moving left, snap to right edge of block
-                            posX = collidedBlockBounds.x + collidedBlockBounds.width + hitboxWidth / 2 + 1;
-                        }
+                        // Stay at current position - no snap to avoid teleporting through blocks
                     } else {
                         // Mob-to-mob collision: skip this step's movement but don't zero velocity
                         // AI will keep trying to move, EntityPhysics handles separation
