@@ -775,10 +775,21 @@ public class GameScene implements Scene {
             door.setPlayerNearby(isNearby);
         }
 
+        // Update button proximity detection (for interaction prompts)
+        for (ButtonEntity button : interactiveButtons) {
+            if (button.requiresInteraction()) {
+                boolean isNearby = button.isInActivationZone(playerBounds);
+                button.setPlayerNearby(isNearby);
+            }
+        }
+
         // Handle E key interactions with doors and buttons
         if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+            System.out.println("GameScene: E key pressed, checking " + doors.size() + " doors and " + interactiveButtons.size() + " buttons");
+
             // Try to interact with nearby doors
             for (DoorEntity door : doors) {
+                System.out.println("GameScene: Checking door " + door.getLinkId() + ", isPlayerNearby=" + door.isPlayerNearby());
                 if (door.isPlayerNearby()) {
                     // Check if door is locked and player has key
                     if (door.isLocked()) {
@@ -892,7 +903,13 @@ public class GameScene implements Scene {
      * Executes door-specific actions (level transitions, events, etc.).
      */
     private void executeDoorAction(DoorEntity door) {
-        if (door.getActionType() == DoorEntity.ActionType.NONE) return;
+        System.out.println("GameScene: executeDoorAction called for door " + door.getLinkId() +
+            ", actionType=" + door.getActionType() + ", actionTarget=" + door.getActionTarget());
+
+        if (door.getActionType() == DoorEntity.ActionType.NONE) {
+            System.out.println("GameScene: Door action is NONE, returning");
+            return;
+        }
 
         switch (door.getActionType()) {
             case LEVEL_TRANSITION:

@@ -101,6 +101,7 @@ public class ButtonEntity extends Entity {
     private Rectangle activationZone;
     private boolean entityOnButton;           // For pressure plate behavior
     private int entitiesOnButton;             // Count for multi-entity plates
+    private boolean playerNearby;             // For interaction prompt
 
     // Sound
     private boolean playPressSound;
@@ -142,6 +143,7 @@ public class ButtonEntity extends Entity {
         this.activationZone = new Rectangle(x - 8, y - 8, width + 16, height + 16);
         this.entityOnButton = false;
         this.entitiesOnButton = 0;
+        this.playerNearby = false;
         this.playPressSound = false;
         this.playReleaseSound = false;
 
@@ -454,10 +456,43 @@ public class ButtonEntity extends Entity {
             g2d.fillRect(x, y, width, height);
         }
 
+        // Draw interaction prompt if player is nearby and button requires interaction
+        if (playerNearby && requiresInteraction && state != ButtonState.DISABLED) {
+            drawInteractionPrompt(g2d);
+        }
+
         // Debug drawing
         if (System.getProperty("debug") != null) {
             drawDebug(g2d);
         }
+    }
+
+    /**
+     * Draws the "Press E" interaction prompt above the button.
+     */
+    private void drawInteractionPrompt(Graphics2D g) {
+        String prompt = "Press E";
+        Font font = new Font("Arial", Font.BOLD, 12);
+        g.setFont(font);
+        FontMetrics fm = g.getFontMetrics();
+
+        int textWidth = fm.stringWidth(prompt);
+        int textHeight = fm.getHeight();
+        int promptX = x + width / 2 - textWidth / 2;
+        int promptY = y - 20;
+
+        // Background
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRoundRect(promptX - 6, promptY - textHeight + 2, textWidth + 12, textHeight + 4, 8, 8);
+
+        // Border
+        g.setColor(new Color(255, 200, 100));
+        g.setStroke(new BasicStroke(1));
+        g.drawRoundRect(promptX - 6, promptY - textHeight + 2, textWidth + 12, textHeight + 4, 8, 8);
+
+        // Text
+        g.setColor(Color.WHITE);
+        g.drawString(prompt, promptX, promptY);
     }
 
     /**
@@ -626,6 +661,14 @@ public class ButtonEntity extends Entity {
 
     public boolean shouldPlayReleaseSound() {
         return playReleaseSound;
+    }
+
+    public boolean isPlayerNearby() {
+        return playerNearby;
+    }
+
+    public void setPlayerNearby(boolean nearby) {
+        this.playerNearby = nearby;
     }
 
     /**
