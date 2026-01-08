@@ -639,4 +639,45 @@ public class SaveManager {
         save();
         System.out.println("SaveManager: Chest cooldowns reset");
     }
+
+    /**
+     * Transfers all items from the saved inventory to the vault.
+     * This is called when entering the Loot Game to ensure all saved items
+     * are accessible through the vault.
+     *
+     * @return Number of items transferred
+     */
+    public int transferInventoryToVault() {
+        if (inventory.isEmpty()) {
+            return 0;
+        }
+
+        int transferred = 0;
+        int overflow = 0;
+
+        for (SavedItem item : inventory) {
+            int itemOverflow = addItemToVault(item.itemId, item.stackCount);
+            if (itemOverflow == 0) {
+                transferred += item.stackCount;
+            } else {
+                transferred += (item.stackCount - itemOverflow);
+                overflow += itemOverflow;
+            }
+        }
+
+        // Clear the inventory after transfer
+        inventory.clear();
+        save();
+
+        System.out.println("SaveManager: Transferred " + transferred + " items from inventory to vault"
+                + (overflow > 0 ? " (" + overflow + " overflow)" : ""));
+        return transferred;
+    }
+
+    /**
+     * Checks if there are items in the saved inventory that haven't been transferred to vault.
+     */
+    public boolean hasInventoryItems() {
+        return !inventory.isEmpty();
+    }
 }

@@ -836,19 +836,21 @@ public class ItemEntity extends Entity {
 
     /**
      * Checks if this item can stack with another item.
-     * Items can stack if they have the same ID or name and type.
+     * Items can stack ONLY if they have the same registry ID.
+     * This prevents incorrect stacking of different items with similar names.
      */
     public boolean canStackWith(ItemEntity other) {
         if (other == null || !isStackable()) return false;
         if (stackCount >= maxStackSize) return false;
 
-        // Match by item ID if both have one
-        if (itemId != null && other.itemId != null) {
+        // Strict matching: Both items must have the same non-null registry ID
+        if (itemId != null && !itemId.isEmpty() && other.itemId != null && !other.itemId.isEmpty()) {
             return itemId.equals(other.itemId);
         }
 
-        // Fallback to matching by name and type
-        return itemName.equals(other.itemName) && itemType.equals(other.itemType);
+        // If either item doesn't have a registry ID, they cannot stack
+        // This prevents accidental stacking of unregistered or misidentified items
+        return false;
     }
 
     /**

@@ -32,6 +32,7 @@ public class GameScene implements Scene {
     private ArrayList<TriggerEntity> triggers;
     private ArrayList<DoorEntity> doors;
     private ArrayList<ButtonEntity> interactiveButtons;
+    private ArrayList<VaultEntity> vaults;
     private Map<String, DoorEntity> doorsByLinkId;
     private Map<String, ButtonEntity> buttonsByLinkId;
     private PlayerBase player;
@@ -108,6 +109,7 @@ public class GameScene implements Scene {
             triggers = new ArrayList<>();
             doors = new ArrayList<>();
             interactiveButtons = new ArrayList<>();
+            vaults = new ArrayList<>();
             doorsByLinkId = new HashMap<>();
             buttonsByLinkId = new HashMap<>();
 
@@ -347,6 +349,7 @@ public class GameScene implements Scene {
 
             VaultEntity vault = new VaultEntity(v.x, v.y, vaultType);
             entityManager.addEntity(vault);
+            vaults.add(vault);  // Track for interaction handling
             vaultsAdded++;
         }
         System.out.println("GameScene: Added " + vaultsAdded + " vaults to level");
@@ -796,9 +799,15 @@ public class GameScene implements Scene {
             }
         }
 
-        // Handle E key interactions with doors and buttons
+        // Update vault proximity detection (for interaction prompts)
+        for (VaultEntity vault : vaults) {
+            vault.checkPlayerProximity(player.getX(), player.getY(),
+                playerBounds.width, playerBounds.height);
+        }
+
+        // Handle E key interactions with doors, buttons, and vaults
         if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
-            System.out.println("GameScene: E key pressed, checking " + doors.size() + " doors and " + interactiveButtons.size() + " buttons");
+            System.out.println("GameScene: E key pressed, checking " + doors.size() + " doors, " + interactiveButtons.size() + " buttons, " + vaults.size() + " vaults");
 
             // Try to interact with nearby doors
             for (DoorEntity door : doors) {
@@ -830,6 +839,18 @@ public class GameScene implements Scene {
                         handleButtonActivation(button);
                     }
                     break;  // Only interact with one button at a time
+                }
+            }
+
+            // Try to interact with nearby vaults/chests
+            for (VaultEntity vault : vaults) {
+                if (vault.isPlayerNearby()) {
+                    if (vault.isOpen()) {
+                        vault.close();
+                    } else {
+                        vault.tryOpen();
+                    }
+                    break;  // Only interact with one vault at a time
                 }
             }
         }

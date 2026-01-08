@@ -89,11 +89,18 @@ public class LootGameScene implements Scene {
         // Create UI
         createUI();
 
-        // Load stats
+        // Load stats and transfer any saved inventory items to vault
         SaveManager save = SaveManager.getInstance();
         totalItemsCollected = save.getTotalItemsCollected();
         legendaryItems = save.getLegendaryItemsFound();
         mythicItems = save.getMythicItemsFound();
+
+        // Transfer any items from saved inventory to vault on game start
+        // This ensures items saved from previous sessions are accessible in the vault
+        if (save.hasInventoryItems()) {
+            int transferred = save.transferInventoryToVault();
+            System.out.println("LootGameScene: Transferred " + transferred + " saved items to vault");
+        }
 
         initialized = true;
         System.out.println("LootGameScene: Initialized successfully!");
@@ -484,6 +491,8 @@ public class LootGameScene implements Scene {
             player.getInventory().draw(g);
             // Draw vault inventory if open
             player.getInventory().drawVault(g);
+            // Draw dragged item overlays on top of all UI (ensures proper z-order)
+            player.getInventory().drawAllDraggedItemOverlays(g);
         }
 
         // Draw stats panel
