@@ -29,22 +29,28 @@ public class VaultEntity extends Entity {
 
     // Vault types
     public enum VaultType {
-        PLAYER_VAULT("Player Vault", "assets/vault/player_vault.gif", true),
-        STORAGE_CHEST("Storage Chest", "assets/vault/storage_chest.gif", false);
+        PLAYER_VAULT("Player Vault", "assets/vault/player_vault.gif", true, 10000),
+        STORAGE_CHEST("Storage Chest", "assets/vault/storage_chest.gif", false, 48),
+        LARGE_CHEST("Large Chest", "assets/vault/large_chest.gif", false, 32),
+        MEDIUM_CHEST("Medium Chest", "assets/vault/medium_chest.gif", false, 16),
+        ANCIENT_POTTERY("Ancient Pottery", "assets/items/ancient_pottery/idle.gif", false, 5);
 
         private final String displayName;
         private final String texturePath;
         private final boolean persistent;
+        private final int maxSlots;
 
-        VaultType(String displayName, String texturePath, boolean persistent) {
+        VaultType(String displayName, String texturePath, boolean persistent, int maxSlots) {
             this.displayName = displayName;
             this.texturePath = texturePath;
             this.persistent = persistent;
+            this.maxSlots = maxSlots;
         }
 
         public String getDisplayName() { return displayName; }
         public String getTexturePath() { return texturePath; }
         public boolean isPersistent() { return persistent; }
+        public int getMaxSlots() { return maxSlots; }
     }
 
     // Dimensions (position is inherited from Entity)
@@ -82,7 +88,6 @@ public class VaultEntity extends Entity {
 
     // Local storage for STORAGE_CHEST type (non-persistent)
     private List<SavedItem> localItems = new ArrayList<>();
-    private static final int LOCAL_CHEST_MAX_SLOTS = 48;
 
     /**
      * Creates a new VaultEntity.
@@ -106,10 +111,31 @@ public class VaultEntity extends Entity {
     }
 
     /**
-     * Creates a storage chest at the specified position.
+     * Creates a storage chest at the specified position (48 slots).
      */
     public static VaultEntity createStorageChest(int x, int y) {
         return new VaultEntity(x, y, VaultType.STORAGE_CHEST);
+    }
+
+    /**
+     * Creates a large chest at the specified position (32 slots).
+     */
+    public static VaultEntity createLargeChest(int x, int y) {
+        return new VaultEntity(x, y, VaultType.LARGE_CHEST);
+    }
+
+    /**
+     * Creates a medium chest at the specified position (16 slots).
+     */
+    public static VaultEntity createMediumChest(int x, int y) {
+        return new VaultEntity(x, y, VaultType.MEDIUM_CHEST);
+    }
+
+    /**
+     * Creates an ancient pottery container at the specified position (5 slots).
+     */
+    public static VaultEntity createAncientPottery(int x, int y) {
+        return new VaultEntity(x, y, VaultType.ANCIENT_POTTERY);
     }
 
     private void loadTexture() {
@@ -473,7 +499,7 @@ public class VaultEntity extends Entity {
             }
 
             // Add new stacks
-            while (remaining > 0 && localItems.size() < LOCAL_CHEST_MAX_SLOTS) {
+            while (remaining > 0 && localItems.size() < vaultType.getMaxSlots()) {
                 int toAdd = Math.min(stackSize, remaining);
                 localItems.add(new SavedItem(itemId, toAdd));
                 remaining -= toAdd;
@@ -523,6 +549,6 @@ public class VaultEntity extends Entity {
      * Gets the maximum local storage slots.
      */
     public int getMaxLocalSlots() {
-        return LOCAL_CHEST_MAX_SLOTS;
+        return vaultType.getMaxSlots();
     }
 }

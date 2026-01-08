@@ -31,10 +31,13 @@ public class VaultInventory {
     // Layout constants
     private static final int SLOT_SIZE = 48;
     private static final int SLOT_PADDING = 4;
-    private static final int COLUMNS = 6;
-    private static final int VISIBLE_ROWS = 8;
-    private static final int VISIBLE_SLOTS = COLUMNS * VISIBLE_ROWS;
     private static final int SCROLLBAR_WIDTH = 16;
+
+    // Dynamic layout based on chest type
+    private int columns = 6;
+    private int visibleRows = 8;
+    private int visibleSlots = 48;
+    private int maxSlots = 10000; // Default for player vault
 
     // Position (set when shown, positioned next to player inventory)
     private int x, y;
@@ -123,8 +126,41 @@ public class VaultInventory {
     }
 
     private void calculateDimensions() {
-        width = COLUMNS * (SLOT_SIZE + SLOT_PADDING) + SLOT_PADDING + SCROLLBAR_WIDTH;
-        height = VISIBLE_ROWS * (SLOT_SIZE + SLOT_PADDING) + SLOT_PADDING + 40;  // Extra for title
+        width = columns * (SLOT_SIZE + SLOT_PADDING) + SLOT_PADDING + SCROLLBAR_WIDTH;
+        height = visibleRows * (SLOT_SIZE + SLOT_PADDING) + SLOT_PADDING + 40;  // Extra for title
+    }
+
+    /**
+     * Configures the layout based on chest size.
+     * Small chests use fewer columns and rows.
+     */
+    private void configureLayoutForChestSize(int totalSlots) {
+        maxSlots = totalSlots;
+
+        if (totalSlots <= 5) {
+            // Ancient Pottery: 5 slots in a single row
+            columns = 5;
+            visibleRows = 1;
+        } else if (totalSlots <= 16) {
+            // Medium Chest: 16 slots in 4x4 grid
+            columns = 4;
+            visibleRows = 4;
+        } else if (totalSlots <= 32) {
+            // Large Chest: 32 slots in 8x4 grid
+            columns = 8;
+            visibleRows = 4;
+        } else if (totalSlots <= 48) {
+            // Storage Chest: 48 slots in 6x8 grid
+            columns = 6;
+            visibleRows = 8;
+        } else {
+            // Player Vault: Large scrollable grid
+            columns = 6;
+            visibleRows = 8;
+        }
+
+        visibleSlots = columns * visibleRows;
+        calculateDimensions();
     }
 
     /**
@@ -134,6 +170,10 @@ public class VaultInventory {
         isOpen = true;
         localMode = false;
         linkedVault = null;
+
+        // Configure layout for player vault (unlimited slots)
+        configureLayoutForChestSize(10000);
+
         loadFromSaveManager();
 
         // Position to the left of player inventory
@@ -157,6 +197,11 @@ public class VaultInventory {
         isOpen = true;
         localMode = true;
         linkedVault = vault;
+
+        // Configure layout based on chest's max slots
+        int chestMaxSlots = vault != null ? vault.getMaxLocalSlots() : 48;
+        configureLayoutForChestSize(chestMaxSlots);
+
         loadFromLocalVault();
 
         // Position to the left of player inventory
@@ -169,7 +214,8 @@ public class VaultInventory {
         scrollOffset = 0;
         updateMaxScroll();
 
-        System.out.println("VaultInventory: Opened in local mode with " + slots.size() + " items");
+        String chestType = vault != null ? vault.getVaultType().getDisplayName() : "Storage Chest";
+        System.out.println("VaultInventory: Opened " + chestType + " (" + chestMaxSlots + " slots) with " + slots.size() + " items");
     }
 
     /**
@@ -319,8 +365,8 @@ public class VaultInventory {
     }
 
     private void updateMaxScroll() {
-        int totalRows = (int) Math.ceil((double) slots.size() / COLUMNS);
-        maxScrollRows = Math.max(0, totalRows - VISIBLE_ROWS);
+        int totalRows = (int) Math.ceil((double) Math.max(slots.size(), maxSlots) / columns);
+        maxScrollRows = Math.max(0, totalRows - visibleRows);
     }
 
     /**
@@ -485,8 +531,8 @@ public class VaultInventory {
         // Check if within vault grid area
         int gridX = x + SLOT_PADDING;
         int gridY = y + 40;  // Below title
-        int gridWidth = COLUMNS * (SLOT_SIZE + SLOT_PADDING);
-        int gridHeight = VISIBLE_ROWS * (SLOT_SIZE + SLOT_PADDING);
+        int gridWidth = columns * (SLOT_SIZE + SLOT_PADDING);
+        int gridHeight = visibleRows * (SLOT_SIZE + SLOT_PADDING);
 
         if (mouseX < gridX || mouseX >= gridX + gridWidth) return -1;
         if (mouseY < gridY || mouseY >= gridY + gridHeight) return -1;
@@ -494,10 +540,10 @@ public class VaultInventory {
         int col = (mouseX - gridX) / (SLOT_SIZE + SLOT_PADDING);
         int row = (mouseY - gridY) / (SLOT_SIZE + SLOT_PADDING);
 
-        if (col < 0 || col >= COLUMNS) return -1;
-        if (row < 0 || row >= VISIBLE_ROWS) return -1;
+        if (col < 0 || col >= columns) return -1;
+        if (row < 0 || row >= visibleRows) return -1;
 
-        return (scrollOffset + row) * COLUMNS + col;
+        return (scrollOffset + row) * columns + col;
     }
 
     private boolean isScrollbarClick(int mouseX, int mouseY) {
@@ -584,14 +630,18 @@ public class VaultInventory {
         // Title text
         g2d.setColor(new Color(255, 215, 0));
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        String title = localMode ? "STORAGE CHEST" : "VAULT";
+        String title;
+        if (localMode && linkedVault != null) {
+            title = linkedVault.getVaultType().getDisplayName().toUpperCase();
+        } else {
+            title = "VAULT";
+        }
         int titleWidth = g2d.getFontMetrics().stringWidth(title);
         g2d.drawString(title, x + (width - titleWidth) / 2, y + 24);
 
         // Slot count
         g2d.setColor(new Color(180, 180, 180));
         g2d.setFont(new Font("Arial", Font.PLAIN, 11));
-        int maxSlots = localMode ? (linkedVault != null ? linkedVault.getMaxLocalSlots() : 48) : SaveManager.VAULT_MAX_SLOTS;
         String count = slots.size() + " / " + maxSlots;
         g2d.drawString(count, x + 8, y + 24);
     }
@@ -599,13 +649,14 @@ public class VaultInventory {
     private void drawSlots(Graphics2D g2d) {
         int gridY = y + 40;
 
-        int startIndex = scrollOffset * COLUMNS;
-        int endIndex = Math.min(startIndex + VISIBLE_SLOTS, slots.size() + VISIBLE_SLOTS);
+        int startIndex = scrollOffset * columns;
+        int endIndex = Math.min(startIndex + visibleSlots, Math.max(slots.size(), maxSlots));
 
-        for (int i = 0; i < VISIBLE_SLOTS; i++) {
+        for (int i = 0; i < visibleSlots; i++) {
             int slotIndex = startIndex + i;
-            int col = i % COLUMNS;
-            int row = i / COLUMNS;
+            if (slotIndex >= maxSlots) break; // Don't draw beyond max slots
+            int col = i % columns;
+            int row = i / columns;
 
             int slotX = x + SLOT_PADDING + col * (SLOT_SIZE + SLOT_PADDING);
             int slotY = gridY + row * (SLOT_SIZE + SLOT_PADDING);
@@ -674,7 +725,7 @@ public class VaultInventory {
         g2d.fillRoundRect(scrollbarX, scrollbarY, SCROLLBAR_WIDTH - 4, scrollbarHeight, 4, 4);
 
         // Handle
-        float handleHeight = Math.max(20, scrollbarHeight * ((float) VISIBLE_ROWS / (maxScrollRows + VISIBLE_ROWS)));
+        float handleHeight = Math.max(20, scrollbarHeight * ((float) visibleRows / (maxScrollRows + visibleRows)));
         float handleY = scrollbarY + (scrollbarHeight - handleHeight) * ((float) scrollOffset / maxScrollRows);
 
         g2d.setColor(new Color(255, 215, 0, 180));
