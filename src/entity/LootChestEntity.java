@@ -353,6 +353,36 @@ public class LootChestEntity extends Entity {
     }
 
     /**
+     * Checks if the player is nearby.
+     */
+    public boolean isPlayerNearby() {
+        return playerNearby;
+    }
+
+    /**
+     * Handles a mouse click at the given screen coordinates.
+     * Opens the chest if clicked while player is nearby and chest can be opened.
+     *
+     * @param clickX Click X position (screen coordinates)
+     * @param clickY Click Y position (screen coordinates)
+     * @param cameraOffsetX Camera X offset for coordinate translation
+     * @param cameraOffsetY Camera Y offset for coordinate translation
+     * @return true if the click was handled (chest opened)
+     */
+    public boolean handleClick(int clickX, int clickY, int cameraOffsetX, int cameraOffsetY) {
+        // Translate screen coordinates to world coordinates
+        int worldX = clickX + cameraOffsetX;
+        int worldY = clickY + cameraOffsetY;
+
+        // Check if click is within chest bounds (use a slightly larger hitbox for easier clicking)
+        Rectangle clickBounds = new Rectangle(x - 10, y - 10, width + 20, height + 20);
+        if (clickBounds.contains(worldX, worldY)) {
+            return tryOpen();
+        }
+        return false;
+    }
+
+    /**
      * Checks if the chest has been opened.
      */
     public boolean isOpen() {
