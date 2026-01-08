@@ -12,6 +12,7 @@ import level.*;
 import audio.*;
 import input.*;
 import ui.*;
+import ui.VaultInventory;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -343,9 +344,25 @@ public class GameScene implements Scene {
         // Add vaults (interactive vault/chest entities)
         int vaultsAdded = 0;
         for (LevelData.VaultData v : levelData.vaults) {
-            VaultEntity.VaultType vaultType = "STORAGE_CHEST".equals(v.vaultType)
-                ? VaultEntity.VaultType.STORAGE_CHEST
-                : VaultEntity.VaultType.PLAYER_VAULT;
+            VaultEntity.VaultType vaultType;
+            String vaultTypeName = v.vaultType != null ? v.vaultType.toUpperCase() : "PLAYER_VAULT";
+            switch (vaultTypeName) {
+                case "STORAGE_CHEST":
+                    vaultType = VaultEntity.VaultType.STORAGE_CHEST;
+                    break;
+                case "LARGE_CHEST":
+                    vaultType = VaultEntity.VaultType.LARGE_CHEST;
+                    break;
+                case "MEDIUM_CHEST":
+                    vaultType = VaultEntity.VaultType.MEDIUM_CHEST;
+                    break;
+                case "ANCIENT_POTTERY":
+                    vaultType = VaultEntity.VaultType.ANCIENT_POTTERY;
+                    break;
+                default:
+                    vaultType = VaultEntity.VaultType.PLAYER_VAULT;
+                    break;
+            }
 
             VaultEntity vault = new VaultEntity(v.x, v.y, vaultType);
             entityManager.addEntity(vault);
@@ -398,8 +415,38 @@ public class GameScene implements Scene {
         camera.setTarget((Entity) player);
         camera.snapToTarget();
 
+        // Set up vault callbacks to open/close inventory UI
+        setupVaultCallbacks();
+
         // Initialize lighting system
         setupLighting();
+    }
+
+    /**
+     * Set up vault callbacks to open/close inventory UI.
+     */
+    private void setupVaultCallbacks() {
+        if (player == null) return;
+
+        for (VaultEntity vault : vaults) {
+            final VaultEntity currentVault = vault;
+
+            vault.setOnOpenCallback(() -> {
+                if (player != null && player.getInventory() != null) {
+                    // Open vault with the specific vault entity for proper local storage mode
+                    player.getInventory().openVault(currentVault);
+                    System.out.println("GameScene: Opened " + currentVault.getVaultType().getDisplayName() + " UI");
+                }
+            });
+
+            vault.setOnCloseCallback(() -> {
+                if (player != null && player.getInventory() != null) {
+                    player.getInventory().closeVault();
+                    System.out.println("GameScene: Closed vault UI");
+                }
+            });
+        }
+        System.out.println("GameScene: Set up callbacks for " + vaults.size() + " vaults");
     }
 
     /**
@@ -1240,6 +1287,10 @@ public class GameScene implements Scene {
         // Draw inventory UI (in screen space, not affected by camera)
         if (player != null) {
             player.getInventory().draw(g2d);
+            // Draw vault inventory if open
+            player.getInventory().drawVault(g2d);
+            // Draw dragged item overlays on top of all UI (ensures proper z-order)
+            player.getInventory().drawAllDraggedItemOverlays(g2d);
 
             // Draw player status bars (health, mana, stamina) above hotbar
             PlayerStatusBar.draw(g2d, player, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
@@ -1372,14 +1423,38 @@ public class GameScene implements Scene {
     @Override
     public void onMousePressed(int x, int y) {
         if (player != null) {
-            player.getInventory().handleMousePressed(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Check if pressing on vault inventory first (for drag start)
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.containsPoint(x, y)) {
+                    vault.handleMousePressed(x, y);
+                    return;  // Press handled by vault
+                }
+            }
+
+            // Handle inventory drag start
+            inventory.handleMousePressed(x, y);
         }
     }
 
     @Override
     public void onMouseReleased(int x, int y) {
         if (player != null) {
-            ItemEntity droppedItem = player.getInventory().handleMouseReleased(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Check if releasing a vault drag
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.isDragging()) {
+                    vault.handleMouseReleased(x, y);
+                    return;
+                }
+            }
+
+            // Handle inventory drag release (may drop item)
+            ItemEntity droppedItem = inventory.handleMouseReleased(x, y);
             if (droppedItem != null) {
                 droppedItem.collected = false;
                 player.dropItem(droppedItem);
@@ -1391,7 +1466,19 @@ public class GameScene implements Scene {
     @Override
     public void onMouseDragged(int x, int y) {
         if (player != null) {
-            player.getInventory().handleMouseDragged(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Forward drag to vault if it's dragging
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.isDragging()) {
+                    vault.handleMouseDragged(x, y);
+                    return;
+                }
+            }
+
+            // Forward to inventory
+            inventory.handleMouseDragged(x, y);
         }
     }
 
@@ -1400,10 +1487,16 @@ public class GameScene implements Scene {
         for (UIButton button : buttons) {
             button.handleMouseMove(x, y);
         }
+
+        // Update vault inventory mouse position for tooltips
+        if (player != null && player.getInventory().isVaultOpen()) {
+            player.getInventory().updateVaultMousePosition(x, y);
+        }
     }
 
     @Override
     public void onMouseClicked(int x, int y) {
+        // Handle button clicks first
         for (UIButton button : buttons) {
             if (button.handleClick(x, y)) {
                 // UI button handled the click - consume it so game logic doesn't also respond
@@ -1412,6 +1505,31 @@ public class GameScene implements Scene {
                     input.consumeClick();
                 }
                 return;  // Stop processing after first button handles click
+            }
+        }
+
+        if (player != null) {
+            Inventory inventory = player.getInventory();
+
+            // Check if clicking on vault inventory
+            if (inventory.isVaultOpen() && inventory.handleVaultClick(x, y, false)) {
+                return;  // Click handled by vault
+            }
+
+            // Check if clicking on player inventory
+            if (inventory.isOpen() && inventory.handleLeftClick(x, y)) {
+                return;  // Click handled by inventory
+            }
+
+            // Get camera offset for world coordinate translation
+            int cameraOffsetX = camera != null ? (int) camera.getX() : 0;
+            int cameraOffsetY = camera != null ? (int) camera.getY() : 0;
+
+            // Check if clicking on vault (left-click to open/close)
+            for (VaultEntity vault : vaults) {
+                if (vault.handleClick(x, y, cameraOffsetX, cameraOffsetY)) {
+                    return;  // Click handled by vault entity
+                }
             }
         }
     }

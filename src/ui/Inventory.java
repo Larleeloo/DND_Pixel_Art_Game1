@@ -125,12 +125,16 @@ public class Inventory {
 
     /**
      * Handles scroll wheel input.
-     * When inventory is closed: cycles hotbar selection
+     * When vault is open: scrolls through vault inventory
      * When inventory is open: scrolls through inventory rows
+     * When both are closed: cycles hotbar selection
      * @param scrollDirection Positive for scroll up, negative for scroll down
      */
     public void handleScroll(int scrollDirection) {
-        if (isOpen) {
+        if (vaultOpen && vaultInventory != null) {
+            // Forward scroll to vault inventory when vault is open
+            vaultInventory.handleScroll(scrollDirection);
+        } else if (isOpen) {
             // Scroll through inventory
             int totalRows = (int) Math.ceil(items.size() / (double) COLS);
             int maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);

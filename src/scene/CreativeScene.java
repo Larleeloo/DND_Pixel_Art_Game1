@@ -390,17 +390,20 @@ public class CreativeScene implements Scene {
             interactivePalette.add(new PaletteItem(button[0], button[1], icon, buttonData));
         }
 
-        // Vaults and Chests
+        // Vaults and Chests with different slot counts
         String[][] vaultTypes = {
-            {"player_vault", "Player Vault", "assets/vault/player_vault.gif"},
-            {"storage_chest", "Storage Chest", "assets/vault/storage_chest.gif"}
+            {"player_vault", "Player Vault", "assets/vault/player_vault.gif", "PLAYER_VAULT"},
+            {"storage_chest", "Storage Chest (48)", "assets/vault/storage_chest.gif", "STORAGE_CHEST"},
+            {"large_chest", "Large Chest (32)", "assets/vault/large_chest.gif", "LARGE_CHEST"},
+            {"medium_chest", "Medium Chest (16)", "assets/vault/medium_chest.gif", "MEDIUM_CHEST"},
+            {"ancient_pottery", "Ancient Pottery (5)", "assets/items/ancient_pottery/idle.gif", "ANCIENT_POTTERY"}
         };
         for (String[] vault : vaultTypes) {
             BufferedImage icon = createVaultIcon(vault[2]);
             Map<String, Object> vaultData = new HashMap<>();
             vaultData.put("type", "vault");
             vaultData.put("texturePath", vault[2]);
-            vaultData.put("vaultType", vault[0].equals("player_vault") ? "PLAYER_VAULT" : "STORAGE_CHEST");
+            vaultData.put("vaultType", vault[3]);
             interactivePalette.add(new PaletteItem(vault[0], vault[1], icon, vaultData));
         }
 
