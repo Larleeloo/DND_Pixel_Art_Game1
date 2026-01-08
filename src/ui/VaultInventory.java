@@ -45,16 +45,25 @@ public class VaultInventory {
     private int scrollOffset = 0;  // Number of rows scrolled
     private int maxScrollRows = 0;
 
+    // Local storage mode (for STORAGE_CHEST)
+    private boolean localMode = false;
+    private entity.VaultEntity linkedVault = null;
+
     // Items loaded from vault
     private List<VaultSlot> slots = new ArrayList<>();
 
     // Drag and drop state
     private VaultSlot draggedSlot = null;
+    private int draggedSlotIndex = -1;
     private int dragOffsetX, dragOffsetY;
     private int mouseX, mouseY;
+    private boolean isDragging = false;
 
     // Hover state for tooltips
     private int hoveredSlotIndex = -1;
+
+    // Reference to player inventory for drag-drop transfers
+    private InventoryDropCallback inventoryDropCallback;
 
     // Callback for when an item is taken from vault
     private ItemTakenCallback itemTakenCallback;
@@ -89,6 +98,26 @@ public class VaultInventory {
         void onItemTaken(String itemId, int count);
     }
 
+    /**
+     * Callback interface for when items are dropped onto inventory area.
+     */
+    public interface InventoryDropCallback {
+        /**
+         * Called when an item from vault is dropped onto inventory.
+         * @param itemId The item registry ID
+         * @param count Number of items
+         * @param dropX Screen X position of drop
+         * @param dropY Screen Y position of drop
+         * @return true if the item was accepted by inventory
+         */
+        boolean onDropToInventory(String itemId, int count, int dropX, int dropY);
+
+        /**
+         * Checks if a point is within the inventory bounds.
+         */
+        boolean isPointInInventory(int x, int y);
+    }
+
     public VaultInventory() {
         calculateDimensions();
     }
@@ -99,10 +128,12 @@ public class VaultInventory {
     }
 
     /**
-     * Opens the vault UI and loads items from SaveManager.
+     * Opens the vault UI and loads items from SaveManager (persistent mode).
      */
     public void open(int playerInventoryX, int playerInventoryY) {
         isOpen = true;
+        localMode = false;
+        linkedVault = null;
         loadFromSaveManager();
 
         // Position to the left of player inventory
@@ -116,6 +147,42 @@ public class VaultInventory {
         updateMaxScroll();
 
         System.out.println("VaultInventory: Opened with " + slots.size() + " items");
+    }
+
+    /**
+     * Opens the vault UI in local mode (for STORAGE_CHEST).
+     * Items are stored in the vault entity, not in SaveManager.
+     */
+    public void openLocal(int playerInventoryX, int playerInventoryY, entity.VaultEntity vault) {
+        isOpen = true;
+        localMode = true;
+        linkedVault = vault;
+        loadFromLocalVault();
+
+        // Position to the left of player inventory
+        this.x = playerInventoryX - width - 20;
+        this.y = playerInventoryY;
+
+        // Ensure on screen
+        if (this.x < 10) this.x = 10;
+
+        scrollOffset = 0;
+        updateMaxScroll();
+
+        System.out.println("VaultInventory: Opened in local mode with " + slots.size() + " items");
+    }
+
+    /**
+     * Loads items from the linked local vault.
+     */
+    private void loadFromLocalVault() {
+        slots.clear();
+        if (linkedVault != null) {
+            for (SavedItem saved : linkedVault.getLocalItems()) {
+                slots.add(new VaultSlot(saved.itemId, saved.stackCount));
+            }
+        }
+        updateMaxScroll();
     }
 
     /**
@@ -149,8 +216,14 @@ public class VaultInventory {
      * @return Number of items that couldn't be added (overflow)
      */
     public int addItem(String itemId, int count) {
-        int overflow = SaveManager.getInstance().addItemToVault(itemId, count);
-        loadFromSaveManager();  // Refresh display
+        int overflow;
+        if (localMode && linkedVault != null) {
+            overflow = linkedVault.addLocalItem(itemId, count);
+            loadFromLocalVault();  // Refresh display
+        } else {
+            overflow = SaveManager.getInstance().addItemToVault(itemId, count);
+            loadFromSaveManager();  // Refresh display
+        }
         return overflow;
     }
 
@@ -191,12 +264,22 @@ public class VaultInventory {
         VaultSlot slot = slots.get(slotIndex);
         if (slot.isEmpty()) return null;
 
-        SavedItem removed = SaveManager.getInstance().removeItemFromVault(slotIndex, count);
-        if (removed != null) {
-            loadFromSaveManager();  // Refresh display
+        SavedItem removed;
+        if (localMode && linkedVault != null) {
+            removed = linkedVault.removeLocalItem(slotIndex, count);
+            if (removed != null) {
+                loadFromLocalVault();  // Refresh display
+            }
+        } else {
+            removed = SaveManager.getInstance().removeItemFromVault(slotIndex, count);
+            if (removed != null) {
+                loadFromSaveManager();  // Refresh display
+            }
+        }
 
+        if (removed != null) {
             // Create ItemEntity for the removed items
-            ItemEntity item = new ItemEntity(0, 0, removed.itemId + ".gif");
+            ItemEntity item = new ItemEntity(0, 0, removed.itemId);
             item.setLinkedItem(ItemRegistry.create(removed.itemId));
             item.setStackCount(removed.stackCount);
             return item;
@@ -221,12 +304,15 @@ public class VaultInventory {
     }
 
     /**
-     * Handles mouse click events.
+     * Handles mouse click events (for taking items on click).
      *
      * @return The slot index clicked, or -1 if none
      */
     public int handleClick(int mouseX, int mouseY, boolean isRightClick) {
         if (!isOpen) return -1;
+
+        // Don't handle clicks while dragging
+        if (isDragging) return -1;
 
         int slotIndex = getSlotAtPosition(mouseX, mouseY);
         if (slotIndex >= 0 && slotIndex < slots.size()) {
@@ -256,6 +342,113 @@ public class VaultInventory {
         }
 
         return -1;
+    }
+
+    /**
+     * Handles mouse pressed events (starts dragging an item).
+     *
+     * @return true if drag started
+     */
+    public boolean handleMousePressed(int mouseX, int mouseY) {
+        if (!isOpen) return false;
+
+        int slotIndex = getSlotAtPosition(mouseX, mouseY);
+        if (slotIndex >= 0 && slotIndex < slots.size()) {
+            VaultSlot slot = slots.get(slotIndex);
+            if (!slot.isEmpty()) {
+                // Start dragging this slot
+                draggedSlot = slot;
+                draggedSlotIndex = slotIndex;
+                isDragging = true;
+                this.mouseX = mouseX;
+                this.mouseY = mouseY;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Handles mouse dragged events (updates drag position).
+     */
+    public void handleMouseDragged(int mouseX, int mouseY) {
+        if (isDragging) {
+            this.mouseX = mouseX;
+            this.mouseY = mouseY;
+        }
+    }
+
+    /**
+     * Handles mouse released events (completes drag or cancels).
+     *
+     * @return true if an item was transferred to inventory
+     */
+    public boolean handleMouseReleased(int mouseX, int mouseY) {
+        if (!isDragging || draggedSlot == null) {
+            isDragging = false;
+            draggedSlot = null;
+            draggedSlotIndex = -1;
+            return false;
+        }
+
+        boolean transferred = false;
+
+        // Check if dropped outside vault bounds
+        if (!containsPoint(mouseX, mouseY)) {
+            // Check if dropped on inventory
+            if (inventoryDropCallback != null && inventoryDropCallback.isPointInInventory(mouseX, mouseY)) {
+                // Transfer to inventory
+                if (inventoryDropCallback.onDropToInventory(draggedSlot.itemId, draggedSlot.stackCount, mouseX, mouseY)) {
+                    // Successfully transferred - remove from vault
+                    removeFromVaultStorage(draggedSlotIndex);
+                    transferred = true;
+                    System.out.println("VaultInventory: Transferred " + draggedSlot.itemId + " to inventory");
+                }
+            } else {
+                // Dropped outside both vault and inventory - use callback to add to inventory anyway
+                if (itemTakenCallback != null) {
+                    itemTakenCallback.onItemTaken(draggedSlot.itemId, draggedSlot.stackCount);
+                    // Remove from vault
+                    removeFromVaultStorage(draggedSlotIndex);
+                    transferred = true;
+                    System.out.println("VaultInventory: Dropped " + draggedSlot.itemId + " to inventory");
+                }
+            }
+        }
+
+        // Reset drag state
+        isDragging = false;
+        draggedSlot = null;
+        draggedSlotIndex = -1;
+
+        return transferred;
+    }
+
+    /**
+     * Removes item from vault storage (handles both local and persistent modes).
+     */
+    private void removeFromVaultStorage(int slotIndex) {
+        if (localMode && linkedVault != null) {
+            linkedVault.removeLocalItem(slotIndex, -1);
+            loadFromLocalVault();
+        } else {
+            SaveManager.getInstance().removeItemFromVault(slotIndex, -1);
+            loadFromSaveManager();
+        }
+    }
+
+    /**
+     * Sets the callback for dropping items to inventory.
+     */
+    public void setInventoryDropCallback(InventoryDropCallback callback) {
+        this.inventoryDropCallback = callback;
+    }
+
+    /**
+     * Checks if currently dragging an item.
+     */
+    public boolean isDragging() {
+        return isDragging;
     }
 
     private int getSlotAtPosition(int mouseX, int mouseY) {
@@ -352,14 +545,15 @@ public class VaultInventory {
         // Title text
         g2d.setColor(new Color(255, 215, 0));
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        String title = "VAULT";
+        String title = localMode ? "STORAGE CHEST" : "VAULT";
         int titleWidth = g2d.getFontMetrics().stringWidth(title);
         g2d.drawString(title, x + (width - titleWidth) / 2, y + 24);
 
         // Slot count
         g2d.setColor(new Color(180, 180, 180));
         g2d.setFont(new Font("Arial", Font.PLAIN, 11));
-        String count = slots.size() + " / " + SaveManager.VAULT_MAX_SLOTS;
+        int maxSlots = localMode ? (linkedVault != null ? linkedVault.getMaxLocalSlots() : 48) : SaveManager.VAULT_MAX_SLOTS;
+        String count = slots.size() + " / " + maxSlots;
         g2d.drawString(count, x + 8, y + 24);
     }
 
@@ -515,6 +709,10 @@ public class VaultInventory {
     public int getHeight() { return height; }
 
     public int getSlotCount() { return slots.size(); }
+
+    public boolean isLocalMode() { return localMode; }
+
+    public entity.VaultEntity getLinkedVault() { return linkedVault; }
 
     public void setItemTakenCallback(ItemTakenCallback callback) {
         this.itemTakenCallback = callback;

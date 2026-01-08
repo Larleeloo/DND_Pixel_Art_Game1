@@ -573,14 +573,38 @@ public class LootGameScene implements Scene {
     @Override
     public void onMousePressed(int x, int y) {
         if (player != null) {
-            player.getInventory().handleMousePressed(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Check if pressing on vault inventory first (for drag start)
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.containsPoint(x, y)) {
+                    vault.handleMousePressed(x, y);
+                    return;  // Press handled by vault
+                }
+            }
+
+            // Handle inventory drag start
+            inventory.handleMousePressed(x, y);
         }
     }
 
     @Override
     public void onMouseReleased(int x, int y) {
         if (player != null) {
-            ItemEntity droppedItem = player.getInventory().handleMouseReleased(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Check if releasing a vault drag
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.isDragging()) {
+                    vault.handleMouseReleased(x, y);
+                    return;
+                }
+            }
+
+            // Handle inventory drag release (may drop item)
+            ItemEntity droppedItem = inventory.handleMouseReleased(x, y);
             if (droppedItem != null) {
                 droppedItem.collected = false;
                 player.dropItem(droppedItem);
@@ -592,21 +616,91 @@ public class LootGameScene implements Scene {
     @Override
     public void onMouseDragged(int x, int y) {
         if (player != null) {
-            player.getInventory().handleMouseDragged(x, y);
+            Inventory inventory = player.getInventory();
+
+            // Forward drag to vault if it's dragging
+            if (inventory.isVaultOpen()) {
+                VaultInventory vault = inventory.getVaultInventory();
+                if (vault.isDragging()) {
+                    vault.handleMouseDragged(x, y);
+                    return;
+                }
+            }
+
+            // Forward to inventory
+            inventory.handleMouseDragged(x, y);
         }
     }
 
     @Override
     public void onMouseMoved(int x, int y) {
+        // Update button hover states
         for (UIButton button : buttons) {
             button.handleMouseMove(x, y);
+        }
+
+        // Update vault inventory mouse position for tooltips
+        if (player != null && player.getInventory().isVaultOpen()) {
+            player.getInventory().updateVaultMousePosition(x, y);
         }
     }
 
     @Override
     public void onMouseClicked(int x, int y) {
+        // Handle button clicks first
         for (UIButton button : buttons) {
-            button.handleClick(x, y);
+            if (button.handleClick(x, y)) {
+                return;  // Button handled the click
+            }
+        }
+
+        if (player != null) {
+            Inventory inventory = player.getInventory();
+
+            // Check if clicking on vault inventory
+            if (inventory.isVaultOpen() && inventory.handleVaultClick(x, y, false)) {
+                return;  // Click handled by vault
+            }
+
+            // Check if clicking on player inventory
+            if (inventory.isOpen() && inventory.handleLeftClick(x, y)) {
+                return;  // Click handled by inventory
+            }
+
+            // Get camera offset for world coordinate translation
+            int cameraOffsetX = camera != null ? (int) camera.getX() : 0;
+            int cameraOffsetY = camera != null ? (int) camera.getY() : 0;
+
+            // Check if clicking on vault (left-click to open/close)
+            if (playerVault != null && playerVault.handleClick(x, y, cameraOffsetX, cameraOffsetY)) {
+                return;  // Click handled by vault entity
+            }
+
+            // Check if clicking on daily chest (left-click to open)
+            if (dailyChest != null && dailyChest.isPlayerNearby() &&
+                dailyChest.handleClick(x, y, cameraOffsetX, cameraOffsetY)) {
+                return;  // Click handled by daily chest
+            }
+
+            // Check if clicking on monthly chest (left-click to open)
+            if (monthlyChest != null && monthlyChest.isPlayerNearby() &&
+                monthlyChest.handleClick(x, y, cameraOffsetX, cameraOffsetY)) {
+                return;  // Click handled by monthly chest
+            }
+        }
+    }
+
+    /**
+     * Handles right-click events (for taking single items from vault).
+     */
+    public void onRightClick(int x, int y) {
+        if (player != null) {
+            Inventory inventory = player.getInventory();
+
+            // Check if right-clicking on vault inventory (take single item)
+            if (inventory.isVaultOpen() && inventory.handleVaultClick(x, y, true)) {
+                return;  // Click handled by vault
+            }
         }
     }
 }

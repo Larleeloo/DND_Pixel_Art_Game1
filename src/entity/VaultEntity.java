@@ -3,9 +3,12 @@ package entity;
 import graphics.AnimatedTexture;
 import graphics.AssetLoader;
 import input.InputManager;
+import save.SaveManager.SavedItem;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * VaultEntity represents an interactable vault/chest that provides access to
@@ -76,6 +79,10 @@ public class VaultEntity extends Entity {
 
     // Time tracking for animation
     private long lastUpdateTime = System.currentTimeMillis();
+
+    // Local storage for STORAGE_CHEST type (non-persistent)
+    private List<SavedItem> localItems = new ArrayList<>();
+    private static final int LOCAL_CHEST_MAX_SLOTS = 48;
 
     /**
      * Creates a new VaultEntity.
@@ -231,11 +238,19 @@ public class VaultEntity extends Entity {
 
     private void drawOpenVault(Graphics2D g2d) {
         // Draw base of vault (stays in place)
-        int lidHeight = height / 3;
+        // Calculate lid height proportionally based on display size
+        int displayLidHeight = height / 3;
 
-        // Draw body
-        g2d.drawImage(texture, x, y + lidHeight, width, height - lidHeight,
-                      0, lidHeight, texture.getWidth(), texture.getHeight(), null);
+        // Calculate source coordinates proportionally based on texture size
+        int texWidth = texture.getWidth();
+        int texHeight = texture.getHeight();
+        int texLidHeight = texHeight / 3;
+
+        // Draw body - source from texture's body portion to display body portion
+        g2d.drawImage(texture,
+                      x, y + displayLidHeight, x + width, y + height,  // dest rect
+                      0, texLidHeight, texWidth, texHeight,  // source rect
+                      null);
 
         // Draw lid with rotation
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
@@ -246,8 +261,11 @@ public class VaultEntity extends Entity {
         int pivotY = y + 5;
 
         g2d.rotate(angle, pivotX, pivotY);
-        g2d.drawImage(texture, x, y, width, lidHeight,
-                      0, 0, texture.getWidth(), lidHeight, null);
+        // Draw lid - source from texture's lid portion to display lid portion
+        g2d.drawImage(texture,
+                      x, y, x + width, y + displayLidHeight,  // dest rect
+                      0, 0, texWidth, texLidHeight,  // source rect
+                      null);
 
         g2d.setTransform(oldTransform);
     }
@@ -280,6 +298,47 @@ public class VaultEntity extends Entity {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Handles a mouse click at the given screen coordinates.
+     * Opens the vault if clicked while player is nearby.
+     *
+     * @param clickX Click X position (screen coordinates)
+     * @param clickY Click Y position (screen coordinates)
+     * @param cameraOffsetX Camera X offset for coordinate translation
+     * @param cameraOffsetY Camera Y offset for coordinate translation
+     * @return true if the click was handled (vault opened or closed)
+     */
+    public boolean handleClick(int clickX, int clickY, int cameraOffsetX, int cameraOffsetY) {
+        // Translate screen coordinates to world coordinates
+        int worldX = clickX + cameraOffsetX;
+        int worldY = clickY + cameraOffsetY;
+
+        // Check if click is within vault bounds
+        Rectangle bounds = new Rectangle(x, y, width, height);
+        if (bounds.contains(worldX, worldY)) {
+            if (playerNearby && isInteractable) {
+                toggle();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a screen position is within the vault bounds.
+     *
+     * @param screenX Screen X position
+     * @param screenY Screen Y position
+     * @param cameraOffsetX Camera X offset
+     * @param cameraOffsetY Camera Y offset
+     * @return true if the position is within vault bounds
+     */
+    public boolean containsPoint(int screenX, int screenY, int cameraOffsetX, int cameraOffsetY) {
+        int worldX = screenX + cameraOffsetX;
+        int worldY = screenY + cameraOffsetY;
+        return new Rectangle(x, y, width, height).contains(worldX, worldY);
     }
 
     /**
@@ -379,5 +438,91 @@ public class VaultEntity extends Entity {
     @Override
     public Rectangle getBounds() {
         return new Rectangle(x, y, width, height);
+    }
+
+    // ==================== Local Storage Methods (for STORAGE_CHEST) ====================
+
+    /**
+     * Gets the local items list (for STORAGE_CHEST type).
+     */
+    public List<SavedItem> getLocalItems() {
+        return new ArrayList<>(localItems);
+    }
+
+    /**
+     * Adds an item to local storage (for STORAGE_CHEST type).
+     *
+     * @param itemId Item registry ID
+     * @param count Number of items
+     * @return Number of items that couldn't be added (overflow)
+     */
+    public int addLocalItem(String itemId, int count) {
+        if (!vaultType.isPersistent() && itemId != null && !itemId.isEmpty() && count > 0) {
+            int remaining = count;
+            int stackSize = 16;
+
+            // Try to stack with existing items
+            for (SavedItem item : localItems) {
+                if (item.itemId.equals(itemId) && item.stackCount < stackSize) {
+                    int space = stackSize - item.stackCount;
+                    int toAdd = Math.min(space, remaining);
+                    item.stackCount += toAdd;
+                    remaining -= toAdd;
+                    if (remaining == 0) return 0;
+                }
+            }
+
+            // Add new stacks
+            while (remaining > 0 && localItems.size() < LOCAL_CHEST_MAX_SLOTS) {
+                int toAdd = Math.min(stackSize, remaining);
+                localItems.add(new SavedItem(itemId, toAdd));
+                remaining -= toAdd;
+            }
+
+            return remaining;
+        }
+        return count;
+    }
+
+    /**
+     * Removes an item from local storage (for STORAGE_CHEST type).
+     *
+     * @param slotIndex Slot index
+     * @param count Number to remove (-1 for entire stack)
+     * @return The removed item info, or null if invalid
+     */
+    public SavedItem removeLocalItem(int slotIndex, int count) {
+        if (!vaultType.isPersistent() && slotIndex >= 0 && slotIndex < localItems.size()) {
+            SavedItem item = localItems.get(slotIndex);
+            if (count < 0 || count >= item.stackCount) {
+                localItems.remove(slotIndex);
+                return item;
+            } else {
+                item.stackCount -= count;
+                return new SavedItem(item.itemId, count);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Clears all local items (for STORAGE_CHEST type).
+     */
+    public void clearLocalItems() {
+        localItems.clear();
+    }
+
+    /**
+     * Gets the local storage slot count.
+     */
+    public int getLocalSlotCount() {
+        return localItems.size();
+    }
+
+    /**
+     * Gets the maximum local storage slots.
+     */
+    public int getMaxLocalSlots() {
+        return LOCAL_CHEST_MAX_SLOTS;
     }
 }

@@ -278,9 +278,40 @@ public class Inventory {
                 mouseY < panelY || mouseY > panelY + panelHeight;
 
         if (outsideInventory && draggedItem != null) {
-            // Drop the item into the world
-            droppedItem = draggedItem;
-            items.remove(draggedIndex);
+            // Check if dropped on the vault UI
+            if (vaultOpen && vaultInventory != null && vaultInventory.containsPoint(mouseX, mouseY)) {
+                // Transfer item to vault
+                String itemId = draggedItem.getItemId();
+                if (itemId == null || itemId.isEmpty()) {
+                    // Try to find by item name
+                    if (draggedItem.getLinkedItem() != null) {
+                        itemId = ItemRegistry.findIdByName(draggedItem.getLinkedItem().getName());
+                    }
+                    if (itemId == null || itemId.isEmpty()) {
+                        itemId = draggedItem.getItemName();
+                    }
+                }
+
+                if (itemId != null && !itemId.isEmpty()) {
+                    int overflow = vaultInventory.addItem(itemId, draggedItem.getStackCount());
+                    if (overflow == 0) {
+                        // Successfully transferred entire stack to vault
+                        items.remove(draggedIndex);
+                        System.out.println("Inventory: Transferred " + itemId + " to vault");
+                    } else if (overflow < draggedItem.getStackCount()) {
+                        // Partially transferred
+                        draggedItem.setStackCount(overflow);
+                        System.out.println("Inventory: Partially transferred " + itemId + " to vault, " + overflow + " remaining");
+                    } else {
+                        // Vault full, couldn't transfer
+                        System.out.println("Inventory: Vault full, could not transfer " + itemId);
+                    }
+                }
+            } else {
+                // Drop the item into the world
+                droppedItem = draggedItem;
+                items.remove(draggedIndex);
+            }
         }
 
         // Reset drag state
@@ -736,9 +767,11 @@ public class Inventory {
     public VaultInventory getVaultInventory() {
         if (vaultInventory == null) {
             vaultInventory = new VaultInventory();
+
+            // Set callback for when items are taken from vault (via click)
             vaultInventory.setItemTakenCallback((itemId, count) -> {
                 // Try to add item to player inventory
-                ItemEntity item = new ItemEntity(0, 0, itemId + ".gif");
+                ItemEntity item = new ItemEntity(0, 0, itemId);
                 item.setLinkedItem(ItemRegistry.create(itemId));
                 item.setStackCount(count);
                 if (!addItem(item)) {
@@ -747,14 +780,67 @@ public class Inventory {
                     System.out.println("Inventory: Inventory full, item returned to vault");
                 }
             });
+
+            // Set callback for drag-drop from vault to inventory
+            vaultInventory.setInventoryDropCallback(new VaultInventory.InventoryDropCallback() {
+                @Override
+                public boolean onDropToInventory(String itemId, int count, int dropX, int dropY) {
+                    // Try to add item to player inventory
+                    ItemEntity item = new ItemEntity(0, 0, itemId);
+                    item.setLinkedItem(ItemRegistry.create(itemId));
+                    item.setStackCount(count);
+                    return addItem(item);
+                }
+
+                @Override
+                public boolean isPointInInventory(int px, int py) {
+                    return containsPoint(px, py);
+                }
+            });
         }
         return vaultInventory;
     }
 
     /**
-     * Opens the vault UI alongside the inventory.
+     * Checks if a screen point is within the inventory UI bounds.
+     */
+    public boolean containsPoint(int px, int py) {
+        if (!isOpen) {
+            // Check hotbar bounds when closed
+            int hotbarSlotSize = 50;
+            int hotbarPadding = 5;
+            int hotbarWidth = HOTBAR_SIZE * (hotbarSlotSize + hotbarPadding) + hotbarPadding;
+            int hotbarHeight = hotbarSlotSize + hotbarPadding * 2;
+            int hotbarX = (1920 - hotbarWidth) / 2;
+            int hotbarY = 1080 - hotbarHeight - 20;
+            return px >= hotbarX && px < hotbarX + hotbarWidth &&
+                   py >= hotbarY && py < hotbarY + hotbarHeight;
+        }
+
+        // Check full inventory bounds when open
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelHeight = VISIBLE_ROWS * (slotSize + padding) + padding + 100;
+        int panelX = (1920 - panelWidth) / 2;
+        int panelY = 150;
+
+        return px >= panelX && px < panelX + panelWidth &&
+               py >= panelY && py < panelY + panelHeight;
+    }
+
+    /**
+     * Opens the vault UI alongside the inventory (persistent mode).
      */
     public void openVault() {
+        openVault(null);
+    }
+
+    /**
+     * Opens the vault UI alongside the inventory.
+     * If vaultEntity is provided and not persistent, opens in local mode.
+     *
+     * @param vaultEntity The vault entity to link, or null for persistent mode
+     */
+    public void openVault(entity.VaultEntity vaultEntity) {
         if (!vaultOpen) {
             vaultOpen = true;
             isOpen = true;  // Also open regular inventory
@@ -764,9 +850,16 @@ public class Inventory {
             int panelX = (1920 - panelWidth) / 2;
             int panelY = 150;
 
-            // Open vault to the left of inventory
-            getVaultInventory().open(panelX, panelY);
-            System.out.println("Inventory: Vault opened");
+            VaultInventory vault = getVaultInventory();
+
+            // Open in appropriate mode based on vault type
+            if (vaultEntity != null && !vaultEntity.getVaultType().isPersistent()) {
+                vault.openLocal(panelX, panelY, vaultEntity);
+                System.out.println("Inventory: Storage chest opened (local mode)");
+            } else {
+                vault.open(panelX, panelY);
+                System.out.println("Inventory: Vault opened (persistent mode)");
+            }
         }
     }
 
@@ -784,13 +877,23 @@ public class Inventory {
     }
 
     /**
-     * Toggles the vault open/closed state.
+     * Toggles the vault open/closed state (persistent mode).
      */
     public void toggleVault() {
+        toggleVault(null);
+    }
+
+    /**
+     * Toggles the vault open/closed state.
+     * If vaultEntity is provided and not persistent, opens in local mode.
+     *
+     * @param vaultEntity The vault entity to link, or null for persistent mode
+     */
+    public void toggleVault(entity.VaultEntity vaultEntity) {
         if (vaultOpen) {
             closeVault();
         } else {
-            openVault();
+            openVault(vaultEntity);
         }
     }
 
@@ -850,12 +953,7 @@ public class Inventory {
         List<SavedItem> savedItems = new ArrayList<>();
 
         for (ItemEntity item : items) {
-            String itemId = item.getItemName();
-            if (itemId == null || itemId.isEmpty()) {
-                if (item.getLinkedItem() != null) {
-                    itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
-                }
-            }
+            String itemId = resolveItemId(item);
 
             if (itemId != null && !itemId.isEmpty()) {
                 savedItems.add(new SavedItem(itemId, item.getStackCount()));
@@ -874,15 +972,43 @@ public class Inventory {
     }
 
     /**
+     * Resolves the item registry ID for an ItemEntity.
+     * Tries multiple sources in order of reliability:
+     * 1. Direct itemId field
+     * 2. Linked item name lookup
+     * 3. Item name lookup
+     * 4. Fallback to item name as ID
+     */
+    private String resolveItemId(ItemEntity item) {
+        // Try direct item ID first
+        String itemId = item.getItemId();
+        if (itemId != null && !itemId.isEmpty() && ItemRegistry.getTemplate(itemId) != null) {
+            return itemId;
+        }
+
+        // Try to find by linked item name
+        if (item.getLinkedItem() != null) {
+            String foundId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
+            if (foundId != null) {
+                return foundId;
+            }
+        }
+
+        // Try to find by item name
+        String foundId = ItemRegistry.findIdByName(item.getItemName());
+        if (foundId != null) {
+            return foundId;
+        }
+
+        // Last resort: use item name as ID (may not work but better than nothing)
+        return item.getItemName();
+    }
+
+    /**
      * Adds an item to the vault directly (bypasses inventory).
      */
     public void addToVault(ItemEntity item) {
-        String itemId = item.getItemName();
-        if (itemId == null || itemId.isEmpty()) {
-            if (item.getLinkedItem() != null) {
-                itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
-            }
-        }
+        String itemId = resolveItemId(item);
 
         if (itemId != null && !itemId.isEmpty()) {
             SaveManager.getInstance().addItemToVault(itemId, item.getStackCount());
@@ -899,12 +1025,7 @@ public class Inventory {
         List<SavedItem> savedItems = new ArrayList<>();
 
         for (ItemEntity item : items) {
-            String itemId = item.getItemName();
-            if (itemId == null || itemId.isEmpty()) {
-                if (item.getLinkedItem() != null) {
-                    itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
-                }
-            }
+            String itemId = resolveItemId(item);
 
             if (itemId != null && !itemId.isEmpty()) {
                 savedItems.add(new SavedItem(itemId, item.getStackCount()));
