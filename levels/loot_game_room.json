@@ -129,7 +129,7 @@
     {"_comment": "Exit door back to Loot Game"},
     {
       "x": 100,
-      "y": 622,
+      "y": 576,
       "width": 64,
       "height": 128,
       "texturePath": "assets/doors/iron_door.gif",
@@ -143,7 +143,7 @@
     {"_comment": "Bear spawn button in center"},
     {
       "x": 944,
-      "y": 734,
+      "y": 688,
       "width": 32,
       "height": 16,
       "texturePath": "assets/buttons/stone_button.gif",

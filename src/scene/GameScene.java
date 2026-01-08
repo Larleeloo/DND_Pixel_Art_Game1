@@ -625,6 +625,9 @@ public class GameScene implements Scene {
         double deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0;
         lastUpdateTime = currentTime;
 
+        // Handle door and button interactions FIRST (before entities consume E key)
+        handleDoorButtonInteractions(input);
+
         entityManager.updateAll(input);
 
         // Handle block breaking - check for broken blocks and dropped items
@@ -665,9 +668,6 @@ public class GameScene implements Scene {
                 }
             }
         }
-
-        // Handle door and button interactions
-        handleDoorButtonInteractions(input);
 
         // Update lighting system
         if (lightingSystem != null) {
