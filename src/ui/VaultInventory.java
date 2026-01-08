@@ -234,13 +234,7 @@ public class VaultInventory {
      * @return true if item was fully added
      */
     public boolean addItemEntity(ItemEntity item) {
-        String itemId = item.getItemName();
-        if (itemId == null || itemId.isEmpty()) {
-            // Try to find by linked item
-            if (item.getLinkedItem() != null) {
-                itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
-            }
-        }
+        String itemId = resolveItemId(item);
 
         if (itemId == null || itemId.isEmpty()) {
             System.err.println("VaultInventory: Cannot add item - no valid ID");
@@ -249,6 +243,38 @@ public class VaultInventory {
 
         int overflow = addItem(itemId, item.getStackCount());
         return overflow == 0;
+    }
+
+    /**
+     * Resolves the item registry ID for an ItemEntity.
+     * Tries multiple sources in order of reliability:
+     * 1. Direct itemId field
+     * 2. Linked item name lookup
+     * 3. Item name lookup
+     */
+    private String resolveItemId(ItemEntity item) {
+        // Try direct item ID first (most reliable)
+        String itemId = item.getItemId();
+        if (itemId != null && !itemId.isEmpty() && ItemRegistry.getTemplate(itemId) != null) {
+            return itemId;
+        }
+
+        // Try to find by linked item name
+        if (item.getLinkedItem() != null) {
+            String foundId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
+            if (foundId != null) {
+                return foundId;
+            }
+        }
+
+        // Try to find by item name
+        String foundId = ItemRegistry.findIdByName(item.getItemName());
+        if (foundId != null) {
+            return foundId;
+        }
+
+        // Last resort: use item name as ID (may not work but better than nothing)
+        return item.getItemName();
     }
 
     /**
@@ -278,9 +304,13 @@ public class VaultInventory {
         }
 
         if (removed != null) {
-            // Create ItemEntity for the removed items
+            // Create ItemEntity for the removed items using the registry ID
+            // This ensures proper item identity is preserved
             ItemEntity item = new ItemEntity(0, 0, removed.itemId);
-            item.setLinkedItem(ItemRegistry.create(removed.itemId));
+            Item linkedItem = ItemRegistry.create(removed.itemId);
+            if (linkedItem != null) {
+                item.setLinkedItem(linkedItem);
+            }
             item.setStackCount(removed.stackCount);
             return item;
         }
@@ -495,7 +525,7 @@ public class VaultInventory {
     }
 
     /**
-     * Draws the vault inventory UI.
+     * Draws the vault inventory UI (without dragged item - use drawDraggedItemOverlay for that).
      */
     public void draw(Graphics g) {
         if (!isOpen) return;
@@ -520,10 +550,19 @@ public class VaultInventory {
             drawTooltip(g2d, slots.get(hoveredSlotIndex));
         }
 
-        // Draw dragged item
-        if (draggedSlot != null) {
-            drawDraggedItem(g2d);
-        }
+        // Note: Dragged item is now drawn separately via drawDraggedItemOverlay()
+        // to ensure it appears on top of all UI elements
+    }
+
+    /**
+     * Draws the dragged item overlay on top of all other UI.
+     * Call this AFTER drawing all inventory/vault UI to ensure proper z-order.
+     */
+    public void drawDraggedItemOverlay(Graphics g) {
+        if (!isOpen || draggedSlot == null) return;
+
+        Graphics2D g2d = (Graphics2D) g;
+        drawDraggedItem(g2d);
     }
 
     private void drawBackground(Graphics2D g2d) {

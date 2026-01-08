@@ -522,21 +522,36 @@ public class Inventory {
         if (isOpen) {
             // Draw full inventory panel
             drawFullInventory(g2d);
-
-            // Draw dragged item on top if dragging
-            if (isDragging && draggedItem != null) {
-                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.7f));
-                if (draggedItem.getSprite() != null) {
-                    g2d.drawImage(draggedItem.getSprite(),
-                            dragX - slotSize/2, dragY - slotSize/2,
-                            slotSize, slotSize, null);
-                }
-                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-            }
+            // Note: Dragged item is now drawn separately via drawDraggedItemOverlay()
         } else {
             // Draw compact inventory preview (always visible)
             drawCompactInventory(g2d);
         }
+    }
+
+    /**
+     * Draws the dragged item overlay on top of all other UI.
+     * Call this AFTER drawing all inventory/vault UI to ensure proper z-order.
+     */
+    public void drawDraggedItemOverlay(Graphics g) {
+        if (!isOpen || !isDragging || draggedItem == null) return;
+
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));
+        if (draggedItem.getSprite() != null) {
+            g2d.drawImage(draggedItem.getSprite(),
+                    dragX - slotSize/2, dragY - slotSize/2,
+                    slotSize, slotSize, null);
+        }
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+    }
+
+    /**
+     * Checks if the player inventory is currently dragging an item.
+     */
+    public boolean isDragging() {
+        return isDragging;
     }
 
     private void drawCompactInventory(Graphics2D g2d) {
@@ -940,6 +955,21 @@ public class Inventory {
     public void drawVault(Graphics g) {
         if (vaultOpen && vaultInventory != null) {
             vaultInventory.draw(g);
+        }
+    }
+
+    /**
+     * Draws all dragged item overlays on top of all other UI.
+     * Call this AFTER drawVault() and draw() to ensure proper z-order.
+     * This ensures dragged items are always visible above both inventory and vault.
+     */
+    public void drawAllDraggedItemOverlays(Graphics g) {
+        // Draw inventory dragged item overlay
+        drawDraggedItemOverlay(g);
+
+        // Draw vault dragged item overlay
+        if (vaultOpen && vaultInventory != null) {
+            vaultInventory.drawDraggedItemOverlay(g);
         }
     }
 

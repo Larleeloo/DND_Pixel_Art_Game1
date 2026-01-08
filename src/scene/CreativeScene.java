@@ -28,16 +28,20 @@ import java.util.List;
  * - Save levels to JSON files
  * - Level properties configuration
  *
- * Controls:
+ * Controls (Edit Mode):
  * - Left click: Place selected entity
  * - Right click: Remove entity at cursor
  * - WASD/Arrow keys: Pan camera
  * - P: Toggle play mode
- * - S: Save level
- * - E: Edit mode (return from play)
- * - Escape: Return to main menu
+ * - Ctrl+S: Save level
  * - Tab: Cycle palette categories
- * - Mouse wheel: Zoom (when implemented)
+ * - W: Configure door (near door)
+ * - E: Configure button (near button)
+ * - Escape: Exit to main menu
+ *
+ * Controls (Play Mode):
+ * - E: Interact with vault/chest/door
+ * - Escape/Tab: Return to edit mode
  */
 public class CreativeScene implements Scene {
 
@@ -735,8 +739,9 @@ public class CreativeScene implements Scene {
             // In play mode, update the game scene
             gameScene.update(input);
 
-            // Check for E key to return to edit mode
-            if (input.isKeyJustPressed(KeyEvent.VK_E)) {
+            // Check for Escape or Tab to return to edit mode
+            // (E key is now reserved for vault/chest/door interaction in play mode)
+            if (input.isKeyJustPressed(KeyEvent.VK_ESCAPE) || input.isKeyJustPressed(KeyEvent.VK_TAB)) {
                 exitPlayMode();
             }
             return;
