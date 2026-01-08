@@ -126,8 +126,8 @@
   "parallaxLayers": [],
 
   "doors": [
+    {"_comment": "Exit door back to Loot Game"},
     {
-      "_comment": "Exit door back to Loot Game",
       "x": 100,
       "y": 622,
       "width": 64,
@@ -140,8 +140,8 @@
   ],
 
   "buttons": [
+    {"_comment": "Bear spawn button in center"},
     {
-      "_comment": "Bear spawn button in center",
       "x": 944,
       "y": 734,
       "width": 32,
