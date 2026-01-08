@@ -45,6 +45,9 @@ public class LootGameScene implements Scene {
     // Secret room door
     private DoorEntity secretRoomDoor;
 
+    // Player Vault
+    private VaultEntity playerVault;
+
     // UI
     private List<UIButton> buttons;
 
@@ -157,7 +160,25 @@ public class LootGameScene implements Scene {
         secretRoomDoor.setActionTarget("levels/loot_game_room.json");
         entityManager.addEntity(secretRoomDoor);
 
-        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide, with secret room door");
+        // Create Player Vault (to the left of daily chest)
+        int vaultX = LEVEL_WIDTH / 2 - 200;
+        int vaultY = GROUND_Y - 64;
+        playerVault = VaultEntity.createPlayerVault(vaultX, vaultY);
+        playerVault.setOnOpenCallback(() -> {
+            // Open the vault UI when player opens the vault
+            if (player != null && player.getInventory() != null) {
+                player.getInventory().openVault();
+            }
+        });
+        playerVault.setOnCloseCallback(() -> {
+            // Close the vault UI when vault closes
+            if (player != null && player.getInventory() != null) {
+                player.getInventory().closeVault();
+            }
+        });
+        entityManager.addEntity(playerVault);
+
+        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide, with secret room door and vault");
     }
 
     /**
@@ -240,10 +261,25 @@ public class LootGameScene implements Scene {
                 secretRoomDoor.setPlayerNearby(false);
             }
 
-            // Handle 'E' key press for chest/door interaction
+            // Update vault proximity
+            if (playerVault != null) {
+                Rectangle playerBoundsCheck = player.getBounds();
+                playerVault.checkPlayerProximity(player.getX(), player.getY(),
+                    playerBoundsCheck.width, playerBoundsCheck.height);
+            }
+
+            // Handle 'E' key press for chest/door/vault interaction
             if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
-                // Try secret room door first
-                if (secretRoomDoor != null && secretRoomDoor.isPlayerNearby()) {
+                // Check if vault is already open - close it
+                if (playerVault != null && playerVault.isOpen()) {
+                    playerVault.close();
+                }
+                // Try vault first if player is nearby
+                else if (playerVault != null && playerVault.isPlayerNearby()) {
+                    playerVault.tryOpen();
+                }
+                // Try secret room door
+                else if (secretRoomDoor != null && secretRoomDoor.isPlayerNearby()) {
                     secretRoomDoor.open();
                     // Execute door action (level transition)
                     if (secretRoomDoor.getActionType() == DoorEntity.ActionType.LEVEL_TRANSITION) {
@@ -257,6 +293,11 @@ public class LootGameScene implements Scene {
                 else if (!dailyChest.tryOpen()) {
                     monthlyChest.tryOpen();
                 }
+            }
+
+            // Update vault entity
+            if (playerVault != null) {
+                playerVault.update(input);
             }
 
             // Collect dropped items when player touches them
@@ -278,9 +319,28 @@ public class LootGameScene implements Scene {
         legendaryItems = save.getLegendaryItemsFound();
         mythicItems = save.getMythicItemsFound();
 
-        // ESC to return to menu
+        // ESC to return to menu - transfer items to vault first
         if (input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
+            transferInventoryToVaultOnExit();
             SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
+        }
+    }
+
+    /**
+     * Transfers all items from the player's inventory to the vault when leaving.
+     */
+    private void transferInventoryToVaultOnExit() {
+        if (player != null && player.getInventory() != null) {
+            Inventory inventory = player.getInventory();
+            int itemCount = inventory.getItemCount();
+            if (itemCount > 0) {
+                int overflow = inventory.transferAllToVault();
+                if (overflow == 0) {
+                    System.out.println("LootGameScene: Transferred " + itemCount + " items to vault");
+                } else {
+                    System.out.println("LootGameScene: Transferred items to vault with " + overflow + " overflow");
+                }
+            }
         }
     }
 
@@ -422,6 +482,8 @@ public class LootGameScene implements Scene {
         // Draw player inventory
         if (player != null) {
             player.getInventory().draw(g);
+            // Draw vault inventory if open
+            player.getInventory().drawVault(g);
         }
 
         // Draw stats panel

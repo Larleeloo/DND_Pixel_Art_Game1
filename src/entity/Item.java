@@ -162,9 +162,11 @@ public class Item {
         this.triggeredAnimations = new HashMap<>();
 
         // Set defaults based on category
+        // Default stack size is 16 for all stackable items (except blocks which stack to 64)
         switch (category) {
             case WEAPON:
             case TOOL:
+            case ARMOR:
                 this.stackable = false;
                 this.maxStackSize = 1;
                 break;
@@ -180,8 +182,13 @@ public class Item {
                 this.isConsumable = true;
                 break;
             case MATERIAL:
+            case KEY:
+            case ACCESSORY:
+            case THROWABLE:
+            case CLOTHING:
+            case OTHER:
                 this.stackable = true;
-                this.maxStackSize = 64;
+                this.maxStackSize = 16;
                 break;
             case BLOCK:
                 this.stackable = true;

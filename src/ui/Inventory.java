@@ -2,10 +2,13 @@ package ui;
 import entity.*;
 import block.*;
 import audio.*;
+import save.SaveManager;
+import save.SaveManager.SavedItem;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Manages collected items and displays inventory UI.
@@ -17,12 +20,17 @@ import java.util.ArrayList;
  * - Left-click to auto-equip items to hotbar
  * - Drag and drop for item management
  * - Stack display for stackable items
+ * - Vault integration for persistent storage
  */
 public class Inventory {
 
     private ArrayList<ItemEntity> items;
     private static final int MAX_SLOTS = 32;  // Fixed 32 slot limit
     private boolean isOpen;
+
+    // Vault integration
+    private VaultInventory vaultInventory;
+    private boolean vaultOpen = false;
 
     // UI positioning
     private int uiX, uiY;
@@ -718,5 +726,198 @@ public class Inventory {
         FontMetrics fm = g2d.getFontMetrics();
         int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, textX, panelY + panelHeight - 15);
+    }
+
+    // ==================== Vault Integration ====================
+
+    /**
+     * Gets or creates the VaultInventory instance.
+     */
+    public VaultInventory getVaultInventory() {
+        if (vaultInventory == null) {
+            vaultInventory = new VaultInventory();
+            vaultInventory.setItemTakenCallback((itemId, count) -> {
+                // Try to add item to player inventory
+                ItemEntity item = new ItemEntity(0, 0, itemId + ".gif");
+                item.setLinkedItem(ItemRegistry.create(itemId));
+                item.setStackCount(count);
+                if (!addItem(item)) {
+                    // If inventory full, put back in vault
+                    vaultInventory.addItem(itemId, count);
+                    System.out.println("Inventory: Inventory full, item returned to vault");
+                }
+            });
+        }
+        return vaultInventory;
+    }
+
+    /**
+     * Opens the vault UI alongside the inventory.
+     */
+    public void openVault() {
+        if (!vaultOpen) {
+            vaultOpen = true;
+            isOpen = true;  // Also open regular inventory
+
+            // Calculate inventory panel position
+            int panelWidth = COLS * (slotSize + padding) + padding;
+            int panelX = (1920 - panelWidth) / 2;
+            int panelY = 150;
+
+            // Open vault to the left of inventory
+            getVaultInventory().open(panelX, panelY);
+            System.out.println("Inventory: Vault opened");
+        }
+    }
+
+    /**
+     * Closes the vault UI.
+     */
+    public void closeVault() {
+        if (vaultOpen) {
+            vaultOpen = false;
+            if (vaultInventory != null) {
+                vaultInventory.close();
+            }
+            System.out.println("Inventory: Vault closed");
+        }
+    }
+
+    /**
+     * Toggles the vault open/closed state.
+     */
+    public void toggleVault() {
+        if (vaultOpen) {
+            closeVault();
+        } else {
+            openVault();
+        }
+    }
+
+    /**
+     * Checks if the vault is currently open.
+     */
+    public boolean isVaultOpen() {
+        return vaultOpen;
+    }
+
+    /**
+     * Handles vault scroll events.
+     */
+    public void handleVaultScroll(int direction) {
+        if (vaultOpen && vaultInventory != null) {
+            vaultInventory.handleScroll(direction);
+        }
+    }
+
+    /**
+     * Handles vault click events.
+     * @return true if the click was handled by the vault
+     */
+    public boolean handleVaultClick(int mouseX, int mouseY, boolean isRightClick) {
+        if (vaultOpen && vaultInventory != null && vaultInventory.containsPoint(mouseX, mouseY)) {
+            vaultInventory.handleClick(mouseX, mouseY, isRightClick);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Updates vault mouse position for hover effects.
+     */
+    public void updateVaultMousePosition(int mouseX, int mouseY) {
+        if (vaultOpen && vaultInventory != null) {
+            vaultInventory.updateMousePosition(mouseX, mouseY);
+        }
+    }
+
+    /**
+     * Draws the vault UI if open.
+     */
+    public void drawVault(Graphics g) {
+        if (vaultOpen && vaultInventory != null) {
+            vaultInventory.draw(g);
+        }
+    }
+
+    /**
+     * Transfers all inventory items to the vault.
+     * Used when leaving the loot game to preserve collected items.
+     *
+     * @return Number of items that couldn't be stored (overflow)
+     */
+    public int transferAllToVault() {
+        List<SavedItem> savedItems = new ArrayList<>();
+
+        for (ItemEntity item : items) {
+            String itemId = item.getItemName();
+            if (itemId == null || itemId.isEmpty()) {
+                if (item.getLinkedItem() != null) {
+                    itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
+                }
+            }
+
+            if (itemId != null && !itemId.isEmpty()) {
+                savedItems.add(new SavedItem(itemId, item.getStackCount()));
+            }
+        }
+
+        int overflow = SaveManager.getInstance().transferToVault(savedItems);
+        if (overflow == 0) {
+            items.clear();
+            System.out.println("Inventory: All items transferred to vault");
+        } else {
+            System.out.println("Inventory: Vault overflow - " + overflow + " items couldn't be stored");
+        }
+
+        return overflow;
+    }
+
+    /**
+     * Adds an item to the vault directly (bypasses inventory).
+     */
+    public void addToVault(ItemEntity item) {
+        String itemId = item.getItemName();
+        if (itemId == null || itemId.isEmpty()) {
+            if (item.getLinkedItem() != null) {
+                itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
+            }
+        }
+
+        if (itemId != null && !itemId.isEmpty()) {
+            SaveManager.getInstance().addItemToVault(itemId, item.getStackCount());
+            if (vaultInventory != null && vaultInventory.isOpen()) {
+                vaultInventory.loadFromSaveManager();  // Refresh display
+            }
+        }
+    }
+
+    /**
+     * Gets all items as a list of SavedItem for vault transfer.
+     */
+    public List<SavedItem> getItemsAsSavedItems() {
+        List<SavedItem> savedItems = new ArrayList<>();
+
+        for (ItemEntity item : items) {
+            String itemId = item.getItemName();
+            if (itemId == null || itemId.isEmpty()) {
+                if (item.getLinkedItem() != null) {
+                    itemId = ItemRegistry.findIdByName(item.getLinkedItem().getName());
+                }
+            }
+
+            if (itemId != null && !itemId.isEmpty()) {
+                savedItems.add(new SavedItem(itemId, item.getStackCount()));
+            }
+        }
+
+        return savedItems;
+    }
+
+    /**
+     * Clears all items from the inventory.
+     */
+    public void clear() {
+        items.clear();
     }
 }

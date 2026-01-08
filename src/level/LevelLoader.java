@@ -401,6 +401,27 @@ public class LevelLoader {
                 }
             }
 
+            // Parse vaults (interactive vault/chest entities)
+            if (root.containsKey("vaults")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> vaultList = (List<Map<String, Object>>) root.get("vaults");
+                for (Map<String, Object> v : vaultList) {
+                    // Skip comment entries
+                    if (v.containsKey("_comment")) continue;
+
+                    LevelData.VaultData vault = new LevelData.VaultData();
+                    vault.x = toInt(v.get("x"));
+                    vault.y = toInt(v.get("y"));
+                    if (v.containsKey("width")) vault.width = toInt(v.get("width"));
+                    if (v.containsKey("height")) vault.height = toInt(v.get("height"));
+                    if (v.containsKey("texturePath")) vault.texturePath = (String) v.get("texturePath");
+                    if (v.containsKey("linkId")) vault.linkId = (String) v.get("linkId");
+                    if (v.containsKey("vaultType")) vault.vaultType = (String) v.get("vaultType");
+
+                    data.vaults.add(vault);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
@@ -409,6 +430,7 @@ public class LevelLoader {
                     data.mobs.size() + " mobs, " +
                     data.doors.size() + " doors, " +
                     data.buttons.size() + " buttons, " +
+                    data.vaults.size() + " vaults, " +
                     data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {

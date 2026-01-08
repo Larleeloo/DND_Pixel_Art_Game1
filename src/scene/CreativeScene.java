@@ -123,9 +123,10 @@ public class CreativeScene implements Scene {
     private List<PaletteItem> interactivePalette;
     private List<PaletteItem> parallaxPalette;
 
-    // Placed interactive entities (doors and buttons)
+    // Placed interactive entities (doors, buttons, and vaults)
     private List<PlacedEntity> placedDoors;
     private List<PlacedEntity> placedButtons;
+    private List<PlacedEntity> placedVaults;
 
     // For door/button configuration modal
     private PlacedEntity entityBeingConfigured = null;
@@ -231,6 +232,7 @@ public class CreativeScene implements Scene {
         placedLights = new ArrayList<>();
         placedDoors = new ArrayList<>();
         placedButtons = new ArrayList<>();
+        placedVaults = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
         blockTextures = new HashMap<>();
 
@@ -382,6 +384,20 @@ public class CreativeScene implements Scene {
             buttonData.put("actionType", "none");
             buttonData.put("actionTarget", "");
             interactivePalette.add(new PaletteItem(button[0], button[1], icon, buttonData));
+        }
+
+        // Vaults and Chests
+        String[][] vaultTypes = {
+            {"player_vault", "Player Vault", "assets/vault/player_vault.gif"},
+            {"storage_chest", "Storage Chest", "assets/vault/storage_chest.gif"}
+        };
+        for (String[] vault : vaultTypes) {
+            BufferedImage icon = createVaultIcon(vault[2]);
+            Map<String, Object> vaultData = new HashMap<>();
+            vaultData.put("type", "vault");
+            vaultData.put("texturePath", vault[2]);
+            vaultData.put("vaultType", vault[0].equals("player_vault") ? "PLAYER_VAULT" : "STORAGE_CHEST");
+            interactivePalette.add(new PaletteItem(vault[0], vault[1], icon, vaultData));
         }
 
         System.out.println("CreativeScene: Loaded " + interactivePalette.size() + " interactive elements into palette");
@@ -672,6 +688,40 @@ public class CreativeScene implements Scene {
         // Highlight
         g.setColor(new Color(160, 160, 160));
         g.fillRoundRect(12, 20, 24, 4, 2, 2);
+
+        g.dispose();
+        return icon;
+    }
+
+    private BufferedImage createVaultIcon(String texturePath) {
+        // Try to load actual texture
+        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
+        if (asset != null && asset.staticImage != null) {
+            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
+        }
+
+        // Fallback placeholder - draw a chest/vault shape
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Chest body
+        g.setColor(new Color(139, 90, 43));
+        g.fillRoundRect(6, 18, 36, 26, 6, 6);
+
+        // Chest lid
+        g.setColor(new Color(101, 67, 33));
+        g.fillRoundRect(4, 10, 40, 14, 4, 4);
+
+        // Metal bands
+        g.setColor(new Color(169, 169, 169));
+        g.fillRect(10, 18, 3, 26);
+        g.fillRect(35, 18, 3, 26);
+        g.fillRect(21, 18, 6, 26);
+
+        // Gold lock
+        g.setColor(new Color(255, 215, 0));
+        g.fillOval(21, 28, 6, 8);
 
         g.dispose();
         return icon;
@@ -1614,6 +1664,42 @@ public class CreativeScene implements Scene {
                 }
             }
         }
+
+        // Draw vaults
+        for (PlacedEntity entity : placedVaults) {
+            int screenX = entity.x - (int) cameraX;
+            int screenY = entity.y - (int) cameraY;
+
+            if (screenX + 64 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+                screenY + 64 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, screenX, screenY, 64, 64, null);
+                } else {
+                    // Fallback drawing - simple chest shape
+                    g.setColor(new Color(139, 90, 43));
+                    g.fillRoundRect(screenX + 4, screenY + 16, 56, 44, 8, 8);
+                    g.setColor(new Color(101, 67, 33));
+                    g.fillRoundRect(screenX + 2, screenY + 8, 60, 20, 6, 6);
+                    g.setColor(new Color(255, 215, 0));
+                    g.fillOval(screenX + 28, screenY + 35, 8, 10);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 215, 0, 100));
+                    g.fillRect(screenX, screenY, 64, 64);
+                }
+
+                // Draw vault type label
+                @SuppressWarnings("unchecked")
+                Map<String, Object> vaultData = (Map<String, Object>) entity.data;
+                String vaultType = (String) vaultData.get("vaultType");
+                g.setFont(new Font("Arial", Font.BOLD, 9));
+                g.setColor(Color.WHITE);
+                String label = "PLAYER_VAULT".equals(vaultType) ? "P" : "S";
+                g.drawString(label, screenX + 28, screenY + 60);
+            }
+        }
     }
 
     /**
@@ -2071,6 +2157,16 @@ public class CreativeScene implements Scene {
                     PlacedEntity button = new PlacedEntity(placeX, placeY, "button", buttonData, selected.icon);
                     placedButtons.add(button);
                     setStatus("Placed button - Press E near it to configure action");
+                } else if ("vault".equals(interactiveType)) {
+                    // Place vault/chest
+                    placeX = worldMouseX - 32;
+                    placeY = worldMouseY - 32;
+
+                    Map<String, Object> vaultData = new HashMap<>(interactiveData);
+                    vaultData.put("linkId", "vault_" + System.currentTimeMillis());
+                    PlacedEntity vault = new PlacedEntity(placeX, placeY, "vault", vaultData, selected.icon);
+                    placedVaults.add(vault);
+                    setStatus("Placed vault - Player can open with E key");
                 }
                 break;
 
@@ -2180,6 +2276,18 @@ public class CreativeScene implements Scene {
                 return;
             }
         }
+
+        // Check vaults
+        iter = placedVaults.iterator();
+        while (iter.hasNext()) {
+            PlacedEntity entity = iter.next();
+            Rectangle bounds = new Rectangle(entity.x, entity.y, 64, 64);
+            if (bounds.contains(worldX, worldY)) {
+                iter.remove();
+                setStatus("Removed vault");
+                return;
+            }
+        }
     }
 
     /**
@@ -2223,6 +2331,7 @@ public class CreativeScene implements Scene {
         levelData.parallaxLayers.clear();
         levelData.doors.clear();
         levelData.buttons.clear();
+        levelData.vaults.clear();
 
         // Add blocks
         for (PlacedEntity entity : placedBlocks) {
@@ -2310,6 +2419,21 @@ public class CreativeScene implements Scene {
             buttonData.actionType = (String) buttonInfo.getOrDefault("actionType", "none");
             buttonData.actionTarget = (String) buttonInfo.getOrDefault("actionTarget", "");
             levelData.buttons.add(buttonData);
+        }
+
+        // Add vaults
+        for (PlacedEntity entity : placedVaults) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> vaultInfo = (Map<String, Object>) entity.data;
+            LevelData.VaultData vaultData = new LevelData.VaultData();
+            vaultData.x = entity.x;
+            vaultData.y = entity.y;
+            vaultData.width = 64;
+            vaultData.height = 64;
+            vaultData.texturePath = (String) vaultInfo.get("texturePath");
+            vaultData.linkId = (String) vaultInfo.get("linkId");
+            vaultData.vaultType = (String) vaultInfo.getOrDefault("vaultType", "PLAYER_VAULT");
+            levelData.vaults.add(vaultData);
         }
     }
 
@@ -2479,6 +2603,20 @@ public class CreativeScene implements Scene {
                         "\", \"actionType\": \"" + escapeJson(b.actionType) +
                         "\", \"actionTarget\": \"" + escapeJson(b.actionTarget) + "\"}" + comma);
                 }
+                writer.println("  ],");
+                writer.println();
+
+                // Vaults
+                writer.println("  \"vaults\": [");
+                for (int i = 0; i < levelData.vaults.size(); i++) {
+                    LevelData.VaultData v = levelData.vaults.get(i);
+                    String comma = (i < levelData.vaults.size() - 1) ? "," : "";
+                    writer.println("    {\"x\": " + v.x + ", \"y\": " + v.y +
+                        ", \"width\": " + v.width + ", \"height\": " + v.height +
+                        ", \"texturePath\": \"" + escapeJson(v.texturePath) +
+                        "\", \"linkId\": \"" + escapeJson(v.linkId) +
+                        "\", \"vaultType\": \"" + escapeJson(v.vaultType) + "\"}" + comma);
+                }
                 writer.println("  ]");
 
                 writer.println("}");
@@ -2596,6 +2734,19 @@ public class CreativeScene implements Scene {
                 placedButtons.add(entity);
             }
 
+            // Load vaults
+            placedVaults.clear();
+            for (LevelData.VaultData v : levelData.vaults) {
+                Map<String, Object> vaultData = new HashMap<>();
+                vaultData.put("type", "vault");
+                vaultData.put("texturePath", v.texturePath);
+                vaultData.put("linkId", v.linkId);
+                vaultData.put("vaultType", v.vaultType);
+                BufferedImage icon = createVaultIcon(v.texturePath);
+                PlacedEntity entity = new PlacedEntity(v.x, v.y, "vault", vaultData, icon);
+                placedVaults.add(entity);
+            }
+
             // Update camera bounds
             camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
 
@@ -2603,7 +2754,8 @@ public class CreativeScene implements Scene {
                 placedBlocks.size() + " blocks, " +
                 placedMobs.size() + " mobs, " +
                 placedDoors.size() + " doors, " +
-                placedButtons.size() + " buttons)");
+                placedButtons.size() + " buttons, " +
+                placedVaults.size() + " vaults)");
 
         } catch (Exception e) {
             setStatus("Error loading level: " + e.getMessage());
@@ -2686,6 +2838,7 @@ public class CreativeScene implements Scene {
                 placedLights.clear();
                 placedDoors.clear();
                 placedButtons.clear();
+                placedVaults.clear();
 
                 showPropertiesDialog = false;
                 dialog.dispose();

@@ -338,6 +338,19 @@ public class GameScene implements Scene {
         }
         System.out.println("GameScene: Added " + buttonsAdded + " buttons to level");
 
+        // Add vaults (interactive vault/chest entities)
+        int vaultsAdded = 0;
+        for (LevelData.VaultData v : levelData.vaults) {
+            VaultEntity.VaultType vaultType = "STORAGE_CHEST".equals(v.vaultType)
+                ? VaultEntity.VaultType.STORAGE_CHEST
+                : VaultEntity.VaultType.PLAYER_VAULT;
+
+            VaultEntity vault = new VaultEntity(v.x, v.y, vaultType);
+            entityManager.addEntity(vault);
+            vaultsAdded++;
+        }
+        System.out.println("GameScene: Added " + vaultsAdded + " vaults to level");
+
         // Add player - choose animation system based on level settings
         // Priority: useSpriteAnimation > useBoneAnimation > default (PlayerEntity)
         AudioManager audio = SceneManager.getInstance().getAudioManager();

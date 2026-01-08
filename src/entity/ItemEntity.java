@@ -65,8 +65,9 @@ public class ItemEntity extends Entity {
     private BufferedImage tintedSprite; // Cached tinted version
 
     // Stack count for stackable items
+    // Default max stack size is 16 for all items (except blocks which stack to 64)
     private int stackCount = 1;
-    private int maxStackSize = 1;
+    private int maxStackSize = 16;
 
     // Animation support for GIFs (full 32-bit color with per-frame timing)
     private List<BufferedImage> animationFrames;

@@ -70,6 +70,7 @@ public class LevelData {
     public List<MobData> mobs;  // AI-controlled mobs (creatures/enemies)
     public List<DoorData> doors;  // Interactive doors
     public List<ButtonData> buttons;  // Interactive buttons/switches
+    public List<VaultData> vaults;  // Interactive vaults/chests
 
     // Parallax settings
     public boolean parallaxEnabled = false;  // If true, use parallax background system
@@ -87,6 +88,7 @@ public class LevelData {
         mobs = new ArrayList<>();
         doors = new ArrayList<>();
         buttons = new ArrayList<>();
+        vaults = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -543,6 +545,49 @@ public class LevelData {
     }
 
     /**
+     * Data class for interactive vault/chest entities.
+     * Vaults provide access to persistent player storage.
+     */
+    public static class VaultData {
+        public int x;
+        public int y;
+        public int width = 64;
+        public int height = 64;
+        public String texturePath = "assets/vault/player_vault.gif";
+        public String linkId = "";              // ID for identification
+        public String vaultType = "PLAYER_VAULT";  // PLAYER_VAULT or STORAGE_CHEST
+
+        public VaultData() {}
+
+        public VaultData(int x, int y, String linkId) {
+            this.x = x;
+            this.y = y;
+            this.linkId = linkId;
+        }
+
+        public VaultData(int x, int y, String vaultType, String texturePath) {
+            this.x = x;
+            this.y = y;
+            this.vaultType = vaultType;
+            this.texturePath = texturePath;
+        }
+
+        public VaultData(int x, int y, int width, int height, String texturePath, String linkId, String vaultType) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.texturePath = texturePath;
+            this.linkId = linkId;
+            this.vaultType = vaultType;
+        }
+
+        public boolean isPlayerVault() {
+            return "PLAYER_VAULT".equals(vaultType);
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -928,6 +973,7 @@ public class LevelData {
                 ", mobs=" + mobs.size() +
                 ", doors=" + doors.size() +
                 ", buttons=" + buttons.size() +
+                ", vaults=" + vaults.size() +
                 '}';
     }
 }

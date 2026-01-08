@@ -9,7 +9,12 @@ import java.util.*;
 
 /**
  * SaveManager handles persistent game data storage using JSON.
- * Manages player inventory, chest cooldowns, and other progression data.
+ * Manages player inventory, vault storage, chest cooldowns, and other progression data.
+ *
+ * Vault System:
+ * - The vault stores up to 10,000 items persistently
+ * - Items stack up to 16 duplicates before taking another slot
+ * - Items are automatically transferred from player inventory to vault when leaving loot game
  */
 public class SaveManager {
 
@@ -20,6 +25,7 @@ public class SaveManager {
 
     // Save data
     private List<SavedItem> inventory;
+    private List<SavedItem> vaultItems;  // Vault can hold up to 10,000 items
     private long dailyChestLastOpened;
     private long monthlyChestLastOpened;
     private int totalItemsCollected;
@@ -30,6 +36,10 @@ public class SaveManager {
     // Cooldowns in milliseconds
     public static final long DAILY_COOLDOWN = 24 * 60 * 60 * 1000L; // 24 hours
     public static final long MONTHLY_COOLDOWN = 30 * 24 * 60 * 60 * 1000L; // 30 days
+
+    // Vault constants
+    public static final int VAULT_MAX_SLOTS = 10000;
+    public static final int STACK_SIZE = 16;  // Maximum stack size for duplicate items
 
     /**
      * Represents a saved item with its properties
@@ -46,6 +56,7 @@ public class SaveManager {
 
     private SaveManager() {
         inventory = new ArrayList<>();
+        vaultItems = new ArrayList<>();
         dailyChestLastOpened = 0;
         monthlyChestLastOpened = 0;
         totalItemsCollected = 0;
@@ -148,6 +159,138 @@ public class SaveManager {
         return new ArrayList<>(inventory);
     }
 
+    // ==================== Vault Methods ====================
+
+    /**
+     * Adds an item to the vault with proper stacking.
+     * Items stack up to STACK_SIZE (16) before using a new slot.
+     *
+     * @param itemId The item registry ID
+     * @param count Number of items to add
+     * @return Number of items that couldn't be added (overflow)
+     */
+    public int addItemToVault(String itemId, int count) {
+        if (itemId == null || itemId.isEmpty() || count <= 0) return count;
+
+        int remaining = count;
+
+        // First, try to stack with existing items
+        for (SavedItem saved : vaultItems) {
+            if (saved.itemId.equals(itemId) && saved.stackCount < STACK_SIZE) {
+                int spaceAvailable = STACK_SIZE - saved.stackCount;
+                int toAdd = Math.min(spaceAvailable, remaining);
+                saved.stackCount += toAdd;
+                remaining -= toAdd;
+
+                if (remaining == 0) {
+                    save();
+                    return 0;
+                }
+            }
+        }
+
+        // Add new stacks for remaining items
+        while (remaining > 0 && vaultItems.size() < VAULT_MAX_SLOTS) {
+            int stackSize = Math.min(STACK_SIZE, remaining);
+            vaultItems.add(new SavedItem(itemId, stackSize));
+            remaining -= stackSize;
+            totalItemsCollected += stackSize;
+
+            // Track rare items
+            Item item = ItemRegistry.getTemplate(itemId);
+            if (item != null) {
+                if (item.getRarity() == Item.ItemRarity.LEGENDARY) {
+                    legendaryItemsFound++;
+                } else if (item.getRarity() == Item.ItemRarity.MYTHIC) {
+                    mythicItemsFound++;
+                }
+            }
+        }
+
+        save();
+        return remaining;  // Return any overflow
+    }
+
+    /**
+     * Removes an item from the vault.
+     *
+     * @param slotIndex Index of the vault slot
+     * @param count Number of items to remove (or -1 for entire stack)
+     * @return The removed SavedItem with the actual count removed, or null if invalid
+     */
+    public SavedItem removeItemFromVault(int slotIndex, int count) {
+        if (slotIndex < 0 || slotIndex >= vaultItems.size()) return null;
+
+        SavedItem item = vaultItems.get(slotIndex);
+        if (count < 0 || count >= item.stackCount) {
+            // Remove entire stack
+            vaultItems.remove(slotIndex);
+            save();
+            return item;
+        } else {
+            // Remove partial stack
+            item.stackCount -= count;
+            save();
+            return new SavedItem(item.itemId, count);
+        }
+    }
+
+    /**
+     * Gets all vault items.
+     */
+    public List<SavedItem> getVaultItems() {
+        return new ArrayList<>(vaultItems);
+    }
+
+    /**
+     * Gets the number of used vault slots.
+     */
+    public int getVaultSlotCount() {
+        return vaultItems.size();
+    }
+
+    /**
+     * Gets the total number of items in the vault (including stacks).
+     */
+    public int getVaultTotalItems() {
+        int total = 0;
+        for (SavedItem item : vaultItems) {
+            total += item.stackCount;
+        }
+        return total;
+    }
+
+    /**
+     * Checks if the vault has room for more items.
+     */
+    public boolean isVaultFull() {
+        return vaultItems.size() >= VAULT_MAX_SLOTS;
+    }
+
+    /**
+     * Clears all vault items (for testing/reset).
+     */
+    public void clearVault() {
+        vaultItems.clear();
+        save();
+        System.out.println("SaveManager: Vault cleared");
+    }
+
+    /**
+     * Transfers all items from a list to the vault.
+     * Used when leaving loot game to save collected items.
+     *
+     * @param items List of SavedItem to transfer
+     * @return Number of items that couldn't be stored (overflow)
+     */
+    public int transferToVault(List<SavedItem> items) {
+        int overflow = 0;
+        for (SavedItem item : items) {
+            overflow += addItemToVault(item.itemId, item.stackCount);
+        }
+        return overflow;
+    }
+
     /**
      * Gets total items collected
      */
@@ -247,11 +390,26 @@ public class SaveManager {
                 json.append("\n");
             }
 
+            json.append("  ],\n");
+
+            // Save vault items
+            json.append("  \"vaultItems\": [\n");
+
+            for (int i = 0; i < vaultItems.size(); i++) {
+                SavedItem item = vaultItems.get(i);
+                json.append("    {\"itemId\": \"").append(escapeJson(item.itemId))
+                    .append("\", \"stackCount\": ").append(item.stackCount).append("}");
+                if (i < vaultItems.size() - 1) {
+                    json.append(",");
+                }
+                json.append("\n");
+            }
+
             json.append("  ]\n");
             json.append("}\n");
 
             Files.write(Paths.get(SAVE_DIR, SAVE_FILE), json.toString().getBytes());
-            System.out.println("SaveManager: Game data saved successfully");
+            System.out.println("SaveManager: Game data saved successfully (vault: " + vaultItems.size() + " slots)");
 
         } catch (IOException e) {
             System.err.println("SaveManager: Error saving game data: " + e.getMessage());
@@ -310,12 +468,47 @@ public class SaveManager {
         int invStart = json.indexOf("\"inventory\"");
         if (invStart >= 0) {
             int arrayStart = json.indexOf('[', invStart);
-            int arrayEnd = json.indexOf(']', arrayStart);
+            int arrayEnd = findMatchingBracket(json, arrayStart);
             if (arrayStart >= 0 && arrayEnd > arrayStart) {
                 String arrayContent = json.substring(arrayStart + 1, arrayEnd);
-                parseInventoryItems(arrayContent);
+                parseInventoryItems(arrayContent, inventory);
             }
         }
+
+        // Parse vault items array
+        vaultItems.clear();
+        int vaultStart = json.indexOf("\"vaultItems\"");
+        if (vaultStart >= 0) {
+            int arrayStart = json.indexOf('[', vaultStart);
+            int arrayEnd = findMatchingBracket(json, arrayStart);
+            if (arrayStart >= 0 && arrayEnd > arrayStart) {
+                String arrayContent = json.substring(arrayStart + 1, arrayEnd);
+                parseInventoryItems(arrayContent, vaultItems);
+            }
+        }
+
+        System.out.println("SaveManager: Loaded " + inventory.size() + " inventory items, " + vaultItems.size() + " vault items");
+    }
+
+    /**
+     * Finds the matching closing bracket for an opening bracket.
+     */
+    private int findMatchingBracket(String json, int openPos) {
+        if (openPos < 0 || openPos >= json.length()) return -1;
+
+        char openChar = json.charAt(openPos);
+        char closeChar = openChar == '[' ? ']' : '}';
+        int depth = 1;
+
+        for (int i = openPos + 1; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == openChar) depth++;
+            else if (c == closeChar) {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
     }
 
     private long parseLong(String json, String key) {
@@ -367,7 +560,7 @@ public class SaveManager {
         return false;
     }
 
-    private void parseInventoryItems(String arrayContent) {
+    private void parseInventoryItems(String arrayContent, List<SavedItem> targetList) {
         int pos = 0;
         while (pos < arrayContent.length()) {
             int objStart = arrayContent.indexOf('{', pos);
@@ -383,7 +576,7 @@ public class SaveManager {
             int stackCount = (int) parseLong("{" + objContent + "}", "stackCount");
 
             if (itemId != null && !itemId.isEmpty()) {
-                inventory.add(new SavedItem(itemId, Math.max(1, stackCount)));
+                targetList.add(new SavedItem(itemId, Math.max(1, stackCount)));
             }
 
             pos = objEnd + 1;
