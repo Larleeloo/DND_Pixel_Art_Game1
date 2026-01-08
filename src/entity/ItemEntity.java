@@ -48,6 +48,9 @@ public class ItemEntity extends Entity {
     private int bounceCount = 0;
     private int maxBounces = 3;
 
+    // Reference to entity list for block collision detection
+    private java.util.List<Entity> entityList = null;
+
     // Rarity light beam properties (Borderlands style)
     private boolean showLightBeam = false;
     private float lightBeamPhase = 0;
@@ -898,11 +901,44 @@ public class ItemEntity extends Entity {
 
                 // Update position
                 x += (int) velocityX;
-                y += (int) velocityY;
+                int newY = y + (int) velocityY;
 
-                // Ground collision
-                if (y + height >= groundY) {
-                    y = groundY - height;
+                // Block collision detection - find the highest block we'd land on
+                int landingY = groundY; // Default to world ground level
+                boolean hitBlock = false;
+
+                if (entityList != null) {
+                    // Check for solid blocks beneath the item
+                    Rectangle futureYBounds = new Rectangle(x, newY, width, height);
+                    int itemBottom = y + height;
+
+                    for (Entity e : entityList) {
+                        if (e instanceof BlockEntity) {
+                            BlockEntity block = (BlockEntity) e;
+                            if (block.isSolid() && !block.isBroken()) {
+                                Rectangle blockBounds = block.getBounds();
+
+                                // Check if we would intersect this block
+                                if (futureYBounds.intersects(blockBounds)) {
+                                    int blockTop = blockBounds.y;
+
+                                    // Only collide with blocks we're falling onto (top of block is below our current bottom)
+                                    if (velocityY > 0 && blockTop >= itemBottom - 4) {
+                                        hitBlock = true;
+                                        // Find the highest block we can land on
+                                        if (blockTop < landingY) {
+                                            landingY = blockTop;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Check ground/block collision
+                if (newY + height >= landingY) {
+                    y = landingY - height;
                     bounceCount++;
 
                     if (bounceCount >= maxBounces || Math.abs(velocityY) < 2) {
@@ -915,6 +951,8 @@ public class ItemEntity extends Entity {
                         velocityY = -velocityY * bounceMultiplier;
                         velocityX *= 0.8; // Friction
                     }
+                } else {
+                    y = newY;
                 }
 
                 // Don't bob while physics is active
@@ -960,6 +998,17 @@ public class ItemEntity extends Entity {
      */
     public void setGroundY(int groundY) {
         this.groundY = groundY;
+    }
+
+    /**
+     * Sets the entity list reference for block collision detection.
+     * When set, items will properly collide with solid blocks instead of
+     * only using the ground level.
+     *
+     * @param entities The list of entities in the scene
+     */
+    public void setEntityList(java.util.List<Entity> entities) {
+        this.entityList = entities;
     }
 
     // ==================== Light Beam Methods ====================

@@ -54,6 +54,9 @@ public class LootChestEntity extends Entity {
     private boolean hasDroppedItems = false;
     private int groundY;
 
+    // Reference to entity list for block collision detection
+    private List<Entity> entityList = null;
+
     // Visual properties
     private float glowIntensity = 0;
     private float glowPhase = 0;
@@ -198,6 +201,11 @@ public class LootChestEntity extends Entity {
             item.enablePhysics(velX, velY, groundY);
             item.setShowLightBeam(true);
 
+            // Set entity list for block collision detection
+            if (entityList != null) {
+                item.setEntityList(entityList);
+            }
+
             droppedItems.add(item);
 
             // Save the item to player inventory
@@ -306,6 +314,21 @@ public class LootChestEntity extends Entity {
      */
     public List<ItemEntity> getDroppedItems() {
         return droppedItems;
+    }
+
+    /**
+     * Sets the entity list reference for block collision detection on dropped items.
+     * When set, items will properly collide with solid blocks instead of
+     * only using the ground level.
+     *
+     * @param entities The list of entities in the scene
+     */
+    public void setEntityList(List<Entity> entities) {
+        this.entityList = entities;
+        // Also update any already dropped items
+        for (ItemEntity item : droppedItems) {
+            item.setEntityList(entities);
+        }
     }
 
     /**
