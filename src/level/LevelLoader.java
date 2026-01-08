@@ -220,7 +220,13 @@ public class LevelLoader {
                         light.applyTypeDefaults();
                     }
                     // Override defaults if specified
-                    if (l.containsKey("radius")) light.radius = toDouble(l.get("radius"));
+                    if (l.containsKey("radius")) {
+                        light.radius = toDouble(l.get("radius"));
+                        // If falloffRadius wasn't explicitly specified, scale it proportionally
+                        if (!l.containsKey("falloffRadius")) {
+                            light.falloffRadius = light.radius * 2.0;
+                        }
+                    }
                     if (l.containsKey("falloffRadius")) light.falloffRadius = toDouble(l.get("falloffRadius"));
                     if (l.containsKey("colorRed")) light.colorRed = toInt(l.get("colorRed"));
                     if (l.containsKey("colorGreen")) light.colorGreen = toInt(l.get("colorGreen"));
