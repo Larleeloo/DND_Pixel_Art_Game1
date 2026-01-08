@@ -80,6 +80,10 @@ public class EntityManager {
                     SpriteMobEntity spriteMob = (SpriteMobEntity) mob;
                     if (spriteMob.hasPendingDroppedItems()) {
                         List<ItemEntity> droppedItems = spriteMob.collectDroppedItems();
+                        // Set entity list for block collision detection on dropped items
+                        for (ItemEntity item : droppedItems) {
+                            item.setEntityList(entities);
+                        }
                         toAdd.addAll(droppedItems);
                     }
                 }
@@ -88,6 +92,11 @@ public class EntityManager {
                 if (mob.isDead()) {
                     toRemove.add(e);
                 }
+            } else if (e instanceof ItemEntity) {
+                // Set entity list for block collision detection on items
+                ItemEntity item = (ItemEntity) e;
+                item.setEntityList(entities);
+                item.update(input);
             } else {
                 // Regular entity update
                 e.update(input);

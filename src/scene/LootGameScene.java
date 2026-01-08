@@ -137,6 +137,7 @@ public class LootGameScene implements Scene {
         int dailyChestY = GROUND_Y - 72;
         dailyChest = new LootChestEntity(dailyChestX, dailyChestY,
             LootChestEntity.ChestType.DAILY, GROUND_Y);
+        dailyChest.setEntityList(entityManager.getEntities());
         entityManager.addEntity(dailyChest);
 
         // Create Monthly Chest (right of center, larger)
@@ -144,6 +145,7 @@ public class LootGameScene implements Scene {
         int monthlyChestY = GROUND_Y - 90; // Slightly bigger
         monthlyChest = new LootChestEntity(monthlyChestX, monthlyChestY,
             LootChestEntity.ChestType.MONTHLY, GROUND_Y);
+        monthlyChest.setEntityList(entityManager.getEntities());
         entityManager.addEntity(monthlyChest);
 
         // Create Secret Room Door (on the far left)
