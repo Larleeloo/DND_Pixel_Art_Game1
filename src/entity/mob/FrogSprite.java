@@ -81,16 +81,16 @@ public class FrogSprite extends SpriteMobEntity {
         // Configure frog-specific settings
         configureFrogStats();
 
-        // Load frog-specific animations
-        loadFrogAnimations(spriteDir);
-
-        // Set body type to small quadruped
+        // Set body type to small quadruped and apply frog dimensions
+        // (animations already loaded via overridden loadAnimations)
         this.bodyType = MobBodyType.SMALL;
         applyFrogDimensions();
 
         // Frogs are passive by default
         setHostile(false);
         this.detectionRange = 0;  // Don't detect players
+
+        System.out.println("FrogSprite: Created with spriteDir=" + spriteDir + ", variant=" + variant);
     }
 
     /**
@@ -148,18 +148,35 @@ public class FrogSprite extends SpriteMobEntity {
      * Loads frog-specific animations.
      */
     private void loadFrogAnimations(String dir) {
+        System.out.println("FrogSprite: Loading animations from " + dir);
+
         // Load custom frog animations and map to standard states
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.IDLE, dir + "/sleep.gif");
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.WALK, dir + "/hop.gif");
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.RUN, dir + "/hop.gif");
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.ATTACK, dir + "/tongue.gif");
-        spriteAnimation.loadAction(SpriteAnimation.ActionState.HURT, dir + "/hurt.gif");
+        String sleepPath = dir + "/sleep.gif";
+        String hopPath = dir + "/hop.gif";
+        String tonguePath = dir + "/tongue.gif";
+        String hurtPath = dir + "/hurt.gif";
+
+        // Check if files exist before loading
+        java.io.File sleepFile = new java.io.File(sleepPath);
+        java.io.File hopFile = new java.io.File(hopPath);
+        System.out.println("FrogSprite: sleep.gif exists: " + sleepFile.exists() + " at " + sleepFile.getAbsolutePath());
+        System.out.println("FrogSprite: hop.gif exists: " + hopFile.exists() + " at " + hopFile.getAbsolutePath());
+
+        boolean sleepLoaded = spriteAnimation.loadAction(SpriteAnimation.ActionState.IDLE, sleepPath);
+        boolean hopLoaded = spriteAnimation.loadAction(SpriteAnimation.ActionState.WALK, hopPath);
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.RUN, hopPath);
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.ATTACK, tonguePath);
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.HURT, hurtPath);
+
+        System.out.println("FrogSprite: sleep loaded: " + sleepLoaded + ", hop loaded: " + hopLoaded);
+        System.out.println("FrogSprite: Base dimensions: " + spriteAnimation.getBaseWidth() + "x" + spriteAnimation.getBaseHeight());
 
         // Ensure basic animations exist (creates placeholders if needed)
         spriteAnimation.ensureBasicAnimations();
 
         // If no valid dimensions loaded, create frog-specific placeholder
         if (spriteAnimation.getBaseWidth() <= 0) {
+            System.out.println("FrogSprite: Creating placeholder (no valid dimensions loaded)");
             createFrogPlaceholder();
         }
     }

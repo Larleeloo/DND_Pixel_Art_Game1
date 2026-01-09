@@ -252,7 +252,8 @@ public class SpriteMobEntity extends MobEntity {
         // Small creatures
         else if (lowerDir.contains("slime") || lowerDir.contains("bug") ||
                  lowerDir.contains("bat") || lowerDir.contains("small") ||
-                 lowerDir.contains("tiny") || lowerDir.contains("rat")) {
+                 lowerDir.contains("tiny") || lowerDir.contains("rat") ||
+                 lowerDir.contains("frog") || lowerDir.contains("toad")) {
             bodyType = MobBodyType.SMALL;
             isHumanoid = false;
         }
