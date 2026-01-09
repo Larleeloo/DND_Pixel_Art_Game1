@@ -56,9 +56,12 @@ public class FrogSprite extends SpriteMobEntity {
 
     // Hopping behavior
     protected double hopCooldown = 0;
-    protected static final double HOP_INTERVAL = 1.5;  // Time between hops
-    protected static final double HOP_STRENGTH = -8;   // Vertical velocity for hop
-    protected static final double HOP_SPEED = 80;      // Horizontal movement speed
+    protected static final double HOP_AIR_TIME = 1.0;     // Exactly 1 second in air
+    protected static final double HOP_STRENGTH = -10;     // Vertical velocity for ~1 second air time
+    protected static final double HOP_SPEED = 60;         // Horizontal movement speed
+    protected double hopAirTimer = 0;                     // Tracks time in air
+    protected boolean isHopping = false;                  // Currently in a hop
+    protected boolean wasOnGround = true;                 // Track ground state changes
 
     // Sleep behavior
     protected double sleepTimer = 0;
@@ -163,7 +166,9 @@ public class FrogSprite extends SpriteMobEntity {
         System.out.println("FrogSprite: hop.gif exists: " + hopFile.exists() + " at " + hopFile.getAbsolutePath());
 
         boolean sleepLoaded = spriteAnimation.loadAction(SpriteAnimation.ActionState.IDLE, sleepPath);
-        boolean hopLoaded = spriteAnimation.loadAction(SpriteAnimation.ActionState.WALK, hopPath);
+        boolean hopLoaded = spriteAnimation.loadAction(SpriteAnimation.ActionState.JUMP, hopPath);
+        // Also load hop for walk/run as fallback
+        spriteAnimation.loadAction(SpriteAnimation.ActionState.WALK, hopPath);
         spriteAnimation.loadAction(SpriteAnimation.ActionState.RUN, hopPath);
         spriteAnimation.loadAction(SpriteAnimation.ActionState.ATTACK, tonguePath);
         spriteAnimation.loadAction(SpriteAnimation.ActionState.HURT, hurtPath);
@@ -266,11 +271,6 @@ public class FrogSprite extends SpriteMobEntity {
      */
     @Override
     public void update(double deltaTime, List<Entity> entities) {
-        // Update hop cooldown
-        if (hopCooldown > 0) {
-            hopCooldown -= deltaTime;
-        }
-
         // Update sleep timer
         if (isSleeping) {
             sleepTimer += deltaTime;
@@ -301,6 +301,7 @@ public class FrogSprite extends SpriteMobEntity {
 
     /**
      * Updates the frog's animation state based on behavior.
+     * Handles the hop -> idle transition on landing.
      */
     private void updateFrogAnimState() {
         // Don't change state during tongue attack
@@ -311,20 +312,34 @@ public class FrogSprite extends SpriteMobEntity {
         // Hurt state takes priority
         if (currentState == AIState.HURT) {
             setFrogAnimState(FrogAnimState.HURT);
+            isHopping = false;
             return;
         }
 
-        // Check movement
-        boolean isMoving = Math.abs(velocityX) > 5 || !onGround;
-
-        if (isMoving) {
+        // Detect landing (was in air, now on ground)
+        if (!wasOnGround && onGround) {
+            // Just landed - immediately transition to idle
+            isHopping = false;
+            hopAirTimer = 0;
+            velocityX = 0;  // Stop horizontal movement on landing
+            setFrogAnimState(FrogAnimState.SLEEP);
+            isSleeping = true;
+            sleepTimer = 0;
+        }
+        // Currently in air (hopping)
+        else if (!onGround) {
             setFrogAnimState(FrogAnimState.HOP);
             isSleeping = false;
             sleepTimer = 0;
-        } else if (sleepTimer > MIN_SLEEP_TIME || isSleeping) {
+        }
+        // On ground and idle
+        else if (onGround && !isHopping) {
             setFrogAnimState(FrogAnimState.SLEEP);
             isSleeping = true;
         }
+
+        // Track ground state for next frame
+        wasOnGround = onGround;
     }
 
     /**
@@ -336,7 +351,7 @@ public class FrogSprite extends SpriteMobEntity {
 
             switch (state) {
                 case HOP:
-                    spriteAnimation.setState(SpriteAnimation.ActionState.WALK);
+                    spriteAnimation.setState(SpriteAnimation.ActionState.JUMP);
                     break;
                 case TONGUE:
                     spriteAnimation.setState(SpriteAnimation.ActionState.ATTACK);
@@ -413,33 +428,60 @@ public class FrogSprite extends SpriteMobEntity {
     /**
      * Frog-specific hopping movement.
      * Overrides wander state update to use hopping.
+     * Frog hops for exactly 1 second, lands, goes to idle, then hops again.
      */
     @Override
     protected void updateWanderState(double deltaTime) {
-        // Only hop when cooldown expired
-        if (hopCooldown <= 0 && onGround) {
-            // Random direction for wander
-            if (Math.random() < 0.3) {  // 30% chance to change direction
-                facingRight = Math.random() > 0.5;
-            }
-
-            // Perform hop
-            velocityX = facingRight ? HOP_SPEED : -HOP_SPEED;
-            velocityY = HOP_STRENGTH;
-            onGround = false;
-            hopCooldown = HOP_INTERVAL;
-
-            setFrogAnimState(FrogAnimState.HOP);
-        } else if (onGround) {
-            // Slow down when on ground between hops
-            velocityX *= 0.8;
+        // Track air time during hop
+        if (isHopping && !onGround) {
+            hopAirTimer += deltaTime;
         }
 
-        // Update state timer
+        // Update hop cooldown
+        if (hopCooldown > 0) {
+            hopCooldown -= deltaTime;
+        }
+
+        // On ground - either start a new hop or stay idle
+        if (onGround && !isHopping) {
+            // Wait for cooldown before next hop
+            if (hopCooldown <= 0) {
+                // Random direction for wander
+                if (Math.random() < 0.3) {  // 30% chance to change direction
+                    facingRight = Math.random() > 0.5;
+                }
+
+                // Start the hop
+                isHopping = true;
+                hopAirTimer = 0;
+                velocityX = facingRight ? HOP_SPEED : -HOP_SPEED;
+                velocityY = HOP_STRENGTH;
+                onGround = false;
+
+                setFrogAnimState(FrogAnimState.HOP);
+            } else {
+                // Waiting on ground - stay in idle
+                velocityX = 0;
+            }
+        }
+        // In the air - maintain hop animation
+        else if (!onGround && isHopping) {
+            // Keep hop animation while in air
+            setFrogAnimState(FrogAnimState.HOP);
+        }
+        // Just landed - handled in updateFrogAnimState, set cooldown for next hop
+        else if (onGround && wasOnGround && !isHopping) {
+            // Set a short cooldown before next hop (idle time on ground)
+            if (hopCooldown <= 0) {
+                hopCooldown = 0.5;  // Brief pause between hops
+            }
+        }
+
+        // Update state timer for occasional rest
         stateTimer += deltaTime;
-        if (stateTimer > 3.0 + Math.random() * 2) {
-            // Chance to rest
-            if (Math.random() < 0.4) {
+        if (stateTimer > 5.0 + Math.random() * 3) {
+            // Small chance to rest longer
+            if (Math.random() < 0.2) {
                 changeState(AIState.IDLE);
             }
             stateTimer = 0;
