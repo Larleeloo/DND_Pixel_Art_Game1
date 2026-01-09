@@ -1718,6 +1718,43 @@ public class GameScene implements Scene {
 
             System.out.println("GameScene: Created sprite_humanoid mob at (" + m.x + "," + m.y + ") with sprites from " + m.spriteDir);
             return mob;
+
+        } else if (type.equals("frog")) {
+            // Frog mob using FrogSprite class with custom animations
+            String spriteDir = m.spriteDir;
+            if (spriteDir == null || spriteDir.isEmpty()) {
+                // Default to purple_frog variant
+                spriteDir = "assets/mobs/frog/purple_frog";
+            }
+
+            FrogSprite frog = new FrogSprite(m.x, m.y, spriteDir);
+
+            // Set behavior based on level data (frogs are passive by default)
+            if (m.behavior != null) {
+                switch (m.behavior.toLowerCase()) {
+                    case "hostile":
+                        frog.setHostile(true);
+                        frog.setAggroRange(150);
+                        break;
+                    case "neutral":
+                        frog.setHostile(false);
+                        frog.setAggroRange(100);
+                        break;
+                    case "passive":
+                    default:
+                        frog.setHostile(false);
+                        frog.setAggroRange(0);
+                        break;
+                }
+            }
+
+            // Enable debug drawing if requested
+            if (m.debugDraw) {
+                frog.setDebugDraw(true);
+            }
+
+            System.out.println("GameScene: Created frog mob at (" + m.x + "," + m.y + ") with sprites from " + spriteDir);
+            return frog;
         }
 
         System.err.println("GameScene: Unknown mobType: " + type);

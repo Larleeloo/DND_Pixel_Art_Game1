@@ -330,7 +330,8 @@ public class CreativeScene implements Scene {
             {"bear", "Bear", "sprite_quadruped"},
             {"pig", "Pig", "sprite_quadruped"},
             {"cow", "Cow", "sprite_quadruped"},
-            {"sheep", "Sheep", "sprite_quadruped"}
+            {"sheep", "Sheep", "sprite_quadruped"},
+            {"frog", "Frog", "frog"}
         };
 
         for (String[] mob : mobTypes) {
@@ -338,7 +339,7 @@ public class CreativeScene implements Scene {
             Map<String, String> mobData = new HashMap<>();
             mobData.put("subType", mob[0]);
             mobData.put("mobType", mob[2]);
-            mobData.put("behavior", mob[0].equals("pig") || mob[0].equals("cow") || mob[0].equals("sheep") ? "passive" : "hostile");
+            mobData.put("behavior", mob[0].equals("pig") || mob[0].equals("cow") || mob[0].equals("sheep") || mob[0].equals("frog") ? "passive" : "hostile");
             mobPalette.add(new PaletteItem(mob[0], mob[1], icon, mobData));
         }
 
@@ -541,13 +542,14 @@ public class CreativeScene implements Scene {
             case "pig": color = new Color(255, 180, 180); break;
             case "cow": color = new Color(100, 80, 60); break;
             case "sheep": color = new Color(240, 240, 240); break;
+            case "frog": color = new Color(128, 60, 180); break;  // Purple frog
             default: color = Color.GRAY;
         }
 
         // Draw creature silhouette
         g.setColor(color);
         if (mobType.equals("wolf") || mobType.equals("bear") || mobType.equals("pig") ||
-            mobType.equals("cow") || mobType.equals("sheep")) {
+            mobType.equals("cow") || mobType.equals("sheep") || mobType.equals("frog")) {
             // Quadruped - oval body
             g.fillOval(6, 14, PALETTE_ITEM_SIZE - 12, PALETTE_ITEM_SIZE - 22);
             g.fillOval(8, 8, 16, 14); // Head
