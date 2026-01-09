@@ -54,13 +54,19 @@ public class FrogSprite extends SpriteMobEntity {
     // Frog variant (e.g., "purple_frog", "green_frog", etc.)
     protected String variant;
 
-    // Hopping behavior
+    // Hopping behavior - Animation timing:
+    // 0-400ms: Preparation (on ground, crouching)
+    // 400-800ms: In air
+    // 800-1000ms: Landing transition to idle
     protected double hopCooldown = 0;
-    protected static final double HOP_AIR_TIME = 1.0;     // Exactly 1 second in air
-    protected static final double HOP_STRENGTH = -10;     // Vertical velocity for ~1 second air time
+    protected static final double HOP_PREP_TIME = 0.4;    // 400ms preparation before jump
+    protected static final double HOP_AIR_TIME = 0.4;     // 400ms in air (400-800ms of animation)
+    protected static final double HOP_STRENGTH = -8;      // Vertical velocity for ~400ms air time
     protected static final double HOP_SPEED = 60;         // Horizontal movement speed
+    protected double hopPrepTimer = 0;                    // Tracks preparation time
     protected double hopAirTimer = 0;                     // Tracks time in air
-    protected boolean isHopping = false;                  // Currently in a hop
+    protected boolean isHopping = false;                  // Currently in a hop (includes prep)
+    protected boolean isPreparing = false;                // In preparation phase (before launch)
     protected boolean wasOnGround = true;                 // Track ground state changes
 
     // Sleep behavior
@@ -302,6 +308,7 @@ public class FrogSprite extends SpriteMobEntity {
     /**
      * Updates the frog's animation state based on behavior.
      * Handles the hop -> idle transition on landing.
+     * Animation timing: 0-400ms prep, 400-800ms air, 800-1000ms landing to idle.
      */
     private void updateFrogAnimState() {
         // Don't change state during tongue attack
@@ -313,27 +320,36 @@ public class FrogSprite extends SpriteMobEntity {
         if (currentState == AIState.HURT) {
             setFrogAnimState(FrogAnimState.HURT);
             isHopping = false;
+            isPreparing = false;
             return;
         }
 
-        // Detect landing (was in air, now on ground)
+        // Detect landing (was in air, now on ground) - triggers 800-1000ms of animation
         if (!wasOnGround && onGround) {
-            // Just landed - immediately transition to idle
+            // Just landed - transition to idle (landing frames 800-1000ms handled by animation)
             isHopping = false;
+            isPreparing = false;
             hopAirTimer = 0;
+            hopPrepTimer = 0;
             velocityX = 0;  // Stop horizontal movement on landing
             setFrogAnimState(FrogAnimState.SLEEP);
             isSleeping = true;
             sleepTimer = 0;
         }
-        // Currently in air (hopping)
-        else if (!onGround) {
+        // Currently in air (hopping) - 400-800ms of animation
+        else if (!onGround && !isPreparing) {
             setFrogAnimState(FrogAnimState.HOP);
             isSleeping = false;
             sleepTimer = 0;
         }
-        // On ground and idle
-        else if (onGround && !isHopping) {
+        // In preparation phase on ground - 0-400ms of animation
+        else if (onGround && isHopping && isPreparing) {
+            setFrogAnimState(FrogAnimState.HOP);
+            isSleeping = false;
+            sleepTimer = 0;
+        }
+        // On ground and idle (not hopping or preparing)
+        else if (onGround && !isHopping && !isPreparing) {
             setFrogAnimState(FrogAnimState.SLEEP);
             isSleeping = true;
         }
@@ -428,22 +444,35 @@ public class FrogSprite extends SpriteMobEntity {
     /**
      * Frog-specific hopping movement.
      * Overrides wander state update to use hopping.
-     * Frog hops for exactly 1 second, lands, goes to idle, then hops again.
+     * Animation timing: 0-400ms prep, 400-800ms air, 800-1000ms landing to idle.
      */
     @Override
     protected void updateWanderState(double deltaTime) {
-        // Track air time during hop
-        if (isHopping && !onGround) {
-            hopAirTimer += deltaTime;
-        }
-
         // Update hop cooldown
         if (hopCooldown > 0) {
             hopCooldown -= deltaTime;
         }
 
-        // On ground - either start a new hop or stay idle
-        if (onGround && !isHopping) {
+        // Track preparation time
+        if (isPreparing) {
+            hopPrepTimer += deltaTime;
+
+            // After 400ms preparation, launch into the air
+            if (hopPrepTimer >= HOP_PREP_TIME) {
+                isPreparing = false;
+                velocityX = facingRight ? HOP_SPEED : -HOP_SPEED;
+                velocityY = HOP_STRENGTH;
+                onGround = false;
+            }
+        }
+
+        // Track air time during hop
+        if (isHopping && !onGround && !isPreparing) {
+            hopAirTimer += deltaTime;
+        }
+
+        // On ground and not hopping - start a new hop sequence
+        if (onGround && !isHopping && !isPreparing) {
             // Wait for cooldown before next hop
             if (hopCooldown <= 0) {
                 // Random direction for wander
@@ -451,18 +480,24 @@ public class FrogSprite extends SpriteMobEntity {
                     facingRight = Math.random() > 0.5;
                 }
 
-                // Start the hop
+                // Start preparation phase (0-400ms of animation)
                 isHopping = true;
+                isPreparing = true;
+                hopPrepTimer = 0;
                 hopAirTimer = 0;
-                velocityX = facingRight ? HOP_SPEED : -HOP_SPEED;
-                velocityY = HOP_STRENGTH;
-                onGround = false;
+                velocityX = 0;  // Stay still during preparation
 
+                // Start hop animation (shows crouch/prep frames)
                 setFrogAnimState(FrogAnimState.HOP);
             } else {
                 // Waiting on ground - stay in idle
                 velocityX = 0;
             }
+        }
+        // In preparation phase - stay on ground with hop animation
+        else if (onGround && isHopping && isPreparing) {
+            // Keep hop animation during prep
+            setFrogAnimState(FrogAnimState.HOP);
         }
         // In the air - maintain hop animation
         else if (!onGround && isHopping) {
@@ -470,7 +505,7 @@ public class FrogSprite extends SpriteMobEntity {
             setFrogAnimState(FrogAnimState.HOP);
         }
         // Just landed - handled in updateFrogAnimState, set cooldown for next hop
-        else if (onGround && wasOnGround && !isHopping) {
+        else if (onGround && wasOnGround && !isHopping && !isPreparing) {
             // Set a short cooldown before next hop (idle time on ground)
             if (hopCooldown <= 0) {
                 hopCooldown = 0.5;  // Brief pause between hops
