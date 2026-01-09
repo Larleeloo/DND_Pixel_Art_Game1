@@ -2372,7 +2372,13 @@ public class CreativeScene implements Scene {
             mobData.mobType = mobInfo.get("mobType");
             mobData.subType = mobInfo.get("subType");
             mobData.behavior = mobInfo.get("behavior");
-            mobData.spriteDir = "assets/mobs/" + mobInfo.get("subType");
+            // Frog uses a variant subdirectory for its animations
+            String subType = mobInfo.get("subType");
+            if ("frog".equals(subType)) {
+                mobData.spriteDir = "assets/mobs/frog/purple_frog";
+            } else {
+                mobData.spriteDir = "assets/mobs/" + subType;
+            }
             levelData.mobs.add(mobData);
         }
 

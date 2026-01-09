@@ -1722,8 +1722,8 @@ public class GameScene implements Scene {
         } else if (type.equals("frog")) {
             // Frog mob using FrogSprite class with custom animations
             String spriteDir = m.spriteDir;
-            if (spriteDir == null || spriteDir.isEmpty()) {
-                // Default to purple_frog variant
+            // Default to purple_frog variant if not specified or using base frog directory
+            if (spriteDir == null || spriteDir.isEmpty() || spriteDir.equals("assets/mobs/frog")) {
                 spriteDir = "assets/mobs/frog/purple_frog";
             }
 
