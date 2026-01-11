@@ -2,6 +2,7 @@ package entity.player;
 
 import entity.*;
 import entity.capabilities.*;
+import entity.MeleeAttackHitbox;
 import block.*;
 import animation.*;
 import animation.ItemAnimationState;
@@ -119,12 +120,18 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     // Attack system
     private boolean isAttacking = false;
     private double attackTimer = 0;
-    private double attackCooldown = 0.4; // Seconds between attacks
+    private double attackCooldown = 0.4; // Seconds between attacks (base, modified by weapon)
     private double attackDuration = 0.2; // How long attack animation lasts
     private int baseAttackDamage = 5;     // Unarmed damage
     private int baseAttackRange = 40;     // Unarmed range
-    private int attackWidth = 40;
-    private int attackHeight = 50;
+    private int attackWidth = 40;         // Legacy hitbox width (for backward compatibility)
+    private int attackHeight = 50;        // Legacy hitbox height (for backward compatibility)
+
+    // Dynamic attack direction system (360-degree mouse-following)
+    private double attackDirX = 1.0;      // Attack direction X (set when attack starts)
+    private double attackDirY = 0;        // Attack direction Y (set when attack starts)
+    private double attackAngle = 0;       // Attack angle in radians (set when attack starts)
+    private MeleeAttackHitbox currentAttackHitbox = null;  // Arc-based attack hitbox
 
     // Dimensions
     private int width;
@@ -877,6 +884,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         }
         if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
             isAttacking = false;
+            currentAttackHitbox = null;  // Clear the arc hitbox when attack ends
         }
 
         // Fire timer
@@ -1334,15 +1342,25 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             drawPlacementPreview(g2d, previewGridX, previewGridY, previewCanPlace);
         }
 
-        // Draw attack hitbox when attacking
+        // Draw attack hitbox when attacking (arc-based visualization)
         if (isAttacking) {
-            Rectangle attackBounds = getAttackBounds();
-            if (attackBounds != null) {
-                g2d.setColor(new Color(255, 100, 100, 100));
-                g2d.fillRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
-                g2d.setColor(new Color(255, 50, 50, 200));
-                g2d.setStroke(new BasicStroke(2));
-                g2d.drawRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
+            MeleeAttackHitbox meleeHitbox = getMeleeAttackHitbox();
+            if (meleeHitbox != null) {
+                // Draw the arc-shaped hitbox
+                meleeHitbox.draw(g2d,
+                    new Color(255, 100, 100, 80),   // Fill color (semi-transparent red)
+                    new Color(255, 50, 50, 200)     // Border color (more opaque red)
+                );
+            } else {
+                // Fallback to rectangle drawing if no arc hitbox
+                Rectangle attackBounds = getAttackBounds();
+                if (attackBounds != null) {
+                    g2d.setColor(new Color(255, 100, 100, 100));
+                    g2d.fillRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
+                    g2d.setColor(new Color(255, 50, 50, 200));
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawRect(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height);
+                }
             }
         }
 
@@ -1372,8 +1390,71 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             drawAimIndicator(g2d);
         }
 
+        // Draw melee aim indicator when holding a melee weapon (and not attacking)
+        if (!isAttacking && heldItem != null &&
+            (heldItem.getCategory() == Item.ItemCategory.WEAPON ||
+             heldItem.getCategory() == Item.ItemCategory.TOOL)) {
+            drawMeleeAimIndicator(g2d);
+        }
+
         // Draw particles from the triggered animation manager
         triggeredAnimManager.drawParticles(g);
+    }
+
+    /**
+     * Draws the melee aim indicator showing attack direction and range.
+     * Shows a subtle arc preview toward the mouse cursor.
+     */
+    private void drawMeleeAimIndicator(Graphics2D g2d) {
+        int effectiveRange = getEffectiveAttackRange();
+        float attackSpeed = getEffectiveAttackSpeed();
+
+        // Calculate attack origin
+        int attackOriginX = x + width / 2 + (int)(aimDirX * width / 4);
+        int attackOriginY = y + height / 2 + (int)(aimDirY * height / 4);
+
+        // Calculate arc width based on weapon speed
+        double arcWidth;
+        if (attackSpeed >= 2.0f) {
+            arcWidth = Math.PI / 6 + (Math.PI / 6) * Math.max(0, (2.5f - attackSpeed) / 0.5f);
+        } else if (attackSpeed >= 1.0f) {
+            arcWidth = Math.PI / 3 + (Math.PI / 6) * (2.0f - attackSpeed);
+        } else {
+            arcWidth = Math.PI / 2 + (Math.PI / 6) * Math.min(1.0f, (1.0f - attackSpeed) / 0.5f);
+        }
+
+        // Create a preview arc shape
+        java.awt.geom.Arc2D arc = new java.awt.geom.Arc2D.Double();
+        arc.setArcByCenter(
+            attackOriginX, attackOriginY, effectiveRange,
+            -Math.toDegrees(aimAngle + arcWidth / 2),
+            Math.toDegrees(arcWidth),
+            java.awt.geom.Arc2D.PIE
+        );
+
+        // Save original stroke
+        Stroke originalStroke = g2d.getStroke();
+
+        // Draw semi-transparent preview arc
+        g2d.setColor(new Color(255, 200, 100, 30));
+        g2d.fill(arc);
+
+        // Draw dashed outline
+        g2d.setColor(new Color(255, 200, 100, 80));
+        g2d.setStroke(new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                                       0, new float[]{4, 4}, 0));
+        g2d.draw(arc);
+
+        // Draw center line toward mouse
+        int endX = attackOriginX + (int)(aimDirX * effectiveRange * 0.8);
+        int endY = attackOriginY + (int)(aimDirY * effectiveRange * 0.8);
+        g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                                       0, new float[]{3, 5}, 0));
+        g2d.setColor(new Color(255, 200, 100, 120));
+        g2d.drawLine(attackOriginX, attackOriginY, endX, endY);
+
+        // Restore original stroke
+        g2d.setStroke(originalStroke);
     }
 
     /**
@@ -1641,17 +1722,57 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     // ==================== Attack System ====================
 
     /**
-     * Initiates a player attack.
+     * Initiates a player attack with dynamic direction based on mouse position.
+     * The attack direction is locked when the attack starts, and the hitbox
+     * is an arc extending toward the mouse cursor.
+     *
      * @return true if attack was started, false if on cooldown
      */
     public boolean attack() {
         if (attackTimer <= 0 && !isAttacking) {
             isAttacking = true;
+
+            // Capture attack direction from current aim (mouse position)
+            attackDirX = aimDirX;
+            attackDirY = aimDirY;
+            attackAngle = aimAngle;
+
+            // Calculate effective attack parameters from weapon
+            int effectiveRange = getEffectiveAttackRange();
+            float weaponAttackSpeed = getEffectiveAttackSpeed();
+
+            // Calculate cooldown from weapon attack speed
+            // attackSpeed is attacks per second, so cooldown = 1.0 / attackSpeed
+            attackCooldown = 1.0 / Math.max(0.1, weaponAttackSpeed);
+            attackDuration = Math.min(attackCooldown * 0.5, 0.3); // Duration is half of cooldown, max 0.3s
+
             attackTimer = attackCooldown;
+
+            // Create the arc-based attack hitbox
+            // Origin is player's hand/center position
+            int attackOriginX = x + width / 2 + (int)(attackDirX * width / 4);
+            int attackOriginY = y + height / 2 + (int)(attackDirY * height / 4);
+
+            currentAttackHitbox = MeleeAttackHitbox.fromWeaponSpeed(
+                attackOriginX, attackOriginY,
+                attackAngle, effectiveRange, weaponAttackSpeed
+            );
+
             spriteAnimation.setState(SpriteAnimation.ActionState.ATTACK);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Gets the effective attack speed from held weapon or base.
+     * @return Attacks per second
+     */
+    public float getEffectiveAttackSpeed() {
+        if (heldItem != null && heldItem.getAttackSpeed() > 0) {
+            return heldItem.getAttackSpeed();
+        }
+        return 1.0f; // Base attack speed (1 attack per second)
     }
 
     /**
@@ -1662,13 +1783,26 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     }
 
     /**
-     * Gets the current attack hitbox bounds.
-     * Uses held weapon's range if available.
-     * @return Rectangle of attack area, or null if not attacking
+     * Gets the current attack hitbox bounds as a Rectangle.
+     * For the new arc-based system, this returns the bounding box of the arc.
+     * Use getMeleeAttackHitbox() for precise arc-based collision detection.
+     *
+     * @return Rectangle bounding the attack area, or null if not attacking
      */
     public Rectangle getAttackBounds() {
         if (!isAttacking) return null;
 
+        // Use the arc hitbox's bounding box if available
+        if (currentAttackHitbox != null) {
+            // Update the hitbox origin to follow player movement
+            int attackOriginX = x + width / 2 + (int)(attackDirX * width / 4);
+            int attackOriginY = y + height / 2 + (int)(attackDirY * height / 4);
+            currentAttackHitbox.updateOrigin(attackOriginX, attackOriginY);
+
+            return currentAttackHitbox.getBoundingBox();
+        }
+
+        // Fallback to legacy rectangular hitbox
         int effectiveRange = getEffectiveAttackRange();
         int attackX;
         if (facingRight) {
@@ -1679,6 +1813,37 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
         int attackY = y + (height - attackHeight) / 2;
         return new Rectangle(attackX, attackY, effectiveRange, attackHeight);
+    }
+
+    /**
+     * Gets the current melee attack hitbox for precise arc-based collision detection.
+     * This returns the actual arc-shaped hitbox that follows the mouse direction.
+     *
+     * @return MeleeAttackHitbox, or null if not attacking
+     */
+    public MeleeAttackHitbox getMeleeAttackHitbox() {
+        if (!isAttacking || currentAttackHitbox == null) return null;
+
+        // Update the hitbox origin to follow player movement
+        int attackOriginX = x + width / 2 + (int)(attackDirX * width / 4);
+        int attackOriginY = y + height / 2 + (int)(attackDirY * height / 4);
+        currentAttackHitbox.updateOrigin(attackOriginX, attackOriginY);
+
+        return currentAttackHitbox;
+    }
+
+    /**
+     * Gets the attack direction X component (for knockback calculations).
+     */
+    public double getAttackDirX() {
+        return attackDirX;
+    }
+
+    /**
+     * Gets the attack direction Y component (for knockback calculations).
+     */
+    public double getAttackDirY() {
+        return attackDirY;
     }
 
     /**
@@ -1975,6 +2140,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         }
         if (isAttacking && attackTimer <= attackCooldown - attackDuration) {
             isAttacking = false;
+            currentAttackHitbox = null;  // Clear the arc hitbox when attack ends
         }
 
         // Fire timer
