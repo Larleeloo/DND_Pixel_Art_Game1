@@ -1,6 +1,7 @@
 package entity;
 
 import entity.player.PlayerBase;
+import entity.player.SpritePlayerEntity;
 import entity.mob.MobEntity;
 import entity.mob.SpriteMobEntity;
 
@@ -137,9 +138,11 @@ public class EntityPhysics {
 
     /**
      * Checks if a player attack hits any mobs and applies damage.
+     * This version supports both legacy Rectangle hitboxes and the new arc-based MeleeAttackHitbox.
+     * For SpritePlayerEntity, it will use the arc-based hitbox if available.
      *
      * @param player The attacking player
-     * @param attackBounds The attack hitbox
+     * @param attackBounds The attack hitbox (Rectangle for broad-phase, ignored if arc hitbox available)
      * @param damage Damage to apply
      * @param knockbackForce Knockback force to apply
      * @param entities List of all entities
@@ -150,11 +153,89 @@ public class EntityPhysics {
 
         List<MobEntity> hitMobs = new ArrayList<>();
 
-        if (player == null || attackBounds == null || entities == null) {
+        if (player == null || entities == null) {
             return hitMobs;
         }
 
-        double playerCenterX = player.getBounds().x + player.getBounds().width / 2.0;
+        // Check if we have access to arc-based hitbox via SpritePlayerEntity
+        MeleeAttackHitbox arcHitbox = null;
+        double attackDirX = player.isFacingRight() ? 1.0 : -1.0;
+        double attackDirY = 0;
+
+        if (player instanceof SpritePlayerEntity) {
+            SpritePlayerEntity spritePlayer = (SpritePlayerEntity) player;
+            arcHitbox = spritePlayer.getMeleeAttackHitbox();
+            if (arcHitbox != null) {
+                // Get attack direction for knockback calculation
+                attackDirX = spritePlayer.getAttackDirX();
+                attackDirY = spritePlayer.getAttackDirY();
+            }
+        }
+
+        // If no arc hitbox and no rectangle bounds, can't check attack
+        if (arcHitbox == null && attackBounds == null) {
+            return hitMobs;
+        }
+
+        for (Entity entity : entities) {
+            if (entity instanceof MobEntity) {
+                MobEntity mob = (MobEntity) entity;
+
+                // Skip dead mobs
+                if (mob.getState() == MobEntity.AIState.DEAD) continue;
+
+                Rectangle mobBounds = mob.getBounds();
+                boolean hit = false;
+
+                // Use arc-based collision if available, otherwise fall back to rectangle
+                if (arcHitbox != null) {
+                    hit = arcHitbox.intersects(mobBounds);
+                } else if (attackBounds != null) {
+                    hit = attackBounds.intersects(mobBounds);
+                }
+
+                if (hit) {
+                    // Calculate knockback direction based on attack direction
+                    // Knockback is in the direction of the attack, with a slight upward component
+                    double knockbackX = attackDirX * knockbackForce;
+                    double knockbackY = attackDirY * knockbackForce * 0.8 - knockbackForce * 0.3;
+
+                    // Apply damage and knockback
+                    mob.takeDamage(damage, knockbackX, knockbackY);
+                    hitMobs.add(mob);
+                }
+            }
+        }
+
+        return hitMobs;
+    }
+
+    /**
+     * Checks if a player attack hits any mobs using arc-based hitbox detection.
+     * This is the preferred method for the new dynamic attack system.
+     *
+     * @param player The attacking player (must be SpritePlayerEntity)
+     * @param damage Damage to apply
+     * @param knockbackForce Knockback force to apply
+     * @param entities List of all entities
+     * @return List of mobs that were hit
+     */
+    public static List<MobEntity> checkPlayerMeleeAttack(SpritePlayerEntity player,
+            int damage, double knockbackForce, List<Entity> entities) {
+
+        List<MobEntity> hitMobs = new ArrayList<>();
+
+        if (player == null || entities == null) {
+            return hitMobs;
+        }
+
+        MeleeAttackHitbox hitbox = player.getMeleeAttackHitbox();
+        if (hitbox == null) {
+            return hitMobs;
+        }
+
+        double attackDirX = player.getAttackDirX();
+        double attackDirY = player.getAttackDirY();
 
         for (Entity entity : entities) {
             if (entity instanceof MobEntity) {
@@ -165,13 +246,13 @@ public class EntityPhysics {
 
                 Rectangle mobBounds = mob.getBounds();
 
-                if (attackBounds.intersects(mobBounds)) {
-                    // Calculate knockback direction
-                    double mobCenterX = mobBounds.x + mobBounds.width / 2.0;
-                    double knockbackDir = mobCenterX > playerCenterX ? 1 : -1;
+                if (hitbox.intersects(mobBounds)) {
+                    // Calculate knockback direction based on attack direction
+                    double knockbackX = attackDirX * knockbackForce;
+                    double knockbackY = attackDirY * knockbackForce * 0.8 - knockbackForce * 0.3;
 
                     // Apply damage and knockback
-                    mob.takeDamage(damage, knockbackDir * knockbackForce, -knockbackForce * 0.5);
+                    mob.takeDamage(damage, knockbackX, knockbackY);
                     hitMobs.add(mob);
                 }
             }
