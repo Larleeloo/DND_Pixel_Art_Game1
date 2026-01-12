@@ -628,6 +628,11 @@ public class GameScene implements Scene {
                 }
             }
         }
+
+        // Enable/disable melee aim indicator on player
+        if (player instanceof SpritePlayerEntity) {
+            ((SpritePlayerEntity) player).setShowMeleeAimIndicator(debugMode);
+        }
     }
 
     /**
