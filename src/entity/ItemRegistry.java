@@ -1207,7 +1207,8 @@ public class ItemRegistry {
         initialize();
         Item template = templates.get(id);
         if (template != null) {
-            return new Item(template);
+            // Use copy() to preserve subclass types (e.g., MirrorToOtherRealms)
+            return template.copy();
         }
         System.err.println("ItemRegistry: Unknown item ID: " + id);
         return null;

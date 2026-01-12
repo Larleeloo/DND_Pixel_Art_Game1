@@ -251,6 +251,16 @@ public class Item {
         this.statusEffectDamageMultiplier = original.statusEffectDamageMultiplier;
     }
 
+    /**
+     * Creates a copy of this item.
+     * Subclasses should override this to return their specific type.
+     *
+     * @return A new Item instance with the same properties
+     */
+    public Item copy() {
+        return new Item(this);
+    }
+
     // ==================== Animation Loading ====================
 
     /**
