@@ -65,6 +65,19 @@ public class VaultInventory {
     // Hover state for tooltips
     private int hoveredSlotIndex = -1;
 
+    // Sorting state
+    public enum SortMode {
+        NONE,
+        RARITY_DESC,    // Mythic -> Common
+        RARITY_ASC,     // Common -> Mythic
+        ALPHABETICAL    // A -> Z
+    }
+    private SortMode currentSortMode = SortMode.NONE;
+
+    // Sort button bounds (calculated in draw)
+    private int sortRarityBtnX, sortRarityBtnY, sortRarityBtnW, sortRarityBtnH;
+    private int sortAlphaBtnX, sortAlphaBtnY, sortAlphaBtnBtnW, sortAlphaBtnH;
+
     // Reference to player inventory for drag-drop transfers
     private InventoryDropCallback inventoryDropCallback;
 
@@ -371,11 +384,13 @@ public class VaultInventory {
 
     /**
      * Handles mouse scroll events.
+     * Scroll wheel up (positive direction) scrolls content up (decreases offset).
+     * Scroll wheel down (negative direction) scrolls content down (increases offset).
      */
     public void handleScroll(int direction) {
         if (!isOpen) return;
 
-        scrollOffset -= direction;  // Scroll up/down
+        scrollOffset += direction;  // Reversed: scroll wheel matches content movement
         scrollOffset = Math.max(0, Math.min(maxScrollRows, scrollOffset));
     }
 
@@ -390,23 +405,30 @@ public class VaultInventory {
         // Don't handle clicks while dragging
         if (isDragging) return -1;
 
+        // Check sort button clicks first
+        if (handleSortButtonClick(mouseX, mouseY)) {
+            return -1;  // Sort button was clicked, no slot action
+        }
+
         int slotIndex = getSlotAtPosition(mouseX, mouseY);
         if (slotIndex >= 0 && slotIndex < slots.size()) {
             VaultSlot slot = slots.get(slotIndex);
             if (!slot.isEmpty()) {
                 if (isRightClick) {
-                    // Right-click: take one item
+                    // Right-click: take one item and add to inventory
                     ItemEntity taken = removeItem(slotIndex, 1);
                     if (taken != null && itemTakenCallback != null) {
-                        itemTakenCallback.onItemTaken(taken.getItemName(), 1);
-                    }
-                } else {
-                    // Left-click: take entire stack
-                    ItemEntity taken = removeItem(slotIndex, -1);
-                    if (taken != null && itemTakenCallback != null) {
-                        itemTakenCallback.onItemTaken(taken.getItemName(), taken.getStackCount());
+                        // Use itemId for proper item creation, not itemName
+                        String itemId = taken.getItemId();
+                        if (itemId == null || itemId.isEmpty()) {
+                            itemId = ItemRegistry.findIdByName(taken.getItemName());
+                        }
+                        if (itemId != null) {
+                            itemTakenCallback.onItemTaken(itemId, 1);
+                        }
                     }
                 }
+                // Left-click no longer takes items - use 'E' key to equip instead
                 return slotIndex;
             }
         }
@@ -571,6 +593,158 @@ public class VaultInventory {
     }
 
     /**
+     * Gets the currently hovered slot index.
+     * @return The slot index being hovered, or -1 if none
+     */
+    public int getHoveredSlotIndex() {
+        return hoveredSlotIndex;
+    }
+
+    /**
+     * Handles 'E' key press for equipping items from vault to inventory.
+     * Takes the entire stack from the hovered slot.
+     * @return true if an item was equipped
+     */
+    public boolean handleEquipKey() {
+        if (!isOpen || hoveredSlotIndex < 0 || hoveredSlotIndex >= slots.size()) {
+            return false;
+        }
+
+        VaultSlot slot = slots.get(hoveredSlotIndex);
+        if (slot.isEmpty()) {
+            return false;
+        }
+
+        // Take entire stack from hovered slot
+        ItemEntity taken = removeItem(hoveredSlotIndex, -1);
+        if (taken != null && itemTakenCallback != null) {
+            // Use itemId for proper item creation
+            String itemId = taken.getItemId();
+            if (itemId == null || itemId.isEmpty()) {
+                itemId = ItemRegistry.findIdByName(taken.getItemName());
+            }
+            if (itemId != null) {
+                itemTakenCallback.onItemTaken(itemId, taken.getStackCount());
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Sorts the vault inventory by rarity (toggles between descending and ascending).
+     */
+    public void sortByRarity() {
+        if (slots.isEmpty()) return;
+
+        if (currentSortMode == SortMode.RARITY_DESC) {
+            // Switch to ascending (Common -> Mythic)
+            currentSortMode = SortMode.RARITY_ASC;
+            slots.sort((a, b) -> {
+                if (a.isEmpty() && b.isEmpty()) return 0;
+                if (a.isEmpty()) return 1;
+                if (b.isEmpty()) return -1;
+                int rarityA = a.itemTemplate != null ? a.itemTemplate.getRarity().ordinal() : 0;
+                int rarityB = b.itemTemplate != null ? b.itemTemplate.getRarity().ordinal() : 0;
+                return Integer.compare(rarityA, rarityB);
+            });
+        } else {
+            // Switch to descending (Mythic -> Common)
+            currentSortMode = SortMode.RARITY_DESC;
+            slots.sort((a, b) -> {
+                if (a.isEmpty() && b.isEmpty()) return 0;
+                if (a.isEmpty()) return 1;
+                if (b.isEmpty()) return -1;
+                int rarityA = a.itemTemplate != null ? a.itemTemplate.getRarity().ordinal() : 0;
+                int rarityB = b.itemTemplate != null ? b.itemTemplate.getRarity().ordinal() : 0;
+                return Integer.compare(rarityB, rarityA);
+            });
+        }
+
+        // Persist sorted order to storage
+        saveSortedOrder();
+        scrollOffset = 0;  // Reset scroll to top
+        System.out.println("VaultInventory: Sorted by rarity (" + currentSortMode + ")");
+    }
+
+    /**
+     * Sorts the vault inventory alphabetically by item name.
+     */
+    public void sortAlphabetically() {
+        if (slots.isEmpty()) return;
+
+        currentSortMode = SortMode.ALPHABETICAL;
+        slots.sort((a, b) -> {
+            if (a.isEmpty() && b.isEmpty()) return 0;
+            if (a.isEmpty()) return 1;
+            if (b.isEmpty()) return -1;
+            String nameA = a.itemTemplate != null ? a.itemTemplate.getName() : "";
+            String nameB = b.itemTemplate != null ? b.itemTemplate.getName() : "";
+            return nameA.compareToIgnoreCase(nameB);
+        });
+
+        // Persist sorted order to storage
+        saveSortedOrder();
+        scrollOffset = 0;  // Reset scroll to top
+        System.out.println("VaultInventory: Sorted alphabetically");
+    }
+
+    /**
+     * Saves the current sorted order to persistent storage.
+     */
+    private void saveSortedOrder() {
+        if (localMode && linkedVault != null) {
+            // For local mode, update the linked vault's items
+            linkedVault.clearLocalItems();
+            for (VaultSlot slot : slots) {
+                if (!slot.isEmpty()) {
+                    linkedVault.addLocalItem(slot.itemId, slot.stackCount);
+                }
+            }
+        } else {
+            // For persistent mode, update SaveManager
+            SaveManager.getInstance().clearVault();
+            for (VaultSlot slot : slots) {
+                if (!slot.isEmpty()) {
+                    SaveManager.getInstance().addItemToVault(slot.itemId, slot.stackCount);
+                }
+            }
+        }
+    }
+
+    /**
+     * Gets the current sort mode.
+     */
+    public SortMode getCurrentSortMode() {
+        return currentSortMode;
+    }
+
+    /**
+     * Handles clicks on sort buttons.
+     * @return true if a sort button was clicked
+     */
+    public boolean handleSortButtonClick(int mouseX, int mouseY) {
+        if (!isOpen) return false;
+
+        // Check rarity sort button
+        if (mouseX >= sortRarityBtnX && mouseX <= sortRarityBtnX + sortRarityBtnW &&
+            mouseY >= sortRarityBtnY && mouseY <= sortRarityBtnY + sortRarityBtnH) {
+            sortByRarity();
+            return true;
+        }
+
+        // Check alphabetical sort button
+        if (mouseX >= sortAlphaBtnX && mouseX <= sortAlphaBtnX + sortAlphaBtnBtnW &&
+            mouseY >= sortAlphaBtnY && mouseY <= sortAlphaBtnY + sortAlphaBtnH) {
+            sortAlphabetically();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Draws the vault inventory UI (without dragged item - use drawDraggedItemOverlay for that).
      */
     public void draw(Graphics g) {
@@ -644,6 +818,54 @@ public class VaultInventory {
         g2d.setFont(new Font("Arial", Font.PLAIN, 11));
         String count = slots.size() + " / " + maxSlots;
         g2d.drawString(count, x + 8, y + 24);
+
+        // Draw sort buttons in title bar
+        drawSortButtons(g2d);
+    }
+
+    /**
+     * Draws the sort buttons in the title area.
+     */
+    private void drawSortButtons(Graphics2D g2d) {
+        int btnHeight = 18;
+        int btnPadding = 4;
+        int btnY = y + 6;
+
+        // Sort by rarity button (right side)
+        String rarityLabel = currentSortMode == SortMode.RARITY_ASC ? "Rarity ↑" :
+                             currentSortMode == SortMode.RARITY_DESC ? "Rarity ↓" : "Rarity";
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        int rarityWidth = g2d.getFontMetrics().stringWidth(rarityLabel) + 8;
+        sortRarityBtnW = rarityWidth;
+        sortRarityBtnH = btnHeight;
+        sortRarityBtnX = x + width - rarityWidth - btnPadding - SCROLLBAR_WIDTH;
+        sortRarityBtnY = btnY;
+
+        // Draw rarity button background
+        boolean rarityActive = currentSortMode == SortMode.RARITY_ASC || currentSortMode == SortMode.RARITY_DESC;
+        g2d.setColor(rarityActive ? new Color(100, 80, 40) : new Color(70, 60, 50));
+        g2d.fillRoundRect(sortRarityBtnX, sortRarityBtnY, sortRarityBtnW, sortRarityBtnH, 4, 4);
+        g2d.setColor(new Color(200, 180, 100));
+        g2d.drawRoundRect(sortRarityBtnX, sortRarityBtnY, sortRarityBtnW, sortRarityBtnH, 4, 4);
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(rarityLabel, sortRarityBtnX + 4, sortRarityBtnY + 13);
+
+        // Sort alphabetically button (next to rarity)
+        String alphaLabel = currentSortMode == SortMode.ALPHABETICAL ? "A-Z ✓" : "A-Z";
+        int alphaWidth = g2d.getFontMetrics().stringWidth(alphaLabel) + 8;
+        sortAlphaBtnBtnW = alphaWidth;
+        sortAlphaBtnH = btnHeight;
+        sortAlphaBtnX = sortRarityBtnX - alphaWidth - btnPadding;
+        sortAlphaBtnY = btnY;
+
+        // Draw alpha button background
+        boolean alphaActive = currentSortMode == SortMode.ALPHABETICAL;
+        g2d.setColor(alphaActive ? new Color(40, 80, 100) : new Color(50, 60, 70));
+        g2d.fillRoundRect(sortAlphaBtnX, sortAlphaBtnY, sortAlphaBtnBtnW, sortAlphaBtnH, 4, 4);
+        g2d.setColor(new Color(100, 180, 200));
+        g2d.drawRoundRect(sortAlphaBtnX, sortAlphaBtnY, sortAlphaBtnBtnW, sortAlphaBtnH, 4, 4);
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(alphaLabel, sortAlphaBtnX + 4, sortAlphaBtnY + 13);
     }
 
     private void drawSlots(Graphics2D g2d) {

@@ -52,6 +52,11 @@ public class Inventory {
     private static final int VISIBLE_ROWS = 4;  // Rows visible at once in full inventory
     private static final int COLS = 8;  // Columns in full inventory
 
+    // Hover tracking for E key equip
+    private int hoveredSlotIndex = -1;
+    private int lastMouseX = 0;
+    private int lastMouseY = 0;
+
     public Inventory() {
         this.items = new ArrayList<>();
         this.isOpen = false;
@@ -146,7 +151,7 @@ public class Inventory {
     }
 
     /**
-     * Handles left-click for auto-equip and selection.
+     * Handles left-click for selection (no longer auto-equips, use E key instead).
      * @return true if click was handled
      */
     public boolean handleLeftClick(int mouseX, int mouseY) {
@@ -155,13 +160,13 @@ public class Inventory {
             return handleHotbarClick(mouseX, mouseY);
         }
 
-        // Full inventory is open - check for item clicks
+        // Full inventory is open - clicking selects the slot (for drag start)
+        // Auto-equip is now done with E key
         int panelWidth = COLS * (slotSize + padding) + padding;
-        int panelHeight = VISIBLE_ROWS * (slotSize + padding) + padding + 80;
         int panelX = (1920 - panelWidth) / 2;
         int panelY = 150;
 
-        // Check if clicking on an item slot
+        // Check if clicking on an item slot - update hovered slot
         for (int i = 0; i < items.size(); i++) {
             int displayIndex = i - (scrollOffset * COLS);
             if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
@@ -173,13 +178,72 @@ public class Inventory {
 
             if (mouseX >= slotX && mouseX <= slotX + slotSize &&
                     mouseY >= slotY && mouseY <= slotY + slotSize) {
-                // Auto-equip: move item to hotbar (swap if needed)
-                autoEquipItem(i);
+                // Click registers the slot but doesn't auto-equip
+                // Drag handling is separate in handleMousePressed
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Handles E key press for equipping items from inventory to hotbar.
+     * Equips the currently hovered item.
+     * @return true if an item was equipped
+     */
+    public boolean handleEquipKey() {
+        if (!isOpen || hoveredSlotIndex < 0 || hoveredSlotIndex >= items.size()) {
+            return false;
+        }
+
+        // Equip the hovered item to the selected hotbar slot
+        autoEquipItem(hoveredSlotIndex);
+        return true;
+    }
+
+    /**
+     * Updates the mouse position for hover tracking.
+     * Call this during mouse move events.
+     */
+    public void updateMousePosition(int mouseX, int mouseY) {
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
+        if (!isOpen) {
+            hoveredSlotIndex = -1;
+            return;
+        }
+
+        // Calculate which slot is being hovered
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelX = (1920 - panelWidth) / 2;
+        int panelY = 150;
+
+        hoveredSlotIndex = -1;
+        for (int i = 0; i < items.size(); i++) {
+            int displayIndex = i - (scrollOffset * COLS);
+            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+
+            int col = displayIndex % COLS;
+            int row = displayIndex / COLS;
+            int slotX = panelX + padding + col * (slotSize + padding);
+            int slotY = panelY + 60 + row * (slotSize + padding);
+
+            if (mouseX >= slotX && mouseX <= slotX + slotSize &&
+                    mouseY >= slotY && mouseY <= slotY + slotSize) {
+                hoveredSlotIndex = i;
+                break;
+            }
+        }
+    }
+
+    /**
+     * Gets the currently hovered slot index.
+     * @return The slot index being hovered, or -1 if none
+     */
+    public int getHoveredSlotIndex() {
+        return hoveredSlotIndex;
     }
 
     /**
@@ -772,7 +836,7 @@ public class Inventory {
         // Instructions
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.setFont(new Font("Arial", Font.ITALIC, 14));
-        String instructions = "[I] Close | Left-click to equip | Scroll to browse | Drag outside to drop";
+        String instructions = "[I] Close | [E] Equip hovered item | Scroll to browse | Drag to drop";
         FontMetrics fm = g2d.getFontMetrics();
         int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, textX, panelY + panelHeight - 15);
@@ -951,6 +1015,38 @@ public class Inventory {
         if (vaultOpen && vaultInventory != null) {
             vaultInventory.updateMousePosition(mouseX, mouseY);
         }
+    }
+
+    /**
+     * Handles E key for equipping items from vault to inventory.
+     * @return true if an item was equipped from vault
+     */
+    public boolean handleVaultEquipKey() {
+        if (vaultOpen && vaultInventory != null) {
+            return vaultInventory.handleEquipKey();
+        }
+        return false;
+    }
+
+    /**
+     * Handles E key for equipping items (checks both vault and inventory).
+     * Vault takes priority if open and mouse is hovering over vault.
+     * @return true if an item was equipped
+     */
+    public boolean handleEquipKeyGlobal(int mouseX, int mouseY) {
+        // If vault is open and mouse is over vault, try vault equip first
+        if (vaultOpen && vaultInventory != null && vaultInventory.containsPoint(mouseX, mouseY)) {
+            if (vaultInventory.handleEquipKey()) {
+                return true;
+            }
+        }
+
+        // Otherwise try inventory equip
+        if (isOpen) {
+            return handleEquipKey();
+        }
+
+        return false;
     }
 
     /**
