@@ -916,10 +916,17 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     /**
      * Fires a projectile from the held ranged weapon.
      * Consumes appropriate ammo or mana based on weapon type.
+     * Special handling for MirrorToOtherRealms which fires 3 projectiles.
      */
     private void fireProjectile(ArrayList<Entity> entities) {
         if (heldItem == null || !heldItem.isRangedWeapon()) return;
         if (fireTimer > 0) return; // On cooldown
+
+        // Special handling for Mirror to Other Realms
+        if (heldItem instanceof MirrorToOtherRealms) {
+            fireMirrorProjectiles(entities, (MirrorToOtherRealms) heldItem);
+            return;
+        }
 
         // Determine ammo requirements
         String ammoType = heldItem.getAmmoItemName();
@@ -1002,6 +1009,55 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             if (audioManager != null) {
                 audioManager.playSound("fire");
             }
+        }
+    }
+
+    /**
+     * Fires projectiles from the Mirror to Other Realms.
+     * The mirror fires 3 projectiles based on its currently displayed realm:
+     * - Volcano: Fireballs
+     * - Forest: Arrows
+     * - Ocean: Tiny fish
+     *
+     * @param entities Game entities list to add projectiles to
+     * @param mirror The MirrorToOtherRealms item
+     */
+    private void fireMirrorProjectiles(ArrayList<Entity> entities, MirrorToOtherRealms mirror) {
+        int manaCost = mirror.getManaCost();
+
+        // Check mana
+        if (currentMana < manaCost) {
+            // Not enough mana
+            return;
+        }
+
+        // Consume mana
+        currentMana -= manaCost;
+
+        // Calculate spawn position
+        int playerCenterX = x + width / 2;
+        int playerCenterY = y + height / 3;
+        int spawnOffset = 20;
+        int projX = playerCenterX + (int)(aimDirX * spawnOffset);
+        int projY = playerCenterY + (int)(aimDirY * spawnOffset);
+
+        // Create projectiles using the mirror's createProjectiles method
+        java.util.List<ProjectileEntity> projectiles = mirror.createProjectiles(
+            projX, projY, aimDirX, aimDirY, true
+        );
+
+        // Add all projectiles to the game
+        for (ProjectileEntity projectile : projectiles) {
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+            entities.add(projectile);
+        }
+
+        isFiring = true;
+        fireTimer = fireCooldown;
+
+        if (audioManager != null) {
+            audioManager.playSound("fire");
         }
     }
 
