@@ -73,6 +73,17 @@ public class MirrorToOtherRealms extends Item {
     }
 
     /**
+     * Creates a copy of this MirrorToOtherRealms item.
+     * Overrides Item.copy() to return the correct subclass type.
+     *
+     * @return A new MirrorToOtherRealms instance
+     */
+    @Override
+    public Item copy() {
+        return new MirrorToOtherRealms();
+    }
+
+    /**
      * Gets the current realm based on the internal timer.
      * This should be synchronized with the sprite animation frames.
      *
