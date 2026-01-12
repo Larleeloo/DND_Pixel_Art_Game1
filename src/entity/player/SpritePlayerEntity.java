@@ -132,6 +132,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     private double attackDirY = 0;        // Attack direction Y (set when attack starts)
     private double attackAngle = 0;       // Attack angle in radians (set when attack starts)
     private MeleeAttackHitbox currentAttackHitbox = null;  // Arc-based attack hitbox
+    private boolean showMeleeAimIndicator = false;  // Toggle for melee aim indicator (debug feature)
 
     // Dimensions
     private int width;
@@ -1390,8 +1391,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             drawAimIndicator(g2d);
         }
 
-        // Draw melee aim indicator when holding a melee weapon (and not attacking)
-        if (!isAttacking && heldItem != null &&
+        // Draw melee aim indicator when holding a melee weapon (debug feature, toggled)
+        if (showMeleeAimIndicator && !isAttacking && heldItem != null &&
             (heldItem.getCategory() == Item.ItemCategory.WEAPON ||
              heldItem.getCategory() == Item.ItemCategory.TOOL)) {
             drawMeleeAimIndicator(g2d);
@@ -1773,6 +1774,23 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             return heldItem.getAttackSpeed();
         }
         return 1.0f; // Base attack speed (1 attack per second)
+    }
+
+    /**
+     * Sets whether to show the melee aim indicator (debug feature).
+     * When enabled, shows an arc preview of the attack area before swinging.
+     *
+     * @param show true to show the indicator, false to hide
+     */
+    public void setShowMeleeAimIndicator(boolean show) {
+        this.showMeleeAimIndicator = show;
+    }
+
+    /**
+     * Returns whether the melee aim indicator is currently shown.
+     */
+    public boolean isShowMeleeAimIndicator() {
+        return showMeleeAimIndicator;
     }
 
     /**
