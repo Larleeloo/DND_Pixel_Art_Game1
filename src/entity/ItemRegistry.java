@@ -617,8 +617,8 @@ public class ItemRegistry {
         registerCollectible("crucible", "Crucible", ItemRarity.UNCOMMON,
                 "For melting and mixing metals");
 
-        registerCollectible("mirror_realms", "Mirror to Other Realms", ItemRarity.EPIC,
-                "Glimpse into parallel worlds");
+        // Mirror to Other Realms - special ranged weapon with realm-cycling projectiles
+        registerMirrorToOtherRealms();
 
         registerCollectible("rowboat", "Rowboat", ItemRarity.UNCOMMON,
                 "For crossing water");
@@ -1183,6 +1183,16 @@ public class ItemRegistry {
         item.setMaxStackSize(64);
         templates.put(id, item);
         return item;
+    }
+
+    /**
+     * Registers the Mirror to Other Realms special item.
+     * This is a unique ranged weapon that cycles through realms and fires
+     * different projectile types (fireball, arrow, fish).
+     */
+    private static void registerMirrorToOtherRealms() {
+        MirrorToOtherRealms mirror = new MirrorToOtherRealms();
+        templates.put("mirror_realms", mirror);
     }
 
     // ==================== Public API ====================

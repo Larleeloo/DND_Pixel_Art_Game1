@@ -41,7 +41,8 @@ public class ProjectileEntity extends Entity {
         THROWING_AXE,   // Thrown axe
         ROCK,           // Thrown rock
         POTION,         // Thrown potion
-        BOMB            // Explosive
+        BOMB,           // Explosive
+        FISH            // Tiny fish projectile (from Mirror to Other Realms)
     }
 
     // Sprite and animation
@@ -228,6 +229,15 @@ public class ProjectileEntity extends Entity {
                 explosionRadius = 96;
                 if (!tryLoadSprite(spritePath)) {
                     createBombSprite(14, 14);
+                }
+                break;
+            case FISH:
+                gravity = 0.2;
+                rotateWithVelocity = true;
+                hasTrail = true;
+                trailColor = new Color(100, 180, 255);  // Watery blue trail
+                if (!tryLoadSprite(spritePath)) {
+                    createFishSprite(14, 8);
                 }
                 break;
         }
@@ -549,6 +559,56 @@ public class ProjectileEntity extends Entity {
         g.fillOval(w/2 - 2, 0, 4, 4);
         g.setColor(new Color(255, 100, 0));
         g.fillOval(w/2 - 1, 1, 2, 2);
+
+        g.dispose();
+        this.staticSprite = img;
+    }
+
+    /**
+     * Creates a tiny fish sprite for the Mirror to Other Realms ocean projectile.
+     */
+    private void createFishSprite(int w, int h) {
+        this.width = w * SCALE;
+        this.height = h * SCALE;
+
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Fish body (oval shape) - teal/cyan color
+        g.setColor(new Color(50, 180, 200));
+        g.fillOval(2, 1, w - 5, h - 2);
+
+        // Fish belly (lighter)
+        g.setColor(new Color(150, 220, 240));
+        g.fillOval(3, h/2, w - 7, h/2 - 1);
+
+        // Tail fin (triangle at back)
+        g.setColor(new Color(30, 140, 170));
+        int[] tailX = {0, 3, 3};
+        int[] tailY = {h/2, 1, h - 1};
+        g.fillPolygon(tailX, tailY, 3);
+
+        // Dorsal fin (small triangle on top)
+        g.setColor(new Color(30, 140, 170));
+        int[] dorsalX = {w/2 - 1, w/2 + 2, w/2 + 2};
+        int[] dorsalY = {0, 0, 2};
+        g.fillPolygon(dorsalX, dorsalY, 3);
+
+        // Eye
+        g.setColor(Color.WHITE);
+        g.fillOval(w - 5, h/2 - 2, 3, 3);
+        g.setColor(Color.BLACK);
+        g.fillOval(w - 4, h/2 - 1, 2, 2);
+
+        // Mouth line
+        g.setColor(new Color(30, 100, 130));
+        g.drawLine(w - 2, h/2, w - 1, h/2);
+
+        // Scales shimmer (optional detail)
+        g.setColor(new Color(100, 200, 220, 100));
+        g.drawArc(4, 2, 4, 3, 0, 180);
+        g.drawArc(7, 2, 4, 3, 0, 180);
 
         g.dispose();
         this.staticSprite = img;
