@@ -2179,7 +2179,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
     /**
      * Draws the held item at the player's hand position using animated GIF textures.
-     * Items are drawn at hand position, not as full-sprite overlays.
+     * Items are drawn at a fixed hand position - the animation (use.gif) handles
+     * all visual movement for swings, attacks, and other actions.
      *
      * @param g2d Graphics context
      * @param currentState Current player animation state
@@ -2195,50 +2196,15 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         // Item size at hand (larger than old mini icon)
         int itemSize = 32;
 
-        // Calculate hand position based on player facing and animation state
+        // Fixed hand position - item animation handles all movement
         int handOffsetX;
         int handOffsetY = height / 2 - itemSize / 2;  // Centered vertically at mid-body
 
-        // Base hand position
+        // Base hand position (fixed, no state-based movement)
         if (facingRight) {
             handOffsetX = width - 12;  // Right side of player
         } else {
             handOffsetX = -itemSize + 12;  // Left side of player
-        }
-
-        // Adjust position based on animation state for natural movement
-        switch (currentState) {
-            case ATTACK:
-                // Extend arm forward during attack
-                handOffsetX = facingRight ? width + 8 : -itemSize - 8;
-                handOffsetY = height / 2 - itemSize / 2 - 4;  // Slightly raised
-                break;
-            case FIRE:
-                // Extended arm for ranged attack
-                handOffsetX = facingRight ? width + 4 : -itemSize - 4;
-                break;
-            case USE_ITEM:
-            case EAT:
-                // Bring item closer to face
-                handOffsetX = facingRight ? width / 2 : -itemSize / 2;
-                handOffsetY = height / 3 - itemSize / 2;  // Raised to face level
-                break;
-            case RUN:
-            case SPRINT:
-                // Slight bob during running
-                int runBob = (int)(Math.sin(System.currentTimeMillis() * 0.01) * 2);
-                handOffsetY += runBob;
-                break;
-            case JUMP:
-            case DOUBLE_JUMP:
-            case TRIPLE_JUMP:
-            case FALL:
-                // Arm raised during jump/fall
-                handOffsetY = height / 3 - itemSize / 2;
-                break;
-            default:
-                // IDLE, WALK - use base positions
-                break;
         }
 
         int itemX = x + handOffsetX;
@@ -2246,16 +2212,6 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
         // Save transform for restoration
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
-
-        // Apply rotation based on state for natural held appearance
-        double rotation = 0;
-        if (currentState == SpriteAnimation.ActionState.ATTACK) {
-            // Swing rotation during attack
-            rotation = facingRight ? Math.toRadians(-30) : Math.toRadians(30);
-        } else if (heldItem != null && heldItem.isRangedWeapon()) {
-            // Slight angle for bows/crossbows pointing toward aim
-            rotation = facingRight ? Math.toRadians(-15) : Math.toRadians(15);
-        }
 
         // Draw the item - use nearest-neighbor interpolation to preserve pixel art quality
         // This supports variable texture sizes (16x16, 32x32, etc.) while maintaining
@@ -2266,15 +2222,11 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         if (!facingRight) {
             // Flip horizontally for left-facing
             g2d.translate(itemX + itemSize / 2.0, itemY + itemSize / 2.0);
-            g2d.rotate(rotation);
             g2d.scale(-1, 1);
             g2d.translate(-itemSize / 2.0, -itemSize / 2.0);
             g2d.drawImage(itemSprite, 0, 0, itemSize, itemSize, null);
         } else {
-            g2d.translate(itemX + itemSize / 2.0, itemY + itemSize / 2.0);
-            g2d.rotate(rotation);
-            g2d.translate(-itemSize / 2.0, -itemSize / 2.0);
-            g2d.drawImage(itemSprite, 0, 0, itemSize, itemSize, null);
+            g2d.drawImage(itemSprite, itemX, itemY, itemSize, itemSize, null);
         }
 
         g2d.setTransform(oldTransform);
