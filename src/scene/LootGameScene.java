@@ -302,6 +302,20 @@ public class LootGameScene implements Scene {
                 }
             }
 
+            // Handle F key for equipping items from inventory/vault
+            if (input.isKeyJustPressed('f') || input.isKeyJustPressed('F')) {
+                System.out.println("LootGameScene: F key pressed");
+                Inventory inventory = player.getInventory();
+                if (inventory.isOpen() || inventory.isVaultOpen()) {
+                    int mouseX = input.getMouseX();
+                    int mouseY = input.getMouseY();
+                    System.out.println("LootGameScene: Inventory/vault open, calling handleEquipKeyGlobal at " + mouseX + "," + mouseY);
+                    inventory.handleEquipKeyGlobal(mouseX, mouseY);
+                } else {
+                    System.out.println("LootGameScene: Inventory/vault NOT open, skipping equip");
+                }
+            }
+
             // Update vault entity
             if (playerVault != null) {
                 playerVault.update(input);
@@ -627,6 +641,12 @@ public class LootGameScene implements Scene {
         if (player != null) {
             Inventory inventory = player.getInventory();
 
+            // Update mouse position for hover tracking during drag
+            inventory.updateMousePosition(x, y);
+            if (inventory.isVaultOpen()) {
+                inventory.updateVaultMousePosition(x, y);
+            }
+
             // Forward drag to vault if it's dragging
             if (inventory.isVaultOpen()) {
                 VaultInventory vault = inventory.getVaultInventory();
@@ -648,9 +668,13 @@ public class LootGameScene implements Scene {
             button.handleMouseMove(x, y);
         }
 
-        // Update vault inventory mouse position for tooltips
-        if (player != null && player.getInventory().isVaultOpen()) {
-            player.getInventory().updateVaultMousePosition(x, y);
+        // Update inventory and vault mouse position for hover tracking
+        if (player != null) {
+            Inventory inventory = player.getInventory();
+            inventory.updateMousePosition(x, y);
+            if (inventory.isVaultOpen()) {
+                inventory.updateVaultMousePosition(x, y);
+            }
         }
     }
 
