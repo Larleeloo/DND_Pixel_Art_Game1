@@ -1483,6 +1483,12 @@ public class GameScene implements Scene {
         if (player != null) {
             Inventory inventory = player.getInventory();
 
+            // Update mouse position for hover tracking during drag
+            inventory.updateMousePosition(x, y);
+            if (inventory.isVaultOpen()) {
+                inventory.updateVaultMousePosition(x, y);
+            }
+
             // Forward drag to vault if it's dragging
             if (inventory.isVaultOpen()) {
                 VaultInventory vault = inventory.getVaultInventory();
