@@ -188,17 +188,19 @@ public class Inventory {
     }
 
     /**
-     * Handles E key press for equipping items from inventory to hotbar.
+     * Handles F key press for equipping items from inventory to hotbar.
      * Equips the currently hovered item.
      * @return true if an item was equipped
      */
     public boolean handleEquipKey() {
+        System.out.println("Inventory.handleEquipKey: isOpen=" + isOpen + ", hoveredSlotIndex=" + hoveredSlotIndex + ", items.size=" + items.size());
         if (!isOpen || hoveredSlotIndex < 0 || hoveredSlotIndex >= items.size()) {
             return false;
         }
 
         // Equip the hovered item to the selected hotbar slot
         autoEquipItem(hoveredSlotIndex);
+        System.out.println("Inventory.handleEquipKey: Equipped item at slot " + hoveredSlotIndex);
         return true;
     }
 
@@ -418,23 +420,16 @@ public class Inventory {
             int targetSlot = getSlotAtPosition(mouseX, mouseY);
 
             if (targetSlot >= 0 && targetSlot != draggedIndex) {
-                // Remove item from original position
-                items.remove(draggedIndex);
-
                 if (targetSlot < items.size()) {
-                    // Target slot has an item - insert at that position (shifts other items)
-                    items.add(targetSlot, draggedItem);
+                    // Target slot has an item - SWAP the items
+                    ItemEntity targetItem = items.get(targetSlot);
+                    items.set(targetSlot, draggedItem);
+                    items.set(draggedIndex, targetItem);
                 } else {
-                    // Target slot is empty or beyond current items
-                    // Pad with nulls if needed, then add
-                    while (items.size() < targetSlot) {
-                        items.add(null);
-                    }
-                    items.add(targetSlot, draggedItem);
-                    // Remove any trailing nulls
-                    while (!items.isEmpty() && items.get(items.size() - 1) == null) {
-                        items.remove(items.size() - 1);
-                    }
+                    // Target slot is empty (beyond current items)
+                    // Remove from original position and add at end
+                    items.remove(draggedIndex);
+                    items.add(draggedItem);
                 }
             }
             // If dropped on same slot or invalid slot, item stays in place
@@ -861,6 +856,9 @@ public class Inventory {
             if (i < items.size()) {
                 ItemEntity item = items.get(i);
 
+                // Skip if item is null (safety check)
+                if (item == null) continue;
+
                 // Skip drawing if this is the item being dragged
                 if (isDragging && draggedIndex == i) {
                     // Draw empty slot with dashed border
@@ -901,7 +899,10 @@ public class Inventory {
 
         // Draw tooltip for hovered item
         if (hoveredSlotIndex >= 0 && hoveredSlotIndex < items.size()) {
-            drawTooltip(g2d, items.get(hoveredSlotIndex));
+            ItemEntity hoveredItem = items.get(hoveredSlotIndex);
+            if (hoveredItem != null) {
+                drawTooltip(g2d, hoveredItem);
+            }
         }
     }
 
@@ -1189,13 +1190,16 @@ public class Inventory {
     }
 
     /**
-     * Handles E key for equipping items (checks both vault and inventory).
+     * Handles F key for equipping items (checks both vault and inventory).
      * Vault takes priority if open and mouse is hovering over vault.
      * @return true if an item was equipped
      */
     public boolean handleEquipKeyGlobal(int mouseX, int mouseY) {
+        System.out.println("Inventory.handleEquipKeyGlobal: mouseX=" + mouseX + ", mouseY=" + mouseY + ", vaultOpen=" + vaultOpen + ", isOpen=" + isOpen);
+
         // If vault is open and mouse is over vault, try vault equip first
         if (vaultOpen && vaultInventory != null && vaultInventory.containsPoint(mouseX, mouseY)) {
+            System.out.println("Inventory.handleEquipKeyGlobal: Mouse over vault, calling vault equip");
             if (vaultInventory.handleEquipKey()) {
                 return true;
             }
@@ -1203,6 +1207,7 @@ public class Inventory {
 
         // Otherwise try inventory equip
         if (isOpen) {
+            System.out.println("Inventory.handleEquipKeyGlobal: Inventory open, calling inventory equip");
             return handleEquipKey();
         }
 

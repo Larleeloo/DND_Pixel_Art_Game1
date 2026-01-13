@@ -859,11 +859,15 @@ public class GameScene implements Scene {
 
         // Handle F key for equipping items from inventory/vault
         if (input.isKeyJustPressed('f') || input.isKeyJustPressed('F')) {
+            System.out.println("GameScene: F key pressed");
             Inventory inventory = player.getInventory();
             if (inventory.isOpen() || inventory.isVaultOpen()) {
                 int mouseX = input.getMouseX();
                 int mouseY = input.getMouseY();
+                System.out.println("GameScene: Inventory/vault open, calling handleEquipKeyGlobal at " + mouseX + "," + mouseY);
                 inventory.handleEquipKeyGlobal(mouseX, mouseY);
+            } else {
+                System.out.println("GameScene: Inventory/vault NOT open, skipping equip");
             }
         }
 
