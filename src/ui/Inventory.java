@@ -840,6 +840,108 @@ public class Inventory {
         FontMetrics fm = g2d.getFontMetrics();
         int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, textX, panelY + panelHeight - 15);
+
+        // Draw tooltip for hovered item
+        if (hoveredSlotIndex >= 0 && hoveredSlotIndex < items.size()) {
+            drawTooltip(g2d, items.get(hoveredSlotIndex));
+        }
+    }
+
+    /**
+     * Draws a tooltip for the given item at the current mouse position.
+     */
+    private void drawTooltip(Graphics2D g2d, ItemEntity itemEntity) {
+        if (itemEntity == null) return;
+
+        Item item = itemEntity.getLinkedItem();
+        String name = itemEntity.getItemName();
+        String rarity = "Common";
+        String category = itemEntity.getItemType();
+        Color rarityColor = Color.WHITE;
+
+        if (item != null) {
+            rarity = item.getRarity().getDisplayName();
+            rarityColor = item.getRarity().getColor();
+            category = item.getCategory().name();
+        }
+
+        // Build description lines
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add(name);
+        lines.add(rarity + " " + category);
+        if (itemEntity.getStackCount() > 1) {
+            lines.add("Stack: x" + itemEntity.getStackCount());
+        }
+
+        // Add item stats if available
+        if (item != null) {
+            if (item.getDamage() > 0) {
+                lines.add("Damage: " + item.getDamage());
+            }
+            if (item.getDefense() > 0) {
+                lines.add("Defense: " + item.getDefense());
+            }
+            if (item.getHealthRestore() > 0) {
+                lines.add("Heals: " + item.getHealthRestore() + " HP");
+            }
+            if (item.getManaRestore() > 0) {
+                lines.add("Restores: " + item.getManaRestore() + " Mana");
+            }
+            if (item.getDescription() != null && !item.getDescription().isEmpty()) {
+                lines.add(item.getDescription());
+            }
+        }
+
+        // Calculate tooltip size
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        int maxWidth = 0;
+        for (String line : lines) {
+            int w = g2d.getFontMetrics().stringWidth(line);
+            if (w > maxWidth) maxWidth = w;
+        }
+
+        int tooltipWidth = maxWidth + 20;
+        int lineHeight = 14;
+        int tooltipHeight = lines.size() * lineHeight + 16;
+
+        int tooltipX = lastMouseX + 15;
+        int tooltipY = lastMouseY - tooltipHeight / 2;
+
+        // Keep tooltip on screen
+        if (tooltipX + tooltipWidth > 1920) {
+            tooltipX = lastMouseX - tooltipWidth - 10;
+        }
+        if (tooltipY < 0) {
+            tooltipY = 5;
+        }
+        if (tooltipY + tooltipHeight > 1080) {
+            tooltipY = 1080 - tooltipHeight - 5;
+        }
+
+        // Background
+        g2d.setColor(new Color(20, 20, 30, 240));
+        g2d.fillRoundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 8, 8);
+
+        // Border with rarity color
+        g2d.setColor(rarityColor);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 8, 8);
+
+        // Draw text lines
+        int textY = tooltipY + 16;
+        for (int i = 0; i < lines.size(); i++) {
+            if (i == 0) {
+                // Name in rarity color and bold
+                g2d.setColor(rarityColor);
+                g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            } else {
+                // Other lines in light gray
+                g2d.setColor(Color.LIGHT_GRAY);
+                g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            }
+            g2d.drawString(lines.get(i), tooltipX + 10, textY);
+            textY += lineHeight;
+        }
     }
 
     // ==================== Vault Integration ====================
