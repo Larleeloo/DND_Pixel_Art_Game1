@@ -549,7 +549,8 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
         // F key - attack only (separate from right-click for dedicated combat key)
         // Skip if inventory is open (F key is used for equipping items there)
-        if (input.isKeyJustPressed('f') && !inventory.isOpen() && !inventory.isVaultOpen()) {
+        // Check inventory state BEFORE consuming the key press
+        if (!inventory.isOpen() && !inventory.isVaultOpen() && input.isKeyJustPressed('f')) {
             if (heldItem != null && heldItem.isConsumable()) {
                 startEating();
             } else if (attack()) {

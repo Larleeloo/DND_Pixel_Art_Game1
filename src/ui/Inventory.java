@@ -325,10 +325,43 @@ public class Inventory {
     }
 
     public void handleMouseDragged(int mouseX, int mouseY) {
+        // Update mouse position for hover tracking even while dragging
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
         if (isDragging) {
             dragX = mouseX;
             dragY = mouseY;
         }
+    }
+
+    /**
+     * Gets the slot index at the given screen position.
+     * @return slot index (0 to MAX_SLOTS-1), or -1 if not over a slot
+     */
+    private int getSlotAtPosition(int mouseX, int mouseY) {
+        if (!isOpen) return -1;
+
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelX = (1920 - panelWidth) / 2;
+        int panelY = 150;
+
+        int startIndex = scrollOffset * COLS;
+        int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
+
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
+            int col = displayIndex % COLS;
+            int row = displayIndex / COLS;
+            int slotX = panelX + padding + col * (slotSize + padding);
+            int slotY = panelY + 60 + row * (slotSize + padding);
+
+            if (mouseX >= slotX && mouseX <= slotX + slotSize &&
+                    mouseY >= slotY && mouseY <= slotY + slotSize) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public ItemEntity handleMouseReleased(int mouseX, int mouseY) {
@@ -380,6 +413,31 @@ public class Inventory {
                 droppedItem = draggedItem;
                 items.remove(draggedIndex);
             }
+        } else if (!outsideInventory && draggedItem != null) {
+            // Dropped inside inventory - check if dropped on a specific slot
+            int targetSlot = getSlotAtPosition(mouseX, mouseY);
+
+            if (targetSlot >= 0 && targetSlot != draggedIndex) {
+                // Remove item from original position
+                items.remove(draggedIndex);
+
+                if (targetSlot < items.size()) {
+                    // Target slot has an item - insert at that position (shifts other items)
+                    items.add(targetSlot, draggedItem);
+                } else {
+                    // Target slot is empty or beyond current items
+                    // Pad with nulls if needed, then add
+                    while (items.size() < targetSlot) {
+                        items.add(null);
+                    }
+                    items.add(targetSlot, draggedItem);
+                    // Remove any trailing nulls
+                    while (!items.isEmpty() && items.get(items.size() - 1) == null) {
+                        items.remove(items.size() - 1);
+                    }
+                }
+            }
+            // If dropped on same slot or invalid slot, item stays in place
         }
 
         // Reset drag state
