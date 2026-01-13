@@ -857,20 +857,18 @@ public class GameScene implements Scene {
                 playerBounds.width, playerBounds.height);
         }
 
-        // Handle E key interactions with doors, buttons, and vaults
-        if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+        // Handle F key for equipping items from inventory/vault
+        if (input.isKeyJustPressed('f') || input.isKeyJustPressed('F')) {
             Inventory inventory = player.getInventory();
-
-            // If inventory/vault is open, E key equips hovered item instead of interacting
             if (inventory.isOpen() || inventory.isVaultOpen()) {
                 int mouseX = input.getMouseX();
                 int mouseY = input.getMouseY();
-                if (inventory.handleEquipKeyGlobal(mouseX, mouseY)) {
-                    // E key was used to equip an item, don't process other interactions
-                    return;
-                }
+                inventory.handleEquipKeyGlobal(mouseX, mouseY);
             }
+        }
 
+        // Handle E key interactions with doors, buttons, and vaults
+        if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
             System.out.println("GameScene: E key pressed, checking " + doors.size() + " doors, " + interactiveButtons.size() + " buttons, " + vaults.size() + " vaults");
 
             // Try to interact with nearby doors
