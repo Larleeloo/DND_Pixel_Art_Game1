@@ -836,7 +836,7 @@ public class Inventory {
         // Instructions
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.setFont(new Font("Arial", Font.ITALIC, 14));
-        String instructions = "[I] Close | [E] Equip hovered item | Scroll to browse | Drag to drop";
+        String instructions = "[I] Close | [F] Equip hovered item | Scroll to browse | Drag to drop";
         FontMetrics fm = g2d.getFontMetrics();
         int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, textX, panelY + panelHeight - 15);
