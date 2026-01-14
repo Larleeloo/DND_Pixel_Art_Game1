@@ -533,6 +533,11 @@ public class ItemRegistry {
         registerMaterial("skull", "Skull", ItemRarity.UNCOMMON,
                 "A grim reminder of mortality");
 
+        // The Ruby Skull - special accessory that grants unlimited jumps when held
+        registerAccessory("ruby_skull", "The Ruby Skull", ItemRarity.LEGENDARY,
+                "A crimson skull pulsing with dark energy")
+                .setSpecialEffect("Unlimited jumps while held");
+
         // ==================== TOOLS (Discord Bot Items) ====================
 
         registerTool("shears", "Shears", 2,
@@ -1168,6 +1173,16 @@ public class ItemRegistry {
         item.setDescription(desc);
         item.setStackable(true);
         item.setMaxStackSize(16);
+        templates.put(id, item);
+        return item;
+    }
+
+    private static Item registerAccessory(String id, String name, ItemRarity rarity, String desc) {
+        Item item = new Item(name, ItemCategory.ACCESSORY);
+        item.setRarity(rarity);
+        item.setDescription(desc);
+        item.setStackable(false);  // Accessories typically don't stack
+        item.setMaxStackSize(1);
         templates.put(id, item);
         return item;
     }

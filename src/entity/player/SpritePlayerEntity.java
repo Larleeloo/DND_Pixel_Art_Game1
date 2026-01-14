@@ -821,6 +821,7 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
      * Handles multi-jump input (single, double, triple jump).
      * Uses isKeyJustPressed for immediate response on key press.
      * Checks both space char and VK_SPACE keyCode for maximum responsiveness.
+     * Special items like The Ruby Skull can grant unlimited jumps.
      */
     private void handleJumping(InputManager input) {
         // Check both space char and VK_SPACE keyCode for reliable detection
@@ -829,12 +830,18 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         boolean spaceKeyPressed = input.isKeyJustPressed(java.awt.event.KeyEvent.VK_SPACE);
         boolean spacePressed = spaceCharPressed || spaceKeyPressed;
 
-        if (spacePressed && jumpsRemaining > 0) {
+        // Check if holding The Ruby Skull for unlimited jumps
+        boolean hasUnlimitedJumps = heldItem != null &&
+            "The Ruby Skull".equals(heldItem.getName());
+
+        if (spacePressed && (jumpsRemaining > 0 || hasUnlimitedJumps)) {
             if (onGround) {
                 // First jump from ground
                 velY = jumpStrength;
                 onGround = false;
-                jumpsRemaining--;
+                if (!hasUnlimitedJumps) {
+                    jumpsRemaining--;
+                }
                 currentJumpNumber = 1;
 
                 // Trigger jump dust particles
@@ -843,21 +850,27 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                 if (audioManager != null) {
                     audioManager.playSound("jump");
                 }
-            } else if (jumpsRemaining > 0) {
-                // Air jump (double or triple)
+            } else if (jumpsRemaining > 0 || hasUnlimitedJumps) {
+                // Air jump (double or triple, or unlimited with Ruby Skull)
                 // Handle edge case: if player fell off ledge without jumping first,
                 // currentJumpNumber is 0 - treat this as consuming the first jump
                 if (currentJumpNumber == 0) {
                     // Fell off a ledge - first air press gives a weaker "recovery" jump
-                    currentJumpNumber = 1;
+                    currentJumpNumber = hasUnlimitedJumps ? 3 : 1;  // Ruby Skull uses triple jump animation
                     velY = doubleJumpStrength;  // Use double jump strength as recovery
                 } else {
-                    // Normal air jump sequence
-                    currentJumpNumber++;
-                    if (currentJumpNumber == 2) {
-                        velY = doubleJumpStrength;
-                    } else if (currentJumpNumber == 3) {
+                    // Normal air jump sequence or Ruby Skull unlimited jumps
+                    if (hasUnlimitedJumps) {
+                        // Ruby Skull: always use triple jump animation and strength
+                        currentJumpNumber = 3;
                         velY = tripleJumpStrength;
+                    } else {
+                        currentJumpNumber++;
+                        if (currentJumpNumber == 2) {
+                            velY = doubleJumpStrength;
+                        } else if (currentJumpNumber == 3) {
+                            velY = tripleJumpStrength;
+                        }
                     }
                 }
 
@@ -868,7 +881,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                     40, 20, null, 0.4, false
                 );
 
-                jumpsRemaining--;
+                if (!hasUnlimitedJumps) {
+                    jumpsRemaining--;
+                }
 
                 if (audioManager != null) {
                     audioManager.playSound("jump");
