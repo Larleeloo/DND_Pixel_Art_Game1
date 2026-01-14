@@ -7,115 +7,826 @@ Inspired by Dungeons and Dragons games like Baldur's Gate 3. (Non-turn-based)
 This game should feel abundant with the quantity and variations in items and tools.
 
 CURRENT FEATURES
--JSON file-based level loading
--Block-based level construction
--Sprite-based player animations with GIF support
--Sprite-based mob animations with hitbox collision detection
--Equipment overlay system for character customization (helmets, chest, legs, boots, etc.)
--Block overlay system (grass, snow, ice overlays on base blocks)
--Bone-based animations (legacy, moved to animation.bone package)
--Entity management with custom AI for Humanoid and Quadruped entities
--Basic lighting support (simple dark mask and light sources)
--Simple parallax with animated background support
--Scrolling camera that follows the player
+================
 
-MOVEMENT AND ANIMATION SYSTEM (NEW)
--Extended animation states supporting 5-15 frames for smooth, clear motion
-  -Movement: IDLE, WALK, RUN, SPRINT (with Shift key)
-  -Jumping: JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL
-  -Combat: ATTACK, FIRE, BLOCK, CAST
-  -Item Usage: USE_ITEM, EAT
-  -Reactions: HURT, DEAD
--Double and triple jumping for all entities
-  -Press Space while in air to perform additional jumps
-  -Each jump has unique animation (flips and spins)
-  -Configurable max jumps per entity (setMaxJumps)
--Sprinting system for all entities
-  -Hold Shift to sprint (increased speed, drains stamina)
-  -Stamina regenerates when not sprinting
-  -Sprint animations with forward lean
+This section provides comprehensive documentation for developers working on The Amber Moon.
+All systems are designed to be modular and extensible.
 
-PROJECTILE SYSTEM (NEW)
--ProjectileEntity class for fired/thrown projectiles
-  -GIF-based animated projectile sprites
-  -Velocity-based movement with optional gravity
-  -Collision detection with entities and blocks
-  -Configurable damage and knockback
-  -Trail effects for visual polish
-  -Mouse-aimed projectile firing (projectiles fly toward cursor)
--Multiple projectile types:
-  -ARROW, BOLT (bows, crossbows)
-  -MAGIC_BOLT, FIREBALL, ICEBALL (magic weapons)
-  -THROWING_KNIFE, THROWING_AXE, ROCK (throwables)
-  -POTION, BOMB (explosives)
--Special arrows with status effects:
-  -Fire Arrow: Burns enemies for 3 seconds (5 damage/tick, 1.2x multiplier)
-  -Ice Arrow: Freezes/slows enemies for 4 seconds (3 damage/tick, 1.1x multiplier)
--Charged shot system:
-  -Hold attack to charge bows and magic staffs
-  -Bows consume arrows (not mana), arrows don't scale in size
-  -Magic staffs consume mana, projectiles scale with charge level
-  -Visual feedback with growing projectile and particle effects
--Mobs can fire projectiles with ranged attacks
-  -Configurable projectile type, damage, speed, cooldown
-  -AI switches between ranged and melee based on distance
+--------------------------------------------------------------------------------
+1. CORE ARCHITECTURE
+--------------------------------------------------------------------------------
 
-STATUS EFFECT SYSTEM (NEW)
--Mobs can receive burning, frozen, and poisoned status effects
-  -BURNING: Fire damage over time, orange tint, fire particle overlay
-  -FROZEN: Ice damage, blue tint, slowed movement (50%), ice particle overlay
-  -POISONED: Poison damage over time, green tint, bubble particle overlay
--GIF-based particle overlays in assets/particles/:
-  -fire_particles.gif: Rising flames and sparks
-  -ice_particles.gif: Falling snowflakes and crystals
-  -poison_particles.gif: Rising bubbles
--Configurable effect properties:
-  -Duration, damage per tick, tick interval
-  -Movement slow multiplier
-  -Color tint with pulsing alpha
--Fallback to procedural particle rendering if GIFs not available
+The game uses a Java Swing-based engine with a 60 FPS game loop. The architecture
+follows these key patterns:
 
-ITEM AND WEAPON SYSTEM (NEW)
--Comprehensive Item class with categories and properties
-  -Categories: WEAPON, RANGED_WEAPON, TOOL, ARMOR, CLOTHING, BLOCK, FOOD, POTION, MATERIAL, KEY, ACCESSORY, THROWABLE
-  -Rarity tiers: COMMON (white), UNCOMMON (green), RARE (blue), EPIC (purple), LEGENDARY (orange), MYTHIC (cyan)
-  -Properties: damage, defense, attack speed, range, crit chance, special effects
--Held item overlay system
-  -Items render as GIF overlays on the character when held
-  -Animations sync with base character animation states
-  -Support for all action states (idle, walk, attack, fire, etc.)
--Ranged weapons with projectile firing
-  -Crossbow, longbow, magic wand, fire staff, ice staff
-  -Configurable projectile type, damage, and speed
-  -Firing animation triggers on attack
--Consumable items (food and potions)
-  -Health, mana, and stamina restoration
-  -Eating animation with progress bar
-  -Configurable consume time
--ItemRegistry with predefined items
-  -Melee weapons: swords, daggers, axes, maces
-  -Ranged weapons: bows, crossbows, magic staves
-  -Throwing weapons: knives, axes, rocks
-  -Tools: pickaxes, shovels, axes
-  -Armor: helmets, chestplates, leggings, boots
-  -Consumables: food, potions
-  -Materials: crafting ingredients
-  -Keys: for doors and chests
+DESIGN PATTERNS USED:
+  - Singleton: SceneManager, BlockRegistry, SaveManager, InputManager
+  - Interface-based polymorphism: Scene, PlayerBase, CombatCapable, ResourceManager
+  - State Machine: Mob AI (IDLE → WANDER → CHASE → ATTACK states)
+  - Observer: Input events propagate through SceneManager to active scene
 
-NEW PLAYER ANIMATIONS
--Firing animation for projectile weapons (8-12 frames)
--Using item animation for general item usage (6-10 frames)
--Taking damage animation with flinch effect (5-8 frames)
--Eating animation with food approaching mouth (10-15 frames)
--Sprint animation with forward lean (6-10 frames)
--Double jump with spin/flip effect (8-12 frames)
--Triple jump with dramatic spin (10-15 frames)
+GAME LOOP FLOW:
+  1. GamePanel (main rendering surface) runs at 60 FPS
+  2. SceneManager (singleton) manages scene transitions with fade effects
+  3. Scene.update(input) called each frame for game logic
+  4. Scene.draw(g) called each frame for rendering
+  5. EntityManager updates all entities and handles physics
 
-EXTENDED MOB CAPABILITIES
--Mobs support all new animation states
--Ranged attack support for mobs (setRangedAttack)
--Sprint mode when chasing player
--Projectile management for mob attacks
+KEY ENTRY POINTS:
+  - Main.java                    → Application entry point
+  - GameWindow.java              → Creates borderless 1920x1080 window
+  - GamePanel.java               → Game loop, scene initialization
+  - SceneManager.getInstance()   → Access current scene and transitions
+
+COORDINATE SYSTEM:
+  - Origin (0,0) at top-left of screen
+  - X increases rightward, Y increases downward
+  - Screen resolution: 1920x1080
+  - Block scale factor: 4x (16px base → 64px rendered)
+  - Default ground Y: 720 pixels
+
+--------------------------------------------------------------------------------
+2. SCENE SYSTEM (scene/)
+--------------------------------------------------------------------------------
+
+All game states are managed through the Scene interface. SceneManager handles
+transitions between scenes with configurable fade effects.
+
+AVAILABLE SCENES:
+  Scene Class                    | Purpose
+  -------------------------------|------------------------------------------
+  MainMenuScene                  | Title screen with navigation buttons
+  LevelSelectionScene            | Browse and launch levels from levels/
+  SpriteCharacterCustomization   | Character creation with equipment
+  OverworldScene                 | Open world map navigation
+  GameScene                      | Main gameplay with JSON-loaded levels
+  LootGameScene                  | Mini-game with treasure chests and vault
+  CreativeScene                  | Sandbox/creative mode
+
+SCENE INTERFACE METHODS:
+  - init()              → Called once when entering scene
+  - update(input)       → Game logic, called every frame
+  - draw(g)             → Rendering, called every frame
+  - dispose()           → Cleanup when leaving scene
+  - onMouse*()          → Mouse event handlers
+
+SCENE TRANSITIONS:
+  SceneManager.getInstance().loadScene("scene_name");
+  // Transition speed configurable (default 0.12 for snappy transitions)
+
+--------------------------------------------------------------------------------
+3. ENTITY SYSTEM (entity/)
+--------------------------------------------------------------------------------
+
+All game objects inherit from the Entity base class. EntityManager maintains
+and updates all entities in the current scene.
+
+ENTITY HIERARCHY:
+  Entity (abstract)
+  ├── SpriteEntity
+  │   ├── SpritePlayerEntity     → Modern GIF-based player (RECOMMENDED)
+  │   ├── PlayerEntity           → Legacy static PNG player
+  │   ├── GroundEntity           → Ground/platform sprites
+  │   └── ItemEntity             → Dropped items in world
+  ├── MobEntity
+  │   ├── SpriteMobEntity        → Modern GIF-based enemies (RECOMMENDED)
+  │   └── old/                   → Deprecated bone-based mobs
+  │       ├── HumanoidMobEntity  → [DEPRECATED]
+  │       └── QuadrupedMobEntity → [DEPRECATED]
+  ├── ProjectileEntity           → Arrows, fireballs, thrown items
+  ├── BlockEntity                → Placeable/mineable blocks
+  ├── LootChestEntity            → Treasure chests
+  ├── DoorEntity                 → Interactive doors
+  ├── TriggerEntity              → Invisible trigger zones
+  └── VaultEntity                → Persistent storage chests
+
+ENTITY CAPABILITIES (interfaces in entity/capabilities/):
+  - CombatCapable        → attack(), takeDamage(), getAttackDamage()
+  - ResourceManager      → getHealth(), getMana(), getStamina()
+  - BlockInteractionHandler → handleBlockInteraction()
+
+ENTITY MANAGER USAGE:
+  EntityManager em = new EntityManager();
+  em.addEntity(entity);
+  em.update(input);  // Updates all entities
+  em.draw(g);        // Renders all entities
+  em.removeDeadEntities();  // Cleanup
+
+--------------------------------------------------------------------------------
+4. PLAYER SYSTEM (entity/player/)
+--------------------------------------------------------------------------------
+
+Two player implementations exist. SpritePlayerEntity is the modern, recommended
+approach using GIF animations.
+
+SPRITE PLAYER ENTITY (Recommended):
+  - Location: entity/player/SpritePlayerEntity.java
+  - Uses GIF sprite animations (idle.gif, walk.gif, jump.gif, etc.)
+  - Supports equipment overlay system (armor renders on top of player)
+  - Multi-jump support (configurable: double, triple jump)
+  - Sprint with stamina drain
+  - Full combat: melee attacks, ranged projectiles, charged shots
+  - Block interaction: mining and placement
+
+PLAYER BASE INTERFACE:
+  All player implementations provide these methods:
+  - getHealth(), getMaxHealth(), takeDamage(amount)
+  - getMana(), getMaxMana(), useMana(amount)
+  - getStamina(), getMaxStamina(), useStamina(amount)
+  - getInventory() → Player's inventory object
+  - isFacingRight() → Direction player is facing
+  - isInvincible() → True during damage immunity frames
+
+RESOURCE SYSTEM:
+  Resource  | Default Max | Usage
+  ----------|-------------|----------------------------------------
+  Health    | 100         | Decreases from damage, restored by potions
+  Mana      | 100         | Used for magic attacks, auto-regenerates
+  Stamina   | 100         | Used for sprinting, regenerates when idle
+
+MOVEMENT CONTROLS:
+  Key       | Action
+  ----------|----------------------------------------
+  A/D       | Move left/right
+  Space     | Jump (press again in air for multi-jump)
+  Shift     | Sprint (drains stamina)
+  W/S       | Climb ladders (when implemented)
+
+COMBAT CONTROLS:
+  Key       | Action
+  ----------|----------------------------------------
+  Left Click| Attack/Mine/Place blocks
+  Hold Left | Charge attack (bows, magic staffs)
+  E         | Interact/Mine selected block
+  Arrows    | Change mining direction
+
+--------------------------------------------------------------------------------
+5. COMBAT SYSTEM
+--------------------------------------------------------------------------------
+
+Combat is handled through the CombatCapable interface. Both players and mobs
+can implement this interface to participate in combat.
+
+COMBAT CAPABLE INTERFACE:
+  - attack()                           → Initiate attack
+  - isAttacking()                      → Check if currently attacking
+  - getAttackDamage()                  → Base damage value
+  - getAttackRange()                   → Melee attack distance in pixels
+  - getAttackCooldown()                → Frames between attacks
+  - takeDamage(damage, knockbackX, knockbackY) → Receive damage
+
+ATTACK TYPES:
+  1. MELEE ATTACKS
+     - Close range physical attacks
+     - Damage = baseDamage + weaponDamage
+     - Range typically 50-100 pixels
+
+  2. RANGED ATTACKS
+     - Fire ProjectileEntity toward cursor
+     - Projectile handles collision and damage
+     - Bows consume arrows, magic consumes mana
+
+  3. CHARGED ATTACKS
+     - Hold attack button to charge (up to 5 seconds)
+     - Damage multiplier: 1x (no charge) to 3x (full charge)
+     - Visual feedback: projectile grows during charge
+     - Mana/arrow cost scales with charge level
+
+DAMAGE CALCULATION:
+  finalDamage = baseDamage * weaponMultiplier * chargeMultiplier * critMultiplier
+  - Crit chance and multiplier configurable per weapon
+  - Knockback pushes target away from attacker
+  - Invincibility frames prevent damage stacking
+
+--------------------------------------------------------------------------------
+6. PROJECTILE SYSTEM (entity/ProjectileEntity.java)
+--------------------------------------------------------------------------------
+
+Projectiles are fired by players and mobs for ranged attacks. Each projectile
+type has unique properties and behaviors.
+
+PROJECTILE TYPES:
+  Type           | Source              | Properties
+  ---------------|---------------------|--------------------------------
+  ARROW          | Bows                | Gravity, consumes arrows
+  BOLT           | Crossbows           | Fast, flat trajectory
+  MAGIC_BOLT     | Wands               | No gravity, mana cost
+  FIREBALL       | Fire Staff          | Explosion on impact, burn effect
+  ICEBALL        | Ice Staff           | Freeze effect on hit
+  THROWING_KNIFE | Thrown              | Fast, small hitbox
+  THROWING_AXE   | Thrown              | Slower, more damage
+  ROCK           | Thrown              | Gravity, blunt damage
+  POTION         | Thrown              | Splash effect on impact
+  BOMB           | Thrown              | Explosion radius
+  FISH           | Mirror to Realms    | Special weapon projectile
+
+PROJECTILE PROPERTIES:
+  - velocityX, velocityY    → Movement per frame
+  - gravity                 → Vertical acceleration (optional)
+  - damage                  → Damage on hit
+  - knockbackX, knockbackY  → Push force on hit
+  - lifetime                → Frames before despawn
+  - piercing                → Can pass through enemies
+  - explosionRadius         → Area damage on impact
+
+STATUS EFFECTS (applied on hit):
+  Effect   | Duration | Damage/Tick | Special
+  ---------|----------|-------------|------------------
+  BURNING  | 3 sec    | 5 damage    | Orange tint, fire particles
+  FROZEN   | 4 sec    | 3 damage    | Blue tint, 50% slow, ice particles
+  POISONED | 5 sec    | 2 damage    | Green tint, bubble particles
+
+CREATING PROJECTILES:
+  ProjectileEntity proj = new ProjectileEntity(
+      x, y,                    // Start position
+      velocityX, velocityY,    // Direction and speed
+      ProjectileType.ARROW,    // Type
+      damage,                  // Damage amount
+      owner                    // Entity that fired it
+  );
+  entityManager.addEntity(proj);
+
+--------------------------------------------------------------------------------
+7. INVENTORY SYSTEM (ui/Inventory.java)
+--------------------------------------------------------------------------------
+
+The inventory manages player items with drag-and-drop support, hotbar quick
+access, and vault integration for persistent storage.
+
+INVENTORY STRUCTURE:
+  - 32 item slots in 8x4 grid
+  - 5-slot hotbar for quick access (bottom of inventory)
+  - Items stack up to their maxStackSize
+  - Scroll wheel cycles hotbar selection
+
+INVENTORY INTERACTIONS:
+  Action        | Result
+  --------------|----------------------------------------
+  Left Click    | Auto-equip item to hotbar
+  Drag & Drop   | Move item between slots
+  Right Click   | Drop item to world
+  Mouse Wheel   | Cycle hotbar / scroll inventory
+  E Key         | Equip hovered item
+  F Key         | Equip to specific slot (with item selected)
+
+VAULT INVENTORY (ui/VaultInventory.java):
+  - Up to 10,000 slots persistent storage
+  - Accessed via VaultEntity (treasure chests)
+  - Items persist across game sessions (JSON save)
+  - Sorting: by rarity or alphabetical
+  - Drag/drop between vault and player inventory
+
+INVENTORY METHODS:
+  Inventory inv = player.getInventory();
+  inv.addItem(item, count);      // Add items, returns leftover
+  inv.removeItem(item, count);   // Remove items
+  inv.getHotbarItem(slot);       // Get item in hotbar slot 0-4
+  inv.getSelectedItem();         // Currently selected hotbar item
+  inv.hasItem(item, count);      // Check if has enough
+
+--------------------------------------------------------------------------------
+8. ITEM SYSTEM (entity/Item.java, entity/ItemRegistry.java)
+--------------------------------------------------------------------------------
+
+Items are defined with categories, rarities, and various properties. The
+ItemRegistry contains all predefined items.
+
+ITEM CATEGORIES (ItemCategory enum):
+  Category      | Description
+  --------------|----------------------------------------
+  WEAPON        | Melee weapons (swords, axes, maces)
+  RANGED_WEAPON | Bows, crossbows, wands, staffs
+  TOOL          | Pickaxes, shovels, axes
+  ARMOR         | Helmets, chestplates, leggings, boots
+  CLOTHING      | Cosmetic equipment
+  BLOCK         | Placeable blocks
+  FOOD          | Consumable food items
+  POTION        | Healing and effect potions
+  MATERIAL      | Crafting materials
+  KEY           | Door/chest keys
+  ACCESSORY     | Rings, amulets, belts
+  THROWABLE     | Grenades, throwing knives
+
+ITEM RARITY (ItemRarity enum):
+  Rarity    | Color  | Drop Rate
+  ----------|--------|----------
+  COMMON    | White  | 50%
+  UNCOMMON  | Green  | 25%
+  RARE      | Blue   | 15%
+  EPIC      | Purple | 7%
+  LEGENDARY | Orange | 2.5%
+  MYTHIC    | Cyan   | 0.5%
+
+ITEM PROPERTIES:
+  - damage, defense           → Combat stats
+  - attackSpeed, range        → Combat mechanics
+  - critChance, critMultiplier→ Critical hit stats
+  - healthRestore, manaRestore→ Consumable effects
+  - specialEffect             → Unique item abilities
+  - maxStackSize              → Inventory stacking limit
+
+ITEM ANIMATION STATES (for held item overlays):
+  - IDLE, USE, BREAK          → General usage
+  - ATTACK, BLOCK, CRITICAL   → Combat
+  - DRAW, FIRE, RELOAD        → Ranged weapons
+  - CHARGE, CAST, GLOW        → Magic
+  - MINE, CHOP, IMPACT        → Tools
+
+CREATING NEW ITEMS:
+  // In ItemRegistry.initialize():
+  Item flameSword = new Item("Flame Sword", ItemCategory.WEAPON, ItemRarity.EPIC);
+  flameSword.setDamage(45);
+  flameSword.setAttackSpeed(1.2);
+  flameSword.setSpecialEffect("burn");
+  flameSword.setSpritePath("assets/items/flame_sword.gif");
+  register(flameSword);
+
+NOTABLE SPECIAL ITEMS:
+  - Mirror to Other Realms: Cycles through 3 realms every 400ms
+    - Volcano Realm → Fires fireballs
+    - Forest Realm → Fires arrows
+    - Ocean Realm → Fires tiny fish
+    - Fires 3 projectiles per use, 25 mana cost
+
+--------------------------------------------------------------------------------
+9. MOB/ENEMY SYSTEM (entity/mob/)
+--------------------------------------------------------------------------------
+
+Enemies use an AI state machine for behavior. SpriteMobEntity is the modern
+GIF-based implementation (recommended over deprecated bone-based mobs).
+
+AI STATE MACHINE:
+  State  | Behavior
+  -------|------------------------------------------------
+  IDLE   | Stand still, wait for player detection
+  WANDER | Move randomly within area
+  CHASE  | Move toward detected player
+  ATTACK | Attack when in range
+  HURT   | Flinch after taking damage
+  FLEE   | Run away when health low
+  DEAD   | Death animation, then despawn
+
+AI CONFIGURATION:
+  SpriteMobEntity mob = new SpriteMobEntity(x, y, "assets/mobs/zombie");
+  mob.setDetectionRange(300);      // Pixels to detect player
+  mob.setLoseTargetRange(500);     // Pixels to lose player
+  mob.setWanderSpeed(1.0);         // Movement speed when wandering
+  mob.setChaseSpeed(2.5);          // Movement speed when chasing
+  mob.setAttackDamage(15);         // Damage per attack
+  mob.setAttackRange(60);          // Melee attack distance
+  mob.setAttackCooldown(60);       // Frames between attacks
+  mob.setRangedAttack(true);       // Enable projectile attacks
+  mob.setProjectileType(ProjectileType.ARROW);
+
+AUTO-CONFIGURED MOB TYPES:
+  Mob type is auto-detected from sprite directory name:
+
+  Type     | Health | Damage | Speed | Special
+  ---------|--------|--------|-------|------------------
+  zombie   | 50     | 10     | 1.5   | Slow, persistent
+  skeleton | 40     | 15     | 2.0   | Ranged attacks
+  goblin   | 35     | 12     | 2.5   | Fast, weak
+  orc      | 80     | 20     | 1.8   | Tank, strong
+  bandit   | 45     | 18     | 2.2   | Balanced
+  knight   | 100    | 25     | 1.5   | Heavy armor
+  mage     | 30     | 30     | 1.0   | Magic attacks
+  wolf     | 40     | 15     | 3.0   | Fast, pack AI
+  bear     | 120    | 35     | 1.2   | Boss-tier
+
+REQUIRED MOB SPRITE FILES:
+  assets/mobs/[mob_name]/
+  ├── idle.gif      → Standing animation
+  ├── walk.gif      → Walking animation
+  ├── attack.gif    → Attack animation
+  ├── hurt.gif      → Damage reaction
+  ├── death.gif     → Death animation
+  ├── burning.gif   → (Optional) On fire variant
+  └── frozen.gif    → (Optional) Frozen variant
+
+--------------------------------------------------------------------------------
+10. ANIMATION SYSTEM (animation/)
+--------------------------------------------------------------------------------
+
+The game supports both modern GIF-based animations and legacy bone-based
+animations. GIF sprites are the recommended approach.
+
+SPRITE ANIMATION (animation/SpriteAnimation.java):
+  Manages GIF-based animations for different action states.
+
+ACTION STATES (ActionState enum):
+  Movement: IDLE, WALK, RUN, SPRINT
+  Jumping:  JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL
+  Combat:   ATTACK, FIRE, BLOCK, CAST
+  Items:    USE_ITEM, EAT
+  Reactions: HURT, DEAD
+  Effects:  BURNING, FROZEN, POISONED
+
+ANIMATION FEATURES:
+  - Automatic frame cycling with configurable timing
+  - Direction flipping for left/right facing
+  - Smooth state transitions
+  - Frame synchronization for overlay alignment
+
+EQUIPMENT OVERLAY (animation/EquipmentOverlay.java):
+  Renders equipment on top of the player sprite:
+
+  Slot       | Render Order | Description
+  -----------|--------------|---------------------------
+  HAIR_BACK  | Behind       | Ponytails, long hair back
+  BOOTS      | 1            | Footwear
+  LEGS       | 2            | Pants, leggings
+  BELT       | 3            | Belts, sashes
+  CHEST      | 4            | Shirts, armor
+  HELMET     | 5            | Hats, helmets
+  HAIR_FRONT | 6            | Bangs, front hair
+  HELD_ITEM  | 7            | Currently held item
+
+ANIMATED TEXTURE (animation/AnimatedTexture.java):
+  - Extracts frames from GIF files
+  - Respects per-frame delays from GIF metadata
+  - Provides getCurrentFrame() for rendering
+  - update() method advances animation
+
+LEGACY BONE ANIMATION (animation/bone/):
+  - Skeleton-based hierarchical animation
+  - Keyframe blending between poses
+  - Still functional but deprecated
+  - Use for reference only
+
+--------------------------------------------------------------------------------
+11. BLOCK SYSTEM (block/)
+--------------------------------------------------------------------------------
+
+Blocks form the destructible/constructible terrain. Each block type has
+unique textures and properties.
+
+BLOCK TYPES (BlockType enum):
+  Type        | Solid | Description
+  ------------|-------|---------------------------
+  GRASS       | Yes   | Dirt with grass overlay
+  DIRT        | Yes   | Basic terrain
+  STONE       | Yes   | Hard rock
+  COBBLESTONE | Yes   | Broken stone
+  WOOD        | Yes   | Tree wood
+  LEAVES      | Yes   | Tree foliage
+  BRICK       | Yes   | Construction
+  SAND        | Yes   | Beach/desert
+  WATER       | No    | Liquid (non-solid)
+  GLASS       | No    | Transparent
+  COAL_ORE    | Yes   | Mineable ore
+  IRON_ORE    | Yes   | Mineable ore
+  GOLD_ORE    | Yes   | Mineable ore
+  PLATFORM    | Semi  | One-way platform
+
+BLOCK OVERLAYS (BlockOverlay enum):
+  Overlays render on top of base blocks and must be removed before mining:
+  - GRASS  → Green grass tufts on top
+  - SNOW   → White snow layer
+  - ICE    → Semi-transparent ice coating
+  - MOSS   → Green moss patches
+  - VINES  → Hanging vine decoration
+
+BLOCK INTERACTION:
+  1. Click block within 3-block radius to select
+  2. Selected block shows yellow highlight
+  3. Arrow keys change mining direction indicator
+  4. Click again (or press E) to mine from chosen direction
+  5. If block has overlay, overlay breaks first
+
+BLOCK PLACEMENT:
+  - Player must hold a BLOCK category item
+  - Left click empty space within 3-block radius
+  - Cannot place where player is standing
+  - Cannot place on existing blocks
+
+BLOCK REGISTRY (Singleton):
+  - Caches block textures (loaded once, shared)
+  - Pre-scales textures to 64x64 rendered size
+  - Supports animated blocks (GIF textures)
+  - Fallback magenta/black checkerboard for missing textures
+
+--------------------------------------------------------------------------------
+12. LEVEL SYSTEM (level/)
+--------------------------------------------------------------------------------
+
+Levels are defined in JSON files in the levels/ directory. LevelLoader parses
+these files and creates the game world.
+
+LEVEL JSON STRUCTURE:
+  {
+    "name": "Level Name",
+    "description": "Level description",
+
+    // Player spawn
+    "playerSpawnX": 100,
+    "playerSpawnY": 620,
+    "playerSpritePath": "assets/player/sprites",
+    "useSpriteAnimation": true,
+
+    // Level dimensions
+    "levelWidth": 1920,
+    "levelHeight": 1080,
+    "groundY": 720,
+
+    // Camera settings
+    "scrollingEnabled": true,
+    "verticalScrollEnabled": false,
+    "verticalMargin": 0,
+
+    // Lighting
+    "nightMode": false,
+    "nightDarkness": 0.8,
+    "ambientLight": 0.12,
+    "playerLightEnabled": false,
+
+    // Parallax background
+    "parallaxEnabled": true,
+    "parallaxLayers": [ /* layer data */ ],
+
+    // Game objects
+    "platforms": [ /* platform data */ ],
+    "blocks": [ /* block grid */ ],
+    "items": [ /* item spawns */ ],
+    "mobs": [ /* enemy spawns */ ],
+    "doors": [ /* door connections */ ],
+    "buttons": [ /* switches */ ],
+    "vaults": [ /* chest locations */ ],
+    "triggers": [ /* trigger zones */ ]
+  }
+
+LEVEL DATA CLASSES:
+  - PlatformData    → Sprite-based obstacles
+  - BlockData       → Block type and position
+  - ItemData        → Item spawn with rarity
+  - MobData         → Enemy type, position, AI config
+  - DoorData        → Door ID and destination link
+  - ButtonData      → Switch with linked door ID
+  - VaultData       → Chest type (daily, monthly, regular)
+  - TriggerData     → Zone bounds and action
+  - LightSourceData → Position, color, radius
+  - ParallaxLayerData → Image path, depth, scroll speed
+
+LEVEL LOADER USAGE:
+  LevelData level = LevelLoader.loadLevel("levels/forest_1.json");
+  // Access level.mobs, level.blocks, level.items, etc.
+
+--------------------------------------------------------------------------------
+13. GRAPHICS SYSTEM (graphics/)
+--------------------------------------------------------------------------------
+
+Handles rendering, camera, lighting, and parallax backgrounds.
+
+CAMERA (Camera.java):
+  - Follows player with smooth interpolation
+  - Dead zone prevents jitter on small movements
+  - Clamps to level bounds
+  - Converts screen ↔ world coordinates
+
+  Camera camera = new Camera(screenWidth, screenHeight);
+  camera.setTarget(player);
+  camera.update();
+
+  // In rendering:
+  g.translate(-camera.getX(), -camera.getY());
+  // Draw world objects
+  g.translate(camera.getX(), camera.getY());
+  // Draw UI (screen space)
+
+LIGHTING SYSTEM (LightingSystem.java):
+  - Day/night cycle support
+  - Dynamic point light sources
+  - Ambient lighting level
+  - Darkness overlay with light cutouts
+
+  LightingSystem lighting = new LightingSystem();
+  lighting.setDarknessLevel(0.7);  // 70% dark
+  lighting.addLightSource(new LightSource(x, y, radius, color));
+  lighting.draw(g, camera);
+
+PARALLAX BACKGROUND (ParallaxBackground.java):
+  Layers at different depths scroll at different speeds:
+
+  Depth Level      | Z-Index | Scroll Speed
+  -----------------|---------|-------------
+  Z_BACKGROUND     | -2      | 0.1x (slowest)
+  Z_MIDDLEGROUND_3 | -1      | 0.3x
+  Z_MIDDLEGROUND_2 | 0       | 0.5x
+  Z_MIDDLEGROUND_1 | 1       | 0.7x
+  Z_FOREGROUND     | 2       | 1.2x (fastest)
+
+ASSET LOADER (AssetLoader.java):
+  Static methods for loading images and GIFs:
+
+  ImageAsset asset = AssetLoader.loadAsset("path/to/image.png");
+  BufferedImage img = asset.getImage();
+
+  // For GIFs:
+  ImageAsset gifAsset = AssetLoader.loadAsset("path/to/anim.gif");
+  AnimatedTexture anim = gifAsset.getAnimatedTexture();
+  anim.update();  // Call each frame
+  BufferedImage frame = anim.getCurrentFrame();
+
+RENDER PIPELINE ORDER:
+  1. Clear screen
+  2. Draw parallax background layers (world space)
+  3. Draw game entities (world space, camera transformed)
+  4. Draw blocks and terrain
+  5. Draw lighting overlay
+  6. Draw UI elements (screen space)
+  7. Draw settings/menu overlays
+
+--------------------------------------------------------------------------------
+14. INPUT SYSTEM (input/InputManager.java)
+--------------------------------------------------------------------------------
+
+Singleton that captures all keyboard and mouse input. Implements KeyListener,
+MouseListener, MouseWheelListener, and MouseMotionListener.
+
+KEYBOARD INPUT:
+  InputManager input = InputManager.getInstance();
+
+  // Check if key currently held
+  if (input.isKeyPressed('a')) { /* move left */ }
+  if (input.isKeyPressed(' ')) { /* space held */ }
+
+  // Check if key just pressed this frame (one-shot)
+  if (input.isKeyJustPressed('e')) { /* interact */ }
+
+  // Special keys via KeyEvent codes
+  if (input.isKeyPressed(KeyEvent.VK_SHIFT)) { /* sprinting */ }
+  if (input.isKeyPressed(KeyEvent.VK_LEFT))  { /* arrow key */ }
+
+MOUSE INPUT:
+  int mouseX = input.getMouseX();
+  int mouseY = input.getMouseY();
+
+  if (input.isLeftMousePressed()) { /* attack/mine */ }
+  if (input.isRightMousePressed()) { /* place/drop */ }
+  if (input.isLeftMouseJustPressed()) { /* one-shot click */ }
+
+SCROLL WHEEL:
+  int scroll = input.getScrollDirection();
+  // Returns: -1 (up), 0 (none), 1 (down)
+  // Has threshold (1.5) to prevent accidental scrolling
+
+UI CLICK CONSUMPTION:
+  When UI handles a click, it should consume it to prevent game actions:
+
+  // In UI button handler:
+  input.consumeLeftClick();
+
+  // In game logic:
+  if (!input.isLeftClickConsumed()) {
+      // Process game click
+  }
+
+--------------------------------------------------------------------------------
+15. SAVE SYSTEM (save/SaveManager.java)
+--------------------------------------------------------------------------------
+
+Singleton that handles JSON-based persistence of player data, inventory,
+and vault contents.
+
+SAVE FILE LOCATION: saves/player_data.json
+
+SAVED DATA:
+  - Player inventory items with stack counts
+  - Vault inventory (up to 10,000 items)
+  - Chest cooldowns (daily/monthly)
+  - Statistics (items collected, legendary count)
+  - Developer mode flag
+  - Equipment loadout
+  - Character customization (skin tone, hair color)
+
+SAVE MANAGER USAGE:
+  SaveManager save = SaveManager.getInstance();
+
+  // Save current state
+  save.saveInventory(player.getInventory());
+  save.saveVault(vaultInventory);
+
+  // Load state
+  save.loadInventory(player.getInventory());
+  VaultInventory vault = save.loadVault();
+
+  // Check chest cooldowns
+  if (save.canOpenDailyChest()) {
+      // Open chest
+      save.recordDailyChestOpened();
+  }
+
+CHEST COOLDOWNS:
+  - DAILY_COOLDOWN = 24 hours
+  - MONTHLY_COOLDOWN = 30 days
+  - Cooldowns reset in developer mode for testing
+
+--------------------------------------------------------------------------------
+16. AUDIO SYSTEM (audio/AudioManager.java)
+--------------------------------------------------------------------------------
+
+Manages background music and sound effects with separate volume controls.
+
+AUDIO MANAGER USAGE:
+  AudioManager audio = AudioManager.getInstance();
+
+  // Music
+  audio.playMusic("sounds/background.wav");
+  audio.stopMusic();
+  audio.setMusicVolume(0.7f);  // 0.0 to 1.0
+
+  // Sound effects
+  audio.playSFX("sounds/sword_swing.wav");
+  audio.setSFXVolume(0.8f);
+
+  // Mute all
+  audio.setMuted(true);
+
+SUPPORTED FORMATS:
+  - WAV files (recommended)
+  - Looping support for background music
+  - Clip-based SFX with fast restart
+
+SOUND FILE LOCATIONS:
+  sounds/
+  ├── music/       → Background music tracks
+  ├── effects/     → Combat and action sounds
+  ├── ui/          → Menu clicks, inventory sounds
+  └── ambient/     → Environmental sounds
+
+--------------------------------------------------------------------------------
+17. UI SYSTEM (ui/)
+--------------------------------------------------------------------------------
+
+Custom UI components rendered directly on the game canvas.
+
+UI BUTTON (UIButton.java):
+  UIButton btn = new UIButton(x, y, width, height, "Label");
+  btn.setOnClick(() -> { /* action */ });
+  btn.update(input);  // Check hover/click
+  btn.draw(g);
+
+UI SLIDER (UISlider.java):
+  UISlider slider = new UISlider(x, y, width, min, max, initial);
+  slider.setOnChange((value) -> { /* handle value */ });
+  slider.update(input);  // Handle drag
+  slider.draw(g);
+
+PLAYER STATUS BAR (PlayerStatusBar.java):
+  Displays health, mana, and stamina bars:
+  - Health: Red bar (RGB: 220, 50, 50)
+  - Mana: Blue bar (RGB: 50, 100, 220)
+  - Stamina: Green bar (RGB: 50, 200, 50)
+
+SETTINGS OVERLAY (SettingsOverlay.java):
+  Global settings panel accessible via M key:
+  - Music volume slider
+  - SFX volume slider
+  - Mute all toggle
+  - Darkened background overlay
+
+INVENTORY UI:
+  - 8x4 grid (32 slots) with 5-slot hotbar
+  - Rarity color-coded borders
+  - Stack count display
+  - Drag-and-drop support
+  - Tooltip on hover (item stats)
+
+--------------------------------------------------------------------------------
+18. SPECIAL GAME FEATURES
+--------------------------------------------------------------------------------
+
+LOOT GAME SCENE:
+  Mini-game focused on collecting loot from chests:
+  - Wide level (6000px) with limited vertical space
+  - Daily Chest (center): Opens once per 24 hours, drops 3 items
+  - Monthly Chest (right): Opens once per 30 days, drops 10 items
+  - Vault for persistent storage
+  - Items bounce with physics when dropped
+  - Rarity-colored light beams (Borderlands style)
+
+DOOR AND TRIGGER SYSTEM:
+  DoorEntity:
+  - Interactive doors between areas
+  - Linked to spawn points (door A → door B)
+  - Lock/key system (requires KEY item)
+  - Opening/closing animations
+
+  TriggerEntity:
+  - Invisible activation zones
+  - Triggers on player collision
+  - Can load levels, show dialogue, spawn entities
+
+  ButtonEntity:
+  - Interactive switches/levers
+  - Links to doors or other triggers
+
+CHARACTER CUSTOMIZATION:
+  Available in SpriteCharacterCustomization scene:
+  - 8 skin tone presets
+  - 13 hair color presets
+  - Equipment slots: Hair, Helmet, Chest, Legs, Boots, Belt
+  - Companion selection (alternate player characters)
+  - All choices persist across sessions
 
 PROJECT STRUCTURE
 src/                    - Game engine source code (organized by package)
