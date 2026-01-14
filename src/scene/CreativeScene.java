@@ -162,6 +162,28 @@ public class CreativeScene implements Scene {
     }
 
     /**
+     * Sort modes for the item palette
+     */
+    public enum ItemSortMode {
+        RARITY("Rarity"),
+        ALPHABETICAL("A-Z");
+
+        private final String displayName;
+
+        ItemSortMode(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
+
+    // Item palette sorting
+    private ItemSortMode itemSortMode = ItemSortMode.RARITY;
+    private List<PaletteItem> sortedItemPalette;
+
+    /**
      * Represents an item in the palette
      */
     private static class PaletteItem {
@@ -294,20 +316,10 @@ public class CreativeScene implements Scene {
         itemPalette = new ArrayList<>();
         ItemRegistry.initialize();
 
-        // Get all items and sort them by rarity for better organization
+        // Get all items
         java.util.Set<String> allItemIds = ItemRegistry.getAllItemIds();
-        java.util.List<String> sortedItems = new ArrayList<>(allItemIds);
 
-        // Sort by rarity (Mythic first, then Legendary, Epic, Rare, Uncommon, Common)
-        sortedItems.sort((a, b) -> {
-            Item itemA = ItemRegistry.getTemplate(a);
-            Item itemB = ItemRegistry.getTemplate(b);
-            if (itemA == null || itemB == null) return 0;
-            // Reverse order so mythic comes first
-            return itemB.getRarity().ordinal() - itemA.getRarity().ordinal();
-        });
-
-        for (String itemId : sortedItems) {
+        for (String itemId : allItemIds) {
             Item template = ItemRegistry.getTemplate(itemId);
             if (template != null) {
                 BufferedImage icon = createItemIcon(itemId);
@@ -315,6 +327,9 @@ public class CreativeScene implements Scene {
             }
         }
         System.out.println("CreativeScene: Loaded " + itemPalette.size() + " items into palette");
+
+        // Initialize sorted item palette with current sort mode
+        sortItemPalette();
 
         // Mob palette
         mobPalette = new ArrayList<>();
@@ -804,6 +819,13 @@ public class CreativeScene implements Scene {
         if (input.isKeyJustPressed(KeyEvent.VK_G)) {
             showGrid = !showGrid;
             setStatus("Grid: " + (showGrid ? "ON" : "OFF"));
+        }
+
+        // S to toggle item sort mode (only when in Items category, and not Ctrl+S for save)
+        if (input.isKeyJustPressed(KeyEvent.VK_S) && !input.isKeyPressed(KeyEvent.VK_CONTROL)) {
+            if (currentCategory == PaletteCategory.ITEMS) {
+                toggleItemSortMode();
+            }
         }
 
         // Ctrl+S to save
@@ -1865,6 +1887,14 @@ public class CreativeScene implements Scene {
             String name = currentPalette.get(selectedPaletteIndex).displayName;
             g.drawString(name, 10, GamePanel.SCREEN_HEIGHT - 40);
         }
+
+        // Draw sort mode indicator for Items category
+        if (currentCategory == PaletteCategory.ITEMS) {
+            g.setFont(new Font("Arial", Font.BOLD, 10));
+            g.setColor(new Color(100, 180, 255));
+            String sortLabel = "Sort: " + itemSortMode.getDisplayName() + " [S]";
+            g.drawString(sortLabel, 10, GamePanel.SCREEN_HEIGHT - 20);
+        }
     }
 
     /**
@@ -1935,7 +1965,7 @@ public class CreativeScene implements Scene {
     private List<PaletteItem> getCurrentPalette() {
         switch (currentCategory) {
             case BLOCKS: return blockPalette;
-            case ITEMS: return itemPalette;
+            case ITEMS: return sortedItemPalette != null ? sortedItemPalette : itemPalette;
             case MOBS: return mobPalette;
             case LIGHTS: return lightPalette;
             case INTERACTIVE: return interactivePalette;
@@ -1953,6 +1983,49 @@ public class CreativeScene implements Scene {
             return palette.get(selectedPaletteIndex);
         }
         return null;
+    }
+
+    /**
+     * Sort the item palette based on current sort mode
+     */
+    private void sortItemPalette() {
+        sortedItemPalette = new ArrayList<>(itemPalette);
+
+        switch (itemSortMode) {
+            case RARITY:
+                // Sort by rarity (Mythic first, then Legendary, Epic, Rare, Uncommon, Common)
+                sortedItemPalette.sort((a, b) -> {
+                    Item itemA = ItemRegistry.getTemplate(a.id);
+                    Item itemB = ItemRegistry.getTemplate(b.id);
+                    if (itemA == null || itemB == null) return 0;
+                    // Reverse order so mythic comes first
+                    int rarityCompare = itemB.getRarity().ordinal() - itemA.getRarity().ordinal();
+                    // Secondary sort: alphabetical within same rarity
+                    if (rarityCompare == 0) {
+                        return a.displayName.compareToIgnoreCase(b.displayName);
+                    }
+                    return rarityCompare;
+                });
+                break;
+
+            case ALPHABETICAL:
+                // Sort alphabetically by display name
+                sortedItemPalette.sort((a, b) -> a.displayName.compareToIgnoreCase(b.displayName));
+                break;
+        }
+    }
+
+    /**
+     * Toggle the item palette sort mode
+     */
+    private void toggleItemSortMode() {
+        ItemSortMode[] modes = ItemSortMode.values();
+        int currentIndex = itemSortMode.ordinal();
+        itemSortMode = modes[(currentIndex + 1) % modes.length];
+        sortItemPalette();
+        selectedPaletteIndex = 0;  // Reset selection to first item
+        paletteScrollOffset = 0;   // Reset scroll position
+        setStatus("Sort: " + itemSortMode.getDisplayName());
     }
 
     /**
