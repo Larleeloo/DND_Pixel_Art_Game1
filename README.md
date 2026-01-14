@@ -724,11 +724,21 @@ CHEST COOLDOWNS:
 16. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
 --------------------------------------------------------------------------------
 
-Manages background music and sound effects with MP3 support via JavaFX.
+Manages background music and sound effects with MP3 support via JLayer.
 Supports both WAV files (legacy) and MP3 files (recommended for compression).
 
+JLAYER SETUP (Required for MP3 support):
+  1. Download jlayer-1.0.1.jar from:
+     https://repo1.maven.org/maven2/javazoom/jlayer/1.0.1/jlayer-1.0.1.jar
+  2. Place the JAR in the lib/ folder
+  3. Add lib/jlayer-1.0.1.jar to your project classpath:
+     - IntelliJ: File > Project Structure > Modules > Dependencies > + > JARs
+     - Eclipse: Project > Properties > Java Build Path > Libraries > Add JARs
+     - VS Code: Add "lib/**/*.jar" to java.project.referencedLibraries
+  4. See lib/README.md for detailed IDE setup instructions
+
 SUPPORTED FORMATS:
-  - MP3 files (via JavaFX Media) - recommended for compressed audio
+  - MP3 files (via JLayer) - recommended for compressed audio
   - WAV files (via javax.sound.sampled) - legacy support
   - Automatic fallback: tries MP3 first, then WAV
 

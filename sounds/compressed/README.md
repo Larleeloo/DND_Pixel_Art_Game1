@@ -3,6 +3,8 @@
 This directory contains placeholder folders for all game sound effects in MP3 format.
 The AudioManager will automatically look for MP3 files here before falling back to WAV files.
 
+**Note:** MP3 playback requires JLayer. See `lib/README.md` for setup instructions.
+
 ## Usage
 
 To add a sound effect:

@@ -1,19 +1,22 @@
 package audio;
 
 import javax.sound.sampled.*;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.util.Duration;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Manages all audio in the game - background music and sound effects.
- * Supports both WAV files (via javax.sound.sampled) and MP3 files (via JavaFX).
+ * Supports both WAV files (via javax.sound.sampled) and MP3 files (via JLayer).
+ *
+ * SETUP REQUIRED FOR MP3 SUPPORT:
+ * 1. Download JLayer from: https://github.com/umjammer/jlayer/releases
+ *    Or Maven: https://mvnrepository.com/artifact/javazoom/jlayer/1.0.1
+ * 2. Place jlayer-1.0.1.jar in the lib/ folder
+ * 3. Add lib/jlayer-1.0.1.jar to your project's classpath
  *
  * MP3 Support:
  * - MP3 files should be placed in sounds/compressed/[category]/[action].mp3
@@ -31,14 +34,15 @@ public class AudioManager {
     // WAV-based sound effects (legacy support)
     private HashMap<String, Clip> soundEffects;
 
-    // MP3-based sound effects (JavaFX)
-    private Map<String, MediaPlayer> mp3Cache;
-    private Map<String, Media> mediaCache;
+    // MP3 support via JLayer
+    private static boolean jlayerAvailable = false;
+    private ExecutorService audioExecutor;
 
     // Background music
     private Clip backgroundMusicWav;
-    private MediaPlayer backgroundMusicMp3;
-    private boolean usingMp3Music = false;
+    private volatile MP3Player backgroundMusicMp3;
+    private volatile boolean musicLooping = false;
+    private volatile String currentMusicPath = null;
 
     // Volume and state
     private float musicVolume = 0.7f;
@@ -46,43 +50,35 @@ public class AudioManager {
     private boolean musicEnabled = true;
     private boolean sfxEnabled = true;
 
-    // JavaFX initialization flag
-    private static boolean jfxInitialized = false;
-
     // Base paths for sound files
     private static final String WAV_BASE_PATH = "sounds";
     private static final String MP3_BASE_PATH = "sounds/compressed";
 
-    // Maximum concurrent MediaPlayer instances per sound
-    private static final int MAX_CONCURRENT_SOUNDS = 3;
+    // Static initialization to check for JLayer
+    static {
+        try {
+            Class.forName("javazoom.jl.player.Player");
+            jlayerAvailable = true;
+            System.out.println("JLayer library found - MP3 support enabled");
+        } catch (ClassNotFoundException e) {
+            jlayerAvailable = false;
+            System.out.println("JLayer library not found - MP3 support disabled");
+            System.out.println("To enable MP3 support:");
+            System.out.println("  1. Download jlayer-1.0.1.jar from https://mvnrepository.com/artifact/javazoom/jlayer/1.0.1");
+            System.out.println("  2. Place it in the lib/ folder");
+            System.out.println("  3. Add lib/jlayer-1.0.1.jar to your project classpath");
+        }
+    }
 
     public AudioManager() {
         soundEffects = new HashMap<>();
-        mp3Cache = new ConcurrentHashMap<>();
-        mediaCache = new ConcurrentHashMap<>();
+        audioExecutor = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r, "AudioManager-Worker");
+            t.setDaemon(true);
+            return t;
+        });
 
-        // Initialize JavaFX toolkit
-        initializeJavaFX();
-
-        System.out.println("AudioManager initialized with MP3 support");
-    }
-
-    /**
-     * Initialize JavaFX toolkit for MP3 playback.
-     * This must be called before using any JavaFX media classes.
-     */
-    private void initializeJavaFX() {
-        if (!jfxInitialized) {
-            try {
-                // Create a JFXPanel to initialize the JavaFX toolkit
-                new JFXPanel();
-                jfxInitialized = true;
-                System.out.println("JavaFX toolkit initialized for MP3 support");
-            } catch (Exception e) {
-                System.out.println("Failed to initialize JavaFX: " + e.getMessage());
-                System.out.println("MP3 playback will not be available");
-            }
-        }
+        System.out.println("AudioManager initialized" + (jlayerAvailable ? " with MP3 support" : " (WAV only)"));
     }
 
     // =========================================================================
@@ -106,8 +102,8 @@ public class AudioManager {
         String mp3Path = action.getMP3Path(MP3_BASE_PATH);
         String wavPath = action.getWAVPath(WAV_BASE_PATH);
 
-        // Try MP3 first
-        if (playMP3Sound(mp3Path)) {
+        // Try MP3 first (if JLayer is available)
+        if (jlayerAvailable && playMP3Sound(mp3Path)) {
             return;
         }
 
@@ -134,85 +130,88 @@ public class AudioManager {
     }
 
     // =========================================================================
-    // MP3 PLAYBACK (JavaFX-based)
+    // MP3 PLAYBACK (JLayer-based)
     // =========================================================================
 
     /**
      * Play an MP3 sound effect from a file path.
+     * Playback is non-blocking (runs in background thread).
      *
      * @param path Path to the MP3 file
      * @return true if playback started successfully, false otherwise
      */
     public boolean playMP3Sound(String path) {
-        if (!sfxEnabled || !jfxInitialized || path == null) return false;
+        if (!sfxEnabled || !jlayerAvailable || path == null) return false;
 
         File soundFile = new File(path);
         if (!soundFile.exists()) {
             return false;
         }
 
-        try {
-            // Check if we have this media cached
-            Media media = mediaCache.get(path);
-            if (media == null) {
-                media = new Media(soundFile.toURI().toString());
-                mediaCache.put(path, media);
+        // Play in background thread
+        audioExecutor.submit(() -> {
+            try {
+                FileInputStream fis = new FileInputStream(soundFile);
+                MP3Player player = new MP3Player(fis, sfxVolume);
+                player.play();
+            } catch (Exception e) {
+                // Fail silently for missing/invalid files
             }
+        });
 
-            // Create a new MediaPlayer for this playback
-            MediaPlayer player = new MediaPlayer(media);
-            player.setVolume(sfxVolume);
-
-            // Clean up when done
-            player.setOnEndOfMedia(() -> {
-                player.dispose();
-            });
-
-            player.setOnError(() -> {
-                System.out.println("Error playing MP3: " + path);
-                player.dispose();
-            });
-
-            player.play();
-            return true;
-        } catch (Exception e) {
-            System.out.println("Failed to play MP3 " + path + ": " + e.getMessage());
-            return false;
-        }
+        return true;
     }
 
     /**
-     * Load and play MP3 background music.
+     * Load and prepare MP3 background music for playback.
      *
      * @param path Path to the MP3 file
      */
     public void loadMusicMP3(String path) {
-        if (!jfxInitialized) {
-            System.out.println("JavaFX not initialized - cannot play MP3 music");
+        if (!jlayerAvailable) {
+            System.out.println("JLayer not available - cannot load MP3 music");
+            System.out.println("Falling back to WAV if available");
             return;
         }
 
-        try {
-            File musicFile = new File(path);
-            if (!musicFile.exists()) {
-                System.out.println("MP3 music file not found: " + path);
-                return;
-            }
-
-            // Stop any existing music
-            stopMusic();
-
-            Media media = new Media(musicFile.toURI().toString());
-            backgroundMusicMp3 = new MediaPlayer(media);
-            backgroundMusicMp3.setVolume(musicVolume);
-            backgroundMusicMp3.setCycleCount(MediaPlayer.INDEFINITE);
-            usingMp3Music = true;
-
-            System.out.println("Loaded MP3 background music: " + path);
-        } catch (Exception e) {
-            System.out.println("Failed to load MP3 music: " + e.getMessage());
-            usingMp3Music = false;
+        File musicFile = new File(path);
+        if (!musicFile.exists()) {
+            System.out.println("MP3 music file not found: " + path);
+            return;
         }
+
+        // Stop any existing music
+        stopMusic();
+
+        currentMusicPath = path;
+        System.out.println("Loaded MP3 background music: " + path);
+    }
+
+    /**
+     * Start playing MP3 background music with looping.
+     */
+    private void playMusicMP3Loop() {
+        if (!jlayerAvailable || currentMusicPath == null) return;
+
+        audioExecutor.submit(() -> {
+            while (musicLooping && musicEnabled) {
+                try {
+                    FileInputStream fis = new FileInputStream(currentMusicPath);
+                    backgroundMusicMp3 = new MP3Player(fis, musicVolume);
+                    backgroundMusicMp3.play();
+
+                    // Small delay before looping
+                    if (musicLooping && musicEnabled) {
+                        Thread.sleep(100);
+                    }
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    System.out.println("Error playing MP3 music: " + e.getMessage());
+                    break;
+                }
+            }
+        });
     }
 
     // =========================================================================
@@ -252,12 +251,15 @@ public class AudioManager {
                 return;
             }
 
+            // Stop any existing music
+            stopMusic();
+
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
             backgroundMusicWav = AudioSystem.getClip();
             backgroundMusicWav.open(audioStream);
 
             setVolume(backgroundMusicWav, musicVolume);
-            usingMp3Music = false;
+            currentMusicPath = null; // Clear MP3 path when loading WAV
             System.out.println("Loaded WAV background music");
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
             System.out.println("Failed to load music: " + e.getMessage());
@@ -308,7 +310,7 @@ public class AudioManager {
             String mp3Path = MP3_BASE_PATH + "/" + name + ".mp3";
             String wavPath = WAV_BASE_PATH + "/" + name + ".wav";
 
-            if (playMP3Sound(mp3Path)) return;
+            if (jlayerAvailable && playMP3Sound(mp3Path)) return;
             playSoundFromPath(wavPath);
         }
     }
@@ -335,7 +337,6 @@ public class AudioManager {
                 clip = AudioSystem.getClip();
                 clip.open(audioStream);
                 soundEffects.put(path, clip);
-                System.out.println("Loaded sound from path: " + path);
             } catch (Exception e) {
                 // Failed to load - fail silently
                 return;
@@ -362,9 +363,10 @@ public class AudioManager {
     public void playMusic() {
         if (!musicEnabled) return;
 
-        if (usingMp3Music && backgroundMusicMp3 != null) {
-            backgroundMusicMp3.seek(Duration.ZERO);
-            backgroundMusicMp3.play();
+        // Check if we have MP3 music loaded
+        if (jlayerAvailable && currentMusicPath != null && currentMusicPath.endsWith(".mp3")) {
+            musicLooping = true;
+            playMusicMP3Loop();
             System.out.println("MP3 background music started");
         } else if (backgroundMusicWav != null && !backgroundMusicWav.isRunning()) {
             backgroundMusicWav.setFramePosition(0);
@@ -377,14 +379,19 @@ public class AudioManager {
      * Stop background music.
      */
     public void stopMusic() {
-        if (usingMp3Music && backgroundMusicMp3 != null) {
+        // Stop MP3 music
+        musicLooping = false;
+        if (backgroundMusicMp3 != null) {
             backgroundMusicMp3.stop();
-            System.out.println("MP3 background music stopped");
+            backgroundMusicMp3 = null;
         }
+
+        // Stop WAV music
         if (backgroundMusicWav != null && backgroundMusicWav.isRunning()) {
             backgroundMusicWav.stop();
-            System.out.println("WAV background music stopped");
         }
+
+        System.out.println("Background music stopped");
     }
 
     /**
@@ -418,7 +425,7 @@ public class AudioManager {
     public void setMusicVolume(float volume) {
         musicVolume = Math.max(0.0f, Math.min(1.0f, volume));
 
-        if (usingMp3Music && backgroundMusicMp3 != null) {
+        if (backgroundMusicMp3 != null) {
             backgroundMusicMp3.setVolume(musicVolume);
         }
         if (backgroundMusicWav != null) {
@@ -504,10 +511,17 @@ public class AudioManager {
     }
 
     /**
-     * Check if JavaFX is initialized and MP3 playback is available.
+     * Check if JLayer is available and MP3 playback is supported.
      */
     public boolean isMP3Available() {
-        return jfxInitialized;
+        return jlayerAvailable;
+    }
+
+    /**
+     * Check if JLayer library is loaded.
+     */
+    public static boolean isJLayerAvailable() {
+        return jlayerAvailable;
     }
 
     // =========================================================================
@@ -522,7 +536,8 @@ public class AudioManager {
             try {
                 FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
                 // Convert 0.0-1.0 to decibels (logarithmic scale)
-                float dB = (float) (Math.log(volume) / Math.log(10.0) * 20.0);
+                float dB = (float) (Math.log(Math.max(volume, 0.0001)) / Math.log(10.0) * 20.0);
+                dB = Math.max(gainControl.getMinimum(), Math.min(gainControl.getMaximum(), dB));
                 gainControl.setValue(dB);
             } catch (Exception e) {
                 // Volume control not supported
@@ -536,6 +551,9 @@ public class AudioManager {
     public void dispose() {
         stopMusic();
 
+        // Shutdown executor
+        audioExecutor.shutdownNow();
+
         // Dispose WAV clips
         if (backgroundMusicWav != null) {
             backgroundMusicWav.close();
@@ -544,16 +562,6 @@ public class AudioManager {
             clip.close();
         }
 
-        // Dispose MP3 players
-        if (backgroundMusicMp3 != null) {
-            backgroundMusicMp3.dispose();
-        }
-        for (MediaPlayer player : mp3Cache.values()) {
-            player.dispose();
-        }
-
-        mp3Cache.clear();
-        mediaCache.clear();
         soundEffects.clear();
 
         System.out.println("AudioManager disposed");
@@ -586,5 +594,75 @@ public class AudioManager {
             "footsteps", "inventory", "chests", "doors", "mobs", "ui",
             "music", "ambient", "water", "events", "npc", "crafting", "special"
         };
+    }
+
+    // =========================================================================
+    // INNER CLASS: MP3Player (JLayer wrapper)
+    // =========================================================================
+
+    /**
+     * Simple MP3 player wrapper using JLayer.
+     * Handles playback in a way that allows stopping and volume control.
+     */
+    private static class MP3Player {
+        private javazoom.jl.player.Player player;
+        private InputStream inputStream;
+        private volatile boolean stopped = false;
+        private float volume;
+
+        public MP3Player(InputStream inputStream, float volume) {
+            this.inputStream = inputStream;
+            this.volume = volume;
+        }
+
+        public void play() {
+            try {
+                // Create player with volume-adjusted audio device
+                javazoom.jl.player.AudioDevice device = createAudioDevice();
+                player = new javazoom.jl.player.Player(inputStream, device);
+
+                if (!stopped) {
+                    player.play();
+                }
+            } catch (Exception e) {
+                // Playback error - fail silently
+            } finally {
+                close();
+            }
+        }
+
+        public void stop() {
+            stopped = true;
+            if (player != null) {
+                player.close();
+            }
+        }
+
+        public void setVolume(float volume) {
+            this.volume = volume;
+            // Note: Volume changes take effect on next playback
+        }
+
+        private void close() {
+            try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+
+        /**
+         * Create an audio device with volume control.
+         */
+        private javazoom.jl.player.AudioDevice createAudioDevice() {
+            try {
+                // Use FactoryRegistry to get default audio device
+                return javazoom.jl.player.FactoryRegistry.systemRegistry().createAudioDevice();
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 }
