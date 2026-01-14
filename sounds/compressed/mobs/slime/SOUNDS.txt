@@ -1,0 +1,11 @@
+# Slime Sounds
+# Place MP3 files here for slime mob sounds.
+
+Expected files:
+- slime_idle.mp3        # Slime idle wobble
+- slime_move.mp3        # Slime movement
+- slime_attack.mp3      # Slime attack
+- slime_hurt.mp3        # Slime hurt
+- slime_death.mp3       # Slime death
+- slime_bounce.mp3      # Slime bouncing
+- slime_split.mp3       # Slime splitting

@@ -1,0 +1,16 @@
+# Impact Sounds
+# Place MP3 files here for projectile impact sounds.
+
+Expected files:
+- impact_arrow.mp3      # Arrow hitting target
+- impact_bolt.mp3       # Crossbow bolt impact
+- impact_magic.mp3      # Magic bolt impact
+- impact_fireball.mp3   # Fireball explosion
+- impact_iceball.mp3    # Ice spell impact
+- impact_knife.mp3      # Throwing knife impact
+- impact_axe.mp3        # Throwing axe impact
+- impact_rock.mp3       # Rock impact
+- impact_bomb.mp3       # Bomb explosion
+- impact_potion.mp3     # Potion splash
+- impact_fish.mp3       # Fish projectile impact (Mirror item)
+- explosion.mp3         # Generic explosion

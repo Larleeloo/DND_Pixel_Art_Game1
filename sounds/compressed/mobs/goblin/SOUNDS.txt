@@ -1,0 +1,10 @@
+# Goblin Sounds
+# Place MP3 files here for goblin mob sounds.
+
+Expected files:
+- goblin_idle.mp3       # Goblin idle
+- goblin_walk.mp3       # Goblin walking
+- goblin_attack.mp3     # Goblin attack screech
+- goblin_hurt.mp3       # Goblin hurt
+- goblin_death.mp3      # Goblin death
+- goblin_laugh.mp3      # Goblin mischievous laugh

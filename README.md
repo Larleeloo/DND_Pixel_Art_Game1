@@ -721,37 +721,109 @@ CHEST COOLDOWNS:
   - Cooldowns reset in developer mode for testing
 
 --------------------------------------------------------------------------------
-16. AUDIO SYSTEM (audio/AudioManager.java)
+16. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
 --------------------------------------------------------------------------------
 
-Manages background music and sound effects with separate volume controls.
+Manages background music and sound effects with MP3 support via JavaFX.
+Supports both WAV files (legacy) and MP3 files (recommended for compression).
+
+SUPPORTED FORMATS:
+  - MP3 files (via JavaFX Media) - recommended for compressed audio
+  - WAV files (via javax.sound.sampled) - legacy support
+  - Automatic fallback: tries MP3 first, then WAV
 
 AUDIO MANAGER USAGE:
-  AudioManager audio = AudioManager.getInstance();
+  AudioManager audio = new AudioManager();
 
-  // Music
-  audio.playMusic("sounds/background.wav");
+  // Action-based playback (RECOMMENDED)
+  // Uses SoundAction enum for type-safe sound routing
+  audio.playAction(SoundAction.JUMP);
+  audio.playAction(SoundAction.USE_BATTLE_AXE);
+  audio.playAction(SoundAction.OPEN_MONTHLY_CHEST);
+  audio.playAction(SoundAction.MUSIC_LEVEL_1);
+
+  // String-based action playback
+  audio.playAction("JUMP");
+  audio.playAction("USE_SWORD");
+
+  // Direct MP3 playback
+  audio.playMP3Sound("sounds/compressed/player/jump.mp3");
+
+  // Legacy WAV playback (still supported)
+  audio.playSound("jump");
+  audio.playSoundFromPath("sounds/jump.wav");
+
+  // Music control
+  audio.loadMusicMP3("sounds/compressed/music/music_level_1.mp3");
+  audio.loadMusic("sounds/music.wav");  // WAV fallback
+  audio.playMusic();
   audio.stopMusic();
   audio.setMusicVolume(0.7f);  // 0.0 to 1.0
 
-  // Sound effects
-  audio.playSFX("sounds/sword_swing.wav");
+  // SFX volume
   audio.setSFXVolume(0.8f);
 
-  // Mute all
-  audio.setMuted(true);
+  // Mute controls
+  audio.setMuteAll(true);
+  audio.toggleMusic();
+  audio.toggleSFX();
 
-SUPPORTED FORMATS:
-  - WAV files (recommended)
-  - Looping support for background music
-  - Clip-based SFX with fast restart
+SOUND ACTION CATEGORIES:
+  The SoundAction enum provides 300+ predefined game actions organized by category:
+
+  Category     | Examples
+  -------------|--------------------------------------------------
+  player       | JUMP, DOUBLE_JUMP, WALK, RUN, HURT, DEAD
+  combat/melee | USE_SWORD, USE_BATTLE_AXE, USE_MACE, USE_DAGGER
+  combat/ranged| FIRE_BOW, FIRE_CROSSBOW, FIRE_WAND, DRAW_BOW
+  combat/throw | THROW_KNIFE, THROW_AXE, THROW_BOMB
+  combat/impact| IMPACT_ARROW, IMPACT_FIREBALL, EXPLOSION
+  effects      | BURNING, FROZEN, POISONED, HEALING
+  items        | EAT, DRINK, CAST_SPELL, READ_SCROLL
+  tools        | USE_PICKAXE, USE_AXE, USE_SHOVEL
+  blocks/break | BREAK_DIRT, BREAK_STONE, BREAK_GLASS
+  blocks/place | PLACE_DIRT, PLACE_STONE, PLACE_WOOD
+  footsteps    | STEP_GRASS, STEP_STONE, STEP_WOOD
+  inventory    | COLLECT, DROP, EQUIP, HOTBAR_SWITCH
+  chests       | OPEN_CHEST, OPEN_DAILY_CHEST, OPEN_MONTHLY_CHEST
+  doors        | DOOR_OPEN, DOOR_CLOSE, DOOR_LOCKED
+  mobs/*       | ZOMBIE_ATTACK, SKELETON_DEATH, WOLF_HOWL, etc.
+  ui           | UI_BUTTON_CLICK, MENU_OPEN, NOTIFICATION
+  music        | MUSIC_MENU, MUSIC_LEVEL_1, MUSIC_BOSS
+  ambient      | AMBIENT_WIND, AMBIENT_RAIN, AMBIENT_CAVE
+  events       | LEVEL_START, CHECKPOINT, SECRET_FOUND
+  npc          | NPC_GREETING, SHOP_BUY, SHOP_SELL
+  crafting     | CRAFT_SUCCESS, FORGE_HAMMER, ENCHANT_SUCCESS
+  special      | MIRROR_ACTIVATE, MIRROR_REALM_CHANGE
 
 SOUND FILE LOCATIONS:
-  sounds/
-  ├── music/       → Background music tracks
-  ├── effects/     → Combat and action sounds
-  ├── ui/          → Menu clicks, inventory sounds
-  └── ambient/     → Environmental sounds
+  sounds/                  → Legacy WAV files (flat structure)
+  sounds/compressed/       → MP3 files organized by category
+  ├── player/             → Player movement and state sounds
+  ├── combat/             → Combat sounds (melee, ranged, impact)
+  ├── effects/            → Status effect sounds
+  ├── items/              → Item usage sounds
+  ├── tools/              → Tool usage sounds
+  ├── blocks/             → Block break/place sounds
+  ├── footsteps/          → Footstep sounds by surface
+  ├── inventory/          → Inventory management sounds
+  ├── chests/             → Chest and vault sounds
+  ├── doors/              → Door interaction sounds
+  ├── mobs/               → Mob-specific sounds (by mob type)
+  ├── ui/                 → UI interaction sounds
+  ├── music/              → Background music tracks
+  ├── ambient/            → Ambient environment sounds
+  ├── water/              → Water interaction sounds
+  ├── events/             → Special event sounds
+  ├── npc/                → NPC interaction sounds
+  ├── crafting/           → Crafting system sounds
+  └── special/            → Special item sounds
+
+ADDING NEW SOUNDS:
+  1. Create MP3 file with appropriate name (e.g., jump.mp3)
+  2. Place in corresponding category folder (e.g., sounds/compressed/player/)
+  3. The game automatically picks up the file when playAction() is called
+  4. See sounds/compressed/README.md and SOUNDS.txt files for expected filenames
 
 --------------------------------------------------------------------------------
 17. UI SYSTEM (ui/)

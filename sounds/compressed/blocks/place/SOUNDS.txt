@@ -1,0 +1,15 @@
+# Block Placing Sounds
+# Place MP3 files here for block placing sounds.
+
+Expected files:
+- place_dirt.mp3        # Dirt block place
+- place_grass.mp3       # Grass block place
+- place_stone.mp3       # Stone block place
+- place_cobblestone.mp3 # Cobblestone place
+- place_wood.mp3        # Wood block place
+- place_leaves.mp3      # Leaves place
+- place_sand.mp3        # Sand block place
+- place_gravel.mp3      # Gravel place
+- place_glass.mp3       # Glass place
+- place_brick.mp3       # Brick place
+- place_metal.mp3       # Metal block place

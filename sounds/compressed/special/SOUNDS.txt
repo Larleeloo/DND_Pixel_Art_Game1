@@ -1,0 +1,12 @@
+# Special Item Sounds
+# Place MP3 files here for special/unique item sounds.
+
+Expected files:
+# Mirror to Other Realms (unique item)
+- mirror_activate.mp3       # Mirror activation
+- mirror_realm_change.mp3   # Realm cycling
+- mirror_volcano.mp3        # Volcano realm effect
+- mirror_forest.mp3         # Forest realm effect
+- mirror_ocean.mp3          # Ocean realm effect
+
+# Add more special item sounds as needed

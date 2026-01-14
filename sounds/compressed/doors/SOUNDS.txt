@@ -1,0 +1,19 @@
+# Door Sounds
+# Place MP3 files here for door interaction sounds.
+
+Expected files:
+- door_open.mp3             # Generic door open
+- door_open_wood.mp3        # Wooden door open
+- door_open_metal.mp3       # Metal door open
+- door_open_stone.mp3       # Stone door open
+- door_close.mp3            # Generic door close
+- door_close_wood.mp3       # Wooden door close
+- door_close_metal.mp3      # Metal door close
+- door_close_stone.mp3      # Stone door close
+- door_locked.mp3           # Attempt to open locked door
+- door_unlock.mp3           # Unlock door with key
+- door_break.mp3            # Break down door
+- gate_open.mp3             # Gate opening
+- gate_close.mp3            # Gate closing
+- portcullis_open.mp3       # Portcullis raising
+- portcullis_close.mp3      # Portcullis lowering

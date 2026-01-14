@@ -1,0 +1,12 @@
+# Water Interaction Sounds
+# Place MP3 files here for water interaction sounds.
+
+Expected files:
+- water_splash.mp3          # Generic splash
+- water_splash_small.mp3    # Small splash (items)
+- water_splash_big.mp3      # Big splash (player falling)
+- water_enter.mp3           # Entering water
+- water_exit.mp3            # Exiting water
+- water_swim.mp3            # Swimming sounds
+- water_submerge.mp3        # Going underwater
+- water_bubble.mp3          # Underwater bubbles

@@ -1,0 +1,10 @@
+# Orc Sounds
+# Place MP3 files here for orc mob sounds.
+
+Expected files:
+- orc_idle.mp3          # Orc idle
+- orc_walk.mp3          # Orc walking (heavy footsteps)
+- orc_attack.mp3        # Orc attack grunt
+- orc_hurt.mp3          # Orc hurt
+- orc_death.mp3         # Orc death
+- orc_roar.mp3          # Orc battle roar

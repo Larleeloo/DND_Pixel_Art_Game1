@@ -1,0 +1,20 @@
+# Crafting Sounds
+# Place MP3 files here for crafting system sounds.
+
+Expected files:
+# General crafting
+- craft_start.mp3           # Crafting initiated
+- craft_success.mp3         # Crafting successful
+- craft_fail.mp3            # Crafting failed
+
+# Forge/Smithing
+- forge_hammer.mp3          # Hammering metal
+- forge_heat.mp3            # Heating metal
+
+# Alchemy
+- alchemy_bubble.mp3        # Potion bubbling
+- alchemy_success.mp3       # Potion complete
+
+# Enchanting
+- enchant_start.mp3         # Enchantment starting
+- enchant_success.mp3       # Enchantment complete

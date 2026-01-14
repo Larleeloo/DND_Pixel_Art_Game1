@@ -1,0 +1,37 @@
+# UI Sounds
+# Place MP3 files here for user interface sounds.
+
+Expected files:
+# Buttons
+- ui_button_click.mp3       # Button click
+- ui_button_hover.mp3       # Button hover
+- ui_button_disabled.mp3    # Disabled button click
+- ui_confirm.mp3            # Confirm action
+- ui_cancel.mp3             # Cancel action
+- ui_back.mp3               # Back button
+- ui_select.mp3             # Selection made
+
+# Sliders
+- ui_slider_change.mp3      # Slider value change
+- ui_slider_min.mp3         # Slider at minimum
+- ui_slider_max.mp3         # Slider at maximum
+- ui_toggle_on.mp3          # Toggle switch on
+- ui_toggle_off.mp3         # Toggle switch off
+
+# Menus
+- menu_open.mp3             # Menu opening
+- menu_close.mp3            # Menu closing
+- menu_transition.mp3       # Menu transition
+- settings_open.mp3         # Settings menu open
+- settings_close.mp3        # Settings menu close
+- pause.mp3                 # Game pause
+- unpause.mp3               # Game unpause
+
+# Notifications
+- notification.mp3          # Generic notification
+- achievement.mp3           # Achievement unlocked
+- level_up.mp3              # Level up fanfare
+- quest_accept.mp3          # Quest accepted
+- quest_complete.mp3        # Quest completed
+- warning.mp3               # Warning sound
+- error.mp3                 # Error sound

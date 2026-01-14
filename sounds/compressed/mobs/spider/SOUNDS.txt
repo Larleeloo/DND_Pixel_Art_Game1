@@ -1,0 +1,10 @@
+# Spider Sounds
+# Place MP3 files here for spider mob sounds.
+
+Expected files:
+- spider_idle.mp3       # Spider idle
+- spider_walk.mp3       # Spider scuttling
+- spider_attack.mp3     # Spider bite attack
+- spider_hurt.mp3       # Spider hurt
+- spider_death.mp3      # Spider death
+- spider_hiss.mp3       # Spider hissing

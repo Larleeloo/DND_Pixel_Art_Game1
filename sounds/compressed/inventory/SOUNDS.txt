@@ -1,0 +1,24 @@
+# Inventory Sounds
+# Place MP3 files here for inventory management sounds.
+
+Expected files:
+- collect.mp3           # Generic item pickup
+- collect_item.mp3      # Standard item pickup
+- collect_coin.mp3      # Coin pickup
+- collect_gem.mp3       # Gem/crystal pickup
+- collect_key.mp3       # Key pickup
+- drop.mp3              # Generic item drop
+- drop_item.mp3         # Standard item drop
+- drop_stack.mp3        # Dropping item stack
+- equip.mp3             # Generic equip
+- equip_weapon.mp3      # Equip weapon
+- equip_armor.mp3       # Equip armor
+- equip_accessory.mp3   # Equip accessory
+- unequip.mp3           # Unequip item
+- hotbar_switch.mp3     # Switch hotbar slot
+- hotbar_scroll.mp3     # Scroll hotbar
+- inventory_open.mp3    # Open inventory
+- inventory_close.mp3   # Close inventory
+- inventory_sort.mp3    # Sort inventory
+- item_stack.mp3        # Stack items
+- item_split.mp3        # Split item stack

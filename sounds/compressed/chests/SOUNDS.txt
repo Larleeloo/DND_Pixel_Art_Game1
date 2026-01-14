@@ -1,0 +1,18 @@
+# Chest and Vault Sounds
+# Place MP3 files here for chest and vault interaction sounds.
+
+Expected files:
+- open_chest.mp3            # Generic chest open
+- open_wooden_chest.mp3     # Wooden chest open
+- open_iron_chest.mp3       # Iron chest open
+- open_gold_chest.mp3       # Gold chest open
+- open_daily_chest.mp3      # Daily reward chest open
+- open_monthly_chest.mp3    # Monthly reward chest open
+- close_chest.mp3           # Chest close
+- chest_locked.mp3          # Attempt to open locked chest
+- chest_unlock.mp3          # Unlock chest with key
+- open_vault.mp3            # Open vault/storage
+- close_vault.mp3           # Close vault
+- loot_drop.mp3             # Loot dropping from chest
+- loot_legendary.mp3        # Legendary item drop fanfare
+- loot_mythic.mp3           # Mythic item drop fanfare

@@ -1,0 +1,37 @@
+# Ambient/Environment Sounds
+# Place MP3 files here for ambient environmental sounds.
+# These typically loop and play in the background.
+
+Expected files:
+# Wind
+- ambient_wind.mp3          # Light wind
+- ambient_wind_strong.mp3   # Strong wind
+
+# Rain
+- ambient_rain.mp3          # Light rain
+- ambient_rain_heavy.mp3    # Heavy rain
+
+# Thunder
+- ambient_thunder.mp3       # Distant thunder
+- ambient_thunder_close.mp3 # Close thunder crack
+
+# Water
+- ambient_water_flow.mp3    # River/stream flowing
+- ambient_waterfall.mp3     # Waterfall
+
+# Caves
+- ambient_cave.mp3          # Cave ambience
+- ambient_cave_drip.mp3     # Water dripping in cave
+
+# Nature
+- ambient_forest.mp3        # Forest ambience
+- ambient_birds.mp3         # Bird sounds
+- ambient_crickets.mp3      # Cricket sounds (night)
+
+# Fire
+- ambient_fire_crackle.mp3  # Fire crackling
+
+# Other
+- ambient_lava.mp3          # Lava bubbling
+- ambient_desert_wind.mp3   # Desert wind
+- ambient_snow_wind.mp3     # Cold wind in snow area

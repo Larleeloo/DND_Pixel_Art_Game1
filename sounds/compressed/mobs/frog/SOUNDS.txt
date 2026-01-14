@@ -1,0 +1,10 @@
+# Frog Sounds
+# Place MP3 files here for frog mob sounds.
+
+Expected files:
+- frog_idle.mp3         # Frog idle
+- frog_hop.mp3          # Frog hopping
+- frog_attack.mp3       # Frog tongue attack
+- frog_hurt.mp3         # Frog hurt
+- frog_death.mp3        # Frog death
+- frog_croak.mp3        # Frog croaking

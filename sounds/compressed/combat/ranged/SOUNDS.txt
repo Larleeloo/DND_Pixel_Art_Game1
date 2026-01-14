@@ -1,0 +1,15 @@
+# Ranged Combat Sounds
+# Place MP3 files here for ranged weapon sounds.
+
+Expected files:
+- fire.mp3              # Generic projectile fire
+- fire_bow.mp3          # Bow firing
+- fire_crossbow.mp3     # Crossbow firing
+- fire_wand.mp3         # Wand magic bolt
+- fire_staff.mp3        # Staff magic cast
+- fire_slingshot.mp3    # Slingshot firing
+- draw_bow.mp3          # Drawing bow string
+- draw_crossbow.mp3     # Cocking crossbow
+- reload_crossbow.mp3   # Reloading crossbow
+- charge_magic.mp3      # Charging magic attack
+- release_magic.mp3     # Releasing charged magic

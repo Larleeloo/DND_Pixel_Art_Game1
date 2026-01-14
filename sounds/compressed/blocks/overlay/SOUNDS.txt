@@ -1,0 +1,9 @@
+# Block Overlay Sounds
+# Place MP3 files here for block overlay removal sounds.
+
+Expected files:
+- break_overlay_grass.mp3   # Grass tuft removal
+- break_overlay_snow.mp3    # Snow layer removal
+- break_overlay_ice.mp3     # Ice coating break
+- break_overlay_moss.mp3    # Moss removal
+- break_overlay_vines.mp3   # Vines cutting

@@ -1,0 +1,14 @@
+# Footstep Sounds
+# Place MP3 files here for footstep sounds on different surfaces.
+
+Expected files:
+- step_grass.mp3        # Walking on grass
+- step_dirt.mp3         # Walking on dirt
+- step_stone.mp3        # Walking on stone
+- step_wood.mp3         # Walking on wood
+- step_sand.mp3         # Walking on sand
+- step_gravel.mp3       # Walking on gravel
+- step_water.mp3        # Walking in shallow water
+- step_snow.mp3         # Walking on snow
+- step_metal.mp3        # Walking on metal
+- step_leaves.mp3       # Walking on leaves

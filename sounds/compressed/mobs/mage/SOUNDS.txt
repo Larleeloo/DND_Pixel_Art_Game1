@@ -1,0 +1,10 @@
+# Mage Sounds
+# Place MP3 files here for mage mob sounds.
+
+Expected files:
+- mage_idle.mp3         # Mage idle
+- mage_walk.mp3         # Mage walking
+- mage_attack.mp3       # Mage attack
+- mage_hurt.mp3         # Mage hurt
+- mage_death.mp3        # Mage death
+- mage_cast.mp3         # Mage casting spell

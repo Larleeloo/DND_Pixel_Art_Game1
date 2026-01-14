@@ -1,0 +1,21 @@
+# Block Breaking Sounds
+# Place MP3 files here for block breaking sounds.
+
+Expected files:
+- break_dirt.mp3        # Dirt block break
+- break_grass.mp3       # Grass block break
+- break_stone.mp3       # Stone block break
+- break_cobblestone.mp3 # Cobblestone break
+- break_wood.mp3        # Wood block break
+- break_leaves.mp3      # Leaves break
+- break_sand.mp3        # Sand block break
+- break_gravel.mp3      # Gravel break
+- break_glass.mp3       # Glass break
+- break_brick.mp3       # Brick break
+- break_metal.mp3       # Metal block break
+- break_ice.mp3         # Ice block break
+- break_snow.mp3        # Snow break
+- break_coal_ore.mp3    # Coal ore break
+- break_iron_ore.mp3    # Iron ore break
+- break_gold_ore.mp3    # Gold ore break
+- break_diamond_ore.mp3 # Diamond ore break

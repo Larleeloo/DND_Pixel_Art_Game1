@@ -1,0 +1,21 @@
+# Background Music
+# Place MP3 files here for background music tracks.
+# Music files can be larger and will loop continuously.
+
+Expected files:
+- music_menu.mp3            # Main menu music
+- music_level_1.mp3         # Level 1 background music
+- music_level_2.mp3         # Level 2 background music
+- music_level_3.mp3         # Level 3 background music
+- music_boss.mp3            # Boss battle music
+- music_victory.mp3         # Victory fanfare
+- music_defeat.mp3          # Defeat/game over music
+- music_peaceful.mp3        # Peaceful/safe area music
+- music_combat.mp3          # Combat encounter music
+- music_dungeon.mp3         # Dungeon exploration music
+- music_cave.mp3            # Cave exploration music
+- music_forest.mp3          # Forest area music
+- music_desert.mp3          # Desert area music
+- music_snow.mp3            # Snow/ice area music
+- music_loot.mp3            # Loot game scene music
+- music_credits.mp3         # Credits roll music
