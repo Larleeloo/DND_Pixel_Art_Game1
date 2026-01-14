@@ -1,0 +1,29 @@
+# Tool Sounds
+# Place MP3 files here for tool usage sounds.
+
+Expected files:
+# Pickaxes
+- use_pickaxe.mp3           # Generic pickaxe
+- use_pickaxe_wood.mp3      # Wooden pickaxe
+- use_pickaxe_stone.mp3     # Stone pickaxe
+- use_pickaxe_iron.mp3      # Iron pickaxe
+- use_pickaxe_gold.mp3      # Gold pickaxe
+- use_pickaxe_diamond.mp3   # Diamond pickaxe
+
+# Axes
+- use_axe.mp3               # Generic axe (chopping)
+- use_axe_wood.mp3          # Wooden axe
+- use_axe_stone.mp3         # Stone axe
+- use_axe_iron.mp3          # Iron axe
+
+# Shovels
+- use_shovel.mp3            # Generic shovel
+- use_shovel_wood.mp3       # Wooden shovel
+- use_shovel_stone.mp3      # Stone shovel
+- use_shovel_iron.mp3       # Iron shovel
+
+# Other tools
+- use_hoe.mp3               # Hoe (farming)
+- use_fishing_rod.mp3       # Fishing rod cast
+- use_torch.mp3             # Torch igniting
+- use_lantern.mp3           # Lantern toggle

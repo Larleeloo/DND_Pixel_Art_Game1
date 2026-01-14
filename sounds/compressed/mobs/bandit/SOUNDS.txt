@@ -1,0 +1,10 @@
+# Bandit Sounds
+# Place MP3 files here for bandit mob sounds.
+
+Expected files:
+- bandit_idle.mp3       # Bandit idle
+- bandit_walk.mp3       # Bandit walking
+- bandit_attack.mp3     # Bandit attack
+- bandit_hurt.mp3       # Bandit hurt
+- bandit_death.mp3      # Bandit death
+- bandit_taunt.mp3      # Bandit taunting

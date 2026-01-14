@@ -1,0 +1,10 @@
+# Zombie Sounds
+# Place MP3 files here for zombie mob sounds.
+
+Expected files:
+- zombie_idle.mp3       # Zombie idle groan
+- zombie_walk.mp3       # Zombie shuffling
+- zombie_attack.mp3     # Zombie attack
+- zombie_hurt.mp3       # Zombie hurt
+- zombie_death.mp3      # Zombie death
+- zombie_groan.mp3      # Zombie ambient groan

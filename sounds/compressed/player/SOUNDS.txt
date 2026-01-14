@@ -1,0 +1,22 @@
+# Player Sounds
+# Place MP3 files here for player movement and state sounds.
+# Files will be automatically loaded by AudioManager when actions are triggered.
+
+Expected files:
+- idle.mp3              # Player idle sound (ambient/breathing)
+- walk.mp3              # Walking footsteps
+- run.mp3               # Running footsteps
+- sprint.mp3            # Sprinting footsteps
+- jump.mp3              # Jump sound
+- double_jump.mp3       # Double jump sound
+- triple_jump.mp3       # Triple jump sound
+- fall.mp3              # Falling wind sound
+- land.mp3              # Landing impact
+- land_hard.mp3         # Hard landing impact (from high fall)
+- hurt.mp3              # Taking damage
+- hurt_light.mp3        # Light damage
+- hurt_heavy.mp3        # Heavy damage
+- dead.mp3              # Death sound
+- respawn.mp3           # Respawn sound
+- invincible_start.mp3  # Invincibility frame start
+- invincible_end.mp3    # Invincibility frame end

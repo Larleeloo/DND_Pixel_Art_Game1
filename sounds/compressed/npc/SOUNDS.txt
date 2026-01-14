@@ -1,0 +1,22 @@
+# NPC Interaction Sounds
+# Place MP3 files here for NPC interaction sounds.
+
+Expected files:
+# Dialogue
+- npc_greeting.mp3          # NPC greeting player
+- npc_goodbye.mp3           # NPC farewell
+- npc_talk.mp3              # NPC talking (full dialogue)
+- npc_talk_blip.mp3         # NPC text blip sound
+
+# Emotions
+- npc_laugh.mp3             # NPC laughing
+- npc_angry.mp3             # NPC angry
+- npc_sad.mp3               # NPC sad
+- npc_surprised.mp3         # NPC surprised
+
+# Shop
+- shop_open.mp3             # Shop interface open
+- shop_close.mp3            # Shop interface close
+- shop_buy.mp3              # Purchase item
+- shop_sell.mp3             # Sell item
+- shop_cant_afford.mp3      # Not enough money

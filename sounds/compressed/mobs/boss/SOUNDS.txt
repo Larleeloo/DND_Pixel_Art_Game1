@@ -1,0 +1,11 @@
+# Boss Sounds
+# Place MP3 files here for boss mob sounds.
+
+Expected files:
+- boss_intro.mp3            # Boss introduction fanfare
+- boss_phase_change.mp3     # Boss phase transition
+- boss_attack.mp3           # Boss regular attack
+- boss_special_attack.mp3   # Boss special attack
+- boss_hurt.mp3             # Boss taking damage
+- boss_death.mp3            # Boss defeated
+- boss_roar.mp3             # Boss roar/intimidation

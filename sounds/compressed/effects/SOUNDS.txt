@@ -1,0 +1,16 @@
+# Status Effect Sounds
+# Place MP3 files here for status effect sounds.
+
+Expected files:
+- burning.mp3           # Burning tick sound
+- burning_start.mp3     # Catching fire
+- burning_end.mp3       # Fire extinguished
+- frozen.mp3            # Frozen tick sound
+- frozen_start.mp3      # Getting frozen
+- frozen_end.mp3        # Thawing out
+- poisoned.mp3          # Poison tick sound
+- poisoned_start.mp3    # Getting poisoned
+- poisoned_end.mp3      # Poison wears off
+- healing.mp3           # Healing effect
+- buff_applied.mp3      # Positive buff applied
+- debuff_applied.mp3    # Negative debuff applied

@@ -1,0 +1,13 @@
+# General Mob Sounds
+# Place MP3 files here for generic mob sounds used as fallbacks.
+
+Expected files:
+- mob_idle.mp3          # Generic idle/ambient
+- mob_walk.mp3          # Generic walking
+- mob_run.mp3           # Generic running
+- mob_attack.mp3        # Generic attack
+- mob_hurt.mp3          # Generic hurt
+- mob_death.mp3         # Generic death
+- mob_spawn.mp3         # Mob spawning
+- mob_aggro.mp3         # Mob becoming aggressive
+- mob_flee.mp3          # Mob fleeing

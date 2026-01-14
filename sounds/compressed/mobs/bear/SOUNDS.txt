@@ -1,0 +1,10 @@
+# Bear Sounds
+# Place MP3 files here for bear mob sounds.
+
+Expected files:
+- bear_idle.mp3         # Bear idle
+- bear_walk.mp3         # Bear walking
+- bear_attack.mp3       # Bear swipe attack
+- bear_hurt.mp3         # Bear hurt
+- bear_death.mp3        # Bear death
+- bear_roar.mp3         # Bear roar

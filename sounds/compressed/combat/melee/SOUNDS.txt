@@ -1,0 +1,13 @@
+# Melee Combat Sounds
+# Place MP3 files here for melee weapon sounds.
+
+Expected files:
+- use_sword.mp3         # Sword swing
+- use_battle_axe.mp3    # Battle axe swing
+- use_mace.mp3          # Mace swing
+- use_dagger.mp3        # Dagger stab
+- use_spear.mp3         # Spear thrust
+- use_hammer.mp3        # Hammer swing
+- use_club.mp3          # Club swing
+- use_scythe.mp3        # Scythe swing
+- use_fists.mp3         # Punch/unarmed attack

@@ -1,0 +1,16 @@
+# Item Usage Sounds
+# Place MP3 files here for item usage sounds.
+
+Expected files:
+- use_item.mp3          # Generic item use
+- eat.mp3               # Generic eating
+- eat_bread.mp3         # Eating bread
+- eat_apple.mp3         # Eating apple
+- eat_meat.mp3          # Eating meat
+- drink.mp3             # Generic drinking
+- drink_potion.mp3      # Drinking potion
+- drink_water.mp3       # Drinking water
+- cast.mp3              # Generic casting
+- cast_spell.mp3        # Casting a spell
+- cast_scroll.mp3       # Using a scroll spell
+- read_scroll.mp3       # Reading a scroll

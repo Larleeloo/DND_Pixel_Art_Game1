@@ -1,0 +1,10 @@
+# Knight Sounds
+# Place MP3 files here for knight mob sounds.
+
+Expected files:
+- knight_idle.mp3           # Knight idle
+- knight_walk.mp3           # Knight walking (armor clank)
+- knight_attack.mp3         # Knight attack
+- knight_hurt.mp3           # Knight hurt
+- knight_death.mp3          # Knight death
+- knight_armor_clank.mp3    # Armor clanking ambient

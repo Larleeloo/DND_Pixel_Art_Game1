@@ -1,0 +1,17 @@
+# Special Event Sounds
+# Place MP3 files here for special game event sounds.
+
+Expected files:
+- level_start.mp3           # Level starting
+- level_complete.mp3        # Level completed
+- checkpoint.mp3            # Checkpoint reached
+- secret_found.mp3          # Secret area discovered
+- treasure_reveal.mp3       # Treasure revealed
+- fanfare_short.mp3         # Short fanfare
+- fanfare_long.mp3          # Long fanfare
+- death_jingle.mp3          # Player death jingle
+- game_over.mp3             # Game over sound
+- teleport.mp3              # Teleportation sound
+- portal_open.mp3           # Portal opening
+- portal_close.mp3          # Portal closing
+- portal_enter.mp3          # Entering portal

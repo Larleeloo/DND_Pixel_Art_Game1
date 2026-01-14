@@ -1,0 +1,10 @@
+# Throwable Sounds
+# Place MP3 files here for throwable item sounds.
+
+Expected files:
+- throw.mp3             # Generic throw
+- throw_knife.mp3       # Throwing knife
+- throw_axe.mp3         # Throwing axe
+- throw_rock.mp3        # Throwing rock
+- throw_bomb.mp3        # Throwing bomb/grenade
+- throw_potion.mp3      # Throwing potion

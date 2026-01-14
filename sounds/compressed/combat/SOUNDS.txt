@@ -1,0 +1,11 @@
+# General Combat Sounds
+# Place MP3 files here for general combat sounds.
+
+Expected files:
+- attack.mp3            # Generic attack
+- attack_miss.mp3       # Attack miss/whiff
+- attack_critical.mp3   # Critical hit
+- block.mp3             # Shield block
+- block_break.mp3       # Shield/block broken
+- parry.mp3             # Successful parry
+- dodge.mp3             # Dodge roll

@@ -1,0 +1,10 @@
+# Skeleton Sounds
+# Place MP3 files here for skeleton mob sounds.
+
+Expected files:
+- skeleton_idle.mp3     # Skeleton idle
+- skeleton_walk.mp3     # Skeleton walking (bone clatter)
+- skeleton_attack.mp3   # Skeleton attack
+- skeleton_hurt.mp3     # Skeleton hurt
+- skeleton_death.mp3    # Skeleton death (bones falling)
+- skeleton_rattle.mp3   # Bone rattle ambient

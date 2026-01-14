@@ -1,0 +1,13 @@
+# Wolf Sounds
+# Place MP3 files here for wolf mob sounds.
+
+Expected files:
+- wolf_idle.mp3         # Wolf idle panting
+- wolf_walk.mp3         # Wolf walking
+- wolf_run.mp3          # Wolf running
+- wolf_attack.mp3       # Wolf bite attack
+- wolf_hurt.mp3         # Wolf yelp
+- wolf_death.mp3        # Wolf death
+- wolf_bark.mp3         # Wolf barking
+- wolf_howl.mp3         # Wolf howling
+- wolf_growl.mp3        # Wolf growling
