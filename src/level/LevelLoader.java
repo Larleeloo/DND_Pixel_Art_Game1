@@ -422,6 +422,35 @@ public class LevelLoader {
                 }
             }
 
+            // Parse moving blocks (animated/moving block entities)
+            if (root.containsKey("movingBlocks")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> movingBlockList = (List<Map<String, Object>>) root.get("movingBlocks");
+                for (Map<String, Object> mb : movingBlockList) {
+                    // Skip comment entries
+                    if (mb.containsKey("_comment")) continue;
+
+                    LevelData.MovingBlockData movingBlock = new LevelData.MovingBlockData();
+                    movingBlock.x = toInt(mb.get("x"));
+                    movingBlock.y = toInt(mb.get("y"));
+                    if (mb.containsKey("blockType")) movingBlock.blockType = (String) mb.get("blockType");
+                    if (mb.containsKey("useGridCoords")) movingBlock.useGridCoords = toBool(mb.get("useGridCoords"));
+                    if (mb.containsKey("movementPattern")) movingBlock.movementPattern = (String) mb.get("movementPattern");
+                    if (mb.containsKey("endX")) movingBlock.endX = toInt(mb.get("endX"));
+                    if (mb.containsKey("endY")) movingBlock.endY = toInt(mb.get("endY"));
+                    if (mb.containsKey("speed")) movingBlock.speed = toDouble(mb.get("speed"));
+                    if (mb.containsKey("pauseTime")) movingBlock.pauseTime = toInt(mb.get("pauseTime"));
+                    if (mb.containsKey("radius")) movingBlock.radius = toDouble(mb.get("radius"));
+                    if (mb.containsKey("waypoints")) movingBlock.waypoints = (String) mb.get("waypoints");
+                    // Parse optional tint
+                    if (mb.containsKey("tintRed")) movingBlock.tintRed = toInt(mb.get("tintRed"));
+                    if (mb.containsKey("tintGreen")) movingBlock.tintGreen = toInt(mb.get("tintGreen"));
+                    if (mb.containsKey("tintBlue")) movingBlock.tintBlue = toInt(mb.get("tintBlue"));
+
+                    data.movingBlocks.add(movingBlock);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
@@ -431,6 +460,7 @@ public class LevelLoader {
                     data.doors.size() + " doors, " +
                     data.buttons.size() + " buttons, " +
                     data.vaults.size() + " vaults, " +
+                    data.movingBlocks.size() + " moving blocks, " +
                     data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {
@@ -840,6 +870,37 @@ public class LevelLoader {
             }
             sb.append(" }");
             if (i < data.blocks.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
+
+        // Moving Blocks
+        sb.append("  \"movingBlocks\": [\n");
+        for (int i = 0; i < data.movingBlocks.size(); i++) {
+            LevelData.MovingBlockData mb = data.movingBlocks.get(i);
+            sb.append("    { \"x\": ").append(mb.x);
+            sb.append(", \"y\": ").append(mb.y);
+            sb.append(", \"blockType\": \"").append(escape(mb.blockType)).append("\"");
+            sb.append(", \"useGridCoords\": ").append(mb.useGridCoords);
+            sb.append(", \"movementPattern\": \"").append(escape(mb.movementPattern)).append("\"");
+            sb.append(", \"endX\": ").append(mb.endX);
+            sb.append(", \"endY\": ").append(mb.endY);
+            sb.append(", \"speed\": ").append(mb.speed);
+            sb.append(", \"pauseTime\": ").append(mb.pauseTime);
+            if (mb.movementPattern.equals("CIRCULAR")) {
+                sb.append(", \"radius\": ").append(mb.radius);
+            }
+            if (mb.hasWaypoints()) {
+                sb.append(", \"waypoints\": \"").append(escape(mb.waypoints)).append("\"");
+            }
+            // Include tint if set
+            if (mb.hasTint()) {
+                sb.append(", \"tintRed\": ").append(mb.tintRed);
+                sb.append(", \"tintGreen\": ").append(mb.tintGreen);
+                sb.append(", \"tintBlue\": ").append(mb.tintBlue);
+            }
+            sb.append(" }");
+            if (i < data.movingBlocks.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append("  ]\n");
