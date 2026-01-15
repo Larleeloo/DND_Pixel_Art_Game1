@@ -743,10 +743,20 @@ public class GameScene implements Scene {
 
         // Handle player riding on moving blocks
         if (player != null && !movingBlocks.isEmpty()) {
+            boolean playerIsRiding = false;
             for (block.MovingBlockEntity movingBlock : movingBlocks) {
                 if (movingBlock.isEntityOnTop((Entity) player)) {
                     movingBlock.applyMovementToRider((Entity) player);
+                    playerIsRiding = true;
                     break; // Only ride one block at a time
+                }
+            }
+            // Clear rider status from all blocks if player is not riding anything
+            if (!playerIsRiding) {
+                for (block.MovingBlockEntity movingBlock : movingBlocks) {
+                    if (movingBlock.getRidingEntity() == (Entity) player) {
+                        movingBlock.clearRider();
+                    }
                 }
             }
         }

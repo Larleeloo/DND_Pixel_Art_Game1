@@ -60,6 +60,9 @@ public class MovingBlockEntity extends BlockEntity {
 
     // Entity riding tracking
     private Entity ridingEntity;    // Entity currently riding this block (if any)
+    private double riderOffsetX;    // Rider's X offset from block left edge
+    private double riderAccumX;     // Accumulated fractional X movement for rider
+    private double riderAccumY;     // Accumulated fractional Y movement for rider
 
     /**
      * Creates a moving block with horizontal movement pattern.
@@ -431,17 +434,26 @@ public class MovingBlockEntity extends BlockEntity {
 
     /**
      * Check if a given entity is standing on top of this moving block.
+     * Uses a tolerance that accounts for the block's movement speed.
      */
     public boolean isEntityOnTop(Entity entity) {
         Rectangle entityBounds = entity.getBounds();
         Rectangle blockBounds = getBounds();
 
-        // Check if entity's bottom is within a few pixels of block's top
+        // Check if entity's bottom is within tolerance of block's top
         int entityBottom = entityBounds.y + entityBounds.height;
         int blockTop = blockBounds.y;
 
-        // Entity must be within 5 pixels of block top and horizontally overlapping
-        if (Math.abs(entityBottom - blockTop) <= 5) {
+        // Use larger tolerance for faster blocks and circular movement
+        // Circular blocks need extra tolerance since they move in all directions
+        int tolerance = (int) Math.max(8, speed * 2 + 4);
+        if (pattern == MovementPattern.CIRCULAR) {
+            tolerance = (int) Math.max(12, speed * 3 + 6);
+        }
+
+        // Entity must be within tolerance of block top (can be slightly above or below)
+        int verticalDiff = entityBottom - blockTop;
+        if (verticalDiff >= -tolerance && verticalDiff <= tolerance) {
             // Check horizontal overlap
             int entityLeft = entityBounds.x;
             int entityRight = entityBounds.x + entityBounds.width;
@@ -455,6 +467,7 @@ public class MovingBlockEntity extends BlockEntity {
 
     /**
      * Apply this block's movement to an entity riding on top.
+     * Uses accumulated fractional movement for smooth riding.
      * Call this from the scene's update loop for entities standing on moving blocks.
      */
     public void applyMovementToRider(Entity rider) {
@@ -463,9 +476,58 @@ public class MovingBlockEntity extends BlockEntity {
         double velX = getVelocityX();
         double velY = getVelocityY();
 
-        // Move the rider with the block
-        rider.x += (int) velX;
-        rider.y += (int) velY;
+        // Track if this is a new rider or continuing rider
+        if (ridingEntity != rider) {
+            ridingEntity = rider;
+            riderAccumX = 0;
+            riderAccumY = 0;
+            // Store rider's offset from block for maintaining relative position
+            riderOffsetX = rider.x - this.x;
+        }
+
+        // Accumulate fractional movement
+        riderAccumX += velX;
+        riderAccumY += velY;
+
+        // Apply integer portion of accumulated movement
+        int moveX = (int) riderAccumX;
+        int moveY = (int) riderAccumY;
+
+        if (moveX != 0 || moveY != 0) {
+            rider.x += moveX;
+            rider.y += moveY;
+            riderAccumX -= moveX;
+            riderAccumY -= moveY;
+        }
+
+        // For circular and fast movement, snap rider to stay exactly on block top
+        // This prevents drift from accumulated rounding errors
+        Rectangle blockBounds = getBounds();
+        Rectangle riderBounds = rider.getBounds();
+        int expectedY = blockBounds.y - riderBounds.height;
+        int actualY = rider.y;
+
+        // If rider has drifted more than a few pixels vertically, correct it
+        if (Math.abs(actualY - expectedY) > 3) {
+            rider.y = expectedY;
+            riderAccumY = 0;
+        }
+    }
+
+    /**
+     * Clear the riding entity reference (call when entity stops riding).
+     */
+    public void clearRider() {
+        ridingEntity = null;
+        riderAccumX = 0;
+        riderAccumY = 0;
+    }
+
+    /**
+     * Get the current riding entity.
+     */
+    public Entity getRidingEntity() {
+        return ridingEntity;
     }
 
     @Override
