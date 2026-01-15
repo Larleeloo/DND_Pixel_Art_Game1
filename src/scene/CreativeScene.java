@@ -121,6 +121,7 @@ public class CreativeScene implements Scene {
 
     // Palette data
     private List<PaletteItem> blockPalette;
+    private List<PaletteItem> movingBlockPalette;
     private List<PaletteItem> itemPalette;
     private List<PaletteItem> mobPalette;
     private List<PaletteItem> lightPalette;
@@ -131,6 +132,7 @@ public class CreativeScene implements Scene {
     private List<PlacedEntity> placedDoors;
     private List<PlacedEntity> placedButtons;
     private List<PlacedEntity> placedVaults;
+    private List<PlacedEntity> placedMovingBlocks;
 
     // For door/button configuration modal
     private PlacedEntity entityBeingConfigured = null;
@@ -144,6 +146,7 @@ public class CreativeScene implements Scene {
      */
     public enum PaletteCategory {
         BLOCKS("Blocks"),
+        MOVING_BLOCKS("Moving"),
         ITEMS("Items"),
         MOBS("Mobs"),
         LIGHTS("Lights"),
@@ -259,6 +262,7 @@ public class CreativeScene implements Scene {
         placedDoors = new ArrayList<>();
         placedButtons = new ArrayList<>();
         placedVaults = new ArrayList<>();
+        placedMovingBlocks = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
         blockTextures = new HashMap<>();
 
@@ -311,6 +315,40 @@ public class CreativeScene implements Scene {
                 blockPalette.add(new PaletteItem(type.name(), type.getDisplayName(), scaledIcon, type));
             }
         }
+
+        // Moving block palette - blocks with movement patterns
+        movingBlockPalette = new ArrayList<>();
+
+        // Add moving block variations for each solid block type
+        BlockType[] movableTypes = {BlockType.STONE, BlockType.COBBLESTONE, BlockType.BRICK,
+                                    BlockType.WOOD, BlockType.IRON_ORE, BlockType.GOLD_ORE};
+
+        String[][] movementPatterns = {
+            {"HORIZONTAL", "Horizontal", "Moves left and right"},
+            {"VERTICAL", "Vertical", "Moves up and down"},
+            {"CIRCULAR", "Circular", "Moves in a circle"}
+        };
+
+        for (BlockType type : movableTypes) {
+            BufferedImage baseIcon = BlockRegistry.getInstance().getTexture(type);
+            if (baseIcon != null) {
+                for (String[] pattern : movementPatterns) {
+                    // Create icon with movement indicator overlay
+                    BufferedImage icon = createMovingBlockIcon(baseIcon, pattern[0]);
+                    Map<String, Object> movingData = new HashMap<>();
+                    movingData.put("blockType", type);
+                    movingData.put("movementPattern", pattern[0]);
+                    movingData.put("speed", 2.0);
+                    movingData.put("pauseTime", 30);
+                    movingData.put("endX", 3);  // Default 3 blocks distance
+                    movingData.put("endY", 0);
+                    movingData.put("radius", 100.0);
+                    String itemName = type.getDisplayName() + " (" + pattern[1] + ")";
+                    movingBlockPalette.add(new PaletteItem(type.name() + "_" + pattern[0], itemName, icon, movingData));
+                }
+            }
+        }
+        System.out.println("CreativeScene: Loaded " + movingBlockPalette.size() + " moving block types into palette");
 
         // Item palette - ALL items from ItemRegistry (for LOOT GAME functionality)
         itemPalette = new ArrayList<>();
@@ -514,6 +552,56 @@ public class CreativeScene implements Scene {
         int textY = (PALETTE_ITEM_SIZE + fm.getAscent() - fm.getDescent()) / 2;
         g.setColor(Color.WHITE);
         g.drawString(letter, textX, textY);
+
+        g.dispose();
+        return icon;
+    }
+
+    /**
+     * Create an icon for moving blocks - adds arrow overlay to indicate movement pattern
+     */
+    private BufferedImage createMovingBlockIcon(BufferedImage baseIcon, String pattern) {
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw scaled base block
+        g.drawImage(scaleImage(baseIcon, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE), 0, 0, null);
+
+        // Draw movement indicator arrows
+        g.setColor(new Color(255, 255, 0, 200));
+        g.setStroke(new BasicStroke(2));
+
+        int cx = PALETTE_ITEM_SIZE / 2;
+        int cy = PALETTE_ITEM_SIZE / 2;
+
+        switch (pattern) {
+            case "HORIZONTAL":
+                // Left-right arrows
+                g.drawLine(8, cy, 16, cy);
+                g.drawLine(8, cy, 12, cy - 4);
+                g.drawLine(8, cy, 12, cy + 4);
+                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 16, cy);
+                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 12, cy - 4);
+                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 12, cy + 4);
+                break;
+            case "VERTICAL":
+                // Up-down arrows
+                g.drawLine(cx, 8, cx, 16);
+                g.drawLine(cx, 8, cx - 4, 12);
+                g.drawLine(cx, 8, cx + 4, 12);
+                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx, PALETTE_ITEM_SIZE - 16);
+                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx - 4, PALETTE_ITEM_SIZE - 12);
+                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx + 4, PALETTE_ITEM_SIZE - 12);
+                break;
+            case "CIRCULAR":
+                // Circular arrow
+                g.drawArc(12, 12, PALETTE_ITEM_SIZE - 24, PALETTE_ITEM_SIZE - 24, 45, 270);
+                // Arrow head
+                g.drawLine(cx + 6, 16, cx + 10, 12);
+                g.drawLine(cx + 6, 16, cx + 2, 12);
+                break;
+        }
 
         g.dispose();
         return icon;
@@ -1164,6 +1252,14 @@ public class CreativeScene implements Scene {
             }
         }
 
+        // Check moving blocks
+        for (PlacedEntity entity : placedMovingBlocks) {
+            if (entity.getBounds().contains(worldMouseX, worldMouseY)) {
+                hoveredEntity = entity;
+                return;
+            }
+        }
+
         // Check items
         for (PlacedEntity entity : placedItems) {
             if (entity.getBounds().contains(worldMouseX, worldMouseY)) {
@@ -1549,6 +1645,51 @@ public class CreativeScene implements Scene {
                 // Highlight if hovered
                 if (entity == hoveredEntity) {
                     g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(screenX, screenY, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+
+        // Draw moving blocks with movement pattern indicator
+        for (PlacedEntity entity : placedMovingBlocks) {
+            int screenX = entity.x - (int) cameraX;
+            int screenY = entity.y - (int) cameraY;
+
+            if (screenX + GRID_SIZE > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+                screenY + GRID_SIZE > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, screenX, screenY, GRID_SIZE, GRID_SIZE, null);
+                }
+
+                // Draw movement path preview
+                @SuppressWarnings("unchecked")
+                Map<String, Object> movingData = (Map<String, Object>) entity.data;
+                String pattern = (String) movingData.get("movementPattern");
+                int endX = ((Number) movingData.getOrDefault("endX", entity.gridX)).intValue();
+                int endY = ((Number) movingData.getOrDefault("endY", entity.gridY)).intValue();
+
+                g.setColor(new Color(255, 255, 0, 100));
+                g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{5, 5}, 0));
+
+                int endScreenX = endX * GRID_SIZE - (int) cameraX;
+                int endScreenY = endY * GRID_SIZE - (int) cameraY;
+
+                if ("HORIZONTAL".equals(pattern) || "VERTICAL".equals(pattern)) {
+                    g.drawLine(screenX + GRID_SIZE / 2, screenY + GRID_SIZE / 2,
+                              endScreenX + GRID_SIZE / 2, endScreenY + GRID_SIZE / 2);
+                    g.fillOval(endScreenX + GRID_SIZE / 2 - 5, endScreenY + GRID_SIZE / 2 - 5, 10, 10);
+                } else if ("CIRCULAR".equals(pattern)) {
+                    double radius = ((Number) movingData.getOrDefault("radius", 100.0)).doubleValue();
+                    g.drawOval(screenX + GRID_SIZE / 2 - (int) radius, screenY + GRID_SIZE / 2 - (int) radius,
+                              (int) (radius * 2), (int) (radius * 2));
+                }
+
+                g.setStroke(new BasicStroke(1));
+
+                // Highlight if hovered
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(0, 255, 255, 100));
                     g.fillRect(screenX, screenY, GRID_SIZE, GRID_SIZE);
                 }
             }
@@ -1965,6 +2106,7 @@ public class CreativeScene implements Scene {
     private List<PaletteItem> getCurrentPalette() {
         switch (currentCategory) {
             case BLOCKS: return blockPalette;
+            case MOVING_BLOCKS: return movingBlockPalette;
             case ITEMS: return sortedItemPalette != null ? sortedItemPalette : itemPalette;
             case MOBS: return mobPalette;
             case LIGHTS: return lightPalette;
@@ -2187,6 +2329,44 @@ public class CreativeScene implements Scene {
                 placedBlocks.add(block);
                 break;
 
+            case MOVING_BLOCKS:
+                // Snap to grid
+                placeX = (worldMouseX / GRID_SIZE) * GRID_SIZE;
+                placeY = (worldMouseY / GRID_SIZE) * GRID_SIZE;
+
+                // Check if moving block already exists at this position
+                for (PlacedEntity entity : placedMovingBlocks) {
+                    if (entity.x == placeX && entity.y == placeY) {
+                        return; // Block already exists
+                    }
+                }
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> movingData = new HashMap<>((Map<String, Object>) selected.data);
+                // Set default end position based on pattern
+                String pattern = (String) movingData.get("movementPattern");
+                int gridX = placeX / GRID_SIZE;
+                int gridY = placeY / GRID_SIZE;
+                if ("HORIZONTAL".equals(pattern)) {
+                    movingData.put("endX", gridX + 3);  // 3 blocks to the right
+                    movingData.put("endY", gridY);
+                } else if ("VERTICAL".equals(pattern)) {
+                    movingData.put("endX", gridX);
+                    movingData.put("endY", gridY + 3);  // 3 blocks down
+                } else if ("CIRCULAR".equals(pattern)) {
+                    movingData.put("endX", gridX);      // Center X
+                    movingData.put("endY", gridY);      // Center Y
+                }
+                movingData.put("startGridX", gridX);
+                movingData.put("startGridY", gridY);
+
+                PlacedEntity movingBlock = new PlacedEntity(placeX, placeY, "moving_block", movingData, selected.icon);
+                movingBlock.gridX = gridX;
+                movingBlock.gridY = gridY;
+                placedMovingBlocks.add(movingBlock);
+                setStatus("Placed moving block (" + pattern + ") - Right-click to remove");
+                break;
+
             case ITEMS:
                 placeX = worldMouseX - 16;
                 placeY = worldMouseY - 16;
@@ -2306,6 +2486,17 @@ public class CreativeScene implements Scene {
             }
         }
 
+        // Check moving blocks
+        iter = placedMovingBlocks.iterator();
+        while (iter.hasNext()) {
+            PlacedEntity entity = iter.next();
+            if (entity.getBounds().contains(worldX, worldY)) {
+                iter.remove();
+                setStatus("Removed moving block");
+                return;
+            }
+        }
+
         iter = placedItems.iterator();
         while (iter.hasNext()) {
             PlacedEntity entity = iter.next();
@@ -2415,6 +2606,7 @@ public class CreativeScene implements Scene {
         levelData.doors.clear();
         levelData.buttons.clear();
         levelData.vaults.clear();
+        levelData.movingBlocks.clear();
 
         // Add blocks
         for (PlacedEntity entity : placedBlocks) {
@@ -2523,6 +2715,24 @@ public class CreativeScene implements Scene {
             vaultData.linkId = (String) vaultInfo.get("linkId");
             vaultData.vaultType = (String) vaultInfo.getOrDefault("vaultType", "PLAYER_VAULT");
             levelData.vaults.add(vaultData);
+        }
+
+        // Add moving blocks
+        for (PlacedEntity entity : placedMovingBlocks) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> movingInfo = (Map<String, Object>) entity.data;
+            LevelData.MovingBlockData movingData = new LevelData.MovingBlockData();
+            movingData.x = entity.gridX;
+            movingData.y = entity.gridY;
+            movingData.blockType = ((BlockType) movingInfo.get("blockType")).name();
+            movingData.useGridCoords = true;
+            movingData.movementPattern = (String) movingInfo.get("movementPattern");
+            movingData.endX = (Integer) movingInfo.getOrDefault("endX", entity.gridX + 3);
+            movingData.endY = (Integer) movingInfo.getOrDefault("endY", entity.gridY);
+            movingData.speed = ((Number) movingInfo.getOrDefault("speed", 2.0)).doubleValue();
+            movingData.pauseTime = ((Number) movingInfo.getOrDefault("pauseTime", 30)).intValue();
+            movingData.radius = ((Number) movingInfo.getOrDefault("radius", 100.0)).doubleValue();
+            levelData.movingBlocks.add(movingData);
         }
     }
 
@@ -2706,6 +2916,22 @@ public class CreativeScene implements Scene {
                         "\", \"linkId\": \"" + escapeJson(v.linkId) +
                         "\", \"vaultType\": \"" + escapeJson(v.vaultType) + "\"}" + comma);
                 }
+                writer.println("  ],");
+                writer.println();
+
+                // Moving Blocks
+                writer.println("  \"movingBlocks\": [");
+                for (int i = 0; i < levelData.movingBlocks.size(); i++) {
+                    LevelData.MovingBlockData mb = levelData.movingBlocks.get(i);
+                    String comma = (i < levelData.movingBlocks.size() - 1) ? "," : "";
+                    writer.println("    {\"x\": " + mb.x + ", \"y\": " + mb.y +
+                        ", \"blockType\": \"" + escapeJson(mb.blockType) +
+                        "\", \"useGridCoords\": " + mb.useGridCoords +
+                        ", \"movementPattern\": \"" + escapeJson(mb.movementPattern) +
+                        "\", \"endX\": " + mb.endX + ", \"endY\": " + mb.endY +
+                        ", \"speed\": " + mb.speed + ", \"pauseTime\": " + mb.pauseTime +
+                        ", \"radius\": " + mb.radius + "}" + comma);
+                }
                 writer.println("  ]");
 
                 writer.println("}");
@@ -2836,11 +3062,39 @@ public class CreativeScene implements Scene {
                 placedVaults.add(entity);
             }
 
+            // Load moving blocks
+            placedMovingBlocks.clear();
+            for (LevelData.MovingBlockData mb : levelData.movingBlocks) {
+                BlockType type = BlockType.fromName(mb.blockType);
+                int px = mb.useGridCoords ? mb.x * GRID_SIZE : mb.x;
+                int py = mb.useGridCoords ? mb.y * GRID_SIZE : mb.y;
+
+                // Create moving data map
+                Map<String, Object> movingData = new HashMap<>();
+                movingData.put("blockType", type);
+                movingData.put("movementPattern", mb.movementPattern);
+                movingData.put("endX", mb.endX);
+                movingData.put("endY", mb.endY);
+                movingData.put("speed", mb.speed);
+                movingData.put("pauseTime", mb.pauseTime);
+                movingData.put("radius", mb.radius);
+
+                // Create icon with pattern overlay
+                BufferedImage baseIcon = blockTextures.get(type);
+                BufferedImage icon = createMovingBlockIcon(baseIcon, mb.movementPattern);
+
+                PlacedEntity entity = new PlacedEntity(px, py, "moving_block", movingData, icon);
+                entity.gridX = mb.useGridCoords ? mb.x : mb.x / GRID_SIZE;
+                entity.gridY = mb.useGridCoords ? mb.y : mb.y / GRID_SIZE;
+                placedMovingBlocks.add(entity);
+            }
+
             // Update camera bounds
             camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
 
             setStatus("Loaded level: " + filepath + " (" +
                 placedBlocks.size() + " blocks, " +
+                placedMovingBlocks.size() + " moving blocks, " +
                 placedMobs.size() + " mobs, " +
                 placedDoors.size() + " doors, " +
                 placedButtons.size() + " buttons, " +

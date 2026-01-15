@@ -34,6 +34,7 @@ public class GameScene implements Scene {
     private ArrayList<DoorEntity> doors;
     private ArrayList<ButtonEntity> interactiveButtons;
     private ArrayList<VaultEntity> vaults;
+    private ArrayList<block.MovingBlockEntity> movingBlocks;
     private Map<String, DoorEntity> doorsByLinkId;
     private Map<String, ButtonEntity> buttonsByLinkId;
     private PlayerBase player;
@@ -111,6 +112,7 @@ public class GameScene implements Scene {
             doors = new ArrayList<>();
             interactiveButtons = new ArrayList<>();
             vaults = new ArrayList<>();
+            movingBlocks = new ArrayList<>();
             doorsByLinkId = new HashMap<>();
             buttonsByLinkId = new HashMap<>();
 
@@ -370,6 +372,47 @@ public class GameScene implements Scene {
             vaultsAdded++;
         }
         System.out.println("GameScene: Added " + vaultsAdded + " vaults to level");
+
+        // Add moving blocks (animated platform blocks)
+        int movingBlocksAdded = 0;
+        for (LevelData.MovingBlockData mb : levelData.movingBlocks) {
+            BlockType blockType = BlockType.fromName(mb.blockType);
+            block.MovingBlockEntity movingBlock;
+
+            // Create moving block based on pattern type
+            String pattern = mb.movementPattern != null ? mb.movementPattern.toUpperCase() : "HORIZONTAL";
+
+            if (pattern.equals("CIRCULAR")) {
+                // Circular movement - x,y are center position
+                movingBlock = new block.MovingBlockEntity(mb.x, mb.y, blockType, mb.useGridCoords,
+                        block.MovingBlockEntity.MovementPattern.CIRCULAR, mb.speed);
+                movingBlock.setCircularMovement(mb.x, mb.y, mb.useGridCoords, mb.radius);
+            } else if (pattern.equals("PATH") && mb.hasWaypoints()) {
+                // Path-based movement
+                movingBlock = new block.MovingBlockEntity(mb.x, mb.y, blockType, mb.useGridCoords,
+                        block.MovingBlockEntity.MovementPattern.PATH, mb.speed);
+                int[][] waypoints = mb.parseWaypoints();
+                for (int[] wp : waypoints) {
+                    movingBlock.addWaypoint(wp[0], wp[1], mb.useGridCoords);
+                }
+            } else {
+                // Linear movement (horizontal or vertical)
+                movingBlock = new block.MovingBlockEntity(mb.x, mb.y, blockType, mb.useGridCoords,
+                        mb.endX, mb.endY, mb.speed);
+            }
+
+            movingBlock.setPauseTime(mb.pauseTime);
+
+            // Apply tint if set
+            if (mb.hasTint()) {
+                movingBlock.setTint(mb.tintRed, mb.tintGreen, mb.tintBlue);
+            }
+
+            movingBlocks.add(movingBlock);
+            entityManager.addEntity(movingBlock);
+            movingBlocksAdded++;
+        }
+        System.out.println("GameScene: Added " + movingBlocksAdded + " moving blocks to level");
 
         // Add player - choose animation system based on level settings
         // Priority: useSpriteAnimation > useBoneAnimation > default (PlayerEntity)
@@ -697,6 +740,16 @@ public class GameScene implements Scene {
         handleDoorButtonInteractions(input);
 
         entityManager.updateAll(input);
+
+        // Handle player riding on moving blocks
+        if (player != null && !movingBlocks.isEmpty()) {
+            for (block.MovingBlockEntity movingBlock : movingBlocks) {
+                if (movingBlock.isEntityOnTop((Entity) player)) {
+                    movingBlock.applyMovementToRider((Entity) player);
+                    break; // Only ride one block at a time
+                }
+            }
+        }
 
         // Handle block breaking - check for broken blocks and dropped items
         if (player != null) {

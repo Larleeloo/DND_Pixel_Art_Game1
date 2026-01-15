@@ -71,6 +71,7 @@ public class LevelData {
     public List<DoorData> doors;  // Interactive doors
     public List<ButtonData> buttons;  // Interactive buttons/switches
     public List<VaultData> vaults;  // Interactive vaults/chests
+    public List<MovingBlockData> movingBlocks;  // Moving/animated blocks
 
     // Parallax settings
     public boolean parallaxEnabled = false;  // If true, use parallax background system
@@ -89,6 +90,7 @@ public class LevelData {
         doors = new ArrayList<>();
         buttons = new ArrayList<>();
         vaults = new ArrayList<>();
+        movingBlocks = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -588,6 +590,82 @@ public class LevelData {
     }
 
     /**
+     * Data class for moving block entities.
+     * Moving blocks follow patterns like horizontal, vertical, circular, or custom paths.
+     */
+    public static class MovingBlockData {
+        public int x;
+        public int y;
+        public String blockType;          // BlockType enum name (e.g., "GRASS", "STONE")
+        public boolean useGridCoords;     // If true, x/y are grid positions, not pixels
+
+        // Movement configuration
+        public String movementPattern;    // "HORIZONTAL", "VERTICAL", "CIRCULAR", "PATH"
+        public int endX;                  // End position X (or center X for circular)
+        public int endY;                  // End position Y (or center Y for circular)
+        public double speed = 2.0;        // Movement speed in pixels per frame
+        public int pauseTime = 30;        // Frames to pause at endpoints
+
+        // Circular movement specific
+        public double radius = 100;       // Radius for circular movement
+
+        // Path movement specific (comma-separated x,y pairs)
+        public String waypoints = "";     // e.g., "100,200;150,250;200,200"
+
+        // Optional tint
+        public int tintRed = -1;
+        public int tintGreen = -1;
+        public int tintBlue = -1;
+
+        public MovingBlockData() {
+            blockType = "STONE";
+            useGridCoords = true;
+            movementPattern = "HORIZONTAL";
+        }
+
+        public MovingBlockData(int x, int y, String blockType, boolean useGridCoords,
+                              String movementPattern, int endX, int endY, double speed) {
+            this.x = x;
+            this.y = y;
+            this.blockType = blockType;
+            this.useGridCoords = useGridCoords;
+            this.movementPattern = movementPattern;
+            this.endX = endX;
+            this.endY = endY;
+            this.speed = speed;
+        }
+
+        public boolean hasTint() {
+            return tintRed >= 0 && tintGreen >= 0 && tintBlue >= 0;
+        }
+
+        public boolean hasWaypoints() {
+            return waypoints != null && !waypoints.isEmpty();
+        }
+
+        /**
+         * Parse waypoints string into array of points.
+         * Format: "x1,y1;x2,y2;x3,y3"
+         */
+        public int[][] parseWaypoints() {
+            if (!hasWaypoints()) return new int[0][0];
+
+            String[] pairs = waypoints.split(";");
+            int[][] result = new int[pairs.length][2];
+
+            for (int i = 0; i < pairs.length; i++) {
+                String[] coords = pairs[i].trim().split(",");
+                if (coords.length >= 2) {
+                    result[i][0] = Integer.parseInt(coords[0].trim());
+                    result[i][1] = Integer.parseInt(coords[1].trim());
+                }
+            }
+
+            return result;
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -957,6 +1035,51 @@ public class LevelData {
             return this;
         }
 
+        /**
+         * Add a moving block with horizontal/vertical movement.
+         * @param x Starting X position
+         * @param y Starting Y position
+         * @param blockType Type of block (e.g., "STONE", "WOOD")
+         * @param useGridCoords If true, coordinates are in grid units
+         * @param endX End X position
+         * @param endY End Y position
+         * @param speed Movement speed in pixels per frame
+         */
+        public Builder addMovingBlock(int x, int y, String blockType, boolean useGridCoords,
+                                     int endX, int endY, double speed) {
+            MovingBlockData mb = new MovingBlockData(x, y, blockType, useGridCoords,
+                    "HORIZONTAL", endX, endY, speed);
+            // Auto-detect pattern based on movement direction
+            if (Math.abs(endY - y) > Math.abs(endX - x)) {
+                mb.movementPattern = "VERTICAL";
+            }
+            data.movingBlocks.add(mb);
+            return this;
+        }
+
+        /**
+         * Add a circular moving block.
+         * @param centerX Center X position
+         * @param centerY Center Y position
+         * @param blockType Type of block
+         * @param useGridCoords If true, coordinates are in grid units
+         * @param radius Radius of circular path
+         * @param speed Movement speed
+         */
+        public Builder addCircularMovingBlock(int centerX, int centerY, String blockType,
+                                             boolean useGridCoords, double radius, double speed) {
+            MovingBlockData mb = new MovingBlockData();
+            mb.x = centerX;
+            mb.y = centerY;
+            mb.blockType = blockType;
+            mb.useGridCoords = useGridCoords;
+            mb.movementPattern = "CIRCULAR";
+            mb.radius = radius;
+            mb.speed = speed;
+            data.movingBlocks.add(mb);
+            return this;
+        }
+
         public LevelData build() {
             return data;
         }
@@ -974,6 +1097,7 @@ public class LevelData {
                 ", doors=" + doors.size() +
                 ", buttons=" + buttons.size() +
                 ", vaults=" + vaults.size() +
+                ", movingBlocks=" + movingBlocks.size() +
                 '}';
     }
 }
