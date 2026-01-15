@@ -8,21 +8,20 @@ import entity.RecipeManager.Recipe;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AlchemyTableUI provides a drag-and-drop interface for crafting items.
+ * ReverseCraftingUI provides a drag-and-drop interface for deconstructing items.
  *
  * Features:
- * - 3 input slots for ingredients
- * - 1 output slot showing the result
- * - Real-time recipe matching as items are placed
- * - Taking output consumes ONE item from each input slot (supports stacks)
- * - Removing any input clears the output
+ * - 1 input slot for the item to deconstruct
+ * - 3 output slots showing the resulting components
+ * - Real-time recipe matching as item is placed
+ * - Taking outputs consumes ONE item from input (supports stacks)
+ * - Only works with items marked as "reversible" in recipes
  *
  * Usage:
- *   AlchemyTableUI ui = new AlchemyTableUI();
+ *   ReverseCraftingUI ui = new ReverseCraftingUI();
  *   ui.open(screenWidth, screenHeight);  // Positions to right of inventory
  *   // In update loop:
  *   ui.update(mouseX, mouseY);
@@ -31,7 +30,7 @@ import java.util.List;
  *   // Draw dragged items on top of all UI:
  *   ui.drawDraggedItemOverlay(g);
  */
-public class AlchemyTableUI {
+public class ReverseCraftingUI {
 
     // Layout constants
     private static final int SLOT_SIZE = 56;
@@ -45,33 +44,32 @@ public class AlchemyTableUI {
     // State
     private boolean isOpen = false;
 
-    // Slots (3 input + 1 output)
-    private CraftingSlot[] inputSlots = new CraftingSlot[3];
-    private CraftingSlot outputSlot;
+    // Slots (1 input + 3 output)
+    private CraftingSlot inputSlot;
+    private CraftingSlot[] outputSlots = new CraftingSlot[3];
 
     // Current matched recipe
     private Recipe currentRecipe = null;
 
     // Drag and drop state
     private CraftingSlot draggedSlot = null;
-    private int dragSourceIndex = -1;  // -1 = from inventory, 0-2 = from input slots
+    private boolean dragFromInput = false;
     private int dragOffsetX, dragOffsetY;
     private int mouseX, mouseY;
     private boolean isDragging = false;
 
     // Hover state
-    private int hoveredSlotIndex = -1;  // -1 = none, 0-2 = input, 3 = output
+    private int hoveredSlotIndex = -1;  // -1 = none, 0 = input, 1-3 = output
 
     // Colors
     private Color panelBackground = new Color(40, 35, 50, 240);
     private Color slotBackground = new Color(60, 55, 70);
     private Color slotHover = new Color(80, 75, 95);
     private Color slotBorder = new Color(100, 95, 120);
-    private Color accentColor = new Color(100, 220, 150);  // Green for alchemy
-    private Color titleColor = new Color(150, 255, 180);
+    private Color accentColor = new Color(180, 100, 255);  // Purple for deconstruction
+    private Color titleColor = new Color(220, 150, 255);
 
     // Callbacks
-    private ItemConsumedCallback itemConsumedCallback;
     private ItemProducedCallback itemProducedCallback;
     private Runnable onCloseCallback;
 
@@ -113,42 +111,32 @@ public class AlchemyTableUI {
     }
 
     /**
-     * Callback when items are consumed from input slots.
-     */
-    public interface ItemConsumedCallback {
-        void onItemConsumed(String itemId, int count);
-    }
-
-    /**
-     * Callback when items are produced and taken from output.
+     * Callback when items are produced (deconstructed components or returned input).
      */
     public interface ItemProducedCallback {
         void onItemProduced(String itemId, int count);
     }
 
     /**
-     * Creates an alchemy table UI for crafting items.
+     * Creates a reverse crafting UI for deconstructing items.
      */
-    public AlchemyTableUI() {
-        // Initialize slots
+    public ReverseCraftingUI() {
+        inputSlot = new CraftingSlot();
         for (int i = 0; i < 3; i++) {
-            inputSlots[i] = new CraftingSlot();
+            outputSlots[i] = new CraftingSlot();
         }
-        outputSlot = new CraftingSlot();
-
         calculateDimensions();
     }
 
     /**
-     * Creates an alchemy table UI (compatibility constructor).
-     * @param ignored This parameter is ignored; use ReverseCraftingUI for deconstruction
+     * Compatibility constructor.
      */
-    public AlchemyTableUI(boolean ignored) {
+    public ReverseCraftingUI(boolean ignored) {
         this();
     }
 
     private void calculateDimensions() {
-        // Layout: [Input1] [Input2] [Input3] -> [Output]
+        // Layout: [Input] -> [Output1] [Output2] [Output3]
         width = 4 * SLOT_SIZE + 5 * SLOT_PADDING + 40 + PANEL_PADDING * 2;  // 40 for arrow
         height = SLOT_SIZE + PANEL_PADDING * 2 + 50;  // 50 for title
     }
@@ -159,44 +147,45 @@ public class AlchemyTableUI {
      * @param screenHeight Screen height for positioning
      */
     public void open(int screenWidth, int screenHeight) {
-        // Position to the right of the inventory (inventory is typically on the left side)
-        // Inventory is around x=50-400, so we position this starting around x=420
+        // Position to the right of the inventory
         this.x = 420;
-        this.y = screenHeight / 2 - height / 2 - 50;  // Slightly above center
+        this.y = screenHeight / 2 - height / 2 - 50;
 
         // Position slots
         int slotY = y + PANEL_PADDING + 40;  // Below title
         int slotX = x + PANEL_PADDING;
 
+        // Input slot on left
+        inputSlot.x = slotX;
+        inputSlot.y = slotY;
+
+        // Arrow gap, then 3 output slots
+        int outputStartX = slotX + SLOT_SIZE + SLOT_PADDING + 40;
         for (int i = 0; i < 3; i++) {
-            inputSlots[i].x = slotX + i * (SLOT_SIZE + SLOT_PADDING);
-            inputSlots[i].y = slotY;
+            outputSlots[i].x = outputStartX + i * (SLOT_SIZE + SLOT_PADDING);
+            outputSlots[i].y = slotY;
         }
 
-        // Arrow gap, then output
-        outputSlot.x = slotX + 3 * (SLOT_SIZE + SLOT_PADDING) + 40;
-        outputSlot.y = slotY;
-
         isOpen = true;
-        System.out.println("AlchemyTableUI: Opened");
+        System.out.println("ReverseCraftingUI: Opened");
     }
 
     /**
-     * Closes the UI and returns any items in input slots.
+     * Closes the UI and returns any items in input slot.
      */
     public void close() {
         if (!isOpen) return;
 
         // Return input items to player
-        for (CraftingSlot slot : inputSlots) {
-            if (!slot.isEmpty() && itemProducedCallback != null) {
-                itemProducedCallback.onItemProduced(slot.itemId, slot.stackCount);
-            }
+        if (!inputSlot.isEmpty() && itemProducedCallback != null) {
+            itemProducedCallback.onItemProduced(inputSlot.itemId, inputSlot.stackCount);
+        }
+        inputSlot.clear();
+
+        // Clear outputs
+        for (CraftingSlot slot : outputSlots) {
             slot.clear();
         }
-
-        // Clear output
-        outputSlot.clear();
         currentRecipe = null;
 
         isOpen = false;
@@ -206,7 +195,7 @@ public class AlchemyTableUI {
             onCloseCallback.run();
         }
 
-        System.out.println("AlchemyTableUI: Closed");
+        System.out.println("ReverseCraftingUI: Closed");
     }
 
     public boolean isOpen() {
@@ -227,7 +216,7 @@ public class AlchemyTableUI {
     }
 
     /**
-     * Handles mouse press - starts dragging from a slot.
+     * Handles mouse press - starts dragging from input slot or takes from output.
      * Returns true if handled.
      */
     public boolean handleMousePressed(int mouseX, int mouseY) {
@@ -236,22 +225,20 @@ public class AlchemyTableUI {
         int slotIndex = getSlotAtPosition(mouseX, mouseY);
         if (slotIndex == -1) return false;
 
-        CraftingSlot slot = getSlotByIndex(slotIndex);
-        if (slot != null && !slot.isEmpty()) {
-            // Special handling for output slot
-            if (slotIndex == 3) {
-                // Taking from output - consume inputs and give output
-                if (currentRecipe != null) {
-                    takeOutput();
-                    return true;
-                }
-            } else {
-                // Start dragging from input slot
-                draggedSlot = slot;
-                dragSourceIndex = slotIndex;
+        if (slotIndex == 0) {
+            // Input slot - start dragging if has item
+            if (!inputSlot.isEmpty()) {
+                draggedSlot = inputSlot;
+                dragFromInput = true;
                 isDragging = true;
                 this.mouseX = mouseX;
                 this.mouseY = mouseY;
+                return true;
+            }
+        } else if (slotIndex >= 1 && slotIndex <= 3) {
+            // Output slot - take deconstructed items
+            if (currentRecipe != null && !outputSlots[0].isEmpty()) {
+                takeOutput();
                 return true;
             }
         }
@@ -277,12 +264,11 @@ public class AlchemyTableUI {
         if (!isDragging || draggedSlot == null) {
             isDragging = false;
             draggedSlot = null;
-            dragSourceIndex = -1;
+            dragFromInput = false;
             return null;
         }
 
         ItemEntity droppedItem = null;
-        int targetSlot = getSlotAtPosition(mouseX, mouseY);
 
         if (!containsPoint(mouseX, mouseY)) {
             // Dropped outside UI - return item to inventory
@@ -293,159 +279,113 @@ public class AlchemyTableUI {
                 droppedItem.setLinkedItem(linked);
             }
 
-            // Clear source slot
-            inputSlots[dragSourceIndex].clear();
-            updateRecipe();
-        } else if (targetSlot >= 0 && targetSlot < 3 && targetSlot != dragSourceIndex) {
-            // Swap with another input slot
-            CraftingSlot target = inputSlots[targetSlot];
-            String tempId = target.itemId;
-            int tempCount = target.stackCount;
-
-            target.setItem(draggedSlot.itemId, draggedSlot.stackCount);
-            if (tempId != null && !tempId.isEmpty()) {
-                inputSlots[dragSourceIndex].setItem(tempId, tempCount);
-            } else {
-                inputSlots[dragSourceIndex].clear();
-            }
+            // Clear input slot
+            inputSlot.clear();
             updateRecipe();
         }
-        // Else dropped on same slot or output - do nothing
+        // Dropped back on input slot - do nothing
 
         isDragging = false;
         draggedSlot = null;
-        dragSourceIndex = -1;
+        dragFromInput = false;
 
         return droppedItem;
     }
 
     /**
-     * Attempts to add an item to an input slot.
+     * Attempts to add an item to the input slot.
      * Returns true if item was accepted.
      */
     public boolean addItem(String itemId, int count) {
         if (!isOpen || itemId == null || itemId.isEmpty()) return false;
 
-        // Find first empty input slot
-        for (int i = 0; i < 3; i++) {
-            if (inputSlots[i].isEmpty()) {
-                inputSlots[i].setItem(itemId, count);
-                updateRecipe();
-                return true;
-            }
-        }
-
-        return false;  // All slots full
-    }
-
-    /**
-     * Attempts to add an item to a specific slot.
-     */
-    public boolean addItemToSlot(int slotIndex, String itemId, int count) {
-        if (!isOpen || slotIndex < 0 || slotIndex >= 3) return false;
-
-        CraftingSlot slot = inputSlots[slotIndex];
-
-        // If slot has same item, try to stack
-        if (!slot.isEmpty() && slot.itemId.equals(itemId)) {
-            slot.stackCount += count;
-            return true;
-        }
-
-        // If slot is empty, add item
-        if (slot.isEmpty()) {
-            slot.setItem(itemId, count);
+        // Only accept if input slot is empty
+        if (inputSlot.isEmpty()) {
+            inputSlot.setItem(itemId, count);
             updateRecipe();
             return true;
         }
 
-        return false;  // Slot occupied with different item
+        return false;
     }
 
     /**
      * Gets the slot at the given position.
-     * Returns -1 = none, 0-2 = input slots, 3 = output slot
+     * Returns -1 = none, 0 = input, 1-3 = output slots
      */
     private int getSlotAtPosition(int mx, int my) {
-        for (int i = 0; i < 3; i++) {
-            CraftingSlot slot = inputSlots[i];
-            if (mx >= slot.x && mx < slot.x + SLOT_SIZE &&
-                my >= slot.y && my < slot.y + SLOT_SIZE) {
-                return i;
-            }
+        // Check input slot
+        if (mx >= inputSlot.x && mx < inputSlot.x + SLOT_SIZE &&
+            my >= inputSlot.y && my < inputSlot.y + SLOT_SIZE) {
+            return 0;
         }
 
-        if (mx >= outputSlot.x && mx < outputSlot.x + SLOT_SIZE &&
-            my >= outputSlot.y && my < outputSlot.y + SLOT_SIZE) {
-            return 3;
+        // Check output slots
+        for (int i = 0; i < 3; i++) {
+            CraftingSlot slot = outputSlots[i];
+            if (mx >= slot.x && mx < slot.x + SLOT_SIZE &&
+                my >= slot.y && my < slot.y + SLOT_SIZE) {
+                return i + 1;
+            }
         }
 
         return -1;
     }
 
-    private CraftingSlot getSlotByIndex(int index) {
-        if (index >= 0 && index < 3) return inputSlots[index];
-        if (index == 3) return outputSlot;
-        return null;
-    }
-
     /**
-     * Updates the output based on current input items (alchemy mode).
+     * Updates the output slots based on input item.
      */
     private void updateRecipe() {
-        List<String> ingredients = new ArrayList<>();
-        for (CraftingSlot slot : inputSlots) {
-            if (!slot.isEmpty()) {
-                ingredients.add(slot.itemId);
-            }
+        // Clear outputs first
+        for (CraftingSlot slot : outputSlots) {
+            slot.clear();
         }
 
-        if (ingredients.isEmpty()) {
-            outputSlot.clear();
+        if (inputSlot.isEmpty()) {
             currentRecipe = null;
             return;
         }
 
-        Recipe recipe = RecipeManager.findRecipe(ingredients);
-        if (recipe != null) {
-            currentRecipe = recipe;
-            outputSlot.setItem(recipe.result, recipe.resultCount);
-            System.out.println("AlchemyTableUI: Recipe found - " + recipe.name);
+        String itemId = inputSlot.itemId;
+        List<Recipe> reverseRecipes = RecipeManager.findReverseRecipes(itemId);
+
+        if (!reverseRecipes.isEmpty()) {
+            // Use first available recipe
+            currentRecipe = reverseRecipes.get(0);
+
+            // Set output slots with ingredients (up to 3)
+            for (int i = 0; i < Math.min(3, currentRecipe.ingredients.size()); i++) {
+                outputSlots[i].setItem(currentRecipe.ingredients.get(i), 1);
+            }
+
+            System.out.println("ReverseCraftingUI: Reverse recipe found - " + currentRecipe.name +
+                " with " + currentRecipe.ingredients.size() + " components");
         } else {
-            outputSlot.clear();
             currentRecipe = null;
+            System.out.println("ReverseCraftingUI: Item cannot be deconstructed: " + itemId);
         }
     }
 
     /**
-     * Takes the output item, consuming ONE item from each input slot.
-     * Supports stacked items - only decrements stack count by 1.
+     * Takes the output items, consuming ONE item from input.
      */
     private void takeOutput() {
-        if (currentRecipe == null || outputSlot.isEmpty()) return;
+        if (currentRecipe == null) return;
 
-        // Give result to player
+        // Give all ingredients to player
         if (itemProducedCallback != null) {
-            itemProducedCallback.onItemProduced(currentRecipe.result, currentRecipe.resultCount);
-        }
-
-        // Consume ONE item from each input slot (supports stacks)
-        for (CraftingSlot slot : inputSlots) {
-            if (!slot.isEmpty()) {
-                // Notify about consumed item
-                if (itemConsumedCallback != null) {
-                    itemConsumedCallback.onItemConsumed(slot.itemId, 1);
-                }
-
-                // Decrement stack count by 1
-                slot.stackCount--;
-                if (slot.stackCount <= 0) {
-                    slot.clear();
-                }
+            for (String ingredientId : currentRecipe.ingredients) {
+                itemProducedCallback.onItemProduced(ingredientId, 1);
             }
         }
 
-        // Update recipe - may still have items for another craft
+        // Consume ONE item from input (supports stacks)
+        inputSlot.stackCount--;
+        if (inputSlot.stackCount <= 0) {
+            inputSlot.clear();
+        }
+
+        // Update recipe - may still have items for another deconstruction
         updateRecipe();
     }
 
@@ -464,16 +404,16 @@ public class AlchemyTableUI {
         // Draw title
         drawTitle(g2d);
 
-        // Draw input slots
-        for (int i = 0; i < 3; i++) {
-            drawSlot(g2d, inputSlots[i], i, hoveredSlotIndex == i);
-        }
+        // Draw input slot
+        drawSlot(g2d, inputSlot, 0, hoveredSlotIndex == 0, true);
 
         // Draw arrow
         drawArrow(g2d);
 
-        // Draw output slot
-        drawSlot(g2d, outputSlot, 3, hoveredSlotIndex == 3);
+        // Draw output slots
+        for (int i = 0; i < 3; i++) {
+            drawSlot(g2d, outputSlots[i], i + 1, hoveredSlotIndex == i + 1, false);
+        }
 
         // Draw tooltip
         if (hoveredSlotIndex >= 0) {
@@ -495,6 +435,12 @@ public class AlchemyTableUI {
         drawDraggedItem(g2d);
     }
 
+    private CraftingSlot getSlotByIndex(int index) {
+        if (index == 0) return inputSlot;
+        if (index >= 1 && index <= 3) return outputSlots[index - 1];
+        return null;
+    }
+
     private void drawBackground(Graphics2D g2d) {
         // Main panel
         g2d.setColor(panelBackground);
@@ -512,21 +458,21 @@ public class AlchemyTableUI {
         g2d.fillRect(x + 2, y + 2, width - 4, 32);
 
         // Title text
-        String title = "ALCHEMY TABLE";
+        String title = "DECONSTRUCTION TABLE";
         g2d.setColor(titleColor);
         g2d.setFont(new Font("Arial", Font.BOLD, 15));
         int titleWidth = g2d.getFontMetrics().stringWidth(title);
         g2d.drawString(title, x + (width - titleWidth) / 2, y + 22);
 
         // Subtitle (instructions)
-        String subtitle = "Combine items to craft";
+        String subtitle = "Place item to break down";
         g2d.setColor(new Color(180, 180, 180));
         g2d.setFont(new Font("Arial", Font.PLAIN, 10));
         int subWidth = g2d.getFontMetrics().stringWidth(subtitle);
         g2d.drawString(subtitle, x + (width - subWidth) / 2, y + 36);
     }
 
-    private void drawSlot(Graphics2D g2d, CraftingSlot slot, int index, boolean isHovered) {
+    private void drawSlot(Graphics2D g2d, CraftingSlot slot, int index, boolean isHovered, boolean isInput) {
         int sx = slot.x;
         int sy = slot.y;
 
@@ -534,16 +480,21 @@ public class AlchemyTableUI {
         g2d.setColor(isHovered ? slotHover : slotBackground);
         g2d.fillRoundRect(sx, sy, SLOT_SIZE, SLOT_SIZE, 8, 8);
 
-        // Slot border
-        Color borderColor = (index == 3 && currentRecipe != null) ? accentColor : slotBorder;
+        // Slot border - highlight output if recipe found
+        Color borderColor;
+        if (!isInput && currentRecipe != null) {
+            borderColor = accentColor;
+        } else {
+            borderColor = slotBorder;
+        }
         g2d.setColor(borderColor);
-        g2d.setStroke(new BasicStroke(index == 3 ? 2 : 1));
+        g2d.setStroke(new BasicStroke(!isInput && currentRecipe != null ? 2 : 1));
         g2d.drawRoundRect(sx, sy, SLOT_SIZE, SLOT_SIZE, 8, 8);
 
         // Draw item if present
         if (!slot.isEmpty() && slot.icon != null) {
             // Don't draw if this slot is being dragged
-            if (!(isDragging && index < 3 && index == dragSourceIndex)) {
+            if (!(isDragging && isInput && dragFromInput)) {
                 // Rarity glow
                 if (slot.itemTemplate != null) {
                     Color rarityColor = slot.itemTemplate.getRarity().getColor();
@@ -568,16 +519,20 @@ public class AlchemyTableUI {
         }
 
         // Slot label
-        if (index < 3) {
+        if (isInput) {
             g2d.setColor(new Color(120, 120, 140));
             g2d.setFont(new Font("Arial", Font.PLAIN, 9));
-            g2d.drawString(String.valueOf(index + 1), sx + 4, sy + SLOT_SIZE - 4);
+            g2d.drawString("IN", sx + 4, sy + SLOT_SIZE - 4);
+        } else {
+            g2d.setColor(new Color(120, 120, 140));
+            g2d.setFont(new Font("Arial", Font.PLAIN, 9));
+            g2d.drawString(String.valueOf(index), sx + 4, sy + SLOT_SIZE - 4);
         }
     }
 
     private void drawArrow(Graphics2D g2d) {
-        int arrowX = inputSlots[2].x + SLOT_SIZE + SLOT_PADDING + 10;
-        int arrowY = inputSlots[0].y + SLOT_SIZE / 2;
+        int arrowX = inputSlot.x + SLOT_SIZE + SLOT_PADDING + 10;
+        int arrowY = inputSlot.y + SLOT_SIZE / 2;
 
         // Arrow shape
         g2d.setColor(currentRecipe != null ? accentColor : new Color(100, 100, 100));
@@ -651,28 +606,6 @@ public class AlchemyTableUI {
         return isOpen && px >= x && px < x + width && py >= y && py < y + height;
     }
 
-    /**
-     * Returns an item from the given slot (for external removal).
-     */
-    public ItemEntity removeItemFromSlot(int slotIndex) {
-        if (slotIndex < 0 || slotIndex >= 3) return null;
-
-        CraftingSlot slot = inputSlots[slotIndex];
-        if (slot.isEmpty()) return null;
-
-        ItemEntity item = new ItemEntity(0, 0, slot.itemId);
-        item.setStackCount(slot.stackCount);
-        Item linked = ItemRegistry.create(slot.itemId);
-        if (linked != null) {
-            item.setLinkedItem(linked);
-        }
-
-        slot.clear();
-        updateRecipe();
-
-        return item;
-    }
-
     // Getters and setters
 
     public int getX() { return x; }
@@ -682,10 +615,6 @@ public class AlchemyTableUI {
 
     public boolean isDragging() { return isDragging; }
     public Recipe getCurrentRecipe() { return currentRecipe; }
-
-    public void setItemConsumedCallback(ItemConsumedCallback callback) {
-        this.itemConsumedCallback = callback;
-    }
 
     public void setItemProducedCallback(ItemProducedCallback callback) {
         this.itemProducedCallback = callback;

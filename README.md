@@ -893,20 +893,24 @@ ALCHEMY/CRAFTING SYSTEM:
 
   ALCHEMY TABLE (Green Glow):
   - Combines 1-3 items to create new items
-  - Approach table and press 'E' to open
-  - Drag items from inventory to input slots (1-3 slots)
+  - Approach table and press 'E' to open UI (positioned right of inventory)
+  - Drag items from inventory to 3 input slots on the left
   - Recipe matches automatically when correct ingredients are placed
-  - Output shows the craftable result
+  - Output slot on the right shows the craftable result
   - Click output slot to craft and receive the item
-  - Input items are consumed when output is taken
+  - Consumes ONE item from each input slot per craft (supports stacks)
   - Removing any input clears the output preview
+  - Dragged items appear on top of all UI for clarity
 
   REVERSE CRAFTING TABLE (Purple Glow):
   - Breaks down items into component parts
   - Only works with items marked as "reversible" in recipes
-  - Place item in input slot
-  - Shows component materials as output
-  - Click to deconstruct and receive materials
+  - 1 input slot on the left, 3 output slots on the right
+  - Place item to deconstruct in the input slot
+  - Shows up to 3 component materials in output slots
+  - Click any output slot to deconstruct and receive all materials
+  - Consumes ONE item from input per deconstruction (supports stacks)
+  - Dragged items appear on top of all UI for clarity
 
   RECIPES (data/alchemy_recipes.json):
   - 100+ predefined recipes in categories:
@@ -988,7 +992,8 @@ src/                    - Game engine source code (organized by package)
   audio/                - Sound management (AudioManager)
   input/                - Input handling (InputManager)
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
-    - AlchemyTableUI.java   - Drag-and-drop crafting interface
+    - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)
+    - ReverseCraftingUI.java - Drag-and-drop deconstruction interface (1 input, 3 outputs)
 devtools/               - Development tools (texture generators, animation importers)
   - TextureGenerator.java           - Generates player bone textures
   - HumanoidTextureGenerator.java   - Generates humanoid mob textures
