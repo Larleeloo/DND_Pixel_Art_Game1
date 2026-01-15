@@ -885,6 +885,56 @@ LOOT GAME SCENE:
   - Vault for persistent storage
   - Items bounce with physics when dropped
   - Rarity-colored light beams (Borderlands style)
+  - Alchemy Table for crafting items
+  - Reverse Crafting Table for deconstructing items
+
+ALCHEMY/CRAFTING SYSTEM:
+  The game features a comprehensive crafting system with two interactable tables:
+
+  ALCHEMY TABLE (Green Glow):
+  - Combines 1-3 items to create new items
+  - Approach table and press 'E' to open
+  - Drag items from inventory to input slots (1-3 slots)
+  - Recipe matches automatically when correct ingredients are placed
+  - Output shows the craftable result
+  - Click output slot to craft and receive the item
+  - Input items are consumed when output is taken
+  - Removing any input clears the output preview
+
+  REVERSE CRAFTING TABLE (Purple Glow):
+  - Breaks down items into component parts
+  - Only works with items marked as "reversible" in recipes
+  - Place item in input slot
+  - Shows component materials as output
+  - Click to deconstruct and receive materials
+
+  RECIPES (data/alchemy_recipes.json):
+  - 100+ predefined recipes in categories:
+    * Weapons: Bows, swords, staffs, daggers, axes
+    * Armor: Helmets, chestplates, leggings, boots
+    * Tools: Pickaxes, axes, shovels, fishing rods
+    * Potions: Health, mana, stamina, buff potions
+    * Materials: Ingots, planks, yarn, leather
+    * Ammo: Arrows, bolts, fire/ice variants
+    * Blocks: Stone, brick, glass blocks
+    * Collectibles: Keys, lanterns, banners
+
+  RECIPE FORMAT:
+  {
+    "id": "unique_id",
+    "name": "Display Name",
+    "ingredients": ["item1", "item2", "item3"],
+    "result": "output_item_id",
+    "resultCount": 1,
+    "category": "weapons",
+    "reversible": true
+  }
+
+  EXAMPLE RECIPES:
+  - Wooden Bow: string + planks + arrow
+  - Iron Sword: iron_ingot + iron_ingot + planks
+  - Health Potion: apple + mana_leaf
+  - Magic Wand: planks + magic_crystal
 
 DOOR AND TRIGGER SYSTEM:
   DoorEntity:
@@ -918,6 +968,8 @@ src/                    - Game engine source code (organized by package)
     - Item.java             - Item class with categories, rarities, and held item overlay support
     - ItemRegistry.java     - Predefined items (weapons, armor, consumables, etc.)
     - ProjectileEntity.java - Projectile system for ranged attacks and thrown items
+    - RecipeManager.java    - Loads and manages crafting recipes from JSON
+    - AlchemyTableEntity.java - Interactable alchemy/reverse crafting tables
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
       - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
     mob/                - Mob AI classes
@@ -936,6 +988,7 @@ src/                    - Game engine source code (organized by package)
   audio/                - Sound management (AudioManager)
   input/                - Input handling (InputManager)
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
+    - AlchemyTableUI.java   - Drag-and-drop crafting interface
 devtools/               - Development tools (texture generators, animation importers)
   - TextureGenerator.java           - Generates player bone textures
   - HumanoidTextureGenerator.java   - Generates humanoid mob textures
@@ -967,6 +1020,8 @@ assets/
       - burning.gif, frozen.gif (status effect variants)
 sounds/                 - All sound files (music, effects, footsteps)
 levels/                 - Level JSON files
+data/                   - Game data files
+  - alchemy_recipes.json  - Crafting recipes (100+ recipes)
 
 TODOs
 Work on section 1.01 (Inventory and items) 

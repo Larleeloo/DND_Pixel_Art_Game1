@@ -25,6 +25,8 @@ import java.util.List;
  * - Items have Borderlands-style rarity beams
  * - Items bounce with physics when dropped
  * - Player inventory saved to JSON
+ * - Alchemy table for crafting items
+ * - Reverse crafting table for deconstructing items
  */
 public class LootGameScene implements Scene {
 
@@ -47,6 +49,12 @@ public class LootGameScene implements Scene {
 
     // Player Vault
     private VaultEntity playerVault;
+
+    // Alchemy Tables
+    private AlchemyTableEntity alchemyTable;
+    private AlchemyTableEntity reverseCraftingTable;
+    private AlchemyTableUI alchemyUI;
+    private AlchemyTableUI reverseCraftingUI;
 
     // UI
     private List<UIButton> buttons;
@@ -74,8 +82,9 @@ public class LootGameScene implements Scene {
         entityManager = new EntityManager();
         buttons = new ArrayList<>();
 
-        // Initialize item registry
+        // Initialize item registry and recipe manager
         ItemRegistry.initialize();
+        RecipeManager.initialize();
 
         // Create camera
         camera = new Camera(GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
@@ -185,7 +194,76 @@ public class LootGameScene implements Scene {
         });
         entityManager.addEntity(playerVault);
 
-        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide, with secret room door and vault");
+        // Create Alchemy Table (to the right of daily chest)
+        int alchemyTableX = LEVEL_WIDTH / 2 + 100;
+        int alchemyTableY = GROUND_Y - 64;
+        alchemyTable = AlchemyTableEntity.createAlchemyTable(alchemyTableX, alchemyTableY);
+        alchemyTable.setOnOpenCallback(() -> openAlchemyUI(false));
+        alchemyTable.setOnCloseCallback(() -> closeAlchemyUI(false));
+        entityManager.addEntity(alchemyTable);
+
+        // Create Reverse Crafting Table (further right)
+        int reverseCraftingX = LEVEL_WIDTH / 2 + 200;
+        int reverseCraftingY = GROUND_Y - 64;
+        reverseCraftingTable = AlchemyTableEntity.createReverseCraftingTable(reverseCraftingX, reverseCraftingY);
+        reverseCraftingTable.setOnOpenCallback(() -> openAlchemyUI(true));
+        reverseCraftingTable.setOnCloseCallback(() -> closeAlchemyUI(true));
+        entityManager.addEntity(reverseCraftingTable);
+
+        // Create Alchemy UIs
+        alchemyUI = new AlchemyTableUI(false);
+        alchemyUI.setItemProducedCallback((itemId, count) -> {
+            // Add produced item to player inventory
+            if (player != null && player.getInventory() != null) {
+                ItemEntity item = new ItemEntity(0, 0, itemId);
+                item.setStackCount(count);
+                Item linked = ItemRegistry.create(itemId);
+                if (linked != null) {
+                    item.setLinkedItem(linked);
+                }
+                player.getInventory().addItem(item);
+                System.out.println("LootGameScene: Crafted " + count + "x " + itemId);
+            }
+        });
+
+        reverseCraftingUI = new AlchemyTableUI(true);
+        reverseCraftingUI.setItemProducedCallback((itemId, count) -> {
+            // Add deconstructed items to player inventory
+            if (player != null && player.getInventory() != null) {
+                ItemEntity item = new ItemEntity(0, 0, itemId);
+                item.setStackCount(count);
+                Item linked = ItemRegistry.create(itemId);
+                if (linked != null) {
+                    item.setLinkedItem(linked);
+                }
+                player.getInventory().addItem(item);
+                System.out.println("LootGameScene: Deconstructed to " + count + "x " + itemId);
+            }
+        });
+
+        System.out.println("LootGameScene: Level built - " + blocksAcross + " blocks wide, with secret room door, vault, and alchemy tables");
+    }
+
+    /**
+     * Opens the alchemy UI.
+     */
+    private void openAlchemyUI(boolean reverseMode) {
+        if (reverseMode) {
+            reverseCraftingUI.open(GamePanel.SCREEN_WIDTH / 2, GamePanel.SCREEN_HEIGHT / 2);
+        } else {
+            alchemyUI.open(GamePanel.SCREEN_WIDTH / 2, GamePanel.SCREEN_HEIGHT / 2);
+        }
+    }
+
+    /**
+     * Closes the alchemy UI.
+     */
+    private void closeAlchemyUI(boolean reverseMode) {
+        if (reverseMode) {
+            reverseCraftingUI.close();
+        } else {
+            alchemyUI.close();
+        }
     }
 
     /**
@@ -275,13 +353,38 @@ public class LootGameScene implements Scene {
                     playerBoundsCheck.width, playerBoundsCheck.height);
             }
 
-            // Handle 'E' key press for chest/door/vault interaction
+            // Update alchemy table proximity
+            if (alchemyTable != null) {
+                alchemyTable.checkPlayerProximity(player.getX(), player.getY(),
+                    playerBounds.width, playerBounds.height);
+            }
+            if (reverseCraftingTable != null) {
+                reverseCraftingTable.checkPlayerProximity(player.getX(), player.getY(),
+                    playerBounds.width, playerBounds.height);
+            }
+
+            // Handle 'E' key press for chest/door/vault/alchemy interaction
             if (input.isKeyJustPressed('e') || input.isKeyJustPressed('E')) {
+                // Check if any alchemy UI is open - close it
+                if (alchemyUI != null && alchemyUI.isOpen()) {
+                    alchemyTable.close();
+                }
+                else if (reverseCraftingUI != null && reverseCraftingUI.isOpen()) {
+                    reverseCraftingTable.close();
+                }
                 // Check if vault is already open - close it
-                if (playerVault != null && playerVault.isOpen()) {
+                else if (playerVault != null && playerVault.isOpen()) {
                     playerVault.close();
                 }
-                // Try vault first if player is nearby
+                // Try alchemy table if player is nearby
+                else if (alchemyTable != null && alchemyTable.isPlayerNearby()) {
+                    alchemyTable.tryOpen();
+                }
+                // Try reverse crafting table if player is nearby
+                else if (reverseCraftingTable != null && reverseCraftingTable.isPlayerNearby()) {
+                    reverseCraftingTable.tryOpen();
+                }
+                // Try vault if player is nearby
                 else if (playerVault != null && playerVault.isPlayerNearby()) {
                     playerVault.tryOpen();
                 }
@@ -319,6 +422,22 @@ public class LootGameScene implements Scene {
             // Update vault entity
             if (playerVault != null) {
                 playerVault.update(input);
+            }
+
+            // Update alchemy table entities
+            if (alchemyTable != null) {
+                alchemyTable.update(input);
+            }
+            if (reverseCraftingTable != null) {
+                reverseCraftingTable.update(input);
+            }
+
+            // Update alchemy UIs
+            if (alchemyUI != null && alchemyUI.isOpen()) {
+                alchemyUI.update(input.getMouseX(), input.getMouseY());
+            }
+            if (reverseCraftingUI != null && reverseCraftingUI.isOpen()) {
+                reverseCraftingUI.update(input.getMouseX(), input.getMouseY());
             }
 
             // Collect dropped items when player touches them
@@ -509,6 +628,14 @@ public class LootGameScene implements Scene {
             player.getInventory().drawAllDraggedItemOverlays(g);
         }
 
+        // Draw alchemy UIs
+        if (alchemyUI != null && alchemyUI.isOpen()) {
+            alchemyUI.draw(g);
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen()) {
+            reverseCraftingUI.draw(g);
+        }
+
         // Draw stats panel
         drawStatsPanel(g);
 
@@ -567,7 +694,7 @@ public class LootGameScene implements Scene {
         g.setFont(new Font("Arial", Font.PLAIN, 14));
         g.setColor(new Color(255, 255, 255, 180));
 
-        String controls = "A/D: Move | SPACE: Jump | E: Open Chest/Door | Walk to items to collect | ESC: Menu";
+        String controls = "A/D: Move | SPACE: Jump | E: Interact (Chest/Vault/Alchemy) | Walk to items to collect | ESC: Menu";
         FontMetrics fm = g.getFontMetrics();
         int textX = GamePanel.SCREEN_WIDTH / 2 - fm.stringWidth(controls) / 2;
         int textY = GamePanel.SCREEN_HEIGHT - 20;
@@ -590,11 +717,26 @@ public class LootGameScene implements Scene {
         dailyChest = null;
         monthlyChest = null;
         secretRoomDoor = null;
+        playerVault = null;
+        alchemyTable = null;
+        reverseCraftingTable = null;
+        alchemyUI = null;
+        reverseCraftingUI = null;
         camera = null;
     }
 
     @Override
     public void onMousePressed(int x, int y) {
+        // Check if pressing on alchemy UI
+        if (alchemyUI != null && alchemyUI.isOpen() && alchemyUI.containsPoint(x, y)) {
+            alchemyUI.handleMousePressed(x, y);
+            return;
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen() && reverseCraftingUI.containsPoint(x, y)) {
+            reverseCraftingUI.handleMousePressed(x, y);
+            return;
+        }
+
         if (player != null) {
             Inventory inventory = player.getInventory();
 
@@ -614,6 +756,22 @@ public class LootGameScene implements Scene {
 
     @Override
     public void onMouseReleased(int x, int y) {
+        // Check if releasing on alchemy UI
+        if (alchemyUI != null && alchemyUI.isOpen() && alchemyUI.isDragging()) {
+            ItemEntity droppedItem = alchemyUI.handleMouseReleased(x, y);
+            if (droppedItem != null && player != null) {
+                player.getInventory().addItem(droppedItem);
+            }
+            return;
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen() && reverseCraftingUI.isDragging()) {
+            ItemEntity droppedItem = reverseCraftingUI.handleMouseReleased(x, y);
+            if (droppedItem != null && player != null) {
+                player.getInventory().addItem(droppedItem);
+            }
+            return;
+        }
+
         if (player != null) {
             Inventory inventory = player.getInventory();
 
@@ -623,6 +781,37 @@ public class LootGameScene implements Scene {
                 if (vault.isDragging()) {
                     vault.handleMouseReleased(x, y);
                     return;
+                }
+            }
+
+            // Check if releasing on alchemy UI (drop from inventory)
+            if (inventory.isDragging()) {
+                // Check if dropping on alchemy UI
+                if (alchemyUI != null && alchemyUI.isOpen() && alchemyUI.containsPoint(x, y)) {
+                    ItemEntity draggedItem = inventory.getDraggedItem();
+                    if (draggedItem != null) {
+                        String itemId = draggedItem.getItemId();
+                        if (itemId == null || itemId.isEmpty()) {
+                            itemId = ItemRegistry.findIdByName(draggedItem.getItemName());
+                        }
+                        if (itemId != null && alchemyUI.addItem(itemId, draggedItem.getStackCount())) {
+                            inventory.consumeDraggedItem();
+                            return;
+                        }
+                    }
+                }
+                if (reverseCraftingUI != null && reverseCraftingUI.isOpen() && reverseCraftingUI.containsPoint(x, y)) {
+                    ItemEntity draggedItem = inventory.getDraggedItem();
+                    if (draggedItem != null) {
+                        String itemId = draggedItem.getItemId();
+                        if (itemId == null || itemId.isEmpty()) {
+                            itemId = ItemRegistry.findIdByName(draggedItem.getItemName());
+                        }
+                        if (itemId != null && reverseCraftingUI.addItem(itemId, draggedItem.getStackCount())) {
+                            inventory.consumeDraggedItem();
+                            return;
+                        }
+                    }
                 }
             }
 
@@ -638,6 +827,16 @@ public class LootGameScene implements Scene {
 
     @Override
     public void onMouseDragged(int x, int y) {
+        // Forward drag to alchemy UI if it's dragging
+        if (alchemyUI != null && alchemyUI.isOpen() && alchemyUI.isDragging()) {
+            alchemyUI.handleMouseDragged(x, y);
+            return;
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen() && reverseCraftingUI.isDragging()) {
+            reverseCraftingUI.handleMouseDragged(x, y);
+            return;
+        }
+
         if (player != null) {
             Inventory inventory = player.getInventory();
 
@@ -666,6 +865,14 @@ public class LootGameScene implements Scene {
         // Update button hover states
         for (UIButton button : buttons) {
             button.handleMouseMove(x, y);
+        }
+
+        // Update alchemy UI mouse position
+        if (alchemyUI != null && alchemyUI.isOpen()) {
+            alchemyUI.update(x, y);
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen()) {
+            reverseCraftingUI.update(x, y);
         }
 
         // Update inventory and vault mouse position for hover tracking

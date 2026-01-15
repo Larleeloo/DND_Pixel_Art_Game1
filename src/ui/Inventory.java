@@ -675,6 +675,26 @@ public class Inventory {
         return isDragging;
     }
 
+    /**
+     * Gets the currently dragged item.
+     */
+    public ItemEntity getDraggedItem() {
+        return draggedItem;
+    }
+
+    /**
+     * Consumes the currently dragged item (removes it from inventory).
+     * Used when the item is transferred to another UI (like alchemy table).
+     */
+    public void consumeDraggedItem() {
+        if (isDragging && draggedIndex >= 0 && draggedIndex < items.size()) {
+            items.remove(draggedIndex);
+        }
+        draggedItem = null;
+        draggedIndex = -1;
+        isDragging = false;
+    }
+
     private void drawCompactInventory(Graphics2D g2d) {
         // Draw hotbar at bottom center of screen
         int hotbarSlotSize = 50;
