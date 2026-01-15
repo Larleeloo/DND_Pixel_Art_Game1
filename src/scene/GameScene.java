@@ -748,6 +748,11 @@ public class GameScene implements Scene {
                 if (movingBlock.isEntityOnTop((Entity) player)) {
                     movingBlock.applyMovementToRider((Entity) player);
                     playerIsRiding = true;
+
+                    // After applying movement, check for collisions with solid surfaces
+                    // Higher surfaces (floor, blocks) should take precedence over the moving block
+                    correctRiderCollisions((Entity) player, movingBlock);
+
                     break; // Only ride one block at a time
                 }
             }
@@ -886,6 +891,112 @@ public class GameScene implements Scene {
             // Add the dropped item if any
             if (droppedItem != null) {
                 entityManager.addEntity(droppedItem);
+            }
+        }
+    }
+
+    /**
+     * Corrects the rider's position after moving block movement to prevent falling through
+     * solid surfaces. Higher surfaces (floor, static blocks) take precedence over the moving block.
+     *
+     * @param rider The entity riding the moving block
+     * @param ridingBlock The moving block being ridden (excluded from collision checks)
+     */
+    private void correctRiderCollisions(Entity rider, block.MovingBlockEntity ridingBlock) {
+        if (rider == null) return;
+
+        Rectangle riderBounds = rider.getBounds();
+        int riderBottom = riderBounds.y + riderBounds.height;
+        int riderLeft = riderBounds.x;
+        int riderRight = riderBounds.x + riderBounds.width;
+
+        // Track the highest surface the rider should stand on
+        int highestSurfaceY = Integer.MAX_VALUE;
+        boolean foundHigherSurface = false;
+
+        // Check against ground level first
+        if (riderBottom > levelData.groundY) {
+            highestSurfaceY = levelData.groundY;
+            foundHigherSurface = true;
+        }
+
+        // Check against all static blocks
+        ArrayList<Entity> entities = entityManager.getEntities();
+        for (Entity e : entities) {
+            // Skip the moving block being ridden and non-solid entities
+            if (e == ridingBlock) continue;
+
+            boolean isSolid = false;
+            Rectangle blockBounds = null;
+
+            if (e instanceof BlockEntity) {
+                BlockEntity block = (BlockEntity) e;
+                if (block.isSolid() && !block.isBroken()) {
+                    isSolid = true;
+                    blockBounds = block.getBounds();
+                }
+            } else if (e instanceof SpriteEntity) {
+                SpriteEntity sprite = (SpriteEntity) e;
+                if (sprite.isSolid()) {
+                    isSolid = true;
+                    blockBounds = sprite.getBounds();
+                }
+            }
+
+            if (isSolid && blockBounds != null) {
+                // Check if rider horizontally overlaps with this block
+                int blockLeft = blockBounds.x;
+                int blockRight = blockBounds.x + blockBounds.width;
+                int blockTop = blockBounds.y;
+                int blockBottom = blockBounds.y + blockBounds.height;
+
+                boolean horizontalOverlap = riderRight > blockLeft && riderLeft < blockRight;
+
+                if (horizontalOverlap) {
+                    // Check if rider's bottom is inside or below the block's top
+                    // and rider's top is above the block's bottom (actual collision)
+                    if (riderBottom > blockTop && riderBounds.y < blockBottom) {
+                        // Rider is colliding with this block
+                        // If the block top is higher (smaller Y) than current highest, use it
+                        if (blockTop < highestSurfaceY) {
+                            highestSurfaceY = blockTop;
+                            foundHigherSurface = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also check other moving blocks (not the one being ridden)
+        for (block.MovingBlockEntity mb : movingBlocks) {
+            if (mb == ridingBlock || mb.isBroken()) continue;
+
+            Rectangle blockBounds = mb.getBounds();
+            int blockLeft = blockBounds.x;
+            int blockRight = blockBounds.x + blockBounds.width;
+            int blockTop = blockBounds.y;
+            int blockBottom = blockBounds.y + blockBounds.height;
+
+            boolean horizontalOverlap = riderRight > blockLeft && riderLeft < blockRight;
+
+            if (horizontalOverlap) {
+                if (riderBottom > blockTop && riderBounds.y < blockBottom) {
+                    if (blockTop < highestSurfaceY) {
+                        highestSurfaceY = blockTop;
+                        foundHigherSurface = true;
+                    }
+                }
+            }
+        }
+
+        // If we found a higher surface, move the rider to stand on it
+        if (foundHigherSurface && highestSurfaceY < Integer.MAX_VALUE) {
+            int correctedY = highestSurfaceY - riderBounds.height;
+            if (correctedY < rider.y) {
+                // Only correct if the surface is actually higher (rider would be pushed up)
+                rider.y = correctedY;
+                // Clear rider's accumulated Y movement since we're repositioning
+                ridingBlock.clearRider();
             }
         }
     }
