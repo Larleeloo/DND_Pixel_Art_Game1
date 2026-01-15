@@ -54,7 +54,7 @@ public class LootGameScene implements Scene {
     private AlchemyTableEntity alchemyTable;
     private AlchemyTableEntity reverseCraftingTable;
     private AlchemyTableUI alchemyUI;
-    private AlchemyTableUI reverseCraftingUI;
+    private ReverseCraftingUI reverseCraftingUI;
 
     // UI
     private List<UIButton> buttons;
@@ -226,7 +226,7 @@ public class LootGameScene implements Scene {
             }
         });
 
-        reverseCraftingUI = new AlchemyTableUI(true);
+        reverseCraftingUI = new ReverseCraftingUI();
         reverseCraftingUI.setItemProducedCallback((itemId, count) -> {
             // Add deconstructed items to player inventory
             if (player != null && player.getInventory() != null) {
@@ -641,6 +641,14 @@ public class LootGameScene implements Scene {
 
         // Draw controls hint
         drawControlsHint(g);
+
+        // Draw dragged item overlays on top of all UI (for proper z-order)
+        if (alchemyUI != null && alchemyUI.isOpen()) {
+            alchemyUI.drawDraggedItemOverlay(g);
+        }
+        if (reverseCraftingUI != null && reverseCraftingUI.isOpen()) {
+            reverseCraftingUI.drawDraggedItemOverlay(g);
+        }
     }
 
     /**
