@@ -3,6 +3,9 @@ package scene;
 import core.*;
 import entity.*;
 import entity.player.*;
+import entity.player.PlayableCharacter;
+import entity.player.PlayableCharacterRegistry;
+import entity.player.AbilityScores;
 import entity.CompanionRegistry;
 import entity.CompanionRegistry.CompanionData;
 import animation.*;
@@ -98,6 +101,12 @@ public class SpriteCharacterCustomization implements Scene {
     private static CompanionData savedCompanion = null;  // Saved selected companion
     private CompanionData selectedCompanion = null;       // Current selection in menu
     private List<CompanionData> availableCompanions;
+
+    // Character selection system
+    private static String savedCharacterId = "crystal";  // Default character
+    private String selectedCharacterId = "crystal";
+    private List<PlayableCharacter> availableCharacters;
+    private int characterScrollOffset = 0;
 
     // UI State
     private int currentCategory = 0;
@@ -209,11 +218,13 @@ public class SpriteCharacterCustomization implements Scene {
 
         System.out.println("SpriteCharacterCustomization: Initializing...");
 
-        // Initialize preview animation
+        // Load available characters
+        availableCharacters = PlayableCharacterRegistry.getInstance().getPlayableCharacters();
+        selectedCharacterId = savedCharacterId;
+
+        // Initialize preview animation with selected character
         previewAnimation = new SpriteAnimation();
-        previewAnimation.loadAction(SpriteAnimation.ActionState.IDLE, "assets/player/sprites/idle.gif");
-        previewAnimation.loadAction(SpriteAnimation.ActionState.WALK, "assets/player/sprites/walk.gif");
-        previewAnimation.loadAction(SpriteAnimation.ActionState.JUMP, "assets/player/sprites/jump.gif");
+        loadCharacterSprites(selectedCharacterId);
         previewAnimation.setState(SpriteAnimation.ActionState.WALK);
 
         previewOverlay = new EquipmentOverlay();
@@ -306,6 +317,40 @@ public class SpriteCharacterCustomization implements Scene {
 
             availableItems.put(category, items);
         }
+    }
+
+    /**
+     * Loads the sprite animations for a character.
+     */
+    private void loadCharacterSprites(String characterId) {
+        PlayableCharacter character = PlayableCharacterRegistry.getInstance().getCharacter(characterId);
+        String spritePath = character != null ? character.getSpritePath() : "assets/player/sprites";
+
+        // Try to load character sprites, fall back to base player sprites if not found
+        String idlePath = spritePath + "/idle.gif";
+        String walkPath = spritePath + "/walk.gif";
+        String jumpPath = spritePath + "/jump.gif";
+
+        // Check if files exist, fall back to base sprites
+        if (!new File(idlePath).exists()) {
+            idlePath = "assets/player/sprites/idle.gif";
+            walkPath = "assets/player/sprites/walk.gif";
+            jumpPath = "assets/player/sprites/jump.gif";
+        }
+
+        previewAnimation.loadAction(SpriteAnimation.ActionState.IDLE, idlePath);
+        previewAnimation.loadAction(SpriteAnimation.ActionState.WALK, walkPath);
+        previewAnimation.loadAction(SpriteAnimation.ActionState.JUMP, jumpPath);
+    }
+
+    /**
+     * Selects a character and updates the preview.
+     */
+    private void selectCharacter(String characterId) {
+        selectedCharacterId = characterId;
+        loadCharacterSprites(characterId);
+        PlayableCharacterRegistry.setSelectedCharacter(characterId);
+        System.out.println("Selected character: " + characterId);
     }
 
     /**
@@ -527,10 +572,18 @@ public class SpriteCharacterCustomization implements Scene {
         savedSkinToneIndex = selectedSkinToneIndex;
         savedHairColorIndex = selectedHairColorIndex;
         savedCompanion = selectedCompanion;
+        savedCharacterId = selectedCharacterId;
+
+        // Update the global character selection
+        PlayableCharacterRegistry.setSelectedCharacter(selectedCharacterId);
 
         String companionName = selectedCompanion != null ? selectedCompanion.name : "None";
+        PlayableCharacter selectedChar = PlayableCharacterRegistry.getInstance().getCharacter(selectedCharacterId);
+        String characterName = selectedChar != null ? selectedChar.getDisplayName() : selectedCharacterId;
+
         System.out.println("SpriteCharacterCustomization: Saved " + selectedItems.size() + " items" +
-                           " with skin tone: " + SKIN_TONE_NAMES[selectedSkinToneIndex] +
+                           " with character: " + characterName +
+                           ", skin tone: " + SKIN_TONE_NAMES[selectedSkinToneIndex] +
                            ", hair color: " + HAIR_COLOR_NAMES[selectedHairColorIndex] +
                            ", companion: " + companionName);
 
@@ -561,6 +614,7 @@ public class SpriteCharacterCustomization implements Scene {
         selectedSkinToneIndex = 7;  // Reset to "None"
         selectedHairColorIndex = 12; // Reset to "None"
         selectedCompanion = null;    // Reset companion
+        // Don't reset character - keep current selection
         applySelectionsToPreview();
         applySkinToneToPreview();
     }
@@ -667,15 +721,28 @@ public class SpriteCharacterCustomization implements Scene {
                 }
             }
 
-            // Check if mouse is over companion panel
+            // Check if mouse is over character panel
             int charY = LEFT_PANEL_Y + 50;
-            int companionPanelX = LEFT_PANEL_X + 10;
-            int companionPanelY = charY + CHAR_HEIGHT + 40;
+            int characterPanelX = LEFT_PANEL_X + 10;
+            int characterPanelY = charY + CHAR_HEIGHT + 35;
             int panelWidth = LEFT_PANEL_WIDTH - 20;
-            int panelHeight = 160;
+            int characterPanelHeight = 260;
+
+            if (mouseX >= characterPanelX && mouseX < characterPanelX + panelWidth &&
+                mouseY >= characterPanelY && mouseY < characterPanelY + characterPanelHeight) {
+
+                int maxCharacterScroll = Math.max(0, availableCharacters.size() - 4);
+                characterScrollOffset += scroll;
+                characterScrollOffset = Math.max(0, Math.min(characterScrollOffset, maxCharacterScroll));
+            }
+
+            // Check if mouse is over companion panel
+            int companionPanelX = LEFT_PANEL_X + 10;
+            int companionPanelY = charY + CHAR_HEIGHT + 310;
+            int companionPanelHeight = 160;
 
             if (mouseX >= companionPanelX && mouseX < companionPanelX + panelWidth &&
-                mouseY >= companionPanelY && mouseY < companionPanelY + panelHeight) {
+                mouseY >= companionPanelY && mouseY < companionPanelY + companionPanelHeight) {
 
                 int maxCompanionScroll = Math.max(0, availableCompanions.size() - 3);
                 companionScrollOffset += scroll;
@@ -741,12 +808,13 @@ public class SpriteCharacterCustomization implements Scene {
      * Draws the character preview panel.
      */
     private void drawPreviewPanel(Graphics2D g2d) {
-        // Panel background
+        // Panel background - make it taller to fit character selector
+        int panelHeight = LEFT_PANEL_HEIGHT + 280;
         g2d.setColor(PANEL_COLOR);
-        g2d.fillRoundRect(LEFT_PANEL_X, LEFT_PANEL_Y, LEFT_PANEL_WIDTH, LEFT_PANEL_HEIGHT, 15, 15);
+        g2d.fillRoundRect(LEFT_PANEL_X, LEFT_PANEL_Y, LEFT_PANEL_WIDTH, panelHeight, 15, 15);
         g2d.setColor(new Color(100, 100, 120));
         g2d.setStroke(new BasicStroke(2));
-        g2d.drawRoundRect(LEFT_PANEL_X, LEFT_PANEL_Y, LEFT_PANEL_WIDTH, LEFT_PANEL_HEIGHT, 15, 15);
+        g2d.drawRoundRect(LEFT_PANEL_X, LEFT_PANEL_Y, LEFT_PANEL_WIDTH, panelHeight, 15, 15);
 
         // Label
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
@@ -759,7 +827,7 @@ public class SpriteCharacterCustomization implements Scene {
         String stateText = previewAnimation.getState().toString();
         g2d.drawString(stateText, LEFT_PANEL_X + LEFT_PANEL_WIDTH - 70, LEFT_PANEL_Y + 30);
 
-        // Calculate character position (centered in preview area, leaving room for companion panel)
+        // Calculate character position (centered in preview area, leaving room for character + companion panels)
         int charX = LEFT_PANEL_X + (LEFT_PANEL_WIDTH - CHAR_WIDTH) / 2;
         int charY = LEFT_PANEL_Y + 50;
 
@@ -780,8 +848,154 @@ public class SpriteCharacterCustomization implements Scene {
         String dirText = facingRight ? "Facing: Right →" : "← Facing: Left";
         g2d.drawString(dirText, LEFT_PANEL_X + 20, charY + CHAR_HEIGHT + 15);
 
-        // Draw companion selection panel below character
-        drawCompanionSelector(g2d, LEFT_PANEL_X + 10, charY + CHAR_HEIGHT + 40);
+        // Draw character selection panel
+        drawCharacterSelector(g2d, LEFT_PANEL_X + 10, charY + CHAR_HEIGHT + 35);
+
+        // Draw companion selection panel below character selector
+        drawCompanionSelector(g2d, LEFT_PANEL_X + 10, charY + CHAR_HEIGHT + 310);
+    }
+
+    /**
+     * Draws the character selector panel.
+     */
+    private void drawCharacterSelector(Graphics2D g2d, int panelX, int panelY) {
+        int panelWidth = LEFT_PANEL_WIDTH - 20;
+        int panelHeight = 260;
+
+        // Panel background
+        g2d.setColor(new Color(35, 35, 50, 200));
+        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+        g2d.setColor(new Color(100, 80, 140));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(new Color(220, 200, 255));
+        g2d.drawString("Character", panelX + 10, panelY + 20);
+
+        // Get selected character info
+        PlayableCharacter selectedChar = PlayableCharacterRegistry.getInstance().getCharacter(selectedCharacterId);
+
+        // Draw character list (scrollable)
+        int listY = panelY + 30;
+        int optionHeight = 26;
+        int visibleCharacters = 4;
+
+        for (int i = characterScrollOffset; i < availableCharacters.size() && i < characterScrollOffset + visibleCharacters; i++) {
+            PlayableCharacter character = availableCharacters.get(i);
+            int yPos = listY + (i - characterScrollOffset) * (optionHeight + 3);
+
+            boolean isSelected = selectedCharacterId.equals(character.getId());
+
+            // Background
+            g2d.setColor(isSelected ? new Color(70, 100, 150) : new Color(50, 50, 65));
+            g2d.fillRoundRect(panelX + 5, yPos, panelWidth - 10, optionHeight, 5, 5);
+
+            // Border with rarity color
+            g2d.setColor(isSelected ? character.getRarityColor() : new Color(70, 70, 85));
+            g2d.setStroke(new BasicStroke(isSelected ? 2 : 1));
+            g2d.drawRoundRect(panelX + 5, yPos, panelWidth - 10, optionHeight, 5, 5);
+
+            // Character name with rarity color
+            g2d.setFont(new Font("Arial", Font.BOLD, 11));
+            g2d.setColor(character.getRarityColor());
+            String name = character.getDisplayName();
+            if (name.length() > 18) name = name.substring(0, 16) + "..";
+            g2d.drawString(name, panelX + 15, yPos + 17);
+        }
+
+        // Scroll indicators if needed
+        if (availableCharacters.size() > visibleCharacters) {
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.setColor(new Color(150, 150, 170));
+            if (characterScrollOffset > 0) {
+                g2d.drawString("▲", panelX + panelWidth - 20, listY - 2);
+            }
+            if (characterScrollOffset + visibleCharacters < availableCharacters.size()) {
+                g2d.drawString("▼", panelX + panelWidth - 20, listY + visibleCharacters * (optionHeight + 3) - 5);
+            }
+        }
+
+        // Draw selected character ability scores
+        if (selectedChar != null) {
+            int statsY = panelY + 145;
+            AbilityScores scores = selectedChar.getBaseAbilityScores();
+
+            g2d.setFont(new Font("Arial", Font.BOLD, 11));
+            g2d.setColor(new Color(200, 180, 220));
+            g2d.drawString("Ability Scores:", panelX + 10, statsY);
+
+            g2d.setFont(new Font("Monospaced", Font.PLAIN, 10));
+            int statX1 = panelX + 15;
+            int statX2 = panelX + 100;
+            int statX3 = panelX + 185;
+            int statRowHeight = 14;
+
+            // Row 1: CHA, STR, CON
+            drawAbilityStat(g2d, "CHA", scores.getCharisma(), statX1, statsY + statRowHeight);
+            drawAbilityStat(g2d, "STR", scores.getStrength(), statX2, statsY + statRowHeight);
+            drawAbilityStat(g2d, "CON", scores.getConstitution(), statX3, statsY + statRowHeight);
+
+            // Row 2: INT, WIS, DEX
+            drawAbilityStat(g2d, "INT", scores.getIntelligence(), statX1, statsY + statRowHeight * 2);
+            drawAbilityStat(g2d, "WIS", scores.getWisdom(), statX2, statsY + statRowHeight * 2);
+            drawAbilityStat(g2d, "DEX", scores.getDexterity(), statX3, statsY + statRowHeight * 2);
+
+            // Character description (wrapped)
+            g2d.setFont(new Font("Arial", Font.ITALIC, 9));
+            g2d.setColor(new Color(150, 150, 170));
+            String desc = selectedChar.getDescription();
+            if (desc != null && desc.length() > 0) {
+                // Word wrap the description
+                int descY = statsY + statRowHeight * 3 + 5;
+                int maxWidth = panelWidth - 20;
+                String[] words = desc.split(" ");
+                StringBuilder line = new StringBuilder();
+                int lineY = descY;
+                FontMetrics fm = g2d.getFontMetrics();
+
+                for (String word : words) {
+                    String testLine = line.length() > 0 ? line + " " + word : word;
+                    if (fm.stringWidth(testLine) > maxWidth) {
+                        if (lineY < panelY + panelHeight - 15) {
+                            g2d.drawString(line.toString(), panelX + 10, lineY);
+                            lineY += 11;
+                        }
+                        line = new StringBuilder(word);
+                    } else {
+                        line = new StringBuilder(testLine);
+                    }
+                }
+                if (line.length() > 0 && lineY < panelY + panelHeight - 15) {
+                    g2d.drawString(line.toString(), panelX + 10, lineY);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws an ability stat with color coding based on value.
+     */
+    private void drawAbilityStat(Graphics2D g2d, String name, int value, int x, int y) {
+        // Color based on value relative to baseline (5)
+        Color valueColor;
+        if (value > AbilityScores.BASELINE + 2) {
+            valueColor = new Color(100, 255, 100); // High - green
+        } else if (value > AbilityScores.BASELINE) {
+            valueColor = new Color(150, 255, 150); // Above average - light green
+        } else if (value < AbilityScores.BASELINE - 1) {
+            valueColor = new Color(255, 100, 100); // Low - red
+        } else if (value < AbilityScores.BASELINE) {
+            valueColor = new Color(255, 180, 100); // Below average - orange
+        } else {
+            valueColor = new Color(200, 200, 200); // Average - gray
+        }
+
+        g2d.setColor(new Color(180, 180, 200));
+        g2d.drawString(name + ":", x, y);
+        g2d.setColor(valueColor);
+        g2d.drawString(String.valueOf(value), x + 32, y);
     }
 
     /**
@@ -1254,11 +1468,29 @@ public class SpriteCharacterCustomization implements Scene {
             }
         }
 
-        // Check companion clicks
+        // Check character selection clicks
         int charY = LEFT_PANEL_Y + 50;
-        int companionPanelX = LEFT_PANEL_X + 10;
-        int companionPanelY = charY + CHAR_HEIGHT + 40;
+        int characterPanelX = LEFT_PANEL_X + 10;
+        int characterPanelY = charY + CHAR_HEIGHT + 35;
         int panelWidth = LEFT_PANEL_WIDTH - 20;
+        int charOptionHeight = 26;
+        int charListY = characterPanelY + 30;
+        int visibleCharacters = 4;
+
+        // Check character list items
+        for (int i = characterScrollOffset; i < availableCharacters.size() && i < characterScrollOffset + visibleCharacters; i++) {
+            int yPos = charListY + (i - characterScrollOffset) * (charOptionHeight + 3);
+
+            if (x >= characterPanelX + 5 && x < characterPanelX + panelWidth - 5 &&
+                y >= yPos && y < yPos + charOptionHeight) {
+                selectCharacter(availableCharacters.get(i).getId());
+                return;
+            }
+        }
+
+        // Check companion clicks
+        int companionPanelX = LEFT_PANEL_X + 10;
+        int companionPanelY = charY + CHAR_HEIGHT + 310;
         int optionHeight = 24;
         int optionY = companionPanelY + 35;
         int listY = optionY + optionHeight + 5;
@@ -1388,5 +1620,35 @@ public class SpriteCharacterCustomization implements Scene {
      */
     public static boolean hasCompanion() {
         return savedCompanion != null;
+    }
+
+    /**
+     * Gets the saved character ID.
+     */
+    public static String getSavedCharacterId() {
+        return savedCharacterId;
+    }
+
+    /**
+     * Gets the saved character.
+     */
+    public static PlayableCharacter getSavedCharacter() {
+        return PlayableCharacterRegistry.getInstance().getCharacter(savedCharacterId);
+    }
+
+    /**
+     * Gets the sprite path for the saved character.
+     */
+    public static String getSavedCharacterSpritePath() {
+        PlayableCharacter character = getSavedCharacter();
+        return character != null ? character.getSpritePath() : "assets/player/sprites";
+    }
+
+    /**
+     * Gets the ability scores for the saved character.
+     */
+    public static AbilityScores getSavedAbilityScores() {
+        PlayableCharacter character = getSavedCharacter();
+        return character != null ? character.getBaseAbilityScores() : new AbilityScores();
     }
 }

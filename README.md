@@ -161,7 +161,63 @@ COMBAT CONTROLS:
   Arrows    | Change mining direction
 
 --------------------------------------------------------------------------------
-5. COMBAT SYSTEM
+5. PLAYABLE CHARACTERS & ABILITY SCORES (entity/player/)
+--------------------------------------------------------------------------------
+
+The game features a DnD-inspired ability score system with 7 playable characters
+plus a special Loot Game character. Each character has unique starting stats.
+
+ABILITY SCORES (Baseline = 5):
+  Ability      | Effect
+  -------------|----------------------------------------------------------
+  Charisma     | Affects cutscenes and dialogue options (not yet implemented)
+  Strength     | Melee weapon damage (+/-17% per point), backpack capacity (+/-20%)
+  Constitution | Max HP (+/-10%), status effect resistance (+/-10%), carry capacity (+/-5%)
+  Intelligence | Magical item damage (+/-15% per point)
+  Wisdom       | Locks ancient artifacts unless wisdom is high enough
+  Dexterity    | Item usage: +10%/pt double-use chance (above 5), -20%/pt miss chance (below 5)
+
+PLAYABLE CHARACTERS:
+  Character         | CHA | STR | CON | INT | WIS | DEX | Description
+  ------------------|-----|-----|-----|-----|-----|-----|---------------------------
+  Crystal           |  8  |  4  |  4  |  6  |  7  |  5  | Charismatic mage, high wisdom
+  Filvendor Venrona |  7  |  3  |  4  |  9  |  7  |  5  | Scholarly wizard, exceptional INT
+  Breaya            |  4  |  4  |  5  |  7  |  7  |  8  | Nimble alchemist, high dexterity
+  Asteria           |  1  |  8  |  8  |  8  |  4  |  6  | Powerful explorer, strong stats
+  Olyrei            |  5  |  5  |  5  |  7  |  7  |  6  | Balanced spellcaster
+  Trethas           |  6  |  9  |  7  |  5  |  5  |  3  | Mighty warrior, unmatched strength
+  Gridius           |  5  |  5  |  5  |  6  |  6  |  8  | Agile rogue, high dexterity
+  Merlin*           |  5  |  5  |  5  |  5  |  5  |  5  | Loot Game only, baseline stats
+
+  * Merlin is only available in the Loot Game mini-game
+
+CHARACTER SELECTION:
+  - Access via "Customize Character" from main menu
+  - Character panel shows all 7 playable characters
+  - Ability scores displayed with color coding (green = high, red = low)
+  - Selected character's sprites are used in gameplay
+  - Selection persists across game sessions
+
+CHARACTER FILES:
+  Location: entity/player/
+  - AbilityScores.java         → Ability score calculations and modifiers
+  - PlayableCharacter.java     → Character data class
+  - PlayableCharacterRegistry.java → Registry of all characters
+
+SPRITE LOCATIONS:
+  assets/characters/[character_id]/sprites/
+  - idle.gif, walk.gif, jump.gif (copied from base player sprites)
+
+ABILITY SCORE METHODS (SpritePlayerEntity):
+  - getAbilityScores()               → Get current ability scores
+  - getAttackDamage()                → Applies STR/INT modifiers automatically
+  - canUseAncientArtifact(wisdom)    → Check wisdom requirement
+  - useItemWithDexterity(...)        → Calculate DEX-based item usage
+  - getStatusEffectDurationModifier()→ Get CON-based status effect modifier
+  - getCarryingCapacityModifier()    → Get STR+CON carrying capacity modifier
+
+--------------------------------------------------------------------------------
+6. COMBAT SYSTEM
 --------------------------------------------------------------------------------
 
 Combat is handled through the CombatCapable interface. Both players and mobs
@@ -199,7 +255,7 @@ DAMAGE CALCULATION:
   - Invincibility frames prevent damage stacking
 
 --------------------------------------------------------------------------------
-6. PROJECTILE SYSTEM (entity/ProjectileEntity.java)
+7. PROJECTILE SYSTEM (entity/ProjectileEntity.java)
 --------------------------------------------------------------------------------
 
 Projectiles are fired by players and mobs for ranged attacks. Each projectile
@@ -247,7 +303,7 @@ CREATING PROJECTILES:
   entityManager.addEntity(proj);
 
 --------------------------------------------------------------------------------
-7. INVENTORY SYSTEM (ui/Inventory.java)
+8. INVENTORY SYSTEM (ui/Inventory.java)
 --------------------------------------------------------------------------------
 
 The inventory manages player items with drag-and-drop support, hotbar quick
@@ -285,7 +341,7 @@ INVENTORY METHODS:
   inv.hasItem(item, count);      // Check if has enough
 
 --------------------------------------------------------------------------------
-8. ITEM SYSTEM (entity/Item.java, entity/ItemRegistry.java)
+9. ITEM SYSTEM (entity/Item.java, entity/ItemRegistry.java)
 --------------------------------------------------------------------------------
 
 Items are defined with categories, rarities, and various properties. The
@@ -349,7 +405,7 @@ NOTABLE SPECIAL ITEMS:
     - Fires 3 projectiles per use, 25 mana cost
 
 --------------------------------------------------------------------------------
-9. MOB/ENEMY SYSTEM (entity/mob/)
+10. MOB/ENEMY SYSTEM (entity/mob/)
 --------------------------------------------------------------------------------
 
 Enemies use an AI state machine for behavior. SpriteMobEntity is the modern
@@ -404,7 +460,7 @@ REQUIRED MOB SPRITE FILES:
   └── frozen.gif    → (Optional) Frozen variant
 
 --------------------------------------------------------------------------------
-10. ANIMATION SYSTEM (animation/)
+11. ANIMATION SYSTEM (animation/)
 --------------------------------------------------------------------------------
 
 The game supports both modern GIF-based animations and legacy bone-based
@@ -454,7 +510,7 @@ LEGACY BONE ANIMATION (animation/bone/):
   - Use for reference only
 
 --------------------------------------------------------------------------------
-11. BLOCK SYSTEM (block/)
+12. BLOCK SYSTEM (block/)
 --------------------------------------------------------------------------------
 
 Blocks form the destructible/constructible terrain. Each block type has
@@ -506,7 +562,7 @@ BLOCK REGISTRY (Singleton):
   - Fallback magenta/black checkerboard for missing textures
 
 --------------------------------------------------------------------------------
-12. LEVEL SYSTEM (level/)
+13. LEVEL SYSTEM (level/)
 --------------------------------------------------------------------------------
 
 Levels are defined in JSON files in the levels/ directory. LevelLoader parses
@@ -571,7 +627,7 @@ LEVEL LOADER USAGE:
   // Access level.mobs, level.blocks, level.items, etc.
 
 --------------------------------------------------------------------------------
-13. GRAPHICS SYSTEM (graphics/)
+14. GRAPHICS SYSTEM (graphics/)
 --------------------------------------------------------------------------------
 
 Handles rendering, camera, lighting, and parallax backgrounds.
@@ -636,7 +692,7 @@ RENDER PIPELINE ORDER:
   7. Draw settings/menu overlays
 
 --------------------------------------------------------------------------------
-14. INPUT SYSTEM (input/InputManager.java)
+15. INPUT SYSTEM (input/InputManager.java)
 --------------------------------------------------------------------------------
 
 Singleton that captures all keyboard and mouse input. Implements KeyListener,
@@ -681,7 +737,7 @@ UI CLICK CONSUMPTION:
   }
 
 --------------------------------------------------------------------------------
-15. SAVE SYSTEM (save/SaveManager.java)
+16. SAVE SYSTEM (save/SaveManager.java)
 --------------------------------------------------------------------------------
 
 Singleton that handles JSON-based persistence of player data, inventory,
@@ -721,7 +777,7 @@ CHEST COOLDOWNS:
   - Cooldowns reset in developer mode for testing
 
 --------------------------------------------------------------------------------
-16. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
+17. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
 --------------------------------------------------------------------------------
 
 Manages background music and sound effects with MP3 support via JLayer.
@@ -836,7 +892,7 @@ ADDING NEW SOUNDS:
   4. See sounds/compressed/README.md and SOUNDS.txt files for expected filenames
 
 --------------------------------------------------------------------------------
-17. UI SYSTEM (ui/)
+18. UI SYSTEM (ui/)
 --------------------------------------------------------------------------------
 
 Custom UI components rendered directly on the game canvas.
@@ -874,7 +930,7 @@ INVENTORY UI:
   - Tooltip on hover (item stats)
 
 --------------------------------------------------------------------------------
-18. SPECIAL GAME FEATURES
+19. SPECIAL GAME FEATURES
 --------------------------------------------------------------------------------
 
 LOOT GAME SCENE:
@@ -976,6 +1032,9 @@ src/                    - Game engine source code (organized by package)
     - AlchemyTableEntity.java - Interactable alchemy/reverse crafting tables
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
       - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
+      - AbilityScores.java      - DnD-style ability score system (CHA, STR, CON, INT, WIS, DEX)
+      - PlayableCharacter.java  - Character data class with abilities and sprite paths
+      - PlayableCharacterRegistry.java - Registry of all 8 playable characters
     mob/                - Mob AI classes
       - MobEntity.java       - Base mob class with AI state machine
       - SpriteMobEntity.java - GIF-based mob with status effects, auto-configured HP/stats
@@ -1010,6 +1069,15 @@ tools/                  - Utility tools for asset generation
   - StatusEffectSpriteGenerator.java - Generates burning.gif and frozen.gif for mobs
   - ParticleGifGenerator.java        - Generates particle overlay GIFs for status effects
 assets/
+  characters/           - Playable character sprites
+    crystal/sprites/    - Crystal's animation GIFs (idle.gif, walk.gif, jump.gif)
+    filvendor_venrona/sprites/ - Filvendor Venrona's animations
+    breaya/sprites/     - Breaya's animations
+    asteria/sprites/    - Asteria's animations
+    olyrei/sprites/     - Olyrei's animations
+    trethas/sprites/    - Trethas's animations
+    gridius/sprites/    - Gridius's animations
+    merlin/sprites/     - Merlin's animations (Loot Game only)
   textures/
     humanoid/           - Humanoid character textures (player, orc, zombie, skeleton)
     quadruped/          - Animal textures (wolf, dog, cat, horse, etc.)
