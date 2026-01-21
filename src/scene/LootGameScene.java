@@ -4,6 +4,9 @@ import core.GamePanel;
 import entity.*;
 import entity.item.*;
 import entity.player.*;
+import entity.player.AbilityScores;
+import entity.player.PlayableCharacter;
+import entity.player.PlayableCharacterRegistry;
 import block.*;
 import input.*;
 import graphics.*;
@@ -136,10 +139,24 @@ public class LootGameScene implements Scene {
             entityManager.addEntity(dirt2);
         }
 
-        // Create player in the center-left
+        // Create player in the center-left using Merlin character (Loot Game only)
         int playerX = LEVEL_WIDTH / 2 - 200;
         int playerY = GROUND_Y - 100;
-        player = new SpritePlayerEntity(playerX, playerY, "assets/textures/sprite_player");
+
+        // Get Merlin character from registry (Loot Game uses Merlin with baseline stats)
+        PlayableCharacter merlin = PlayableCharacterRegistry.getInstance().getMerlin();
+        String spritePath = merlin != null ? merlin.getSpritePath() : "assets/player/sprites";
+
+        player = new SpritePlayerEntity(playerX, playerY, spritePath);
+
+        // Set Merlin's baseline ability scores (all 5)
+        if (merlin != null) {
+            player.setAbilityScores(merlin.getBaseAbilityScores());
+        } else {
+            // Fallback to baseline if Merlin not found
+            player.setAbilityScores(new AbilityScores());
+        }
+
         player.setGroundY(GROUND_Y);
         player.setCamera(camera);
         AudioManager audio = SceneManager.getInstance().getAudioManager();

@@ -12,9 +12,12 @@ import entity.item.Item;
 import entity.item.ItemEntity;
 import entity.item.ItemRegistry;
 import entity.item.MirrorToOtherRealms;
+import entity.player.AbilityScores;
+import entity.player.AbilityScores.DexterityResult;
 import input.*;
 import ui.*;
 import graphics.*;
+import scene.SpriteCharacterCustomization;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -168,6 +171,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
     // Ground level
     private int groundY = 720;
 
+    // Ability scores system
+    private AbilityScores abilityScores;
+    private int baseMaxHealth = 100;  // Unmodified max health
+    private int baseMaxMana = 100;    // Unmodified max mana
+    private int baseMaxStamina = 100; // Unmodified max stamina
+
     // Block interaction - uses helper for shared functionality
     private BlockInteractionHelper blockHelper = new BlockInteractionHelper();
     private BlockEntity lastBrokenBlock = null;
@@ -217,6 +226,9 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
         // Initialize triggered animation manager
         this.triggeredAnimManager = TriggeredAnimationManager.getInstance();
+
+        // Initialize ability scores from selected character
+        initializeAbilityScores();
     }
 
     /**
@@ -240,6 +252,51 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
         // Initialize triggered animation manager
         this.triggeredAnimManager = TriggeredAnimationManager.getInstance();
+
+        // Initialize ability scores from selected character
+        initializeAbilityScores();
+    }
+
+    /**
+     * Initializes ability scores from the currently selected character.
+     * Applies constitution modifier to max health.
+     */
+    private void initializeAbilityScores() {
+        // Get ability scores from selected character (via customization scene)
+        this.abilityScores = SpriteCharacterCustomization.getSavedAbilityScores();
+
+        // Apply constitution modifier to max health
+        applyConstitutionModifiers();
+    }
+
+    /**
+     * Applies constitution-based modifiers to health and other stats.
+     */
+    private void applyConstitutionModifiers() {
+        if (abilityScores == null) return;
+
+        // Apply health modifier (+/- 10% per point above/below baseline)
+        double healthMod = abilityScores.getHealthModifier();
+        this.maxHealth = (int) Math.max(1, baseMaxHealth * healthMod);
+        this.currentHealth = Math.min(currentHealth, maxHealth);
+
+        System.out.println("SpritePlayerEntity: Applied constitution modifier (" +
+            abilityScores.getConstitution() + ") - MaxHealth: " + maxHealth);
+    }
+
+    /**
+     * Sets ability scores directly (used for Loot Game and testing).
+     */
+    public void setAbilityScores(AbilityScores scores) {
+        this.abilityScores = scores;
+        applyConstitutionModifiers();
+    }
+
+    /**
+     * Gets the current ability scores.
+     */
+    public AbilityScores getAbilityScores() {
+        return abilityScores;
     }
 
     /**
@@ -1784,6 +1841,117 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         return false;
     }
 
+    // ==================== Ability Score Methods ====================
+
+    /**
+     * Calculates dexterity effect on item usage.
+     * - Above baseline (5): Chance to use item twice without consuming resources
+     * - Below baseline (5): Chance to miss but still consume resources
+     * @return DexterityResult with success, resource consumption, and double-use flags
+     */
+    public DexterityResult calculateItemUsageDexterity() {
+        if (abilityScores == null) {
+            return new DexterityResult(true, true, false); // Normal usage
+        }
+        return abilityScores.calculateDexterityEffect();
+    }
+
+    /**
+     * Checks if an item can be used based on dexterity scaling.
+     * Items that scale with dexterity have a chance to be used twice or miss.
+     * @param consumeResources Whether to consume mana/stamina on this check
+     * @param resourceAmount Amount of resources to consume
+     * @param isMana true for mana, false for stamina
+     * @return Number of times to use the item (0 = miss, 1 = normal, 2 = double-use)
+     */
+    public int useItemWithDexterity(boolean consumeResources, int resourceAmount, boolean isMana) {
+        DexterityResult result = calculateItemUsageDexterity();
+
+        // Handle resource consumption
+        if (consumeResources && result.consumesResources()) {
+            if (isMana) {
+                if (!useMana(resourceAmount)) {
+                    return 0; // Not enough resources
+                }
+            } else {
+                if (!useStamina(resourceAmount)) {
+                    return 0; // Not enough resources
+                }
+            }
+        }
+
+        if (!result.isSuccess()) {
+            System.out.println("Dexterity check failed! (DEX: " +
+                (abilityScores != null ? abilityScores.getDexterity() : 5) + ")");
+            return 0; // Miss
+        }
+
+        if (result.isDoubleUse()) {
+            System.out.println("Dexterity bonus! Double use without extra cost! (DEX: " +
+                (abilityScores != null ? abilityScores.getDexterity() : 5) + ")");
+            return 2; // Double use
+        }
+
+        return 1; // Normal use
+    }
+
+    /**
+     * Checks if the player can use an ancient artifact based on wisdom.
+     * @param requiredWisdom The wisdom requirement of the artifact
+     * @return true if wisdom is high enough
+     */
+    public boolean canUseAncientArtifact(int requiredWisdom) {
+        if (abilityScores == null) {
+            return AbilityScores.BASELINE >= requiredWisdom;
+        }
+        return abilityScores.canUseAncientArtifact(requiredWisdom);
+    }
+
+    /**
+     * Gets the status effect duration modifier from constitution.
+     * Higher constitution = shorter status effect duration.
+     * @return Multiplier for status effect duration (lower is better)
+     */
+    public double getStatusEffectDurationModifier() {
+        if (abilityScores == null) {
+            return 1.0;
+        }
+        return abilityScores.getStatusEffectResistanceModifier();
+    }
+
+    /**
+     * Gets the total carrying capacity modifier (strength + constitution).
+     * @return Combined multiplier for carrying capacity
+     */
+    public double getCarryingCapacityModifier() {
+        if (abilityScores == null) {
+            return 1.0;
+        }
+        return abilityScores.getTotalCarryingCapacityModifier();
+    }
+
+    /**
+     * Gets the current dexterity-based double-use chance.
+     * @return Percentage chance (0-100+) for double item use
+     */
+    public double getDoubleUseChance() {
+        if (abilityScores == null) {
+            return 0.0;
+        }
+        return abilityScores.getDoubleUseChance();
+    }
+
+    /**
+     * Gets the current dexterity-based miss chance.
+     * @return Percentage chance (0-100+) for item usage to miss
+     */
+    public double getMissChance() {
+        if (abilityScores == null) {
+            return 0.0;
+        }
+        return abilityScores.getMissChance();
+    }
+
     // ==================== Physics Push System ====================
 
     /**
@@ -1942,12 +2110,56 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
 
     /**
      * Gets the effective attack damage (from weapon if held, otherwise base).
+     * Applies ability score modifiers:
+     * - Strength: +/-17% per point for melee weapons
+     * - Intelligence: +/-15% per point for magical weapons
      */
     public int getAttackDamage() {
+        int baseDamage = baseAttackDamage;
+
         if (heldItem != null && heldItem.getDamage() > 0) {
-            return heldItem.getDamage();
+            baseDamage = heldItem.getDamage();
+
+            // Apply ability modifiers based on weapon type
+            if (abilityScores != null) {
+                if (isMagicalWeapon(heldItem)) {
+                    // Intelligence modifier for magical weapons
+                    baseDamage = (int) Math.max(1, baseDamage * abilityScores.getMagicalDamageModifier());
+                } else if (isMeleeWeapon(heldItem)) {
+                    // Strength modifier for melee weapons
+                    baseDamage = (int) Math.max(1, baseDamage * abilityScores.getMeleeDamageModifier());
+                }
+            }
+        } else if (abilityScores != null) {
+            // Unarmed combat uses strength
+            baseDamage = (int) Math.max(1, baseAttackDamage * abilityScores.getMeleeDamageModifier());
         }
-        return baseAttackDamage;
+
+        return baseDamage;
+    }
+
+    /**
+     * Checks if an item is a magical weapon (staffs, wands, etc.).
+     */
+    private boolean isMagicalWeapon(Item item) {
+        if (item == null) return false;
+        String name = item.getName().toLowerCase();
+        return name.contains("staff") || name.contains("wand") ||
+               name.contains("rod") || name.contains("scepter") ||
+               name.contains("magic") || name.contains("arcane");
+    }
+
+    /**
+     * Checks if an item is a melee weapon (swords, axes, maces, etc.).
+     */
+    private boolean isMeleeWeapon(Item item) {
+        if (item == null) return false;
+        String name = item.getName().toLowerCase();
+        return name.contains("sword") || name.contains("axe") ||
+               name.contains("mace") || name.contains("hammer") ||
+               name.contains("dagger") || name.contains("blade") ||
+               name.contains("club") || name.contains("spear") ||
+               item.getCategory() == entity.item.Item.ItemCategory.WEAPON;
     }
 
     /**
