@@ -44,8 +44,8 @@ public class LootChestEntity extends Entity {
     }
 
     private ChestType chestType;
-    private int width = 96;
-    private int height = 72;
+    private int width = 64;
+    private int height = 64;
 
     // Animation states
     private boolean isOpen = false;
