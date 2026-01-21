@@ -963,14 +963,45 @@ public class VaultInventory {
         String rarity = item.getRarity().getDisplayName();
         String category = item.getCategory().name();
 
+        // Build tooltip lines
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add(name);
+        lines.add(rarity + " " + category);
+        lines.add("x" + slot.stackCount);
+
+        // Add item stats
+        if (item.getDamage() > 0) {
+            lines.add("Damage: " + item.getDamage());
+        }
+        if (item.getDefense() > 0) {
+            lines.add("Defense: " + item.getDefense());
+        }
+        if (item.getHealthRestore() > 0) {
+            lines.add("Heals: " + item.getHealthRestore() + " HP");
+        }
+        if (item.getManaRestore() > 0) {
+            lines.add("Restores: " + item.getManaRestore() + " Mana");
+        }
+        // Add special effect if present
+        if (item.getSpecialEffect() != null && !item.getSpecialEffect().isEmpty()) {
+            lines.add("Effect: " + item.getSpecialEffect());
+        }
+        // Add ability scaling tags
+        if (item.hasAbilityScaling()) {
+            lines.add("Scales: " + item.getAbilityTags());
+        }
+
         // Calculate tooltip size
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        int nameWidth = g2d.getFontMetrics().stringWidth(name);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        int infoWidth = g2d.getFontMetrics().stringWidth(rarity + " " + category);
+        int maxWidth = 0;
+        for (String line : lines) {
+            int w = g2d.getFontMetrics().stringWidth(line);
+            if (w > maxWidth) maxWidth = w;
+        }
 
-        int tooltipWidth = Math.max(nameWidth, infoWidth) + 20;
-        int tooltipHeight = 50;
+        int tooltipWidth = maxWidth + 20;
+        int lineHeight = 14;
+        int tooltipHeight = lines.size() * lineHeight + 16;
 
         int tooltipX = mouseX + 15;
         int tooltipY = mouseY - tooltipHeight / 2;
@@ -979,6 +1010,12 @@ public class VaultInventory {
         if (tooltipX + tooltipWidth > x + width) {
             tooltipX = mouseX - tooltipWidth - 10;
         }
+        if (tooltipY < 0) {
+            tooltipY = 5;
+        }
+        if (tooltipY + tooltipHeight > 1080) {
+            tooltipY = 1080 - tooltipHeight - 5;
+        }
 
         // Background
         g2d.setColor(new Color(20, 20, 30, 240));
@@ -986,20 +1023,24 @@ public class VaultInventory {
 
         // Border with rarity color
         g2d.setColor(item.getRarity().getColor());
+        g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 8, 8);
 
-        // Name
-        g2d.setColor(item.getRarity().getColor());
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        g2d.drawString(name, tooltipX + 10, tooltipY + 18);
-
-        // Info
-        g2d.setColor(Color.LIGHT_GRAY);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        g2d.drawString(rarity + " " + category, tooltipX + 10, tooltipY + 32);
-
-        // Stack info
-        g2d.drawString("x" + slot.stackCount, tooltipX + 10, tooltipY + 44);
+        // Draw text lines
+        int textY = tooltipY + 16;
+        for (int i = 0; i < lines.size(); i++) {
+            if (i == 0) {
+                // Name in rarity color and bold
+                g2d.setColor(item.getRarity().getColor());
+                g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            } else {
+                // Other lines in light gray
+                g2d.setColor(Color.LIGHT_GRAY);
+                g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            }
+            g2d.drawString(lines.get(i), tooltipX + 10, textY);
+            textY += lineHeight;
+        }
     }
 
     private void drawDraggedItem(Graphics2D g2d) {
