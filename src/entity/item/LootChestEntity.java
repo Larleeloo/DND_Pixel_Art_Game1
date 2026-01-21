@@ -49,6 +49,13 @@ public class LootChestEntity extends Entity {
 
     // Texture (single GIF with forward/reverse playback)
     private AnimatedTexture animatedTexture;
+    private float openProgress = 0;
+    private float openSpeed = 0.02f;
+
+    // Textures (GIF-based)
+    private AnimatedTexture closedTexture;
+    private AnimatedTexture openTexture;
+    private BufferedImage currentFrame;
     private long lastUpdateTime = System.currentTimeMillis();
 
     // Particle effects
@@ -182,6 +189,120 @@ public class LootChestEntity extends Entity {
             java.awt.geom.AffineTransform oldTransform = g.getTransform();
             g.rotate(Math.toRadians(-lidAngle), width / 2, height / 3);
 
+     * Loads GIF textures for closed and open states.
+     */
+    private void loadTextures() {
+        String basePath = chestType.textureBasePath;
+
+        // Load closed texture
+        try {
+            AssetLoader.ImageAsset closedAsset = AssetLoader.load(basePath + "_closed.gif");
+            if (closedAsset.animatedTexture != null) {
+                closedTexture = closedAsset.animatedTexture;
+            } else if (closedAsset.staticImage != null) {
+                closedTexture = createSingleFrameTexture(closedAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("LootChestEntity: Failed to load closed texture: " + basePath + "_closed.gif");
+        }
+
+        // Load open texture
+        try {
+            AssetLoader.ImageAsset openAsset = AssetLoader.load(basePath + "_open.gif");
+            if (openAsset.animatedTexture != null) {
+                openTexture = openAsset.animatedTexture;
+            } else if (openAsset.staticImage != null) {
+                openTexture = createSingleFrameTexture(openAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("LootChestEntity: Failed to load open texture: " + basePath + "_open.gif");
+        }
+
+        // Create placeholder textures if needed
+        if (closedTexture == null) {
+            closedTexture = createPlaceholderTexture(false);
+        }
+        if (openTexture == null) {
+            openTexture = createPlaceholderTexture(true);
+        }
+
+        currentFrame = closedTexture.getCurrentFrame();
+    }
+
+    /**
+     * Creates a single-frame AnimatedTexture from a static image.
+     */
+    private AnimatedTexture createSingleFrameTexture(BufferedImage image) {
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(image);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000); // 1 second delay (doesn't matter for single frame)
+        return new AnimatedTexture(frames, delays);
+    }
+
+    /**
+     * Creates a placeholder texture when GIF files are not available.
+     */
+    private AnimatedTexture createPlaceholderTexture(boolean isOpenState) {
+        BufferedImage placeholder = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = placeholder.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Chest base color (dark wood) - different for each type
+        Color baseColor = chestType == ChestType.MONTHLY ?
+            new Color(80, 40, 100) : new Color(100, 60, 30);
+        Color highlightColor = chestType == ChestType.MONTHLY ?
+            new Color(120, 60, 140) : new Color(140, 90, 50);
+        Color metalColor = chestType == ChestType.MONTHLY ?
+            new Color(200, 180, 255) : new Color(255, 215, 0);
+
+        // Draw main body
+        g.setColor(baseColor);
+        g.fillRoundRect(0, height / 3, width, height * 2 / 3, 8, 8);
+
+        // Body highlight
+        g.setColor(highlightColor);
+        g.fillRoundRect(4, height / 3 + 4, width - 8, height / 4, 4, 4);
+
+        // Metal bands
+        g.setColor(metalColor);
+        g.fillRect(5, height / 3, 8, height * 2 / 3);
+        g.fillRect(width - 13, height / 3, 8, height * 2 / 3);
+        g.fillRect(width / 2 - 4, height / 3, 8, height * 2 / 3);
+
+        // Lock/keyhole
+        g.setColor(metalColor.darker());
+        g.fillOval(width / 2 - 8, height / 2 + 5, 16, 20);
+        g.setColor(Color.BLACK);
+        g.fillOval(width / 2 - 4, height / 2 + 10, 8, 10);
+
+        // Draw lid (position depends on open state)
+        if (isOpenState) {
+            // Open lid - rotated back
+            java.awt.geom.AffineTransform oldTransform = g.getTransform();
+            g.rotate(Math.toRadians(-70), width / 2, height / 3);
+
+            // Lid colors
+            Color lidBaseColor = chestType == ChestType.MONTHLY ?
+                new Color(100, 50, 120) : new Color(120, 70, 35);
+            Color lidHighlightColor = chestType == ChestType.MONTHLY ?
+                new Color(140, 80, 160) : new Color(160, 100, 60);
+
+            g.setColor(lidBaseColor);
+            g.fillRoundRect(0, 0, width, height / 3 + 5, 10, 10);
+
+            g.setColor(lidHighlightColor);
+            g.fillArc(0, -height / 6, width, height / 3, 0, 180);
+
+            // Metal bands on lid
+            g.setColor(metalColor);
+            g.fillRect(5, 0, 8, height / 3 + 5);
+            g.fillRect(width - 13, 0, 8, height / 3 + 5);
+            g.fillRect(width / 2 - 4, 0, 8, height / 3 + 5);
+
+            g.setTransform(oldTransform);
+        } else {
+            // Closed lid
             Color lidBaseColor = chestType == ChestType.MONTHLY ?
                 new Color(100, 50, 120) : new Color(120, 70, 35);
             Color lidHighlightColor = chestType == ChestType.MONTHLY ?
@@ -206,6 +327,17 @@ public class LootChestEntity extends Entity {
             delays.add(50); // 50ms per frame
         }
 
+            // Lid edge highlight
+            g.setColor(new Color(255, 255, 255, 50));
+            g.drawArc(2, -height / 6 + 2, width - 4, height / 3 - 4, 0, 180);
+        }
+
+        g.dispose();
+
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(placeholder);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000);
         return new AnimatedTexture(frames, delays);
     }
 
@@ -230,6 +362,9 @@ public class LootChestEntity extends Entity {
         // Update the animated texture
         if (animatedTexture != null) {
             animatedTexture.update(deltaMs);
+        // Update opening animation
+        if (isOpening) {
+            openProgress += openSpeed;
 
             // Check if opening animation completed (reached last frame)
             if (isOpening && animatedTexture.isAtEnd() && animatedTexture.isPaused()) {
@@ -251,6 +386,19 @@ public class LootChestEntity extends Entity {
             // Spawn particles during opening
             if (isOpening) {
                 spawnOpeningParticles();
+            }
+        }
+
+        // Update animated textures and get current frame
+        if (isOpen || isOpening) {
+            if (openTexture != null) {
+                openTexture.update(deltaMs);
+                currentFrame = openTexture.getCurrentFrame();
+            }
+        } else {
+            if (closedTexture != null) {
+                closedTexture.update(deltaMs);
+                currentFrame = closedTexture.getCurrentFrame();
             }
         }
 
@@ -552,6 +700,9 @@ public class LootChestEntity extends Entity {
         // Draw chest texture (GIF-based with directional playback)
         if (animatedTexture != null) {
             g2d.drawImage(animatedTexture.getCurrentFrame(), x, y, width, height, null);
+        // Draw chest texture (GIF-based)
+        if (currentFrame != null) {
+            g2d.drawImage(currentFrame, x, y, width, height, null);
         }
 
         // Draw particles

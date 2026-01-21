@@ -63,6 +63,9 @@ public class VaultEntity extends Entity {
 
     // Visual state
     private AnimatedTexture animatedTexture;
+    private BufferedImage texture;
+    private AnimatedTexture closedTexture;
+    private AnimatedTexture openTexture;
     private boolean isOpen = false;
     private boolean isOpening = false;
     private boolean isClosing = false;
@@ -171,6 +174,81 @@ public class VaultEntity extends Entity {
         animatedTexture.setLooping(false);
         animatedTexture.goToStart();
     }
+        String basePath = vaultType.getTextureBasePath();
+
+        // Load closed texture
+        try {
+            AssetLoader.ImageAsset closedAsset = AssetLoader.load(basePath + "_closed.gif");
+            if (closedAsset.animatedTexture != null) {
+                this.closedTexture = closedAsset.animatedTexture;
+            } else if (closedAsset.staticImage != null) {
+                this.closedTexture = createSingleFrameTexture(closedAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("VaultEntity: Failed to load closed texture: " + basePath + "_closed.gif");
+        }
+
+        // Load open texture
+        try {
+            AssetLoader.ImageAsset openAsset = AssetLoader.load(basePath + "_open.gif");
+            if (openAsset.animatedTexture != null) {
+                this.openTexture = openAsset.animatedTexture;
+            } else if (openAsset.staticImage != null) {
+                this.openTexture = createSingleFrameTexture(openAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("VaultEntity: Failed to load open texture: " + basePath + "_open.gif");
+        }
+
+        // Create placeholder textures if needed
+        if (closedTexture == null) {
+            closedTexture = createPlaceholderTexture(false);
+        }
+        if (openTexture == null) {
+            openTexture = createPlaceholderTexture(true);
+        }
+
+        texture = closedTexture.getCurrentFrame();
+    }
+
+    /**
+     * Creates a single-frame AnimatedTexture from a static image.
+     */
+    private AnimatedTexture createSingleFrameTexture(BufferedImage image) {
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(image);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000);
+        return new AnimatedTexture(frames, delays);
+    }
+
+    private AnimatedTexture createPlaceholderTexture(boolean isOpenState) {
+        BufferedImage placeholder = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = placeholder.createGraphics();
+
+        // Draw a simple vault/chest shape
+        g.setColor(new Color(139, 90, 43));  // Brown for wood
+        g.fillRoundRect(4, 16, 56, 44, 8, 8);
+
+        // Draw lid (position depends on state)
+        if (isOpenState) {
+            // Open lid - rotated back
+            java.awt.geom.AffineTransform oldTransform = g.getTransform();
+            g.rotate(Math.toRadians(-45), 32, 16);
+            g.setColor(new Color(101, 67, 33));  // Darker brown
+            g.fillRoundRect(2, 8, 60, 20, 6, 6);
+            g.setTransform(oldTransform);
+        } else {
+            // Closed lid
+            g.setColor(new Color(101, 67, 33));  // Darker brown
+            g.fillRoundRect(2, 8, 60, 20, 6, 6);
+        }
+
+        // Draw metal bands
+        g.setColor(new Color(169, 169, 169));  // Silver
+        g.fillRect(8, 20, 4, 40);
+        g.fillRect(52, 20, 4, 40);
+        g.fillRect(28, 20, 8, 40);
 
     /**
      * Creates a placeholder animated texture when GIF file is not available.
@@ -215,6 +293,12 @@ public class VaultEntity extends Entity {
             delays.add(50); // 50ms per frame
         }
 
+        g.dispose();
+
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(placeholder);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000);
         return new AnimatedTexture(frames, delays);
     }
 
@@ -244,6 +328,16 @@ public class VaultEntity extends Entity {
             if (isClosing && animatedTexture.isAtStart() && animatedTexture.isPaused()) {
                 isClosing = false;
                 isOpen = false;
+        // Update animated texture based on state and get current frame
+        if (isOpen) {
+            if (openTexture != null) {
+                openTexture.update(deltaMs);
+                texture = openTexture.getCurrentFrame();
+            }
+        } else {
+            if (closedTexture != null) {
+                closedTexture.update(deltaMs);
+                texture = closedTexture.getCurrentFrame();
             }
         }
     }
@@ -265,6 +359,9 @@ public class VaultEntity extends Entity {
         // Draw vault texture (GIF-based with directional playback)
         if (animatedTexture != null) {
             g2d.drawImage(animatedTexture.getCurrentFrame(), x, y, width, height, null);
+        // Draw vault texture (GIF-based, no programmatic animation)
+        if (texture != null) {
+            g2d.drawImage(texture, x, y, width, height, null);
         }
 
         // Draw "OPEN" text when vault is open
