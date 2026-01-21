@@ -966,6 +966,14 @@ public class Inventory {
             if (item.getManaRestore() > 0) {
                 lines.add("Restores: " + item.getManaRestore() + " Mana");
             }
+            // Add special effect if present
+            if (item.getSpecialEffect() != null && !item.getSpecialEffect().isEmpty()) {
+                lines.add("Effect: " + item.getSpecialEffect());
+            }
+            // Add ability scaling tags
+            if (item.hasAbilityScaling()) {
+                lines.add("Scales: " + item.getAbilityTags());
+            }
             if (item.getDescription() != null && !item.getDescription().isEmpty()) {
                 lines.add(item.getDescription());
             }

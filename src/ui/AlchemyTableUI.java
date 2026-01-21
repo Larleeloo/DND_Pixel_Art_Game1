@@ -598,14 +598,40 @@ public class AlchemyTableUI {
         Item item = slot.itemTemplate;
         String name = item.getName();
         String rarity = item.getRarity().getDisplayName();
+        String category = item.getCategory().name();
 
+        // Build tooltip lines
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add(name);
+        lines.add(rarity + " " + category + " x" + slot.stackCount);
+
+        // Add item stats
+        if (item.getDamage() > 0) {
+            lines.add("Damage: " + item.getDamage());
+        }
+        if (item.getDefense() > 0) {
+            lines.add("Defense: " + item.getDefense());
+        }
+        // Add special effect if present
+        if (item.getSpecialEffect() != null && !item.getSpecialEffect().isEmpty()) {
+            lines.add("Effect: " + item.getSpecialEffect());
+        }
+        // Add ability scaling tags
+        if (item.hasAbilityScaling()) {
+            lines.add("Scales: " + item.getAbilityTags());
+        }
+
+        // Calculate tooltip size
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        int nameWidth = g2d.getFontMetrics().stringWidth(name);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        int infoWidth = g2d.getFontMetrics().stringWidth(rarity);
+        int maxWidth = 0;
+        for (String line : lines) {
+            int w = g2d.getFontMetrics().stringWidth(line);
+            if (w > maxWidth) maxWidth = w;
+        }
 
-        int tooltipWidth = Math.max(nameWidth, infoWidth) + 20;
-        int tooltipHeight = 45;
+        int tooltipWidth = maxWidth + 20;
+        int lineHeight = 14;
+        int tooltipHeight = lines.size() * lineHeight + 16;
 
         int tx = mouseX + 15;
         int ty = mouseY - tooltipHeight / 2;
@@ -614,6 +640,12 @@ public class AlchemyTableUI {
         if (tx + tooltipWidth > x + width) {
             tx = mouseX - tooltipWidth - 10;
         }
+        if (ty < 0) {
+            ty = 5;
+        }
+        if (ty + tooltipHeight > 1080) {
+            ty = 1080 - tooltipHeight - 5;
+        }
 
         // Background
         g2d.setColor(new Color(20, 20, 30, 230));
@@ -621,17 +653,22 @@ public class AlchemyTableUI {
 
         // Border
         g2d.setColor(item.getRarity().getColor());
+        g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(tx, ty, tooltipWidth, tooltipHeight, 6, 6);
 
-        // Name
-        g2d.setColor(item.getRarity().getColor());
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        g2d.drawString(name, tx + 10, ty + 18);
-
-        // Rarity
-        g2d.setColor(Color.LIGHT_GRAY);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        g2d.drawString(rarity + " x" + slot.stackCount, tx + 10, ty + 34);
+        // Draw text lines
+        int textY = ty + 16;
+        for (int i = 0; i < lines.size(); i++) {
+            if (i == 0) {
+                g2d.setColor(item.getRarity().getColor());
+                g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            } else {
+                g2d.setColor(Color.LIGHT_GRAY);
+                g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            }
+            g2d.drawString(lines.get(i), tx + 10, textY);
+            textY += lineHeight;
+        }
     }
 
     private void drawDraggedItem(Graphics2D g2d) {

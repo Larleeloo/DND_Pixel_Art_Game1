@@ -553,14 +553,16 @@ public class ReverseCraftingUI {
         Item item = slot.itemTemplate;
         String name = item.getName();
         String rarity = item.getRarity().getDisplayName();
+        String abilityTags = item.hasAbilityScaling() ? item.getAbilityTags() : null;
 
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
         int nameWidth = g2d.getFontMetrics().stringWidth(name);
         g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        int infoWidth = g2d.getFontMetrics().stringWidth(rarity);
+        int infoWidth = g2d.getFontMetrics().stringWidth(rarity + " x" + slot.stackCount);
+        int abilityWidth = abilityTags != null ? g2d.getFontMetrics().stringWidth("Scales: " + abilityTags) : 0;
 
-        int tooltipWidth = Math.max(nameWidth, infoWidth) + 20;
-        int tooltipHeight = 45;
+        int tooltipWidth = Math.max(Math.max(nameWidth, infoWidth), abilityWidth) + 20;
+        int tooltipHeight = abilityTags != null ? 60 : 45;
 
         int tx = mouseX + 15;
         int ty = mouseY - tooltipHeight / 2;
@@ -587,6 +589,12 @@ public class ReverseCraftingUI {
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.setFont(new Font("Arial", Font.PLAIN, 10));
         g2d.drawString(rarity + " x" + slot.stackCount, tx + 10, ty + 34);
+
+        // Ability scaling
+        if (abilityTags != null) {
+            g2d.setColor(new Color(100, 200, 255));
+            g2d.drawString("Scales: " + abilityTags, tx + 10, ty + 50);
+        }
     }
 
     private void drawDraggedItem(Graphics2D g2d) {
