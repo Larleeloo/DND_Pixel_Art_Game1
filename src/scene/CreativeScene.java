@@ -8,6 +8,10 @@ import block.*;
 import graphics.*;
 import level.*;
 import input.*;
+import scene.creative.CreativePaletteManager;
+import scene.creative.CreativePaletteManager.PaletteCategory;
+import scene.creative.CreativePaletteManager.ItemSortMode;
+import scene.creative.CreativePaletteManager.PaletteItem;
 
 import javax.swing.*;
 import java.awt.*;
@@ -68,14 +72,8 @@ public class CreativeScene implements Scene {
     // For play mode
     private GameScene gameScene;
 
-    // Palette
-    private PaletteCategory currentCategory = PaletteCategory.BLOCKS;
-    private int selectedPaletteIndex = 0;
-    private int paletteScrollOffset = 0;
-    private static final int PALETTE_WIDTH = 200;
-    private static final int PALETTE_ITEM_SIZE = 48;
-    private static final int PALETTE_ITEMS_PER_ROW = 3;
-    private static final int PALETTE_VISIBLE_ROWS = 8; // Max rows visible in palette area
+    // Palette manager (extracted for better code organization)
+    private CreativePaletteManager paletteManager;
 
     // Grid
     private static final int GRID_SIZE = BlockRegistry.BLOCK_SIZE; // 64 pixels
@@ -116,18 +114,6 @@ public class CreativeScene implements Scene {
     private List<String> availableLevels;
     private int selectedLevelIndex = 0;
 
-    // Block textures cache
-    private Map<BlockType, BufferedImage> blockTextures;
-
-    // Palette data
-    private List<PaletteItem> blockPalette;
-    private List<PaletteItem> movingBlockPalette;
-    private List<PaletteItem> itemPalette;
-    private List<PaletteItem> mobPalette;
-    private List<PaletteItem> lightPalette;
-    private List<PaletteItem> interactivePalette;
-    private List<PaletteItem> parallaxPalette;
-
     // Placed interactive entities (doors, buttons, and vaults)
     private List<PlacedEntity> placedDoors;
     private List<PlacedEntity> placedButtons;
@@ -140,68 +126,6 @@ public class CreativeScene implements Scene {
 
     // Parallax layers currently in use
     private List<ParallaxLayerEntry> parallaxLayers;
-
-    /**
-     * Categories in the palette
-     */
-    public enum PaletteCategory {
-        BLOCKS("Blocks"),
-        MOVING_BLOCKS("Moving"),
-        ITEMS("Items"),
-        MOBS("Mobs"),
-        LIGHTS("Lights"),
-        INTERACTIVE("Interactive"),
-        PARALLAX("Parallax");
-
-        private final String displayName;
-
-        PaletteCategory(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-
-    /**
-     * Sort modes for the item palette
-     */
-    public enum ItemSortMode {
-        RARITY("Rarity"),
-        ALPHABETICAL("A-Z");
-
-        private final String displayName;
-
-        ItemSortMode(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-
-    // Item palette sorting
-    private ItemSortMode itemSortMode = ItemSortMode.RARITY;
-    private List<PaletteItem> sortedItemPalette;
-
-    /**
-     * Represents an item in the palette
-     */
-    private static class PaletteItem {
-        String id;
-        String displayName;
-        BufferedImage icon;
-        Object data; // BlockType, String itemId, or mob data
-
-        PaletteItem(String id, String displayName, BufferedImage icon, Object data) {
-            this.id = id;
-            this.displayName = displayName;
-            this.icon = icon;
-            this.data = data;
-        }
-    }
 
     /**
      * Represents an entity placed in the level
@@ -264,10 +188,10 @@ public class CreativeScene implements Scene {
         placedVaults = new ArrayList<>();
         placedMovingBlocks = new ArrayList<>();
         parallaxLayers = new ArrayList<>();
-        blockTextures = new HashMap<>();
 
-        // Initialize palettes
-        initializePalettes();
+        // Initialize palette manager (handles all palette-related functionality)
+        paletteManager = new CreativePaletteManager();
+        paletteManager.initialize();
 
         // Create default level data
         levelData = new LevelData();
@@ -291,552 +215,8 @@ public class CreativeScene implements Scene {
         camera.setLevelBounds(levelData.levelWidth, levelData.levelHeight);
         camera.setSmoothSpeed(1.0); // Instant response for editing
 
-        // Preload block textures
-        BlockRegistry.getInstance().preloadAllTextures();
-        for (BlockType type : BlockType.values()) {
-            blockTextures.put(type, BlockRegistry.getInstance().getTexture(type));
-        }
-
         initialized = true;
         setStatus("Creative Mode - Press Tab to change category, P to play, S to save");
-    }
-
-    /**
-     * Initialize the palette with available blocks, items, and mobs
-     */
-    private void initializePalettes() {
-        // Block palette
-        blockPalette = new ArrayList<>();
-        for (BlockType type : BlockType.values()) {
-            BufferedImage icon = BlockRegistry.getInstance().getTexture(type);
-            if (icon != null) {
-                // Scale down for palette
-                BufferedImage scaledIcon = scaleImage(icon, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-                blockPalette.add(new PaletteItem(type.name(), type.getDisplayName(), scaledIcon, type));
-            }
-        }
-
-        // Moving block palette - blocks with movement patterns
-        movingBlockPalette = new ArrayList<>();
-
-        // Add moving block variations for each solid block type
-        BlockType[] movableTypes = {BlockType.STONE, BlockType.COBBLESTONE, BlockType.BRICK,
-                                    BlockType.WOOD, BlockType.IRON_ORE, BlockType.GOLD_ORE};
-
-        String[][] movementPatterns = {
-            {"HORIZONTAL", "Horizontal", "Moves left and right"},
-            {"VERTICAL", "Vertical", "Moves up and down"},
-            {"CIRCULAR", "Circular", "Moves in a circle"}
-        };
-
-        for (BlockType type : movableTypes) {
-            BufferedImage baseIcon = BlockRegistry.getInstance().getTexture(type);
-            if (baseIcon != null) {
-                for (String[] pattern : movementPatterns) {
-                    // Create icon with movement indicator overlay
-                    BufferedImage icon = createMovingBlockIcon(baseIcon, pattern[0]);
-                    Map<String, Object> movingData = new HashMap<>();
-                    movingData.put("blockType", type);
-                    movingData.put("movementPattern", pattern[0]);
-                    movingData.put("speed", 2.0);
-                    movingData.put("pauseTime", 30);
-                    movingData.put("endX", 3);  // Default 3 blocks distance
-                    movingData.put("endY", 0);
-                    movingData.put("radius", 100.0);
-                    String itemName = type.getDisplayName() + " (" + pattern[1] + ")";
-                    movingBlockPalette.add(new PaletteItem(type.name() + "_" + pattern[0], itemName, icon, movingData));
-                }
-            }
-        }
-        System.out.println("CreativeScene: Loaded " + movingBlockPalette.size() + " moving block types into palette");
-
-        // Item palette - ALL items from ItemRegistry (for LOOT GAME functionality)
-        itemPalette = new ArrayList<>();
-        ItemRegistry.initialize();
-
-        // Get all items
-        java.util.Set<String> allItemIds = ItemRegistry.getAllItemIds();
-
-        for (String itemId : allItemIds) {
-            Item template = ItemRegistry.getTemplate(itemId);
-            if (template != null) {
-                BufferedImage icon = createItemIcon(itemId);
-                itemPalette.add(new PaletteItem(itemId, template.getName(), icon, itemId));
-            }
-        }
-        System.out.println("CreativeScene: Loaded " + itemPalette.size() + " items into palette");
-
-        // Initialize sorted item palette with current sort mode
-        sortItemPalette();
-
-        // Mob palette
-        mobPalette = new ArrayList<>();
-        String[][] mobTypes = {
-            {"zombie", "Zombie", "sprite_humanoid"},
-            {"skeleton", "Skeleton", "sprite_humanoid"},
-            {"goblin", "Goblin", "sprite_humanoid"},
-            {"orc", "Orc", "sprite_humanoid"},
-            {"bandit", "Bandit", "sprite_humanoid"},
-            {"knight", "Knight", "sprite_humanoid"},
-            {"mage", "Mage", "sprite_humanoid"},
-            {"wolf", "Wolf", "sprite_quadruped"},
-            {"bear", "Bear", "sprite_quadruped"},
-            {"pig", "Pig", "sprite_quadruped"},
-            {"cow", "Cow", "sprite_quadruped"},
-            {"sheep", "Sheep", "sprite_quadruped"},
-            {"frog", "Frog", "frog"}
-        };
-
-        for (String[] mob : mobTypes) {
-            BufferedImage icon = createMobIcon(mob[0]);
-            Map<String, String> mobData = new HashMap<>();
-            mobData.put("subType", mob[0]);
-            mobData.put("mobType", mob[2]);
-            mobData.put("behavior", mob[0].equals("pig") || mob[0].equals("cow") || mob[0].equals("sheep") || mob[0].equals("frog") ? "passive" : "hostile");
-            mobPalette.add(new PaletteItem(mob[0], mob[1], icon, mobData));
-        }
-
-        // Light palette
-        lightPalette = new ArrayList<>();
-        String[] lightTypes = {"torch", "campfire", "lantern", "magic", "crystal"};
-        for (String lightType : lightTypes) {
-            BufferedImage icon = createLightIcon(lightType);
-            String displayName = Character.toUpperCase(lightType.charAt(0)) + lightType.substring(1);
-            lightPalette.add(new PaletteItem(lightType, displayName, icon, lightType));
-        }
-
-        // Interactive palette - doors and buttons
-        interactivePalette = new ArrayList<>();
-
-        // Doors
-        String[][] doorTypes = {
-            {"wooden_door", "Wooden Door", "assets/doors/wooden_door.gif"},
-            {"iron_door", "Iron Door", "assets/doors/iron_door.gif"},
-            {"stone_door", "Stone Door", "assets/doors/stone_door.gif"}
-        };
-        for (String[] door : doorTypes) {
-            BufferedImage icon = createDoorIcon(door[2]);
-            Map<String, Object> doorData = new HashMap<>();
-            doorData.put("type", "door");
-            doorData.put("texturePath", door[2]);
-            doorData.put("linkId", "");
-            doorData.put("actionType", "none");
-            doorData.put("actionTarget", "");
-            interactivePalette.add(new PaletteItem(door[0], door[1], icon, doorData));
-        }
-
-        // Buttons
-        String[][] buttonTypes = {
-            {"stone_button", "Stone Button", "assets/buttons/stone_button.gif"},
-            {"wooden_button", "Wooden Button", "assets/buttons/wooden_button.gif"},
-            {"pressure_plate", "Pressure Plate", "assets/buttons/pressure_plate.gif"}
-        };
-        for (String[] button : buttonTypes) {
-            BufferedImage icon = createButtonIcon(button[2]);
-            Map<String, Object> buttonData = new HashMap<>();
-            buttonData.put("type", "button");
-            buttonData.put("texturePath", button[2]);
-            buttonData.put("linkId", "");
-            buttonData.put("linkedDoorIds", new ArrayList<String>());
-            buttonData.put("buttonType", button[0].contains("pressure") ? "momentary" : "toggle");
-            buttonData.put("actionType", "none");
-            buttonData.put("actionTarget", "");
-            interactivePalette.add(new PaletteItem(button[0], button[1], icon, buttonData));
-        }
-
-        // Vaults and Chests with different slot counts
-        String[][] vaultTypes = {
-            {"player_vault", "Player Vault", "assets/vault/player_vault.gif", "PLAYER_VAULT"},
-            {"storage_chest", "Storage Chest (48)", "assets/vault/storage_chest.gif", "STORAGE_CHEST"},
-            {"large_chest", "Large Chest (32)", "assets/vault/large_chest.gif", "LARGE_CHEST"},
-            {"medium_chest", "Medium Chest (16)", "assets/vault/medium_chest.gif", "MEDIUM_CHEST"},
-            {"ancient_pottery", "Ancient Pottery (5)", "assets/items/ancient_pottery/idle.gif", "ANCIENT_POTTERY"}
-        };
-        for (String[] vault : vaultTypes) {
-            BufferedImage icon = createVaultIcon(vault[2]);
-            Map<String, Object> vaultData = new HashMap<>();
-            vaultData.put("type", "vault");
-            vaultData.put("texturePath", vault[2]);
-            vaultData.put("vaultType", vault[3]);
-            interactivePalette.add(new PaletteItem(vault[0], vault[1], icon, vaultData));
-        }
-
-        System.out.println("CreativeScene: Loaded " + interactivePalette.size() + " interactive elements into palette");
-
-        // Parallax palette - available background/foreground layers
-        parallaxPalette = new ArrayList<>();
-        String[][] parallaxOptions = {
-            {"sky", "Sky Background", "assets/parallax/sky.png", "-2", "0.1"},
-            {"buildings_far", "Distant Buildings", "assets/parallax/buildings_far.png", "-1", "0.3"},
-            {"buildings_mid", "Mid Buildings", "assets/parallax/buildings_mid.png", "0", "0.5"},
-            {"buildings_near", "Near Buildings", "assets/parallax/buildings_near.png", "1", "0.7"},
-            {"foreground", "Foreground", "assets/parallax/foreground.png", "2", "1.2"},
-            {"background", "Main Background", "assets/background.png", "-2", "0.2"}
-        };
-
-        for (String[] option : parallaxOptions) {
-            BufferedImage icon = createParallaxIcon(option[2]);
-            Map<String, String> data = new HashMap<>();
-            data.put("name", option[0]);
-            data.put("path", option[2]);
-            data.put("zOrder", option[3]);
-            data.put("scrollSpeed", option[4]);
-            parallaxPalette.add(new PaletteItem(option[0], option[1], icon, data));
-        }
-    }
-
-    /**
-     * Scale an image to specified dimensions
-     */
-    private BufferedImage scaleImage(BufferedImage source, int width, int height) {
-        BufferedImage scaled = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = scaled.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-        g.drawImage(source, 0, 0, width, height, null);
-        g.dispose();
-        return scaled;
-    }
-
-    /**
-     * Create an icon for items - tries to load actual sprite first, falls back to placeholder
-     */
-    private BufferedImage createItemIcon(String itemId) {
-        // Try to load actual item sprite from assets
-        String[] extensions = {".gif", ".png"};
-        for (String ext : extensions) {
-            String path = "assets/items/" + itemId + ext;
-            AssetLoader.ImageAsset asset = AssetLoader.load(path);
-            if (asset != null && asset.staticImage != null) {
-                return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-            }
-        }
-
-        // Fallback to placeholder icon
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Color based on item type
-        Color color = Color.GRAY;
-        if (itemId.contains("sword") || itemId.contains("axe") || itemId.contains("knife")) {
-            color = new Color(150, 150, 180); // Steel
-        } else if (itemId.contains("bow") || itemId.contains("crossbow")) {
-            color = new Color(139, 90, 43); // Brown
-        } else if (itemId.contains("staff") || itemId.contains("wand") || itemId.contains("magic")) {
-            color = new Color(138, 43, 226); // Purple
-        } else if (itemId.contains("potion")) {
-            color = itemId.contains("health") ? new Color(255, 50, 50) : new Color(50, 50, 255);
-        } else if (itemId.contains("arrow") || itemId.contains("bolt")) {
-            color = new Color(139, 119, 101); // Tan
-        } else if (itemId.contains("food") || itemId.contains("apple") || itemId.contains("bread") ||
-                   itemId.contains("meat") || itemId.contains("cake")) {
-            color = new Color(210, 180, 140); // Food tan
-        } else if (itemId.contains("gold")) {
-            color = new Color(255, 215, 0); // Gold
-        } else if (itemId.contains("fire")) {
-            color = new Color(255, 100, 0); // Orange
-        } else if (itemId.contains("ice")) {
-            color = new Color(100, 200, 255); // Ice blue
-        }
-
-        g.setColor(color);
-        g.fillRoundRect(4, 4, PALETTE_ITEM_SIZE - 8, PALETTE_ITEM_SIZE - 8, 8, 8);
-        g.setColor(Color.BLACK);
-        g.drawRoundRect(4, 4, PALETTE_ITEM_SIZE - 8, PALETTE_ITEM_SIZE - 8, 8, 8);
-
-        // Draw first letter
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        String letter = itemId.substring(0, 1).toUpperCase();
-        FontMetrics fm = g.getFontMetrics();
-        int textX = (PALETTE_ITEM_SIZE - fm.stringWidth(letter)) / 2;
-        int textY = (PALETTE_ITEM_SIZE + fm.getAscent() - fm.getDescent()) / 2;
-        g.setColor(Color.WHITE);
-        g.drawString(letter, textX, textY);
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create an icon for moving blocks - adds arrow overlay to indicate movement pattern
-     */
-    private BufferedImage createMovingBlockIcon(BufferedImage baseIcon, String pattern) {
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Draw scaled base block
-        g.drawImage(scaleImage(baseIcon, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE), 0, 0, null);
-
-        // Draw movement indicator arrows
-        g.setColor(new Color(255, 255, 0, 200));
-        g.setStroke(new BasicStroke(2));
-
-        int cx = PALETTE_ITEM_SIZE / 2;
-        int cy = PALETTE_ITEM_SIZE / 2;
-
-        switch (pattern) {
-            case "HORIZONTAL":
-                // Left-right arrows
-                g.drawLine(8, cy, 16, cy);
-                g.drawLine(8, cy, 12, cy - 4);
-                g.drawLine(8, cy, 12, cy + 4);
-                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 16, cy);
-                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 12, cy - 4);
-                g.drawLine(PALETTE_ITEM_SIZE - 8, cy, PALETTE_ITEM_SIZE - 12, cy + 4);
-                break;
-            case "VERTICAL":
-                // Up-down arrows
-                g.drawLine(cx, 8, cx, 16);
-                g.drawLine(cx, 8, cx - 4, 12);
-                g.drawLine(cx, 8, cx + 4, 12);
-                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx, PALETTE_ITEM_SIZE - 16);
-                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx - 4, PALETTE_ITEM_SIZE - 12);
-                g.drawLine(cx, PALETTE_ITEM_SIZE - 8, cx + 4, PALETTE_ITEM_SIZE - 12);
-                break;
-            case "CIRCULAR":
-                // Circular arrow
-                g.drawArc(12, 12, PALETTE_ITEM_SIZE - 24, PALETTE_ITEM_SIZE - 24, 45, 270);
-                // Arrow head
-                g.drawLine(cx + 6, 16, cx + 10, 12);
-                g.drawLine(cx + 6, 16, cx + 2, 12);
-                break;
-        }
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create an icon for mobs - tries to load actual sprite first, falls back to placeholder
-     */
-    private BufferedImage createMobIcon(String mobType) {
-        // Try to load actual mob sprite from assets - check multiple paths
-        String[] paths = {
-            "assets/mobs/" + mobType + "/idle.gif",
-            "assets/mobs/" + mobType + "/sprites/idle.gif",
-            "assets/mobs/" + mobType + "/idle.png"
-        };
-
-        for (String path : paths) {
-            AssetLoader.ImageAsset asset = AssetLoader.load(path);
-            if (asset != null && asset.staticImage != null) {
-                return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-            }
-        }
-
-        // Fallback to placeholder icon
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Color based on mob type
-        Color color;
-        switch (mobType) {
-            case "zombie": color = new Color(100, 150, 100); break;
-            case "skeleton": color = new Color(220, 220, 200); break;
-            case "goblin": color = new Color(50, 150, 50); break;
-            case "orc": color = new Color(100, 120, 80); break;
-            case "bandit": color = new Color(120, 80, 60); break;
-            case "knight": color = new Color(180, 180, 200); break;
-            case "mage": color = new Color(100, 50, 150); break;
-            case "wolf": color = new Color(100, 100, 100); break;
-            case "bear": color = new Color(139, 90, 43); break;
-            case "pig": color = new Color(255, 180, 180); break;
-            case "cow": color = new Color(100, 80, 60); break;
-            case "sheep": color = new Color(240, 240, 240); break;
-            case "frog": color = new Color(128, 60, 180); break;  // Purple frog
-            default: color = Color.GRAY;
-        }
-
-        // Draw creature silhouette
-        g.setColor(color);
-        if (mobType.equals("wolf") || mobType.equals("bear") || mobType.equals("pig") ||
-            mobType.equals("cow") || mobType.equals("sheep") || mobType.equals("frog")) {
-            // Quadruped - oval body
-            g.fillOval(6, 14, PALETTE_ITEM_SIZE - 12, PALETTE_ITEM_SIZE - 22);
-            g.fillOval(8, 8, 16, 14); // Head
-        } else {
-            // Humanoid - stick figure
-            g.fillOval(16, 4, 16, 16); // Head
-            g.fillRect(20, 20, 8, 16); // Body
-            g.fillRect(14, 36, 6, 8); // Left leg
-            g.fillRect(28, 36, 6, 8); // Right leg
-        }
-
-        g.setColor(Color.BLACK);
-        g.drawOval(16, 4, 16, 16);
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create a placeholder icon for lights
-     */
-    private BufferedImage createLightIcon(String lightType) {
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Draw light glow
-        Color glowColor;
-        switch (lightType) {
-            case "torch": glowColor = new Color(255, 200, 100); break;
-            case "campfire": glowColor = new Color(255, 150, 50); break;
-            case "lantern": glowColor = new Color(255, 240, 180); break;
-            case "magic": glowColor = new Color(150, 150, 255); break;
-            case "crystal": glowColor = new Color(100, 255, 200); break;
-            default: glowColor = Color.YELLOW;
-        }
-
-        // Outer glow
-        g.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 50));
-        g.fillOval(4, 4, PALETTE_ITEM_SIZE - 8, PALETTE_ITEM_SIZE - 8);
-
-        // Inner glow
-        g.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 150));
-        g.fillOval(12, 12, PALETTE_ITEM_SIZE - 24, PALETTE_ITEM_SIZE - 24);
-
-        // Center
-        g.setColor(glowColor);
-        g.fillOval(18, 18, 12, 12);
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create an icon for parallax layers - loads and scales down the actual image
-     */
-    private BufferedImage createParallaxIcon(String imagePath) {
-        // Try to load the actual parallax image
-        AssetLoader.ImageAsset asset = AssetLoader.load(imagePath);
-        if (asset != null && asset.staticImage != null) {
-            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-        }
-
-        // Fallback to a gradient placeholder
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Create a gradient background
-        GradientPaint gradient = new GradientPaint(
-            0, 0, new Color(100, 150, 200),
-            0, PALETTE_ITEM_SIZE, new Color(50, 80, 120)
-        );
-        g.setPaint(gradient);
-        g.fillRoundRect(2, 2, PALETTE_ITEM_SIZE - 4, PALETTE_ITEM_SIZE - 4, 6, 6);
-
-        // Draw layer lines to indicate parallax
-        g.setColor(new Color(255, 255, 255, 100));
-        for (int i = 10; i < PALETTE_ITEM_SIZE - 10; i += 8) {
-            g.drawLine(4, i, PALETTE_ITEM_SIZE - 4, i);
-        }
-
-        g.setColor(Color.BLACK);
-        g.drawRoundRect(2, 2, PALETTE_ITEM_SIZE - 4, PALETTE_ITEM_SIZE - 4, 6, 6);
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create an icon for doors - loads from GIF or creates placeholder
-     */
-    private BufferedImage createDoorIcon(String texturePath) {
-        // Try to load actual texture
-        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
-        if (asset != null && asset.staticImage != null) {
-            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-        }
-
-        // Fallback placeholder
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Door body
-        g.setColor(new Color(139, 90, 43));
-        g.fillRect(12, 4, 24, 40);
-
-        // Door frame
-        g.setColor(new Color(101, 67, 33));
-        g.setStroke(new BasicStroke(2));
-        g.drawRect(12, 4, 24, 40);
-
-        // Door handle
-        g.setColor(new Color(255, 215, 0));
-        g.fillOval(30, 22, 4, 4);
-
-        g.dispose();
-        return icon;
-    }
-
-    /**
-     * Create an icon for buttons - loads from GIF or creates placeholder
-     */
-    private BufferedImage createButtonIcon(String texturePath) {
-        // Try to load actual texture
-        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
-        if (asset != null && asset.staticImage != null) {
-            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-        }
-
-        // Fallback placeholder
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Button base
-        g.setColor(new Color(80, 80, 80));
-        g.fillRoundRect(8, 20, 32, 12, 4, 4);
-
-        // Button top
-        g.setColor(new Color(120, 120, 120));
-        g.fillRoundRect(10, 18, 28, 10, 4, 4);
-
-        // Highlight
-        g.setColor(new Color(160, 160, 160));
-        g.fillRoundRect(12, 20, 24, 4, 2, 2);
-
-        g.dispose();
-        return icon;
-    }
-
-    private BufferedImage createVaultIcon(String texturePath) {
-        // Try to load actual texture
-        AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
-        if (asset != null && asset.staticImage != null) {
-            return scaleImage(asset.staticImage, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE);
-        }
-
-        // Fallback placeholder - draw a chest/vault shape
-        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Chest body
-        g.setColor(new Color(139, 90, 43));
-        g.fillRoundRect(6, 18, 36, 26, 6, 6);
-
-        // Chest lid
-        g.setColor(new Color(101, 67, 33));
-        g.fillRoundRect(4, 10, 40, 14, 4, 4);
-
-        // Metal bands
-        g.setColor(new Color(169, 169, 169));
-        g.fillRect(10, 18, 3, 26);
-        g.fillRect(35, 18, 3, 26);
-        g.fillRect(21, 18, 6, 26);
-
-        // Gold lock
-        g.setColor(new Color(255, 215, 0));
-        g.fillOval(21, 28, 6, 8);
-
-        g.dispose();
-        return icon;
     }
 
     @Override
@@ -877,24 +257,15 @@ public class CreativeScene implements Scene {
 
         // Tab to cycle categories
         if (input.isKeyJustPressed(KeyEvent.VK_TAB)) {
-            PaletteCategory[] categories = PaletteCategory.values();
-            int nextIndex = (currentCategory.ordinal() + 1) % categories.length;
-            currentCategory = categories[nextIndex];
-            selectedPaletteIndex = 0;
-            paletteScrollOffset = 0;
-            setStatus("Category: " + currentCategory.getDisplayName());
+            paletteManager.cycleCategory();
+            setStatus("Category: " + paletteManager.getCurrentCategory().getDisplayName());
         }
 
         // Handle palette scrolling with mouse wheel when mouse is over palette area
-        if (mouseX < PALETTE_WIDTH) {
+        if (mouseX < CreativePaletteManager.PALETTE_WIDTH) {
             int scroll = input.getScrollDirection();
             if (scroll != 0) {
-                List<PaletteItem> palette = getCurrentPalette();
-                int totalRows = (int) Math.ceil((double) palette.size() / PALETTE_ITEMS_PER_ROW);
-                int maxScroll = Math.max(0, totalRows - PALETTE_VISIBLE_ROWS);
-
-                paletteScrollOffset += scroll;
-                paletteScrollOffset = Math.max(0, Math.min(paletteScrollOffset, maxScroll));
+                paletteManager.handleScroll(scroll);
             }
         }
 
@@ -911,8 +282,9 @@ public class CreativeScene implements Scene {
 
         // S to toggle item sort mode (only when in Items category, and not Ctrl+S for save)
         if (input.isKeyJustPressed(KeyEvent.VK_S) && !input.isKeyPressed(KeyEvent.VK_CONTROL)) {
-            if (currentCategory == PaletteCategory.ITEMS) {
-                toggleItemSortMode();
+            if (paletteManager.getCurrentCategory() == PaletteCategory.ITEMS) {
+                paletteManager.toggleItemSortMode();
+                setStatus("Sort: " + paletteManager.getItemSortMode().getDisplayName());
             }
         }
 
@@ -970,12 +342,12 @@ public class CreativeScene implements Scene {
         worldMouseY = mouseY + (int) cameraY;
 
         // Right-click to delete entity at cursor
-        if (input.isRightMouseJustPressed() && mouseX >= PALETTE_WIDTH) {
+        if (input.isRightMouseJustPressed() && mouseX >= CreativePaletteManager.PALETTE_WIDTH) {
             removeEntityAt(worldMouseX, worldMouseY);
         }
 
         // Left-click to place (already handled in onMouseClicked, but also handle here for immediate feedback)
-        if (input.isLeftMouseJustPressed() && mouseX >= PALETTE_WIDTH) {
+        if (input.isLeftMouseJustPressed() && mouseX >= CreativePaletteManager.PALETTE_WIDTH) {
             placeEntity();
         }
 
@@ -1242,7 +614,7 @@ public class CreativeScene implements Scene {
         hoveredEntity = null;
 
         // Don't check if over palette
-        if (mouseX < PALETTE_WIDTH) return;
+        if (mouseX < CreativePaletteManager.PALETTE_WIDTH) return;
 
         // Check blocks
         for (PlacedEntity entity : placedBlocks) {
@@ -1598,7 +970,7 @@ public class CreativeScene implements Scene {
 
         // Find first grid line that appears after the palette
         int startX = gridOffsetX;
-        while (startX < PALETTE_WIDTH) {
+        while (startX < CreativePaletteManager.PALETTE_WIDTH) {
             startX += GRID_SIZE;
         }
 
@@ -1613,7 +985,7 @@ public class CreativeScene implements Scene {
             startY += GRID_SIZE;
         }
         for (int y = startY; y < GamePanel.SCREEN_HEIGHT; y += GRID_SIZE) {
-            g.drawLine(PALETTE_WIDTH, y, GamePanel.SCREEN_WIDTH, y);
+            g.drawLine(CreativePaletteManager.PALETTE_WIDTH, y, GamePanel.SCREEN_WIDTH, y);
         }
 
         // Draw ground line
@@ -1621,7 +993,7 @@ public class CreativeScene implements Scene {
         if (groundScreenY >= 0 && groundScreenY < GamePanel.SCREEN_HEIGHT) {
             g.setColor(new Color(255, 100, 100, 100));
             g.setStroke(new BasicStroke(2));
-            g.drawLine(PALETTE_WIDTH, groundScreenY, GamePanel.SCREEN_WIDTH, groundScreenY);
+            g.drawLine(CreativePaletteManager.PALETTE_WIDTH, groundScreenY, GamePanel.SCREEN_WIDTH, groundScreenY);
             g.setStroke(new BasicStroke(1));
         }
     }
@@ -1635,7 +1007,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + GRID_SIZE > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + GRID_SIZE > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + GRID_SIZE > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1655,7 +1027,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + GRID_SIZE > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + GRID_SIZE > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + GRID_SIZE > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1700,7 +1072,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 32 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 32 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 32 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1719,7 +1091,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 48 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 48 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 48 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1738,7 +1110,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 32 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 32 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 32 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1757,7 +1129,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 64 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 64 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 128 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1801,7 +1173,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 32 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 32 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 16 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1843,7 +1215,7 @@ public class CreativeScene implements Scene {
             int screenX = entity.x - (int) cameraX;
             int screenY = entity.y - (int) cameraY;
 
-            if (screenX + 64 > PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
+            if (screenX + 64 > CreativePaletteManager.PALETTE_WIDTH && screenX < GamePanel.SCREEN_WIDTH &&
                 screenY + 64 > 0 && screenY < GamePanel.SCREEN_HEIGHT) {
 
                 if (entity.icon != null) {
@@ -1879,15 +1251,15 @@ public class CreativeScene implements Scene {
      * Draw preview of selected item at cursor
      */
     private void drawCursorPreview(Graphics2D g) {
-        if (mouseX < PALETTE_WIDTH) return;
+        if (mouseX < CreativePaletteManager.PALETTE_WIDTH) return;
 
-        PaletteItem selected = getSelectedPaletteItem();
+        PaletteItem selected = paletteManager.getSelectedPaletteItem();
         if (selected == null) return;
 
         int previewX, previewY;
         int size;
 
-        if (currentCategory == PaletteCategory.BLOCKS) {
+        if (paletteManager.getCurrentCategory() == PaletteCategory.BLOCKS) {
             // Snap to grid
             int gridX = (worldMouseX / GRID_SIZE) * GRID_SIZE;
             int gridY = (worldMouseY / GRID_SIZE) * GRID_SIZE;
@@ -1897,7 +1269,7 @@ public class CreativeScene implements Scene {
         } else {
             previewX = mouseX - 16;
             previewY = mouseY - 16;
-            size = currentCategory == PaletteCategory.MOBS ? 48 : 32;
+            size = paletteManager.getCurrentCategory() == PaletteCategory.MOBS ? 48 : 32;
         }
 
         // Draw semi-transparent preview
@@ -1915,34 +1287,34 @@ public class CreativeScene implements Scene {
     private void drawPalette(Graphics2D g) {
         // Background
         g.setColor(new Color(30, 34, 42));
-        g.fillRect(0, 0, PALETTE_WIDTH, GamePanel.SCREEN_HEIGHT);
+        g.fillRect(0, 0, CreativePaletteManager.PALETTE_WIDTH, GamePanel.SCREEN_HEIGHT);
 
         // Border
         g.setColor(new Color(60, 64, 72));
-        g.drawLine(PALETTE_WIDTH, 0, PALETTE_WIDTH, GamePanel.SCREEN_HEIGHT);
+        g.drawLine(CreativePaletteManager.PALETTE_WIDTH, 0, CreativePaletteManager.PALETTE_WIDTH, GamePanel.SCREEN_HEIGHT);
 
         // Category tabs
         int tabY = 10;
         int tabHeight = 30;
         for (PaletteCategory cat : PaletteCategory.values()) {
-            boolean isSelected = cat == currentCategory;
+            boolean isSelected = cat == paletteManager.getCurrentCategory();
 
             g.setColor(isSelected ? new Color(70, 130, 180) : new Color(50, 54, 62));
-            g.fillRoundRect(10, tabY, PALETTE_WIDTH - 20, tabHeight, 5, 5);
+            g.fillRoundRect(10, tabY, CreativePaletteManager.PALETTE_WIDTH - 20, tabHeight, 5, 5);
 
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", isSelected ? Font.BOLD : Font.PLAIN, 12));
             FontMetrics fm = g.getFontMetrics();
-            int textX = (PALETTE_WIDTH - fm.stringWidth(cat.getDisplayName())) / 2;
+            int textX = (CreativePaletteManager.PALETTE_WIDTH - fm.stringWidth(cat.getDisplayName())) / 2;
             g.drawString(cat.getDisplayName(), textX, tabY + 20);
 
             tabY += tabHeight + 5;
         }
 
         // Draw palette items with scrolling
-        List<PaletteItem> currentPalette = getCurrentPalette();
-        int startIndex = paletteScrollOffset * PALETTE_ITEMS_PER_ROW;
-        int endIndex = Math.min(startIndex + PALETTE_VISIBLE_ROWS * PALETTE_ITEMS_PER_ROW, currentPalette.size());
+        List<PaletteItem> currentPalette = paletteManager.getCurrentPalette();
+        int startIndex = paletteManager.getPaletteScrollOffset() * CreativePaletteManager.PALETTE_ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + CreativePaletteManager.PALETTE_VISIBLE_ROWS * CreativePaletteManager.PALETTE_ITEMS_PER_ROW, currentPalette.size());
 
         int itemY = tabY + 20;
         int itemX = 10;
@@ -1950,19 +1322,19 @@ public class CreativeScene implements Scene {
 
         for (int i = startIndex; i < endIndex; i++) {
             PaletteItem item = currentPalette.get(i);
-            boolean isSelected = i == selectedPaletteIndex;
+            boolean isSelected = i == paletteManager.getSelectedPaletteIndex();
 
             // Background
             g.setColor(isSelected ? new Color(70, 130, 180) : new Color(50, 54, 62));
-            g.fillRoundRect(itemX, itemY, PALETTE_ITEM_SIZE + 8, PALETTE_ITEM_SIZE + 8, 5, 5);
+            g.fillRoundRect(itemX, itemY, CreativePaletteManager.PALETTE_ITEM_SIZE + 8, CreativePaletteManager.PALETTE_ITEM_SIZE + 8, 5, 5);
 
             // Icon
             if (item.icon != null) {
-                g.drawImage(item.icon, itemX + 4, itemY + 4, PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, null);
+                g.drawImage(item.icon, itemX + 4, itemY + 4, CreativePaletteManager.PALETTE_ITEM_SIZE, CreativePaletteManager.PALETTE_ITEM_SIZE, null);
             }
 
             // For parallax items, show checkmark if layer is active
-            if (currentCategory == PaletteCategory.PARALLAX) {
+            if (paletteManager.getCurrentCategory() == PaletteCategory.PARALLAX) {
                 boolean isActive = false;
                 for (ParallaxLayerEntry layer : parallaxLayers) {
                     if (layer.name.equals(item.id)) {
@@ -1973,43 +1345,43 @@ public class CreativeScene implements Scene {
                 if (isActive) {
                     // Draw green checkmark overlay
                     g.setColor(new Color(0, 255, 0, 180));
-                    g.fillOval(itemX + PALETTE_ITEM_SIZE - 4, itemY + 4, 12, 12);
+                    g.fillOval(itemX + CreativePaletteManager.PALETTE_ITEM_SIZE - 4, itemY + 4, 12, 12);
                     g.setColor(Color.WHITE);
                     g.setFont(new Font("Arial", Font.BOLD, 10));
-                    g.drawString("✓", itemX + PALETTE_ITEM_SIZE - 1, itemY + 13);
+                    g.drawString("✓", itemX + CreativePaletteManager.PALETTE_ITEM_SIZE - 1, itemY + 13);
                 }
             }
 
             // Selection border
             if (isSelected) {
                 g.setColor(Color.WHITE);
-                g.drawRoundRect(itemX, itemY, PALETTE_ITEM_SIZE + 8, PALETTE_ITEM_SIZE + 8, 5, 5);
+                g.drawRoundRect(itemX, itemY, CreativePaletteManager.PALETTE_ITEM_SIZE + 8, CreativePaletteManager.PALETTE_ITEM_SIZE + 8, 5, 5);
             }
 
             col++;
-            itemX += PALETTE_ITEM_SIZE + 12;
+            itemX += CreativePaletteManager.PALETTE_ITEM_SIZE + 12;
 
-            if (col >= PALETTE_ITEMS_PER_ROW) {
+            if (col >= CreativePaletteManager.PALETTE_ITEMS_PER_ROW) {
                 col = 0;
                 itemX = 10;
-                itemY += PALETTE_ITEM_SIZE + 12;
+                itemY += CreativePaletteManager.PALETTE_ITEM_SIZE + 12;
             }
         }
 
         // Draw scroll indicators if needed
-        int totalRows = (int) Math.ceil((double) currentPalette.size() / PALETTE_ITEMS_PER_ROW);
-        if (totalRows > PALETTE_VISIBLE_ROWS) {
+        int totalRows = (int) Math.ceil((double) currentPalette.size() / CreativePaletteManager.PALETTE_ITEMS_PER_ROW);
+        if (totalRows > CreativePaletteManager.PALETTE_VISIBLE_ROWS) {
             g.setFont(new Font("Arial", Font.BOLD, 14));
 
             // Scroll up indicator
-            if (paletteScrollOffset > 0) {
+            if (paletteManager.getPaletteScrollOffset() > 0) {
                 g.setColor(new Color(150, 200, 255));
                 g.drawString("▲ Scroll Up", 50, tabY + 10);
             }
 
             // Scroll down indicator
-            int maxScroll = Math.max(0, totalRows - PALETTE_VISIBLE_ROWS);
-            if (paletteScrollOffset < maxScroll) {
+            int maxScroll = Math.max(0, totalRows - CreativePaletteManager.PALETTE_VISIBLE_ROWS);
+            if (paletteManager.getPaletteScrollOffset() < maxScroll) {
                 g.setColor(new Color(150, 200, 255));
                 g.drawString("▼ Scroll Down", 45, GamePanel.SCREEN_HEIGHT - 60);
             }
@@ -2017,23 +1389,23 @@ public class CreativeScene implements Scene {
             // Scroll position indicator
             g.setFont(new Font("Arial", Font.PLAIN, 10));
             g.setColor(new Color(180, 180, 200));
-            String scrollInfo = (paletteScrollOffset + 1) + "-" + Math.min(paletteScrollOffset + PALETTE_VISIBLE_ROWS, totalRows) + " of " + totalRows + " rows";
+            String scrollInfo = (paletteManager.getPaletteScrollOffset() + 1) + "-" + Math.min(paletteManager.getPaletteScrollOffset() + CreativePaletteManager.PALETTE_VISIBLE_ROWS, totalRows) + " of " + totalRows + " rows";
             g.drawString(scrollInfo, 10, GamePanel.SCREEN_HEIGHT - 75);
         }
 
         // Draw selected item name
-        if (selectedPaletteIndex < currentPalette.size()) {
+        if (paletteManager.getSelectedPaletteIndex() < currentPalette.size()) {
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.PLAIN, 11));
-            String name = currentPalette.get(selectedPaletteIndex).displayName;
+            String name = currentPalette.get(paletteManager.getSelectedPaletteIndex()).displayName;
             g.drawString(name, 10, GamePanel.SCREEN_HEIGHT - 40);
         }
 
         // Draw sort mode indicator for Items category
-        if (currentCategory == PaletteCategory.ITEMS) {
+        if (paletteManager.getCurrentCategory() == PaletteCategory.ITEMS) {
             g.setFont(new Font("Arial", Font.BOLD, 10));
             g.setColor(new Color(100, 180, 255));
-            String sortLabel = "Sort: " + itemSortMode.getDisplayName() + " [S]";
+            String sortLabel = "Sort: " + paletteManager.getItemSortMode().getDisplayName() + " [S]";
             g.drawString(sortLabel, 10, GamePanel.SCREEN_HEIGHT - 20);
         }
     }
@@ -2044,13 +1416,13 @@ public class CreativeScene implements Scene {
     private void drawToolbar(Graphics2D g) {
         // Background
         g.setColor(new Color(40, 44, 52, 200));
-        g.fillRect(PALETTE_WIDTH, 0, GamePanel.SCREEN_WIDTH - PALETTE_WIDTH, 40);
+        g.fillRect(CreativePaletteManager.PALETTE_WIDTH, 0, GamePanel.SCREEN_WIDTH - CreativePaletteManager.PALETTE_WIDTH, 40);
 
         // Controls help
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.PLAIN, 11));
         g.drawString("WASD: Pan | LClick: Place | RClick: Delete | Tab: Category | G: Grid | P: Play | Ctrl+S: Save | L: Load | Esc: Menu",
-            PALETTE_WIDTH + 10, 25);
+            CreativePaletteManager.PALETTE_WIDTH + 10, 25);
     }
 
     /**
@@ -2069,11 +1441,11 @@ public class CreativeScene implements Scene {
         float alpha = Math.min(1f, (3000 - elapsed) / 1000f);
 
         g.setColor(new Color(0, 0, 0, (int)(200 * alpha)));
-        g.fillRoundRect(PALETTE_WIDTH + 10, GamePanel.SCREEN_HEIGHT - 50, 400, 30, 10, 10);
+        g.fillRoundRect(CreativePaletteManager.PALETTE_WIDTH + 10, GamePanel.SCREEN_HEIGHT - 50, 400, 30, 10, 10);
 
         g.setColor(new Color(255, 255, 255, (int)(255 * alpha)));
         g.setFont(new Font("Arial", Font.BOLD, 14));
-        g.drawString(statusMessage, PALETTE_WIDTH + 20, GamePanel.SCREEN_HEIGHT - 30);
+        g.drawString(statusMessage, CreativePaletteManager.PALETTE_WIDTH + 20, GamePanel.SCREEN_HEIGHT - 30);
     }
 
     /**
@@ -2101,76 +1473,6 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Get the currently active palette
-     */
-    private List<PaletteItem> getCurrentPalette() {
-        switch (currentCategory) {
-            case BLOCKS: return blockPalette;
-            case MOVING_BLOCKS: return movingBlockPalette;
-            case ITEMS: return sortedItemPalette != null ? sortedItemPalette : itemPalette;
-            case MOBS: return mobPalette;
-            case LIGHTS: return lightPalette;
-            case INTERACTIVE: return interactivePalette;
-            case PARALLAX: return parallaxPalette;
-            default: return blockPalette;
-        }
-    }
-
-    /**
-     * Get the currently selected palette item
-     */
-    private PaletteItem getSelectedPaletteItem() {
-        List<PaletteItem> palette = getCurrentPalette();
-        if (selectedPaletteIndex >= 0 && selectedPaletteIndex < palette.size()) {
-            return palette.get(selectedPaletteIndex);
-        }
-        return null;
-    }
-
-    /**
-     * Sort the item palette based on current sort mode
-     */
-    private void sortItemPalette() {
-        sortedItemPalette = new ArrayList<>(itemPalette);
-
-        switch (itemSortMode) {
-            case RARITY:
-                // Sort by rarity (Mythic first, then Legendary, Epic, Rare, Uncommon, Common)
-                sortedItemPalette.sort((a, b) -> {
-                    Item itemA = ItemRegistry.getTemplate(a.id);
-                    Item itemB = ItemRegistry.getTemplate(b.id);
-                    if (itemA == null || itemB == null) return 0;
-                    // Reverse order so mythic comes first
-                    int rarityCompare = itemB.getRarity().ordinal() - itemA.getRarity().ordinal();
-                    // Secondary sort: alphabetical within same rarity
-                    if (rarityCompare == 0) {
-                        return a.displayName.compareToIgnoreCase(b.displayName);
-                    }
-                    return rarityCompare;
-                });
-                break;
-
-            case ALPHABETICAL:
-                // Sort alphabetically by display name
-                sortedItemPalette.sort((a, b) -> a.displayName.compareToIgnoreCase(b.displayName));
-                break;
-        }
-    }
-
-    /**
-     * Toggle the item palette sort mode
-     */
-    private void toggleItemSortMode() {
-        ItemSortMode[] modes = ItemSortMode.values();
-        int currentIndex = itemSortMode.ordinal();
-        itemSortMode = modes[(currentIndex + 1) % modes.length];
-        sortItemPalette();
-        selectedPaletteIndex = 0;  // Reset selection to first item
-        paletteScrollOffset = 0;   // Reset scroll position
-        setStatus("Sort: " + itemSortMode.getDisplayName());
-    }
-
-    /**
      * Set a status message to display
      */
     private void setStatus(String message) {
@@ -2189,7 +1491,7 @@ public class CreativeScene implements Scene {
         mouseY = y;
 
         // Check palette clicks
-        if (x < PALETTE_WIDTH) {
+        if (x < CreativePaletteManager.PALETTE_WIDTH) {
             handlePaletteClick(x, y);
             return;
         }
@@ -2223,7 +1525,7 @@ public class CreativeScene implements Scene {
         worldMouseY = y + (int) cameraY;
 
         // Continuous placement while dragging (for blocks)
-        if (isDragging && x >= PALETTE_WIDTH && currentCategory == PaletteCategory.BLOCKS) {
+        if (isDragging && x >= CreativePaletteManager.PALETTE_WIDTH && paletteManager.getCurrentCategory() == PaletteCategory.BLOCKS) {
             placeEntity();
         }
     }
@@ -2265,9 +1567,9 @@ public class CreativeScene implements Scene {
         int tabHeight = 30;
         for (PaletteCategory cat : PaletteCategory.values()) {
             if (y >= tabY && y < tabY + tabHeight) {
-                currentCategory = cat;
-                selectedPaletteIndex = 0;
-                paletteScrollOffset = 0;
+                paletteManager.setCurrentCategory(cat);
+                paletteManager.setSelectedPaletteIndex(0);
+                paletteManager.setPaletteScrollOffset(0);
                 return;
             }
             tabY += tabHeight + 5;
@@ -2277,24 +1579,24 @@ public class CreativeScene implements Scene {
         int itemY = tabY + 20;
         int itemX = 10;
         int col = 0;
-        List<PaletteItem> palette = getCurrentPalette();
-        int startIndex = paletteScrollOffset * PALETTE_ITEMS_PER_ROW;
-        int endIndex = Math.min(startIndex + PALETTE_VISIBLE_ROWS * PALETTE_ITEMS_PER_ROW, palette.size());
+        List<PaletteItem> palette = paletteManager.getCurrentPalette();
+        int startIndex = paletteManager.getPaletteScrollOffset() * CreativePaletteManager.PALETTE_ITEMS_PER_ROW;
+        int endIndex = Math.min(startIndex + CreativePaletteManager.PALETTE_VISIBLE_ROWS * CreativePaletteManager.PALETTE_ITEMS_PER_ROW, palette.size());
 
         for (int i = startIndex; i < endIndex; i++) {
-            Rectangle itemRect = new Rectangle(itemX, itemY, PALETTE_ITEM_SIZE + 8, PALETTE_ITEM_SIZE + 8);
+            Rectangle itemRect = new Rectangle(itemX, itemY, CreativePaletteManager.PALETTE_ITEM_SIZE + 8, CreativePaletteManager.PALETTE_ITEM_SIZE + 8);
             if (itemRect.contains(x, y)) {
-                selectedPaletteIndex = i;
+                paletteManager.setSelectedPaletteIndex(i);
                 return;
             }
 
             col++;
-            itemX += PALETTE_ITEM_SIZE + 12;
+            itemX += CreativePaletteManager.PALETTE_ITEM_SIZE + 12;
 
-            if (col >= PALETTE_ITEMS_PER_ROW) {
+            if (col >= CreativePaletteManager.PALETTE_ITEMS_PER_ROW) {
                 col = 0;
                 itemX = 10;
-                itemY += PALETTE_ITEM_SIZE + 12;
+                itemY += CreativePaletteManager.PALETTE_ITEM_SIZE + 12;
             }
         }
     }
@@ -2303,12 +1605,12 @@ public class CreativeScene implements Scene {
      * Place an entity at the current mouse position
      */
     private void placeEntity() {
-        PaletteItem selected = getSelectedPaletteItem();
+        PaletteItem selected = paletteManager.getSelectedPaletteItem();
         if (selected == null) return;
 
         int placeX, placeY;
 
-        switch (currentCategory) {
+        switch (paletteManager.getCurrentCategory()) {
             case BLOCKS:
                 // Snap to grid
                 placeX = (worldMouseX / GRID_SIZE) * GRID_SIZE;
@@ -2322,7 +1624,7 @@ public class CreativeScene implements Scene {
                 }
 
                 BlockType blockType = (BlockType) selected.data;
-                BufferedImage blockIcon = blockTextures.get(blockType);
+                BufferedImage blockIcon = paletteManager.getBlockTextures().get(blockType);
                 PlacedEntity block = new PlacedEntity(placeX, placeY, "block", blockType, blockIcon);
                 block.gridX = placeX / GRID_SIZE;
                 block.gridY = placeY / GRID_SIZE;
@@ -2978,20 +2280,20 @@ public class CreativeScene implements Scene {
                 int px = b.useGridCoords ? b.x * GRID_SIZE : b.x;
                 int py = b.useGridCoords ? b.y * GRID_SIZE : b.y;
 
-                PlacedEntity entity = new PlacedEntity(px, py, "block", type, blockTextures.get(type));
+                PlacedEntity entity = new PlacedEntity(px, py, "block", type, paletteManager.getBlockTextures().get(type));
                 entity.gridX = b.useGridCoords ? b.x : b.x / GRID_SIZE;
                 entity.gridY = b.useGridCoords ? b.y : b.y / GRID_SIZE;
                 placedBlocks.add(entity);
             }
 
             for (LevelData.ItemData i : levelData.items) {
-                BufferedImage icon = createItemIcon(i.itemId != null ? i.itemId : "unknown");
+                BufferedImage icon = paletteManager.createItemIcon(i.itemId != null ? i.itemId : "unknown");
                 PlacedEntity entity = new PlacedEntity(i.x, i.y, "item", i.itemId, icon);
                 placedItems.add(entity);
             }
 
             for (LevelData.MobData m : levelData.mobs) {
-                BufferedImage icon = createMobIcon(m.subType != null ? m.subType : "zombie");
+                BufferedImage icon = paletteManager.createMobIcon(m.subType != null ? m.subType : "zombie");
                 Map<String, String> mobData = new HashMap<>();
                 mobData.put("mobType", m.mobType);
                 mobData.put("subType", m.subType);
@@ -3001,7 +2303,7 @@ public class CreativeScene implements Scene {
             }
 
             for (LevelData.LightSourceData l : levelData.lightSources) {
-                BufferedImage icon = createLightIcon(l.lightType);
+                BufferedImage icon = paletteManager.createLightIcon(l.lightType);
                 PlacedEntity entity = new PlacedEntity(l.x, l.y, "light", l.lightType, icon);
                 placedLights.add(entity);
             }
@@ -3009,7 +2311,7 @@ public class CreativeScene implements Scene {
             // Restore parallax layers
             parallaxLayers.clear();
             for (LevelData.ParallaxLayerData p : levelData.parallaxLayers) {
-                BufferedImage icon = createParallaxIcon(p.imagePath);
+                BufferedImage icon = paletteManager.createParallaxIcon(p.imagePath);
                 ParallaxLayerEntry entry = new ParallaxLayerEntry(
                     p.name, p.imagePath, p.scrollSpeedX, p.zOrder, icon
                 );
@@ -3029,7 +2331,7 @@ public class CreativeScene implements Scene {
                 doorData.put("linkId", d.linkId);
                 doorData.put("actionType", d.actionType);
                 doorData.put("actionTarget", d.actionTarget);
-                BufferedImage icon = createDoorIcon(d.texturePath);
+                BufferedImage icon = paletteManager.createDoorIcon(d.texturePath);
                 PlacedEntity entity = new PlacedEntity(d.x, d.y, "door", doorData, icon);
                 placedDoors.add(entity);
             }
@@ -3044,7 +2346,7 @@ public class CreativeScene implements Scene {
                 buttonData.put("buttonType", b.buttonType);
                 buttonData.put("actionType", b.actionType);
                 buttonData.put("actionTarget", b.actionTarget);
-                BufferedImage icon = createButtonIcon(b.texturePath);
+                BufferedImage icon = paletteManager.createButtonIcon(b.texturePath);
                 PlacedEntity entity = new PlacedEntity(b.x, b.y, "button", buttonData, icon);
                 placedButtons.add(entity);
             }
@@ -3057,7 +2359,7 @@ public class CreativeScene implements Scene {
                 vaultData.put("texturePath", v.texturePath);
                 vaultData.put("linkId", v.linkId);
                 vaultData.put("vaultType", v.vaultType);
-                BufferedImage icon = createVaultIcon(v.texturePath);
+                BufferedImage icon = paletteManager.createVaultIcon(v.texturePath);
                 PlacedEntity entity = new PlacedEntity(v.x, v.y, "vault", vaultData, icon);
                 placedVaults.add(entity);
             }
@@ -3080,8 +2382,8 @@ public class CreativeScene implements Scene {
                 movingData.put("radius", mb.radius);
 
                 // Create icon with pattern overlay
-                BufferedImage baseIcon = blockTextures.get(type);
-                BufferedImage icon = createMovingBlockIcon(baseIcon, mb.movementPattern);
+                BufferedImage baseIcon = paletteManager.getBlockTextures().get(type);
+                BufferedImage icon = paletteManager.createMovingBlockIcon(baseIcon, mb.movementPattern);
 
                 PlacedEntity entity = new PlacedEntity(px, py, "moving_block", movingData, icon);
                 entity.gridX = mb.useGridCoords ? mb.x : mb.x / GRID_SIZE;
