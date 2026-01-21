@@ -1,7 +1,8 @@
-package entity;
+package entity.item;
 
 import animation.*;
 import animation.ItemAnimationState;
+import entity.ProjectileEntity;
 import graphics.*;
 
 import java.awt.*;

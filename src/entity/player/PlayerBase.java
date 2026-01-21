@@ -1,11 +1,9 @@
 package entity.player;
 import entity.*;
-import block.*;
-import animation.*;
 import audio.*;
+import entity.item.ItemEntity;
 import input.*;
 import ui.*;
-import graphics.*;
 
 import java.awt.*;
 import java.util.ArrayList;

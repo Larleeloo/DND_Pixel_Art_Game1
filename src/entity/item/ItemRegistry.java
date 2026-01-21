@@ -1,11 +1,10 @@
-package entity;
+package entity.item;
 
 import animation.ItemAnimationState;
 import animation.TriggeredAnimationManager;
-import entity.Item.ItemCategory;
-import entity.Item.ItemRarity;
+import entity.item.Item.ItemCategory;
+import entity.item.Item.ItemRarity;
 import entity.ProjectileEntity.ProjectileType;
-import graphics.AnimatedTexture;
 
 import java.io.File;
 import java.util.HashMap;

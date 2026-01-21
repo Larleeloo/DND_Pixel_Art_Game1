@@ -1,10 +1,10 @@
 package ui;
 
-import entity.Item;
-import entity.ItemEntity;
-import entity.ItemRegistry;
-import entity.RecipeManager;
-import entity.RecipeManager.Recipe;
+import entity.item.Item;
+import entity.item.ItemEntity;
+import entity.item.ItemRegistry;
+import entity.item.RecipeManager;
+import entity.item.RecipeManager.Recipe;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

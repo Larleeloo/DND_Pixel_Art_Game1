@@ -1,6 +1,6 @@
 package entity;
 
-import entity.Item.ItemRarity;
+import entity.item.Item.ItemRarity;
 import java.util.ArrayList;
 import java.util.List;
 

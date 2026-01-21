@@ -1,6 +1,8 @@
 package entity.mob;
 import entity.*;
-import entity.player.*;
+import entity.item.Item;
+import entity.item.ItemEntity;
+import entity.item.ItemRegistry;
 import block.*;
 import animation.*;
 import graphics.*;

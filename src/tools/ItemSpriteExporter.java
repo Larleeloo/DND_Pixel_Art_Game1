@@ -1,6 +1,8 @@
 package tools;
 
-import entity.*;
+import entity.item.Item;
+import entity.item.ItemRegistry;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;

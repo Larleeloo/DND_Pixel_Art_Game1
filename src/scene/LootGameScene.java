@@ -2,6 +2,7 @@ package scene;
 
 import core.GamePanel;
 import entity.*;
+import entity.item.*;
 import entity.player.*;
 import block.*;
 import input.*;

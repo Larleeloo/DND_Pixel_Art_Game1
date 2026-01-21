@@ -1,6 +1,6 @@
 package block;
 import entity.*;
-import graphics.*;
+import entity.item.ItemEntity;
 import audio.*;
 
 import java.awt.*;

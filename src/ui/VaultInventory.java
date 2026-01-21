@@ -1,8 +1,9 @@
 package ui;
 
-import entity.Item;
-import entity.ItemEntity;
-import entity.ItemRegistry;
+import entity.item.Item;
+import entity.item.ItemEntity;
+import entity.item.ItemRegistry;
+import entity.item.VaultEntity;
 import save.SaveManager;
 import save.SaveManager.SavedItem;
 
@@ -50,7 +51,7 @@ public class VaultInventory {
 
     // Local storage mode (for STORAGE_CHEST)
     private boolean localMode = false;
-    private entity.VaultEntity linkedVault = null;
+    private VaultEntity linkedVault = null;
 
     // Items loaded from vault
     private List<VaultSlot> slots = new ArrayList<>();
@@ -206,7 +207,7 @@ public class VaultInventory {
      * Opens the vault UI in local mode (for STORAGE_CHEST).
      * Items are stored in the vault entity, not in SaveManager.
      */
-    public void openLocal(int playerInventoryX, int playerInventoryY, entity.VaultEntity vault) {
+    public void openLocal(int playerInventoryX, int playerInventoryY, VaultEntity vault) {
         isOpen = true;
         localMode = true;
         linkedVault = vault;
@@ -1024,7 +1025,7 @@ public class VaultInventory {
 
     public boolean isLocalMode() { return localMode; }
 
-    public entity.VaultEntity getLinkedVault() { return linkedVault; }
+    public VaultEntity getLinkedVault() { return linkedVault; }
 
     public void setItemTakenCallback(ItemTakenCallback callback) {
         this.itemTakenCallback = callback;

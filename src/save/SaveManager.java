@@ -1,7 +1,7 @@
 package save;
 
-import entity.Item;
-import entity.ItemRegistry;
+import entity.item.Item;
+import entity.item.ItemRegistry;
 
 import java.io.*;
 import java.nio.file.*;

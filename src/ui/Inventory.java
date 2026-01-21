@@ -1,12 +1,12 @@
 package ui;
-import entity.*;
-import block.*;
-import audio.*;
+import entity.item.Item;
+import entity.item.ItemEntity;
+import entity.item.ItemRegistry;
+import entity.item.VaultEntity;
 import save.SaveManager;
 import save.SaveManager.SavedItem;
 
 import java.awt.*;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1104,7 +1104,7 @@ public class Inventory {
      *
      * @param vaultEntity The vault entity to link, or null for persistent mode
      */
-    public void openVault(entity.VaultEntity vaultEntity) {
+    public void openVault(VaultEntity vaultEntity) {
         if (!vaultOpen) {
             vaultOpen = true;
             isOpen = true;  // Also open regular inventory
@@ -1153,7 +1153,7 @@ public class Inventory {
      *
      * @param vaultEntity The vault entity to link, or null for persistent mode
      */
-    public void toggleVault(entity.VaultEntity vaultEntity) {
+    public void toggleVault(VaultEntity vaultEntity) {
         if (vaultOpen) {
             closeVault();
         } else {

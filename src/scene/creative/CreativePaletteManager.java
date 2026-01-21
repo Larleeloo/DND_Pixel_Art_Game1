@@ -1,7 +1,8 @@
 package scene.creative;
 
-import entity.*;
 import block.*;
+import entity.item.Item;
+import entity.item.ItemRegistry;
 import graphics.AssetLoader;
 
 import java.awt.*;

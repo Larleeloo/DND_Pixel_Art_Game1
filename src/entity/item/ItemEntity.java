@@ -1,13 +1,11 @@
-package entity;
+package entity.item;
 import block.*;
+import entity.Entity;
 import input.*;
 import graphics.*;
-import animation.*;
-import audio.*;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

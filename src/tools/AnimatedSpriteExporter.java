@@ -1,8 +1,9 @@
 package tools;
 
-import entity.*;
+import entity.item.Item;
+import entity.item.ItemRegistry;
+
 import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Set;

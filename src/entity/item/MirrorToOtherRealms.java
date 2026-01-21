@@ -1,6 +1,5 @@
-package entity;
+package entity.item;
 
-import entity.Item;
 import entity.ProjectileEntity;
 import entity.ProjectileEntity.ProjectileType;
 import java.util.ArrayList;

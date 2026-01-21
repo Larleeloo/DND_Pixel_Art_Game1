@@ -2,7 +2,8 @@ package entity.capabilities;
 
 import block.*;
 import entity.*;
-import graphics.*;
+import entity.item.Item;
+import entity.item.ItemEntity;
 import audio.*;
 import ui.*;
 

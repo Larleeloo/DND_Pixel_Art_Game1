@@ -1,5 +1,6 @@
-package entity;
+package entity.item;
 
+import entity.Entity;
 import graphics.AnimatedTexture;
 import graphics.AssetLoader;
 import input.InputManager;

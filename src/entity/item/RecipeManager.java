@@ -1,4 +1,4 @@
-package entity;
+package entity.item;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
