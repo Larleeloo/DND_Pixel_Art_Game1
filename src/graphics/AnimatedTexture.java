@@ -14,6 +14,7 @@ import java.util.Map;
  * This class provides support for:
  * - Multi-frame GIF animations
  * - Per-frame timing (respects GIF frame delays)
+ * - Forward and reverse playback
  * - Tinted texture caching
  * - Static texture fallback for single-frame images
  *
@@ -33,6 +34,7 @@ public class AnimatedTexture {
     private long elapsedTime;  // Time since current frame started (ms)
     private boolean paused;
     private boolean looping;
+    private int playDirection;  // +1 for forward, -1 for reverse
 
     // Dimensions (all frames should have same dimensions)
     private final int width;
@@ -77,8 +79,9 @@ public class AnimatedTexture {
 
         this.currentFrameIndex = 0;
         this.elapsedTime = 0;
-        this.paused = false;
+        this.paused = true;  // Start paused by default
         this.looping = true;
+        this.playDirection = 1;  // Forward by default
 
         // Get dimensions from first frame
         BufferedImage firstFrame = frames.get(0);
@@ -102,6 +105,7 @@ public class AnimatedTexture {
     /**
      * Updates the animation state based on elapsed time.
      * Call this every frame with the time delta.
+     * Supports both forward and reverse playback.
      *
      * @param deltaMs Time elapsed since last update in milliseconds
      */
@@ -116,13 +120,24 @@ public class AnimatedTexture {
         // Advance frames if enough time has passed
         while (elapsedTime >= currentDelay) {
             elapsedTime -= currentDelay;
-            currentFrameIndex++;
+            currentFrameIndex += playDirection;
 
-            if (currentFrameIndex >= frames.size()) {
+            // Handle boundary conditions
+            if (playDirection > 0 && currentFrameIndex >= frames.size()) {
+                // Forward playback reached end
                 if (looping) {
                     currentFrameIndex = 0;
                 } else {
                     currentFrameIndex = frames.size() - 1;
+                    paused = true;
+                    break;
+                }
+            } else if (playDirection < 0 && currentFrameIndex < 0) {
+                // Reverse playback reached start
+                if (looping) {
+                    currentFrameIndex = frames.size() - 1;
+                } else {
+                    currentFrameIndex = 0;
                     paused = true;
                     break;
                 }
@@ -232,6 +247,71 @@ public class AnimatedTexture {
         currentFrameIndex = 0;
         elapsedTime = 0;
         paused = false;
+        playDirection = 1;
+    }
+
+    /**
+     * Starts playing the animation forward from the current frame.
+     * Unpauses the animation and sets direction to forward.
+     */
+    public void playForward() {
+        playDirection = 1;
+        paused = false;
+        elapsedTime = 0;
+    }
+
+    /**
+     * Starts playing the animation in reverse from the current frame.
+     * Unpauses the animation and sets direction to reverse.
+     */
+    public void playReverse() {
+        playDirection = -1;
+        paused = false;
+        elapsedTime = 0;
+    }
+
+    /**
+     * Jumps to the first frame and pauses.
+     * Useful for showing the "closed" state of a chest animation.
+     */
+    public void goToStart() {
+        currentFrameIndex = 0;
+        elapsedTime = 0;
+        paused = true;
+    }
+
+    /**
+     * Jumps to the last frame and pauses.
+     * Useful for showing the "open" state of a chest animation.
+     */
+    public void goToEnd() {
+        currentFrameIndex = frames.size() - 1;
+        elapsedTime = 0;
+        paused = true;
+    }
+
+    /**
+     * Checks if the animation is at the first frame.
+     * @return true if at first frame
+     */
+    public boolean isAtStart() {
+        return currentFrameIndex == 0;
+    }
+
+    /**
+     * Checks if the animation is at the last frame.
+     * @return true if at last frame
+     */
+    public boolean isAtEnd() {
+        return currentFrameIndex == frames.size() - 1;
+    }
+
+    /**
+     * Gets the current playback direction.
+     * @return 1 for forward, -1 for reverse
+     */
+    public int getPlayDirection() {
+        return playDirection;
     }
 
     /**
