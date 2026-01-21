@@ -149,6 +149,14 @@ public class Item {
     private int statusEffectDamagePerTick = 0;   // Damage per tick
     private float statusEffectDamageMultiplier = 1.0f;  // Impact damage multiplier
 
+    // ==================== Ability Scaling Properties ====================
+
+    // These flags indicate which ability scores affect this item's usage/damage
+    private boolean scalesWithStrength = false;     // Melee weapons - STR affects damage (+/-17%)
+    private boolean scalesWithDexterity = false;    // Dexterity items - chance for double use or miss
+    private boolean scalesWithIntelligence = false; // Magical items - INT affects damage (+/-15%)
+    private int wisdomRequirement = 0;              // Ancient artifacts - minimum WIS to use (0 = no requirement)
+
     // ==================== Constructors ====================
 
     /**
@@ -250,6 +258,10 @@ public class Item {
         this.statusEffectDuration = original.statusEffectDuration;
         this.statusEffectDamagePerTick = original.statusEffectDamagePerTick;
         this.statusEffectDamageMultiplier = original.statusEffectDamageMultiplier;
+        this.scalesWithStrength = original.scalesWithStrength;
+        this.scalesWithDexterity = original.scalesWithDexterity;
+        this.scalesWithIntelligence = original.scalesWithIntelligence;
+        this.wisdomRequirement = original.wisdomRequirement;
     }
 
     /**
@@ -1005,6 +1017,107 @@ public class Item {
         return statusEffectType != ProjectileEntity.StatusEffectType.NONE;
     }
 
+    // ==================== Ability Scaling Getters/Setters ====================
+
+    /**
+     * Checks if this item's damage scales with Strength.
+     * Melee weapons typically scale with strength (+/-17% per point).
+     */
+    public boolean scalesWithStrength() {
+        return scalesWithStrength;
+    }
+
+    /**
+     * Sets whether this item scales with Strength.
+     */
+    public void setScalesWithStrength(boolean scales) {
+        this.scalesWithStrength = scales;
+    }
+
+    /**
+     * Checks if this item's usage scales with Dexterity.
+     * Dexterity items have a chance for double use (above baseline) or miss (below baseline).
+     */
+    public boolean scalesWithDexterity() {
+        return scalesWithDexterity;
+    }
+
+    /**
+     * Sets whether this item scales with Dexterity.
+     */
+    public void setScalesWithDexterity(boolean scales) {
+        this.scalesWithDexterity = scales;
+    }
+
+    /**
+     * Checks if this item's damage scales with Intelligence.
+     * Magical items typically scale with intelligence (+/-15% per point).
+     */
+    public boolean scalesWithIntelligence() {
+        return scalesWithIntelligence;
+    }
+
+    /**
+     * Sets whether this item scales with Intelligence.
+     */
+    public void setScalesWithIntelligence(boolean scales) {
+        this.scalesWithIntelligence = scales;
+    }
+
+    /**
+     * Gets the minimum Wisdom required to use this item.
+     * Returns 0 if no wisdom requirement.
+     */
+    public int getWisdomRequirement() {
+        return wisdomRequirement;
+    }
+
+    /**
+     * Sets the minimum Wisdom required to use this item.
+     * Set to 0 for no requirement.
+     */
+    public void setWisdomRequirement(int requirement) {
+        this.wisdomRequirement = Math.max(0, requirement);
+    }
+
+    /**
+     * Checks if this item requires wisdom to use.
+     */
+    public boolean requiresWisdom() {
+        return wisdomRequirement > 0;
+    }
+
+    /**
+     * Checks if this item has any ability scaling.
+     */
+    public boolean hasAbilityScaling() {
+        return scalesWithStrength || scalesWithDexterity || scalesWithIntelligence || wisdomRequirement > 0;
+    }
+
+    /**
+     * Gets a formatted string of ability tags for this item.
+     */
+    public String getAbilityTags() {
+        StringBuilder tags = new StringBuilder();
+        if (scalesWithStrength) {
+            if (tags.length() > 0) tags.append(", ");
+            tags.append("[STR]");
+        }
+        if (scalesWithDexterity) {
+            if (tags.length() > 0) tags.append(", ");
+            tags.append("[DEX]");
+        }
+        if (scalesWithIntelligence) {
+            if (tags.length() > 0) tags.append(", ");
+            tags.append("[INT]");
+        }
+        if (wisdomRequirement > 0) {
+            if (tags.length() > 0) tags.append(", ");
+            tags.append("[WIS:" + wisdomRequirement + "]");
+        }
+        return tags.toString();
+    }
+
     /**
      * Gets a formatted tooltip string for inventory display.
      */
@@ -1026,6 +1139,10 @@ public class Item {
         }
         if (specialEffect != null && !specialEffect.isEmpty()) {
             sb.append("Effect: ").append(specialEffect).append("\n");
+        }
+        // Add ability scaling tags
+        if (hasAbilityScaling()) {
+            sb.append("Scales: ").append(getAbilityTags()).append("\n");
         }
         if (description != null && !description.isEmpty()) {
             sb.append("\n").append(description);

@@ -670,11 +670,13 @@ public class ItemRegistry {
                 .setSpecialEffect("Ice damage immunity");
 
         // ==================== MYTHIC WEAPONS (Ultimate Loot) ====================
+        // Mythic weapons require high Wisdom to wield (ancient artifact restrictions)
 
         Item voidBlade = registerMeleeWeapon("void_blade", "Void Blade", 65, 1.3f, 85,
                 ItemRarity.MYTHIC, "Forged in the heart of a black hole");
         voidBlade.setSpecialEffect("Absorbs enemy souls");
         voidBlade.setCritChance(0.30f);
+        voidBlade.setWisdomRequirement(8);  // Requires high WIS to wield
 
         Item celestialBow = registerRangedWeapon("celestial_bow", "Celestial Bow", 45, 30.0f, ProjectileType.ARROW,
                 ItemRarity.MYTHIC, "Fires arrows of pure starlight");
@@ -682,6 +684,7 @@ public class ItemRegistry {
         celestialBow.setChargeable(true, 1.5f, 0, 4.0f);
         celestialBow.setChargeSpeedMultiplier(3.0f);
         celestialBow.setCritChance(0.25f);
+        celestialBow.setWisdomRequirement(8);  // Requires high WIS to wield
 
         Item infinityStaff = registerRangedWeapon("infinity_staff", "Staff of Infinity", 55, 20.0f, ProjectileType.MAGIC_BOLT,
                 ItemRarity.MYTHIC, "Contains the power of infinity");
@@ -689,38 +692,46 @@ public class ItemRegistry {
         infinityStaff.setChargeable(true, 5.0f, 50, 5.0f);
         infinityStaff.setChargeSizeMultiplier(4.0f);
         infinityStaff.setSpecialEffect("Reality-bending damage");
+        infinityStaff.setWisdomRequirement(9);  // Requires very high WIS to wield
 
         Item soulReaver = registerMeleeWeapon("soul_reaver", "Soul Reaver", 45, 1.0f, 75,
                 ItemRarity.MYTHIC, "Devours the souls of the fallen");
         soulReaver.setSpecialEffect("100% lifesteal on kill");
         soulReaver.setCritChance(0.20f);
+        soulReaver.setWisdomRequirement(8);  // Requires high WIS to wield
 
         Item timeWarp = registerMeleeWeapon("time_warp_blade", "Chrono Blade", 40, 2.0f, 70,
                 ItemRarity.MYTHIC, "Bends time around its wielder");
         timeWarp.setSpecialEffect("Slows time on hit");
+        timeWarp.setWisdomRequirement(9);  // Requires very high WIS to wield
 
         // ==================== LEGENDARY WEAPONS ====================
+        // Legendary weapons require moderate Wisdom to wield
 
         Item phoenixBow = registerRangedWeapon("phoenix_bow", "Phoenix Bow", 35, 22.0f, ProjectileType.ARROW,
                 ItemRarity.LEGENDARY, "Rises from the ashes");
         phoenixBow.setAmmoItemName("arrow");
         phoenixBow.setChargeable(true, 2.0f, 0, 3.5f);
         phoenixBow.setSpecialEffect("Fire arrows that resurrect");
+        phoenixBow.setWisdomRequirement(7);  // Requires WIS to wield
 
         Item frostmourne = registerMeleeWeapon("frostmourne", "Frostmourne", 42, 0.9f, 80,
                 ItemRarity.LEGENDARY, "Hungers for souls");
         frostmourne.setSpecialEffect("Freezes enemies solid");
         frostmourne.setCritChance(0.18f);
+        frostmourne.setWisdomRequirement(7);  // Requires WIS to wield
 
         Item thunderHammer = registerMeleeWeapon("thunder_hammer", "Thunder Hammer", 55, 0.6f, 90,
                 ItemRarity.LEGENDARY, "Strikes with the fury of storms");
         thunderHammer.setSpecialEffect("Chain lightning on hit");
         thunderHammer.setCritChance(0.12f);
+        thunderHammer.setWisdomRequirement(6);  // Requires some WIS to wield
 
         Item shadowDagger = registerMeleeWeapon("shadow_dagger", "Shadow Dagger", 28, 3.0f, 40,
                 ItemRarity.LEGENDARY, "Strikes from the shadows");
         shadowDagger.setSpecialEffect("Invisible for 2 seconds after backstab");
         shadowDagger.setCritChance(0.35f);
+        shadowDagger.setWisdomRequirement(6);  // Requires some WIS to wield
 
         // ==================== EPIC ARMOR ====================
 
@@ -728,35 +739,46 @@ public class ItemRegistry {
                 ItemRarity.EPIC, "Blazes with eternal fire")
                 .setSpecialEffect("+100% fire resistance, auto-revive once");
 
-        registerArmor("void_armor", "Void Armor", 35,
-                ItemRarity.LEGENDARY, "Woven from the fabric of space")
-                .setSpecialEffect("+30% damage reduction, +15% evasion");
+        Item voidArmor = registerArmor("void_armor", "Void Armor", 35,
+                ItemRarity.LEGENDARY, "Woven from the fabric of space");
+        voidArmor.setSpecialEffect("+30% damage reduction, +15% evasion");
+        voidArmor.setWisdomRequirement(7);  // Ancient artifact
 
-        registerArmor("celestial_robes", "Celestial Robes", 20,
-                ItemRarity.MYTHIC, "Garments of the gods")
-                .setSpecialEffect("+50% mana, +30% magic damage");
+        Item celestialRobes = registerArmor("celestial_robes", "Celestial Robes", 20,
+                ItemRarity.MYTHIC, "Garments of the gods");
+        celestialRobes.setSpecialEffect("+50% mana, +30% magic damage");
+        celestialRobes.setScalesWithIntelligence(true);  // Magic robes scale with INT
+        celestialRobes.setWisdomRequirement(8);  // Ancient artifact
 
-        registerArmor("titan_gauntlets", "Titan Gauntlets", 18,
-                ItemRarity.LEGENDARY, "Worn by ancient giants")
-                .setSpecialEffect("+40% melee damage, ground slam ability");
+        Item titanGauntlets = registerArmor("titan_gauntlets", "Titan Gauntlets", 18,
+                ItemRarity.LEGENDARY, "Worn by ancient giants");
+        titanGauntlets.setSpecialEffect("+40% melee damage, ground slam ability");
+        titanGauntlets.setScalesWithStrength(true);  // Titan gauntlets scale with STR
+        titanGauntlets.setWisdomRequirement(6);  // Ancient artifact
 
         // ==================== MYTHIC ACCESSORIES ====================
+        // Mythic accessories are ancient artifacts requiring high Wisdom
 
-        registerCollectible("heart_of_eternity", "Heart of Eternity", ItemRarity.MYTHIC,
-                "The crystallized essence of time itself")
-                .setSpecialEffect("Immortality for 10 seconds per day");
+        Item heartOfEternity = registerCollectible("heart_of_eternity", "Heart of Eternity", ItemRarity.MYTHIC,
+                "The crystallized essence of time itself");
+        heartOfEternity.setSpecialEffect("Immortality for 10 seconds per day");
+        heartOfEternity.setWisdomRequirement(9);  // Most powerful artifact
 
-        registerCollectible("eye_of_cosmos", "Eye of the Cosmos", ItemRarity.MYTHIC,
-                "See all that was, is, and will be")
-                .setSpecialEffect("Reveal all secrets and treasures");
+        Item eyeOfCosmos = registerCollectible("eye_of_cosmos", "Eye of the Cosmos", ItemRarity.MYTHIC,
+                "See all that was, is, and will be");
+        eyeOfCosmos.setSpecialEffect("Reveal all secrets and treasures");
+        eyeOfCosmos.setWisdomRequirement(8);  // Powerful artifact
 
-        registerCollectible("philosophers_stone", "Philosopher's Stone", ItemRarity.MYTHIC,
-                "The legendary alchemical creation")
-                .setSpecialEffect("Transmute any material to gold");
+        Item philosophersStone = registerCollectible("philosophers_stone", "Philosopher's Stone", ItemRarity.MYTHIC,
+                "The legendary alchemical creation");
+        philosophersStone.setSpecialEffect("Transmute any material to gold");
+        philosophersStone.setScalesWithIntelligence(true);  // Alchemical item scales with INT
+        philosophersStone.setWisdomRequirement(8);  // Powerful artifact
 
-        registerCollectible("ankh_of_rebirth", "Ankh of Rebirth", ItemRarity.LEGENDARY,
-                "Symbol of eternal life")
-                .setSpecialEffect("Auto-revive with full health");
+        Item ankhOfRebirth = registerCollectible("ankh_of_rebirth", "Ankh of Rebirth", ItemRarity.LEGENDARY,
+                "Symbol of eternal life");
+        ankhOfRebirth.setSpecialEffect("Auto-revive with full health");
+        ankhOfRebirth.setWisdomRequirement(7);  // Legendary artifact
 
         // ==================== LEGENDARY POTIONS ====================
 
@@ -1036,6 +1058,7 @@ public class ItemRegistry {
         item.setRange(range);
         item.setRarity(rarity);
         item.setDescription(desc);
+        item.setScalesWithStrength(true);  // Melee weapons scale with STR
         templates.put(id, item);
         return item;
     }
@@ -1047,6 +1070,12 @@ public class ItemRegistry {
         item.setRarity(rarity);
         item.setDescription(desc);
         item.setAmmoItemName("arrow"); // Default ammo
+        // Staffs and wands scale with INT, bows scale with DEX
+        if (id.contains("staff") || id.contains("wand")) {
+            item.setScalesWithIntelligence(true);  // Magic weapons scale with INT
+        } else {
+            item.setScalesWithDexterity(true);  // Bows/crossbows scale with DEX
+        }
         templates.put(id, item);
         return item;
     }
@@ -1062,6 +1091,7 @@ public class ItemRegistry {
         item.setDescription(desc);
         item.setStackable(true);
         item.setMaxStackSize(16);
+        item.setScalesWithDexterity(true);  // Throwing weapons scale with DEX
         templates.put(id, item);
         return item;
     }
