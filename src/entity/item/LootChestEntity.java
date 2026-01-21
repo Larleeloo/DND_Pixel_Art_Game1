@@ -1,10 +1,13 @@
 package entity.item;
 
 import entity.Entity;
+import graphics.AnimatedTexture;
+import graphics.AssetLoader;
 import input.InputManager;
 import save.SaveManager;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -21,15 +24,17 @@ import java.util.Set;
 public class LootChestEntity extends Entity {
 
     public enum ChestType {
-        DAILY(3, 1.0f),    // 3 items, normal rarity
-        MONTHLY(10, 2.5f); // 10 items, boosted rarity
+        DAILY(3, 1.0f, "assets/chests/daily_chest"),    // 3 items, normal rarity
+        MONTHLY(10, 2.5f, "assets/chests/monthly_chest"); // 10 items, boosted rarity
 
         public final int itemCount;
         public final float rarityBoost;
+        public final String textureBasePath;
 
-        ChestType(int itemCount, float rarityBoost) {
+        ChestType(int itemCount, float rarityBoost, String textureBasePath) {
             this.itemCount = itemCount;
             this.rarityBoost = rarityBoost;
+            this.textureBasePath = textureBasePath;
         }
     }
 
@@ -42,7 +47,12 @@ public class LootChestEntity extends Entity {
     private boolean isOpening = false;
     private float openProgress = 0;
     private float openSpeed = 0.02f;
-    private float lidAngle = 0;
+
+    // Textures (GIF-based)
+    private AnimatedTexture closedTexture;
+    private AnimatedTexture openTexture;
+    private BufferedImage currentFrame;
+    private long lastUpdateTime = System.currentTimeMillis();
 
     // Particle effects
     private List<Particle> particles;
@@ -78,6 +88,9 @@ public class LootChestEntity extends Entity {
         this.droppedItems = new ArrayList<>();
         this.interactionZone = new Rectangle(x - 50, y - 50, width + 100, height + 100);
 
+        // Load textures
+        loadTextures();
+
         // Check if chest can be opened
         SaveManager save = SaveManager.getInstance();
         if (type == ChestType.DAILY) {
@@ -87,6 +100,152 @@ public class LootChestEntity extends Entity {
         }
     }
 
+    /**
+     * Loads GIF textures for closed and open states.
+     */
+    private void loadTextures() {
+        String basePath = chestType.textureBasePath;
+
+        // Load closed texture
+        try {
+            AssetLoader.ImageAsset closedAsset = AssetLoader.load(basePath + "_closed.gif");
+            if (closedAsset.animatedTexture != null) {
+                closedTexture = closedAsset.animatedTexture;
+            } else if (closedAsset.staticImage != null) {
+                closedTexture = createSingleFrameTexture(closedAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("LootChestEntity: Failed to load closed texture: " + basePath + "_closed.gif");
+        }
+
+        // Load open texture
+        try {
+            AssetLoader.ImageAsset openAsset = AssetLoader.load(basePath + "_open.gif");
+            if (openAsset.animatedTexture != null) {
+                openTexture = openAsset.animatedTexture;
+            } else if (openAsset.staticImage != null) {
+                openTexture = createSingleFrameTexture(openAsset.staticImage);
+            }
+        } catch (Exception e) {
+            System.err.println("LootChestEntity: Failed to load open texture: " + basePath + "_open.gif");
+        }
+
+        // Create placeholder textures if needed
+        if (closedTexture == null) {
+            closedTexture = createPlaceholderTexture(false);
+        }
+        if (openTexture == null) {
+            openTexture = createPlaceholderTexture(true);
+        }
+
+        currentFrame = closedTexture.getCurrentFrame();
+    }
+
+    /**
+     * Creates a single-frame AnimatedTexture from a static image.
+     */
+    private AnimatedTexture createSingleFrameTexture(BufferedImage image) {
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(image);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000); // 1 second delay (doesn't matter for single frame)
+        return new AnimatedTexture(frames, delays);
+    }
+
+    /**
+     * Creates a placeholder texture when GIF files are not available.
+     */
+    private AnimatedTexture createPlaceholderTexture(boolean isOpenState) {
+        BufferedImage placeholder = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = placeholder.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Chest base color (dark wood) - different for each type
+        Color baseColor = chestType == ChestType.MONTHLY ?
+            new Color(80, 40, 100) : new Color(100, 60, 30);
+        Color highlightColor = chestType == ChestType.MONTHLY ?
+            new Color(120, 60, 140) : new Color(140, 90, 50);
+        Color metalColor = chestType == ChestType.MONTHLY ?
+            new Color(200, 180, 255) : new Color(255, 215, 0);
+
+        // Draw main body
+        g.setColor(baseColor);
+        g.fillRoundRect(0, height / 3, width, height * 2 / 3, 8, 8);
+
+        // Body highlight
+        g.setColor(highlightColor);
+        g.fillRoundRect(4, height / 3 + 4, width - 8, height / 4, 4, 4);
+
+        // Metal bands
+        g.setColor(metalColor);
+        g.fillRect(5, height / 3, 8, height * 2 / 3);
+        g.fillRect(width - 13, height / 3, 8, height * 2 / 3);
+        g.fillRect(width / 2 - 4, height / 3, 8, height * 2 / 3);
+
+        // Lock/keyhole
+        g.setColor(metalColor.darker());
+        g.fillOval(width / 2 - 8, height / 2 + 5, 16, 20);
+        g.setColor(Color.BLACK);
+        g.fillOval(width / 2 - 4, height / 2 + 10, 8, 10);
+
+        // Draw lid (position depends on open state)
+        if (isOpenState) {
+            // Open lid - rotated back
+            java.awt.geom.AffineTransform oldTransform = g.getTransform();
+            g.rotate(Math.toRadians(-70), width / 2, height / 3);
+
+            // Lid colors
+            Color lidBaseColor = chestType == ChestType.MONTHLY ?
+                new Color(100, 50, 120) : new Color(120, 70, 35);
+            Color lidHighlightColor = chestType == ChestType.MONTHLY ?
+                new Color(140, 80, 160) : new Color(160, 100, 60);
+
+            g.setColor(lidBaseColor);
+            g.fillRoundRect(0, 0, width, height / 3 + 5, 10, 10);
+
+            g.setColor(lidHighlightColor);
+            g.fillArc(0, -height / 6, width, height / 3, 0, 180);
+
+            // Metal bands on lid
+            g.setColor(metalColor);
+            g.fillRect(5, 0, 8, height / 3 + 5);
+            g.fillRect(width - 13, 0, 8, height / 3 + 5);
+            g.fillRect(width / 2 - 4, 0, 8, height / 3 + 5);
+
+            g.setTransform(oldTransform);
+        } else {
+            // Closed lid
+            Color lidBaseColor = chestType == ChestType.MONTHLY ?
+                new Color(100, 50, 120) : new Color(120, 70, 35);
+            Color lidHighlightColor = chestType == ChestType.MONTHLY ?
+                new Color(140, 80, 160) : new Color(160, 100, 60);
+
+            g.setColor(lidBaseColor);
+            g.fillRoundRect(0, 0, width, height / 3 + 5, 10, 10);
+
+            g.setColor(lidHighlightColor);
+            g.fillArc(0, -height / 6, width, height / 3, 0, 180);
+
+            // Metal bands on lid
+            g.setColor(metalColor);
+            g.fillRect(5, 0, 8, height / 3 + 5);
+            g.fillRect(width - 13, 0, 8, height / 3 + 5);
+            g.fillRect(width / 2 - 4, 0, 8, height / 3 + 5);
+
+            // Lid edge highlight
+            g.setColor(new Color(255, 255, 255, 50));
+            g.drawArc(2, -height / 6 + 2, width - 4, height / 3 - 4, 0, 180);
+        }
+
+        g.dispose();
+
+        List<BufferedImage> frames = new ArrayList<>();
+        frames.add(placeholder);
+        List<Integer> delays = new ArrayList<>();
+        delays.add(1000);
+        return new AnimatedTexture(frames, delays);
+    }
+
     @Override
     public Rectangle getBounds() {
         return new Rectangle(x, y, width, height);
@@ -94,6 +253,10 @@ public class LootChestEntity extends Entity {
 
     @Override
     public void update(InputManager input) {
+        long currentTime = System.currentTimeMillis();
+        long deltaMs = currentTime - lastUpdateTime;
+        lastUpdateTime = currentTime;
+
         // Update glow animation
         glowPhase += 0.05f;
         if (glowPhase > Math.PI * 2) {
@@ -104,7 +267,6 @@ public class LootChestEntity extends Entity {
         // Update opening animation
         if (isOpening) {
             openProgress += openSpeed;
-            lidAngle = openProgress * 90; // Lid rotates up to 90 degrees
 
             if (openProgress >= 1.0f) {
                 openProgress = 1.0f;
@@ -119,6 +281,19 @@ public class LootChestEntity extends Entity {
 
             // Spawn particles during opening
             spawnOpeningParticles();
+        }
+
+        // Update animated textures and get current frame
+        if (isOpen || isOpening) {
+            if (openTexture != null) {
+                openTexture.update(deltaMs);
+                currentFrame = openTexture.getCurrentFrame();
+            }
+        } else {
+            if (closedTexture != null) {
+                closedTexture.update(deltaMs);
+                currentFrame = closedTexture.getCurrentFrame();
+            }
         }
 
         // Update particles
@@ -410,11 +585,10 @@ public class LootChestEntity extends Entity {
             drawGlow(g2d);
         }
 
-        // Draw chest body
-        drawChestBody(g2d);
-
-        // Draw chest lid
-        drawChestLid(g2d);
+        // Draw chest texture (GIF-based)
+        if (currentFrame != null) {
+            g2d.drawImage(currentFrame, x, y, width, height, null);
+        }
 
         // Draw particles
         for (Particle p : particles) {
@@ -454,81 +628,6 @@ public class LootChestEntity extends Entity {
                 (int)(alpha * 255)));
             g.fillOval(x - size / 2 + width / 2, y - size / 2 + height / 2, size, size);
         }
-    }
-
-    /**
-     * Draws the main body of the chest.
-     */
-    private void drawChestBody(Graphics2D g) {
-        // Chest base color (dark wood)
-        Color baseColor = chestType == ChestType.MONTHLY ?
-            new Color(80, 40, 100) : new Color(100, 60, 30);
-        Color highlightColor = chestType == ChestType.MONTHLY ?
-            new Color(120, 60, 140) : new Color(140, 90, 50);
-        Color metalColor = chestType == ChestType.MONTHLY ?
-            new Color(200, 180, 255) : new Color(255, 215, 0);
-
-        // Main body
-        g.setColor(baseColor);
-        g.fillRoundRect(x, y + height / 3, width, height * 2 / 3, 8, 8);
-
-        // Body highlight
-        g.setColor(highlightColor);
-        g.fillRoundRect(x + 4, y + height / 3 + 4, width - 8, height / 4, 4, 4);
-
-        // Metal bands
-        g.setColor(metalColor);
-        g.fillRect(x + 5, y + height / 3, 8, height * 2 / 3);
-        g.fillRect(x + width - 13, y + height / 3, 8, height * 2 / 3);
-        g.fillRect(x + width / 2 - 4, y + height / 3, 8, height * 2 / 3);
-
-        // Lock/keyhole
-        g.setColor(metalColor.darker());
-        g.fillOval(x + width / 2 - 8, y + height / 2 + 5, 16, 20);
-        g.setColor(Color.BLACK);
-        g.fillOval(x + width / 2 - 4, y + height / 2 + 10, 8, 10);
-    }
-
-    /**
-     * Draws the lid of the chest (animated when opening).
-     */
-    private void drawChestLid(Graphics2D g) {
-        // Save transform
-        java.awt.geom.AffineTransform oldTransform = g.getTransform();
-
-        // Rotate around the back edge of the lid
-        int pivotX = x + width / 2;
-        int pivotY = y + height / 3;
-        g.rotate(Math.toRadians(-lidAngle), pivotX, pivotY);
-
-        // Lid colors
-        Color baseColor = chestType == ChestType.MONTHLY ?
-            new Color(100, 50, 120) : new Color(120, 70, 35);
-        Color highlightColor = chestType == ChestType.MONTHLY ?
-            new Color(140, 80, 160) : new Color(160, 100, 60);
-        Color metalColor = chestType == ChestType.MONTHLY ?
-            new Color(200, 180, 255) : new Color(255, 215, 0);
-
-        // Lid body
-        g.setColor(baseColor);
-        g.fillRoundRect(x, y, width, height / 3 + 5, 10, 10);
-
-        // Lid top (curved)
-        g.setColor(highlightColor);
-        g.fillArc(x, y - height / 6, width, height / 3, 0, 180);
-
-        // Metal bands on lid
-        g.setColor(metalColor);
-        g.fillRect(x + 5, y, 8, height / 3 + 5);
-        g.fillRect(x + width - 13, y, 8, height / 3 + 5);
-        g.fillRect(x + width / 2 - 4, y, 8, height / 3 + 5);
-
-        // Lid edge highlight
-        g.setColor(new Color(255, 255, 255, 50));
-        g.drawArc(x + 2, y - height / 6 + 2, width - 4, height / 3 - 4, 0, 180);
-
-        // Restore transform
-        g.setTransform(oldTransform);
     }
 
     /**
