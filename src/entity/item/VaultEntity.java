@@ -62,10 +62,13 @@ public class VaultEntity extends Entity {
     private VaultType vaultType;
 
     // Visual state
+    private AnimatedTexture animatedTexture;
     private BufferedImage texture;
     private AnimatedTexture closedTexture;
     private AnimatedTexture openTexture;
     private boolean isOpen = false;
+    private boolean isOpening = false;
+    private boolean isClosing = false;
     private boolean isInteractable = true;
 
     // Glow effect
@@ -136,7 +139,41 @@ public class VaultEntity extends Entity {
         return new VaultEntity(x, y, VaultType.ANCIENT_POTTERY);
     }
 
+    /**
+     * Loads the GIF texture for opening animation.
+     * A single GIF represents the full open/close animation:
+     * - First frame = closed state
+     * - Last frame = open state
+     * - Play forward to open, play reverse to close
+     */
     private void loadTexture() {
+        String texturePath = vaultType.getTextureBasePath() + ".gif";
+
+        try {
+            AssetLoader.ImageAsset asset = AssetLoader.load(texturePath);
+            if (asset.animatedTexture != null) {
+                animatedTexture = asset.animatedTexture;
+            } else if (asset.staticImage != null) {
+                // Single static image - create single-frame animation
+                List<BufferedImage> frames = new ArrayList<>();
+                frames.add(asset.staticImage);
+                List<Integer> delays = new ArrayList<>();
+                delays.add(100);
+                animatedTexture = new AnimatedTexture(frames, delays);
+            }
+        } catch (Exception e) {
+            System.err.println("VaultEntity: Failed to load texture: " + texturePath);
+        }
+
+        // Create placeholder if needed
+        if (animatedTexture == null) {
+            animatedTexture = createPlaceholderTexture();
+        }
+
+        // Configure for non-looping playback and start at first frame (closed)
+        animatedTexture.setLooping(false);
+        animatedTexture.goToStart();
+    }
         String basePath = vaultType.getTextureBasePath();
 
         // Load closed texture
@@ -213,9 +250,48 @@ public class VaultEntity extends Entity {
         g.fillRect(52, 20, 4, 40);
         g.fillRect(28, 20, 8, 40);
 
-        // Draw lock
-        g.setColor(new Color(255, 215, 0));  // Gold
-        g.fillOval(28, 35, 8, 10);
+    /**
+     * Creates a placeholder animated texture when GIF file is not available.
+     * Creates multiple frames showing the lid opening animation.
+     */
+    private AnimatedTexture createPlaceholderTexture() {
+        List<BufferedImage> frames = new ArrayList<>();
+        List<Integer> delays = new ArrayList<>();
+
+        // Create frames for opening animation (8 frames, 0 to 45 degrees)
+        int frameCount = 8;
+        for (int f = 0; f < frameCount; f++) {
+            float lidAngle = (f / (float)(frameCount - 1)) * 45; // 0 to 45 degrees
+
+            BufferedImage frame = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = frame.createGraphics();
+
+            // Draw a simple vault/chest shape
+            g.setColor(new Color(139, 90, 43));  // Brown for wood
+            g.fillRoundRect(4, 16, 56, 44, 8, 8);
+
+            // Draw lid with rotation based on frame
+            java.awt.geom.AffineTransform oldTransform = g.getTransform();
+            g.rotate(Math.toRadians(-lidAngle), 32, 16);
+            g.setColor(new Color(101, 67, 33));  // Darker brown
+            g.fillRoundRect(2, 8, 60, 20, 6, 6);
+            g.setTransform(oldTransform);
+
+            // Draw metal bands
+            g.setColor(new Color(169, 169, 169));  // Silver
+            g.fillRect(8, 20, 4, 40);
+            g.fillRect(52, 20, 4, 40);
+            g.fillRect(28, 20, 8, 40);
+
+            // Draw lock
+            g.setColor(new Color(255, 215, 0));  // Gold
+            g.fillOval(28, 35, 8, 10);
+
+            g.dispose();
+
+            frames.add(frame);
+            delays.add(50); // 50ms per frame
+        }
 
         g.dispose();
 
@@ -238,6 +314,20 @@ public class VaultEntity extends Entity {
         glowPhase += delta * 2;
         glowIntensity = 0.4f + 0.2f * (float) Math.sin(glowPhase);
 
+        // Update the animated texture
+        if (animatedTexture != null) {
+            animatedTexture.update(deltaMs);
+
+            // Check if opening animation completed (reached last frame)
+            if (isOpening && animatedTexture.isAtEnd() && animatedTexture.isPaused()) {
+                isOpening = false;
+                isOpen = true;
+            }
+
+            // Check if closing animation completed (reached first frame)
+            if (isClosing && animatedTexture.isAtStart() && animatedTexture.isPaused()) {
+                isClosing = false;
+                isOpen = false;
         // Update animated texture based on state and get current frame
         if (isOpen) {
             if (openTexture != null) {
@@ -266,6 +356,9 @@ public class VaultEntity extends Entity {
             drawInteractionPrompt(g2d);
         }
 
+        // Draw vault texture (GIF-based with directional playback)
+        if (animatedTexture != null) {
+            g2d.drawImage(animatedTexture.getCurrentFrame(), x, y, width, height, null);
         // Draw vault texture (GIF-based, no programmatic animation)
         if (texture != null) {
             g2d.drawImage(texture, x, y, width, height, null);
@@ -374,30 +467,54 @@ public class VaultEntity extends Entity {
 
     /**
      * Opens the vault.
+     * Plays the GIF animation forward.
      */
     public void open() {
-        isOpen = true;
+        if (isOpen || isOpening) return;
+
+        isOpening = true;
+        isClosing = false;
+
+        // Start playing the animation forward
+        if (animatedTexture != null) {
+            animatedTexture.playForward();
+        }
+
         if (onOpenCallback != null) {
             onOpenCallback.run();
         }
-        System.out.println("VaultEntity: Vault opened");
+        System.out.println("VaultEntity: Vault opening");
     }
 
     /**
      * Closes the vault.
+     * Plays the GIF animation in reverse.
      */
     public void close() {
-        isOpen = false;
+        if (!isOpen || isClosing) return;
+
+        isClosing = true;
+        isOpening = false;
+
+        // Start playing the animation in reverse
+        if (animatedTexture != null) {
+            animatedTexture.playReverse();
+        }
+
         if (onCloseCallback != null) {
             onCloseCallback.run();
         }
-        System.out.println("VaultEntity: Vault closed");
+        System.out.println("VaultEntity: Vault closing");
     }
 
     /**
      * Toggles the vault open/closed state.
      */
     public void toggle() {
+        if (isOpening || isClosing) {
+            // Don't toggle while animation is in progress
+            return;
+        }
         if (isOpen) {
             close();
         } else {
@@ -419,10 +536,13 @@ public class VaultEntity extends Entity {
             Math.pow(playerCenterY - vaultCenterY, 2)
         );
 
+        boolean wasNearby = playerNearby;
         playerNearby = distance <= INTERACTION_RANGE;
 
-        // Auto-close if player moves away while open
-        if (isOpen && !playerNearby) {
+        // Auto-close if player moves away while open (and not already closing)
+        if ((isOpen || isOpening) && wasNearby && !playerNearby && !isClosing) {
+            isOpening = false;
+            isOpen = true; // Force to open state so close() can work
             close();
         }
     }
