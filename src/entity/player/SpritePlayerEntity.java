@@ -926,6 +926,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                 // Trigger jump dust particles
                 triggeredAnimManager.triggerJumpDust(x + width / 2, y + height);
 
+                // Controller vibration for first jump
+                ControllerManager controller = ControllerManager.getInstance();
+                if (controller.isVibrationSupported()) {
+                    controller.vibrate(VibrationPattern.GREATER_JUMP);
+                }
+
                 if (audioManager != null) {
                     audioManager.playSound("jump");
                 }
@@ -959,6 +965,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                     x + width / 2 - 20, y + height / 2 - 10,
                     40, 20, null, 0.4, false
                 );
+
+                // Controller vibration for multi-jump (double or triple)
+                ControllerManager controller = ControllerManager.getInstance();
+                if (controller.isVibrationSupported()) {
+                    if (currentJumpNumber >= 3) {
+                        controller.vibrate(VibrationPattern.GREATER_TRIPLE_JUMP);
+                    } else {
+                        controller.vibrate(VibrationPattern.GREATER_DOUBLE_JUMP);
+                    }
+                }
 
                 if (!hasUnlimitedJumps) {
                     jumpsRemaining--;
@@ -1809,6 +1825,22 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         velY += knockbackY;
         invincibilityTimer = invincibilityTime;
 
+        // Controller vibration for damage taken
+        ControllerManager controller = ControllerManager.getInstance();
+        if (controller.isVibrationSupported()) {
+            // Use stronger vibration for critical damage (more than 25% of max health)
+            if (damage > maxHealth / 4) {
+                controller.vibrate(VibrationPattern.GREATER_CRITICAL_DAMAGE);
+            } else {
+                controller.vibrate(VibrationPattern.GREATER_DAMAGE_TAKEN);
+            }
+
+            // Check for death
+            if (currentHealth <= 0) {
+                controller.vibrate(VibrationPattern.PLAYER_DEATH);
+            }
+        }
+
         if (audioManager != null) {
             audioManager.playSound("hurt");
         }
@@ -2021,6 +2053,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                 attackOriginX, attackOriginY,
                 attackAngle, effectiveRange, weaponAttackSpeed
             );
+
+            // Controller vibration for melee attack
+            ControllerManager controller = ControllerManager.getInstance();
+            if (controller.isVibrationSupported()) {
+                controller.vibrate(VibrationPattern.GREATER_MELEE_ATTACK);
+            }
 
             spriteAnimation.setState(SpriteAnimation.ActionState.ATTACK);
             return true;

@@ -3,6 +3,8 @@ package input;
 import net.java.games.input.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Manages Xbox controller input using JInput library.
@@ -28,6 +30,11 @@ import java.util.List;
  *   - Y Button → 'I' key (Inventory)
  *   - Start Button → 'M' key (Menu/Settings)
  *   - Back Button → Escape key
+ *
+ * Vibration/Haptic Feedback:
+ * - Supports rumble motors (left = low frequency, right = high frequency)
+ * - Use vibrate() methods to trigger haptic feedback
+ * - Patterns defined in VibrationPattern enum
  */
 public class ControllerManager {
 
@@ -36,6 +43,14 @@ public class ControllerManager {
     private Controller xboxController;
     private boolean controllerConnected = false;
     private boolean jinputAvailable = false;
+
+    // Rumble/vibration support
+    private Rumbler leftRumbler = null;   // Low frequency motor
+    private Rumbler rightRumbler = null;  // High frequency motor
+    private boolean vibrationEnabled = true;
+    private ExecutorService vibrationExecutor = Executors.newSingleThreadExecutor();
+    private volatile boolean isVibrating = false;
+    private volatile long vibrationEndTime = 0;
 
     // Stick axis values (-1.0 to 1.0)
     private float leftStickX = 0;
@@ -154,6 +169,7 @@ public class ControllerManager {
                     xboxController = controller;
                     controllerConnected = true;
                     System.out.println("Xbox controller connected: " + controller.getName());
+                    initializeRumblers();
                     return;
                 }
 
@@ -162,6 +178,7 @@ public class ControllerManager {
                     xboxController = controller;
                     controllerConnected = true;
                     System.out.println("Xbox controller connected: " + controller.getName());
+                    initializeRumblers();
                     return;
                 }
             }
@@ -589,5 +606,259 @@ public class ControllerManager {
             result.add("Error: " + e.getMessage());
         }
         return result;
+    }
+
+    // ========== Vibration/Rumble Support ==========
+
+    /**
+     * Initialize rumbler motors for vibration support.
+     */
+    private void initializeRumblers() {
+        if (xboxController == null) return;
+
+        try {
+            Rumbler[] rumblers = xboxController.getRumblers();
+            if (rumblers == null || rumblers.length == 0) {
+                System.out.println("Controller vibration: No rumblers found");
+                return;
+            }
+
+            System.out.println("Controller vibration: Found " + rumblers.length + " rumbler(s)");
+
+            for (Rumbler rumbler : rumblers) {
+                String name = rumbler.getAxisName().toLowerCase();
+                System.out.println("  - Rumbler: " + rumbler.getAxisName() + " [" + rumbler.getAxisIdentifier() + "]");
+
+                // Try to identify left (low frequency) vs right (high frequency) motor
+                if (name.contains("left") || name.contains("low") || name.contains("x")) {
+                    leftRumbler = rumbler;
+                } else if (name.contains("right") || name.contains("high") || name.contains("y")) {
+                    rightRumbler = rumbler;
+                } else {
+                    // If we can't identify, assign to whichever is null
+                    if (leftRumbler == null) {
+                        leftRumbler = rumbler;
+                    } else if (rightRumbler == null) {
+                        rightRumbler = rumbler;
+                    }
+                }
+            }
+
+            // If we only found one rumbler, use it for both
+            if (leftRumbler != null && rightRumbler == null) {
+                rightRumbler = leftRumbler;
+            } else if (rightRumbler != null && leftRumbler == null) {
+                leftRumbler = rightRumbler;
+            }
+
+            if (leftRumbler != null || rightRumbler != null) {
+                System.out.println("Controller vibration: Initialized successfully");
+            }
+        } catch (Exception e) {
+            System.out.println("Controller vibration: Failed to initialize - " + e.getMessage());
+        }
+    }
+
+    /**
+     * Check if vibration/rumble is supported.
+     */
+    public boolean isVibrationSupported() {
+        return controllerConnected && (leftRumbler != null || rightRumbler != null);
+    }
+
+    /**
+     * Enable or disable vibration.
+     */
+    public void setVibrationEnabled(boolean enabled) {
+        this.vibrationEnabled = enabled;
+        if (!enabled) {
+            stopVibration();
+        }
+    }
+
+    /**
+     * Check if vibration is enabled.
+     */
+    public boolean isVibrationEnabled() {
+        return vibrationEnabled;
+    }
+
+    /**
+     * Trigger a vibration pattern.
+     * @param pattern The vibration pattern to execute
+     */
+    public void vibrate(VibrationPattern pattern) {
+        if (!vibrationEnabled || !isVibrationSupported() || pattern == null) {
+            return;
+        }
+
+        if (pattern.isComplex()) {
+            // Execute complex multi-step pattern asynchronously
+            executeComplexPattern(pattern);
+        } else {
+            // Execute simple single-pulse pattern
+            executeSimpleVibration(pattern.getIntensity(), pattern.getDurationMs(), pattern.getMotor());
+        }
+    }
+
+    /**
+     * Trigger a simple vibration with specified intensity and duration.
+     * @param intensity Vibration strength (0.0 to 1.0)
+     * @param durationMs Duration in milliseconds
+     */
+    public void vibrate(float intensity, int durationMs) {
+        vibrate(intensity, durationMs, VibrationPattern.MotorType.BOTH);
+    }
+
+    /**
+     * Trigger a vibration with specified motor selection.
+     * @param intensity Vibration strength (0.0 to 1.0)
+     * @param durationMs Duration in milliseconds
+     * @param motor Which motor(s) to use
+     */
+    public void vibrate(float intensity, int durationMs, VibrationPattern.MotorType motor) {
+        if (!vibrationEnabled || !isVibrationSupported()) {
+            return;
+        }
+        executeSimpleVibration(intensity, durationMs, motor);
+    }
+
+    /**
+     * Execute a simple single-pulse vibration.
+     */
+    private void executeSimpleVibration(float intensity, int durationMs, VibrationPattern.MotorType motor) {
+        vibrationExecutor.submit(() -> {
+            try {
+                isVibrating = true;
+                vibrationEndTime = System.currentTimeMillis() + durationMs;
+
+                // Set motor intensities
+                setMotorIntensity(intensity, motor);
+
+                // Wait for duration
+                Thread.sleep(durationMs);
+
+                // Stop vibration (only if we haven't started a new one)
+                if (System.currentTimeMillis() >= vibrationEndTime) {
+                    stopMotors();
+                }
+            } catch (InterruptedException e) {
+                stopMotors();
+                Thread.currentThread().interrupt();
+            } finally {
+                isVibrating = false;
+            }
+        });
+    }
+
+    /**
+     * Execute a complex multi-step vibration pattern.
+     */
+    private void executeComplexPattern(VibrationPattern pattern) {
+        VibrationPattern.VibrationStep[] steps = pattern.getSteps();
+        if (steps == null || steps.length == 0) return;
+
+        vibrationExecutor.submit(() -> {
+            try {
+                isVibrating = true;
+                long totalDuration = 0;
+                for (VibrationPattern.VibrationStep step : steps) {
+                    totalDuration += step.durationMs;
+                }
+                vibrationEndTime = System.currentTimeMillis() + totalDuration;
+
+                // Execute each step in sequence
+                for (VibrationPattern.VibrationStep step : steps) {
+                    if (Thread.currentThread().isInterrupted()) break;
+
+                    setMotorIntensity(step.intensity, step.motor);
+                    Thread.sleep(step.durationMs);
+                }
+
+                // Stop vibration at the end
+                stopMotors();
+            } catch (InterruptedException e) {
+                stopMotors();
+                Thread.currentThread().interrupt();
+            } finally {
+                isVibrating = false;
+            }
+        });
+    }
+
+    /**
+     * Set motor intensity based on motor type selection.
+     */
+    private void setMotorIntensity(float intensity, VibrationPattern.MotorType motor) {
+        try {
+            switch (motor) {
+                case LEFT:
+                    if (leftRumbler != null) {
+                        leftRumbler.rumble(intensity);
+                    }
+                    if (rightRumbler != null && rightRumbler != leftRumbler) {
+                        rightRumbler.rumble(0);
+                    }
+                    break;
+                case RIGHT:
+                    if (rightRumbler != null) {
+                        rightRumbler.rumble(intensity);
+                    }
+                    if (leftRumbler != null && leftRumbler != rightRumbler) {
+                        leftRumbler.rumble(0);
+                    }
+                    break;
+                case BOTH:
+                default:
+                    if (leftRumbler != null) {
+                        leftRumbler.rumble(intensity);
+                    }
+                    if (rightRumbler != null && rightRumbler != leftRumbler) {
+                        rightRumbler.rumble(intensity);
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            // Silently handle rumbler errors
+        }
+    }
+
+    /**
+     * Stop all motor vibration.
+     */
+    private void stopMotors() {
+        try {
+            if (leftRumbler != null) {
+                leftRumbler.rumble(0);
+            }
+            if (rightRumbler != null && rightRumbler != leftRumbler) {
+                rightRumbler.rumble(0);
+            }
+        } catch (Exception e) {
+            // Silently handle rumbler errors
+        }
+    }
+
+    /**
+     * Immediately stop any ongoing vibration.
+     */
+    public void stopVibration() {
+        vibrationEndTime = 0;
+        stopMotors();
+    }
+
+    /**
+     * Check if controller is currently vibrating.
+     */
+    public boolean isVibrating() {
+        return isVibrating;
+    }
+
+    /**
+     * Shutdown the vibration executor (call on game exit).
+     */
+    public void shutdown() {
+        stopVibration();
+        vibrationExecutor.shutdownNow();
     }
 }

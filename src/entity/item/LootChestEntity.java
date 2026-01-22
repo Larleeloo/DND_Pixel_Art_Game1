@@ -3,7 +3,9 @@ package entity.item;
 import entity.Entity;
 import graphics.AnimatedTexture;
 import graphics.AssetLoader;
+import input.ControllerManager;
 import input.InputManager;
+import input.VibrationPattern;
 import save.SaveManager;
 
 import java.awt.*;
@@ -296,6 +298,16 @@ public class LootChestEntity extends Entity {
         // Start playing the animation forward
         if (animatedTexture != null) {
             animatedTexture.playForward();
+        }
+
+        // Trigger controller vibration with intricate pattern based on chest type
+        ControllerManager controller = ControllerManager.getInstance();
+        if (controller.isVibrationSupported()) {
+            if (chestType == ChestType.MONTHLY) {
+                controller.vibrate(VibrationPattern.LOOT_CHEST_MONTHLY);
+            } else {
+                controller.vibrate(VibrationPattern.LOOT_CHEST_DAILY);
+            }
         }
 
         // Mark chest as opened in save data
