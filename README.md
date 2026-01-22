@@ -756,11 +756,57 @@ RENDER PIPELINE ORDER:
   7. Draw settings/menu overlays
 
 --------------------------------------------------------------------------------
-15. INPUT SYSTEM (input/InputManager.java)
+15. INPUT SYSTEM (input/InputManager.java, input/ControllerManager.java)
 --------------------------------------------------------------------------------
 
-Singleton that captures all keyboard and mouse input. Implements KeyListener,
-MouseListener, MouseWheelListener, and MouseMotionListener.
+Singleton that captures all keyboard, mouse, and Xbox controller input.
+Implements KeyListener, MouseListener, MouseWheelListener, and MouseMotionListener.
+
+XBOX CONTROLLER SUPPORT:
+  The game supports Xbox controllers (and compatible gamepads) via JInput library.
+  When a controller is connected, inputs are automatically mapped to game actions.
+
+  CONTROLLER SETUP:
+    1. Download JInput library (see lib/README.md for detailed instructions)
+    2. Place jinput-2.0.10.jar in lib/ folder
+    3. Extract platform-specific native libraries to lib/ or project root
+    4. Add JARs to project classpath
+    5. Configure VM args: -Djava.library.path=lib
+
+  CONTROLLER MAPPINGS:
+    Controller Input    | Game Action        | Keyboard Equivalent
+    --------------------|--------------------|-----------------------
+    Right Stick Up      | Move up/climb      | W key
+    Right Stick Down    | Move down          | S key
+    Right Stick Left    | Move left          | A key
+    Right Stick Right   | Move right         | D key
+    Left Stick Move     | Mouse cursor       | Mouse movement
+    Left Stick Click    | Primary action     | Left mouse click
+    A Button            | Jump               | Space
+    X Button            | Interact/Mine      | E key
+    Y Button            | Inventory          | I key
+    Start Button        | Menu/Settings      | M key
+
+  CONTROLLER MANAGER USAGE:
+    ControllerManager controller = ControllerManager.getInstance();
+
+    // Poll each frame (done automatically in GamePanel)
+    controller.poll();
+
+    // Check button states
+    if (controller.isButtonAJustPressed()) { /* jump */ }
+    if (controller.isButtonXPressed()) { /* interact */ }
+
+    // Get stick values (-1.0 to 1.0)
+    float moveX = controller.getRightStickX();
+    float moveY = controller.getRightStickY();
+
+    // Virtual mouse (controlled by left stick)
+    int mouseX = controller.getVirtualMouseX();
+    int mouseY = controller.getVirtualMouseY();
+
+  Note: InputManager automatically integrates controller input, so game code
+  using InputManager.isKeyPressed() will work with both keyboard and controller.
 
 KEYBOARD INPUT:
   InputManager input = InputManager.getInstance();
@@ -1131,7 +1177,9 @@ src/                    - Game engine source code (organized by package)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
   audio/                - Sound management (AudioManager)
-  input/                - Input handling (InputManager)
+  input/                - Input handling (InputManager, ControllerManager)
+    - InputManager.java     - Keyboard and mouse input handling with controller integration
+    - ControllerManager.java - Xbox controller support via JInput library
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
     - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)
     - ReverseCraftingUI.java - Drag-and-drop deconstruction interface (1 input, 3 outputs)

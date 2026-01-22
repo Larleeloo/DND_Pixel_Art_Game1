@@ -51,6 +51,9 @@ public class GamePanel extends JPanel implements Runnable {
         addMouseListener(inputManager);  // For left-click mining
         addMouseMotionListener(inputManager);  // For aim tracking
 
+        // Initialize Xbox controller support
+        inputManager.initializeController();
+
         // Load audio files
         audioManager.loadMusic("sounds/music.wav");
         audioManager.loadSound("jump", "sounds/jump.wav");
@@ -147,6 +150,9 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     private void update() {
+        // Poll Xbox controller for input
+        inputManager.pollController();
+
         sceneManager.update(inputManager);
     }
 
