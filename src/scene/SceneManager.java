@@ -210,6 +210,11 @@ public class SceneManager {
             input.resetClickConsumed();
         }
 
+        // Update settings overlay (for controller rebinding detection)
+        if (settingsOverlay != null) {
+            settingsOverlay.update();
+        }
+
         // Handle 'M' key for settings toggle (when not rebinding)
         if (input != null && input.isKeyJustPressed('m')) {
             if (settingsOverlay != null && !settingsOverlay.isVisible()) {

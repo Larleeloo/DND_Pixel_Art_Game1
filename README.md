@@ -1102,14 +1102,14 @@ SETTINGS TABS:
      - Volume changes take effect immediately
 
   2. CONTROLS TAB
-     - Displays all rebindable keyboard controls in a grid layout
-     - Click any control to rebind it to a new key
-     - If the new key is already bound, keys are swapped automatically
+     - Toggle between Keyboard and Controller bindings at the top
+     - Click any control to rebind it
+     - If a key/button is already bound, bindings are swapped automatically
      - Press ESC to cancel rebinding
-     - "Reset to Defaults" button restores original key bindings
+     - "Reset to Defaults" button restores original bindings
      - Shows connected controller name (if any)
 
-     Rebindable Actions:
+     KEYBOARD BINDINGS (Blue buttons):
        Action        | Default Key  | Description
        --------------|--------------|----------------------------------
        Move Left     | A            | Move player left
@@ -1121,6 +1121,22 @@ SETTINGS TABS:
        Interact      | E            | Interact with objects / mine
        Inventory     | I            | Open/close inventory
        Attack/Equip  | F            | Attack or equip item
+
+     CONTROLLER BINDINGS (Green buttons):
+       Button        | Default Action    | Description
+       --------------|-------------------|----------------------------------
+       A Button      | Jump              | Jump action
+       B Button      | Back/Cancel       | Go back or cancel
+       X Button      | Interact/Mine     | Interact with objects
+       Y Button      | Inventory         | Open/close inventory
+       LB            | Hotbar Previous   | Select previous hotbar slot
+       RB            | Hotbar Next       | Select next hotbar slot
+       Start         | Menu/Settings     | Open settings menu
+       Back          | Back/Cancel       | Go back or cancel
+       L3            | Sprint            | Sprint while moving
+       R3            | Attack/Click      | Attack action
+       RT            | Attack/Click      | Primary action (like mouse click)
+       LT            | Interact/Mine     | Secondary interact
 
   3. GAME TAB
      - Vibration Toggle: Enable/disable controller vibration
@@ -1160,6 +1176,40 @@ KEY BINDINGS SYSTEM (input/KeyBindings.java):
     KeyBindings.MOVE_LEFT, MOVE_RIGHT, MOVE_UP, MOVE_DOWN
     KeyBindings.JUMP, SPRINT, INTERACT, INVENTORY
     KeyBindings.MENU, ATTACK, DEBUG
+
+CONTROLLER BINDINGS SYSTEM (input/ControllerBindings.java):
+  Custom controller bindings are saved to "saves/controller_bindings.dat"
+  and persist across game sessions.
+
+  Usage in code:
+    ControllerBindings cb = ControllerBindings.getInstance();
+
+    // Get action bound to a button
+    String action = cb.getAction(ControllerBindings.BUTTON_A);
+
+    // Get button bound to an action
+    String button = cb.getButtonForAction(ControllerBindings.ACTION_JUMP);
+
+    // Check if button is bound to an action
+    if (cb.isButtonBoundTo(ControllerBindings.BUTTON_A, ControllerBindings.ACTION_JUMP)) {
+        // Handle jump
+    }
+
+    // Set a new binding (will swap if button already bound)
+    cb.setBinding(ControllerBindings.BUTTON_X, ControllerBindings.ACTION_JUMP);
+
+    // Reset all to defaults
+    cb.resetAllToDefaults();
+
+  Available Button Constants:
+    ControllerBindings.BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y
+    ControllerBindings.BUTTON_LB, BUTTON_RB, BUTTON_START, BUTTON_BACK
+    ControllerBindings.BUTTON_L3, BUTTON_R3, RIGHT_TRIGGER, LEFT_TRIGGER
+
+  Available Action Constants:
+    ControllerBindings.ACTION_JUMP, ACTION_INTERACT, ACTION_INVENTORY
+    ControllerBindings.ACTION_MENU, ACTION_BACK, ACTION_SPRINT
+    ControllerBindings.ACTION_ATTACK, ACTION_HOTBAR_PREV, ACTION_HOTBAR_NEXT
 
 SETTINGS OVERLAY INTEGRATION:
   GameScene sets up callbacks for settings actions:
@@ -1525,10 +1575,11 @@ src/                    - Game engine source code (organized by package)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
   audio/                - Sound management (AudioManager)
-  input/                - Input handling (InputManager, ControllerManager, KeyBindings, VibrationPattern)
+  input/                - Input handling (InputManager, ControllerManager, KeyBindings, ControllerBindings, VibrationPattern)
     - InputManager.java     - Keyboard and mouse input handling with controller integration
     - ControllerManager.java - Xbox controller support via JInput library with vibration/rumble
-    - KeyBindings.java      - Customizable key bindings with persistence (saves/keybindings.dat)
+    - KeyBindings.java      - Customizable keyboard bindings with persistence (saves/keybindings.dat)
+    - ControllerBindings.java - Customizable controller bindings with persistence (saves/controller_bindings.dat)
     - VibrationPattern.java - Enum defining haptic feedback patterns (minor, greater, intricate)
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
     - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)
