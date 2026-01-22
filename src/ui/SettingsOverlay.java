@@ -2,6 +2,7 @@ package ui;
 
 import audio.AudioManager;
 import core.GamePanel;
+import input.ControllerBindings;
 import input.ControllerManager;
 import input.KeyBindings;
 import scene.SceneManager;
@@ -13,7 +14,7 @@ import java.util.List;
 
 /**
  * A comprehensive settings overlay with tabbed interface.
- * Includes Audio settings, Key rebindings, Game options (vibration), and Quick Actions.
+ * Includes Audio settings, Key/Controller rebindings, Game options (vibration), and Quick Actions.
  * Replaces the in-game UI buttons with a centralized settings menu.
  */
 public class SettingsOverlay {
@@ -35,8 +36,19 @@ public class SettingsOverlay {
     private UIButton muteButton;
 
     // UI Components - Controls Tab
+    private boolean showingControllerBindings = false;  // Toggle between keyboard/controller
+    private UIButton controlsToggleButton;
+
+    // Keyboard bindings
     private List<KeyBindButton> keyBindButtons;
-    private KeyBindButton currentlyRebinding = null;
+    private KeyBindButton currentlyRebindingKey = null;
+    private boolean waitingForKeyInput = false;
+
+    // Controller bindings
+    private List<ControllerBindButton> controllerBindButtons;
+    private ControllerBindButton currentlyRebindingController = null;
+    private boolean waitingForControllerInput = false;
+
     private UIButton resetControlsButton;
 
     // UI Components - Game Tab
@@ -48,12 +60,10 @@ public class SettingsOverlay {
     private UIButton exitGameButton;
     private UIButton returnToMenuButton;
     private UIButton customizeButton;
+    private UIButton musicToggleButton;
 
     // Close button
     private UIButton closeButton;
-
-    // Key rebind state
-    private boolean waitingForKeyInput = false;
 
     // Day/Night and Debug state (managed externally)
     private boolean nightMode = false;
@@ -83,6 +93,8 @@ public class SettingsOverlay {
     private static final Color BUTTON_DANGER_HOVER = new Color(220, 80, 80);
     private static final Color BUTTON_REBIND = new Color(50, 80, 120);
     private static final Color BUTTON_REBIND_ACTIVE = new Color(200, 150, 50);
+    private static final Color BUTTON_CONTROLLER = new Color(50, 120, 80);
+    private static final Color BUTTON_CONTROLLER_HOVER = new Color(70, 160, 110);
 
     public SettingsOverlay(AudioManager audioManager) {
         this.audioManager = audioManager;
@@ -174,12 +186,53 @@ public class SettingsOverlay {
     }
 
     private void initControlsTab(int contentX, int contentWidth) {
-        keyBindButtons = new ArrayList<>();
-        int startY = panelY + 115;
-        int buttonHeight = 35;
-        int spacing = 42;
+        int startY = panelY + 100;
 
-        KeyBindings kb = KeyBindings.getInstance();
+        // Toggle between Keyboard and Controller bindings
+        controlsToggleButton = new UIButton(
+            contentX, startY, contentWidth, 35,
+            getControlsToggleText(), () -> {
+                showingControllerBindings = !showingControllerBindings;
+                controlsToggleButton.setText(getControlsToggleText());
+                updateControlsToggleColors();
+                waitingForKeyInput = false;
+                waitingForControllerInput = false;
+                currentlyRebindingKey = null;
+                currentlyRebindingController = null;
+            }
+        );
+        updateControlsToggleColors();
+
+        initKeyboardBindings(contentX, contentWidth);
+        initControllerBindings(contentX, contentWidth);
+
+        // Reset to Defaults button
+        resetControlsButton = new UIButton(
+            contentX + contentWidth / 4, panelY + panelHeight - 100,
+            contentWidth / 2, 40,
+            "Reset to Defaults", () -> {
+                if (showingControllerBindings) {
+                    ControllerBindings.getInstance().resetAllToDefaults();
+                    for (ControllerBindButton cbb : controllerBindButtons) {
+                        cbb.updateText();
+                    }
+                } else {
+                    KeyBindings.getInstance().resetAllToDefaults();
+                    for (KeyBindButton kbb : keyBindButtons) {
+                        kbb.updateText();
+                    }
+                }
+            }
+        );
+        resetControlsButton.setColors(BUTTON_DANGER, BUTTON_DANGER_HOVER, Color.WHITE);
+    }
+
+    private void initKeyboardBindings(int contentX, int contentWidth) {
+        keyBindButtons = new ArrayList<>();
+        int startY = panelY + 145;
+        int buttonHeight = 32;
+        int spacing = 38;
+
         String[] actions = {
             KeyBindings.MOVE_LEFT, KeyBindings.MOVE_RIGHT,
             KeyBindings.MOVE_UP, KeyBindings.MOVE_DOWN,
@@ -198,20 +251,38 @@ public class SettingsOverlay {
             KeyBindButton kbb = new KeyBindButton(x, y, buttonWidth, buttonHeight, actions[i]);
             keyBindButtons.add(kbb);
         }
+    }
 
-        // Reset to Defaults button
-        resetControlsButton = new UIButton(
-            contentX + contentWidth / 4, startY + (actions.length / 2 + 1) * spacing,
-            contentWidth / 2, 40,
-            "Reset to Defaults", () -> {
-                KeyBindings.getInstance().resetAllToDefaults();
-                // Refresh all buttons
-                for (KeyBindButton kbb : keyBindButtons) {
-                    kbb.updateText();
-                }
-            }
-        );
-        resetControlsButton.setColors(BUTTON_DANGER, BUTTON_DANGER_HOVER, Color.WHITE);
+    private void initControllerBindings(int contentX, int contentWidth) {
+        controllerBindButtons = new ArrayList<>();
+        int startY = panelY + 145;
+        int buttonHeight = 32;
+        int spacing = 38;
+
+        String[] buttons = ControllerBindings.getAllButtons();
+
+        for (int i = 0; i < buttons.length; i++) {
+            int row = i / 2;
+            int col = i % 2;
+            int buttonWidth = (contentWidth - 20) / 2;
+            int x = contentX + col * (buttonWidth + 20);
+            int y = startY + row * spacing;
+
+            ControllerBindButton cbb = new ControllerBindButton(x, y, buttonWidth, buttonHeight, buttons[i]);
+            controllerBindButtons.add(cbb);
+        }
+    }
+
+    private String getControlsToggleText() {
+        return showingControllerBindings ? "Showing: Controller Bindings (click to switch)" : "Showing: Keyboard Bindings (click to switch)";
+    }
+
+    private void updateControlsToggleColors() {
+        if (showingControllerBindings) {
+            controlsToggleButton.setColors(BUTTON_CONTROLLER, BUTTON_CONTROLLER_HOVER, Color.WHITE);
+        } else {
+            controlsToggleButton.setColors(BUTTON_REBIND, BUTTON_HOVER, Color.WHITE);
+        }
     }
 
     private void initGameTab(int contentX, int contentWidth) {
@@ -297,7 +368,7 @@ public class SettingsOverlay {
         );
 
         // Toggle Music (quick access)
-        UIButton musicToggleQuick = new UIButton(
+        musicToggleButton = new UIButton(
             contentX, startY + spacing * 2, contentWidth, buttonHeight,
             "Toggle Music", () -> {
                 if (audioManager != null) {
@@ -305,7 +376,7 @@ public class SettingsOverlay {
                 }
             }
         );
-        musicToggleQuick.setColors(
+        musicToggleButton.setColors(
             new Color(50, 100, 200, 200),
             new Color(80, 130, 255, 230),
             Color.WHITE
@@ -414,12 +485,18 @@ public class SettingsOverlay {
         for (KeyBindButton kbb : keyBindButtons) {
             kbb.updateText();
         }
+        // Refresh controller bindings
+        for (ControllerBindButton cbb : controllerBindButtons) {
+            cbb.updateText();
+        }
     }
 
     public void hide() {
         visible = false;
         waitingForKeyInput = false;
-        currentlyRebinding = null;
+        waitingForControllerInput = false;
+        currentlyRebindingKey = null;
+        currentlyRebindingController = null;
     }
 
     public void toggle() {
@@ -439,6 +516,65 @@ public class SettingsOverlay {
                y >= panelY && y <= panelY + panelHeight;
     }
 
+    /**
+     * Update method called each frame to check for controller input during rebinding.
+     */
+    public void update() {
+        if (!visible || !waitingForControllerInput || currentlyRebindingController == null) {
+            return;
+        }
+
+        ControllerManager cm = ControllerManager.getInstance();
+        if (!cm.isControllerConnected()) {
+            return;
+        }
+
+        // Check for any button press
+        String pressedButton = getAnyPressedControllerButton(cm);
+        if (pressedButton != null) {
+            // Set the new binding
+            ControllerBindings cb = ControllerBindings.getInstance();
+            String currentAction = cb.getAction(currentlyRebindingController.button);
+            cb.setBinding(pressedButton, currentAction);
+
+            // Refresh all buttons in case of swap
+            for (ControllerBindButton cbb : controllerBindButtons) {
+                cbb.updateText();
+            }
+
+            waitingForControllerInput = false;
+            currentlyRebindingController = null;
+
+            // Vibration feedback
+            if (cm.isVibrationSupported() && cm.isVibrationEnabled()) {
+                cm.vibrate(0.3f, 100);
+            }
+        }
+    }
+
+    private String getAnyPressedControllerButton(ControllerManager cm) {
+        if (cm.isButtonAJustPressed()) return ControllerBindings.BUTTON_A;
+        if (cm.isButtonXJustPressed()) return ControllerBindings.BUTTON_X;
+        if (cm.isButtonYJustPressed()) return ControllerBindings.BUTTON_Y;
+        if (cm.isButtonBackJustPressed()) return ControllerBindings.BUTTON_BACK;
+        if (cm.isButtonStartJustPressed()) return ControllerBindings.BUTTON_START;
+        if (cm.isButtonLBJustPressed()) return ControllerBindings.BUTTON_LB;
+        if (cm.isButtonRBJustPressed()) return ControllerBindings.BUTTON_RB;
+        if (cm.isLeftStickJustClicked()) return ControllerBindings.BUTTON_L3;
+        if (cm.isRightTriggerJustPressed()) return ControllerBindings.RIGHT_TRIGGER;
+        // B button check
+        if (cm.isButtonBPressed() && !wasButtonBPressed) {
+            wasButtonBPressed = true;
+            return ControllerBindings.BUTTON_B;
+        }
+        if (!cm.isButtonBPressed()) {
+            wasButtonBPressed = false;
+        }
+        return null;
+    }
+
+    private boolean wasButtonBPressed = false;
+
     public boolean handleMousePressed(int x, int y) {
         if (!visible) return false;
 
@@ -447,7 +583,9 @@ public class SettingsOverlay {
             if (tabRects[i].contains(x, y)) {
                 currentTab = i;
                 waitingForKeyInput = false;
-                currentlyRebinding = null;
+                waitingForControllerInput = false;
+                currentlyRebindingKey = null;
+                currentlyRebindingController = null;
                 return true;
             }
         }
@@ -458,13 +596,30 @@ public class SettingsOverlay {
             sfxVolumeSlider.handleMousePressed(x, y);
         }
 
-        // Handle key bind buttons (Controls tab)
-        if (currentTab == 1 && !waitingForKeyInput) {
-            for (KeyBindButton kbb : keyBindButtons) {
-                if (kbb.contains(x, y)) {
-                    currentlyRebinding = kbb;
-                    waitingForKeyInput = true;
-                    return true;
+        // Handle Controls tab
+        if (currentTab == 1) {
+            // Handle toggle button
+            if (controlsToggleButton.handleClick(x, y)) {
+                return true;
+            }
+
+            if (!showingControllerBindings && !waitingForKeyInput) {
+                // Keyboard bindings
+                for (KeyBindButton kbb : keyBindButtons) {
+                    if (kbb.contains(x, y)) {
+                        currentlyRebindingKey = kbb;
+                        waitingForKeyInput = true;
+                        return true;
+                    }
+                }
+            } else if (showingControllerBindings && !waitingForControllerInput) {
+                // Controller bindings
+                for (ControllerBindButton cbb : controllerBindButtons) {
+                    if (cbb.contains(x, y)) {
+                        currentlyRebindingController = cbb;
+                        waitingForControllerInput = true;
+                        return true;
+                    }
                 }
             }
         }
@@ -498,9 +653,16 @@ public class SettingsOverlay {
         if (currentTab == 0) {
             muteButton.handleMouseMove(x, y);
         } else if (currentTab == 1) {
+            controlsToggleButton.handleMouseMove(x, y);
             resetControlsButton.handleMouseMove(x, y);
-            for (KeyBindButton kbb : keyBindButtons) {
-                kbb.handleMouseMove(x, y);
+            if (!showingControllerBindings) {
+                for (KeyBindButton kbb : keyBindButtons) {
+                    kbb.handleMouseMove(x, y);
+                }
+            } else {
+                for (ControllerBindButton cbb : controllerBindButtons) {
+                    cbb.handleMouseMove(x, y);
+                }
             }
         } else if (currentTab == 2) {
             vibrationToggle.handleMouseMove(x, y);
@@ -509,6 +671,7 @@ public class SettingsOverlay {
         } else if (currentTab == 3) {
             returnToMenuButton.handleMouseMove(x, y);
             customizeButton.handleMouseMove(x, y);
+            musicToggleButton.handleMouseMove(x, y);
             exitGameButton.handleMouseMove(x, y);
         }
     }
@@ -536,6 +699,7 @@ public class SettingsOverlay {
         } else if (currentTab == 3) {
             if (returnToMenuButton.handleClick(x, y)) return true;
             if (customizeButton.handleClick(x, y)) return true;
+            if (musicToggleButton.handleClick(x, y)) return true;
             if (exitGameButton.handleClick(x, y)) return true;
         }
 
@@ -546,19 +710,19 @@ public class SettingsOverlay {
         if (!visible) return false;
 
         // Handle key rebinding
-        if (waitingForKeyInput && currentlyRebinding != null) {
+        if (waitingForKeyInput && currentlyRebindingKey != null) {
             // Escape cancels rebinding
             if (keyCode == KeyEvent.VK_ESCAPE) {
                 waitingForKeyInput = false;
-                currentlyRebinding = null;
+                currentlyRebindingKey = null;
                 return true;
             }
 
             // Set the new binding
-            KeyBindings.getInstance().setKey(currentlyRebinding.action, keyCode);
-            currentlyRebinding.updateText();
+            KeyBindings.getInstance().setKey(currentlyRebindingKey.action, keyCode);
+            currentlyRebindingKey.updateText();
             waitingForKeyInput = false;
-            currentlyRebinding = null;
+            currentlyRebindingKey = null;
 
             // Refresh all buttons in case of swap
             for (KeyBindButton kbb : keyBindButtons) {
@@ -567,7 +731,14 @@ public class SettingsOverlay {
             return true;
         }
 
-        // M or Escape closes the menu
+        // Cancel controller rebinding with Escape
+        if (waitingForControllerInput && keyCode == KeyEvent.VK_ESCAPE) {
+            waitingForControllerInput = false;
+            currentlyRebindingController = null;
+            return true;
+        }
+
+        // M or Escape closes the menu (when not rebinding)
         if (keyCode == KeyEvent.VK_M || keyCode == KeyEvent.VK_ESCAPE) {
             hide();
             return true;
@@ -620,7 +791,14 @@ public class SettingsOverlay {
         // Draw hint text at bottom
         g2d.setColor(new Color(150, 150, 160));
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        String hint = waitingForKeyInput ? "Press any key to bind (ESC to cancel)" : "Press M or ESC to close";
+        String hint;
+        if (waitingForKeyInput) {
+            hint = "Press any key to bind (ESC to cancel)";
+        } else if (waitingForControllerInput) {
+            hint = "Press any controller button to bind (ESC to cancel)";
+        } else {
+            hint = "Press M or ESC to close";
+        }
         fm = g2d.getFontMetrics();
         int hintX = panelX + (panelWidth - fm.stringWidth(hint)) / 2;
         g2d.drawString(hint, hintX, panelY + panelHeight - 15);
@@ -677,14 +855,19 @@ public class SettingsOverlay {
     }
 
     private void drawControlsTab(Graphics2D g2d) {
-        // Draw section header
-        g2d.setColor(TEXT_COLOR);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        g2d.drawString("Click a control to rebind it. Keys will swap if already assigned.", panelX + 40, panelY + 108);
+        // Draw toggle button
+        controlsToggleButton.draw(g2d);
 
-        // Draw key bind buttons
-        for (KeyBindButton kbb : keyBindButtons) {
-            kbb.draw(g2d, kbb == currentlyRebinding && waitingForKeyInput);
+        if (!showingControllerBindings) {
+            // Draw keyboard bindings
+            for (KeyBindButton kbb : keyBindButtons) {
+                kbb.draw(g2d, kbb == currentlyRebindingKey && waitingForKeyInput);
+            }
+        } else {
+            // Draw controller bindings
+            for (ControllerBindButton cbb : controllerBindButtons) {
+                cbb.draw(g2d, cbb == currentlyRebindingController && waitingForControllerInput);
+            }
         }
 
         // Draw reset button
@@ -697,7 +880,7 @@ public class SettingsOverlay {
         String controllerInfo = cm.isControllerConnected()
             ? "Controller: " + cm.getControllerName()
             : "No controller connected. Plug in Xbox controller for gamepad support.";
-        g2d.drawString(controllerInfo, panelX + 40, panelY + panelHeight - 50);
+        g2d.drawString(controllerInfo, panelX + 40, panelY + panelHeight - 55);
     }
 
     private void drawGameTab(Graphics2D g2d) {
@@ -716,34 +899,7 @@ public class SettingsOverlay {
     private void drawActionsTab(Graphics2D g2d) {
         returnToMenuButton.draw(g2d);
         customizeButton.draw(g2d);
-
-        // Find and draw music toggle (we need to reinit to get reference)
-        int contentX = panelX + 40;
-        int contentWidth = panelWidth - 80;
-        int startY = panelY + 120;
-        int buttonHeight = 55;
-        int spacing = 70;
-
-        // Draw music toggle inline since we don't have a reference
-        UIButton musicToggle = new UIButton(
-            contentX, startY + spacing * 2, contentWidth, buttonHeight,
-            "Toggle Music", () -> {
-                if (audioManager != null) {
-                    audioManager.toggleMusic();
-                }
-            }
-        );
-        musicToggle.setColors(
-            new Color(50, 100, 200, 200),
-            new Color(80, 130, 255, 230),
-            Color.WHITE
-        );
-        musicToggle.handleMouseMove(
-            SceneManager.getInstance().getInputManager().getMouseX(),
-            SceneManager.getInstance().getInputManager().getMouseY()
-        );
-        musicToggle.draw(g2d);
-
+        musicToggleButton.draw(g2d);
         exitGameButton.draw(g2d);
 
         // Draw quick actions info
@@ -755,7 +911,7 @@ public class SettingsOverlay {
     }
 
     /**
-     * Inner class for key binding buttons.
+     * Inner class for keyboard key binding buttons.
      */
     private class KeyBindButton {
         int x, y, width, height;
@@ -805,9 +961,70 @@ public class SettingsOverlay {
 
             // Text
             g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 13));
+            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
             FontMetrics fm = g2d.getFontMetrics();
             String text = isRebinding ? "Press a key..." : displayText;
+            int textX = x + (width - fm.stringWidth(text)) / 2;
+            int textY = y + ((height - fm.getHeight()) / 2) + fm.getAscent();
+            g2d.drawString(text, textX, textY);
+        }
+    }
+
+    /**
+     * Inner class for controller binding buttons.
+     */
+    private class ControllerBindButton {
+        int x, y, width, height;
+        String button;  // The controller button (e.g., BUTTON_A)
+        String displayText;
+        boolean hovered = false;
+
+        ControllerBindButton(int x, int y, int width, int height, String button) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.button = button;
+            updateText();
+        }
+
+        void updateText() {
+            ControllerBindings cb = ControllerBindings.getInstance();
+            String buttonName = ControllerBindings.getButtonShortName(button);
+            String action = cb.getAction(button);
+            String actionName = action != null ? ControllerBindings.getActionDisplayName(action) : "Unbound";
+            this.displayText = buttonName + ": " + actionName;
+        }
+
+        boolean contains(int mx, int my) {
+            return mx >= x && mx <= x + width && my >= y && my <= y + height;
+        }
+
+        void handleMouseMove(int mx, int my) {
+            hovered = contains(mx, my);
+        }
+
+        void draw(Graphics2D g2d, boolean isRebinding) {
+            // Background
+            if (isRebinding) {
+                g2d.setColor(BUTTON_REBIND_ACTIVE);
+            } else if (hovered) {
+                g2d.setColor(BUTTON_CONTROLLER_HOVER);
+            } else {
+                g2d.setColor(BUTTON_CONTROLLER);
+            }
+            g2d.fillRoundRect(x, y, width, height, 8, 8);
+
+            // Border
+            g2d.setColor(isRebinding ? new Color(255, 200, 100) : new Color(80, 150, 100));
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawRoundRect(x, y, width, height, 8, 8);
+
+            // Text
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+            FontMetrics fm = g2d.getFontMetrics();
+            String text = isRebinding ? "Press button..." : displayText;
             int textX = x + (width - fm.stringWidth(text)) / 2;
             int textY = y + ((height - fm.getHeight()) / 2) + fm.getAscent();
             g2d.drawString(text, textX, textY);
