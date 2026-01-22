@@ -45,12 +45,16 @@ public class ControllerManager {
     private boolean jinputAvailable = false;
 
     // Rumble/vibration support
-    private Rumbler leftRumbler = null;   // Low frequency motor
-    private Rumbler rightRumbler = null;  // High frequency motor
+    private Rumbler leftRumbler = null;   // Low frequency motor (JInput)
+    private Rumbler rightRumbler = null;  // High frequency motor (JInput)
     private boolean vibrationEnabled = true;
     private ExecutorService vibrationExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean isVibrating = false;
     private volatile long vibrationEndTime = 0;
+
+    // XInput vibration support (preferred on Windows for Xbox controllers)
+    private boolean useXInputVibration = false;
+    private int xinputControllerIndex = 0;
 
     // Stick axis values (-1.0 to 1.0)
     private float leftStickX = 0;
@@ -612,18 +616,52 @@ public class ControllerManager {
 
     /**
      * Initialize rumbler motors for vibration support.
+     * Tries XInput first (better support for Xbox controllers on Windows),
+     * then falls back to JInput rumblers.
      */
     private void initializeRumblers() {
         if (xboxController == null) return;
 
+        // First, try XInput for Windows (works better with Xbox controllers)
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("win")) {
+            try {
+                // Initialize XInput vibration
+                XInputVibration.initialize();
+
+                // Test if XInput can set vibration (brief test pulse)
+                String controllerName = xboxController.getName().toLowerCase();
+                if (controllerName.contains("xbox") || controllerName.contains("xinput") ||
+                    controllerName.contains("controller")) {
+                    useXInputVibration = true;
+                    xinputControllerIndex = 0; // Default to first controller
+                    System.out.println("Controller vibration: Using XInput for Xbox controller");
+
+                    // Do a quick test vibration to verify it works
+                    testVibration();
+                    return;
+                }
+            } catch (Exception e) {
+                System.out.println("Controller vibration: XInput init failed - " + e.getMessage());
+            }
+        }
+
+        // Fallback to JInput rumblers
         try {
             Rumbler[] rumblers = xboxController.getRumblers();
             if (rumblers == null || rumblers.length == 0) {
-                System.out.println("Controller vibration: No rumblers found");
+                System.out.println("Controller vibration: No JInput rumblers found");
+
+                // On Windows, still try XInput as final fallback
+                if (os.contains("win")) {
+                    useXInputVibration = true;
+                    System.out.println("Controller vibration: Falling back to XInput");
+                    testVibration();
+                }
                 return;
             }
 
-            System.out.println("Controller vibration: Found " + rumblers.length + " rumbler(s)");
+            System.out.println("Controller vibration: Found " + rumblers.length + " JInput rumbler(s)");
 
             for (Rumbler rumbler : rumblers) {
                 String name = rumbler.getAxisName().toLowerCase();
@@ -652,18 +690,36 @@ public class ControllerManager {
             }
 
             if (leftRumbler != null || rightRumbler != null) {
-                System.out.println("Controller vibration: Initialized successfully");
+                System.out.println("Controller vibration: JInput rumblers initialized");
             }
         } catch (Exception e) {
-            System.out.println("Controller vibration: Failed to initialize - " + e.getMessage());
+            System.out.println("Controller vibration: JInput init failed - " + e.getMessage());
         }
+    }
+
+    /**
+     * Test vibration with a brief pulse to verify it works.
+     */
+    private void testVibration() {
+        vibrationExecutor.submit(() -> {
+            try {
+                if (useXInputVibration) {
+                    XInputVibration.vibrate(xinputControllerIndex, 0.5f, 0.5f);
+                    Thread.sleep(100);
+                    XInputVibration.stop(xinputControllerIndex);
+                    System.out.println("Controller vibration: Test pulse sent via XInput");
+                }
+            } catch (Exception e) {
+                System.out.println("Controller vibration: Test failed - " + e.getMessage());
+            }
+        });
     }
 
     /**
      * Check if vibration/rumble is supported.
      */
     public boolean isVibrationSupported() {
-        return controllerConnected && (leftRumbler != null || rightRumbler != null);
+        return controllerConnected && (useXInputVibration || leftRumbler != null || rightRumbler != null);
     }
 
     /**
@@ -790,6 +846,36 @@ public class ControllerManager {
      * Set motor intensity based on motor type selection.
      */
     private void setMotorIntensity(float intensity, VibrationPattern.MotorType motor) {
+        // Use XInput if available (better support for Xbox controllers)
+        if (useXInputVibration) {
+            try {
+                float leftIntensity = 0;
+                float rightIntensity = 0;
+
+                switch (motor) {
+                    case LEFT:
+                        leftIntensity = intensity;
+                        rightIntensity = 0;
+                        break;
+                    case RIGHT:
+                        leftIntensity = 0;
+                        rightIntensity = intensity;
+                        break;
+                    case BOTH:
+                    default:
+                        leftIntensity = intensity;
+                        rightIntensity = intensity;
+                        break;
+                }
+
+                XInputVibration.vibrate(xinputControllerIndex, leftIntensity, rightIntensity);
+                return;
+            } catch (Exception e) {
+                // Fall through to JInput
+            }
+        }
+
+        // Fallback to JInput rumblers
         try {
             switch (motor) {
                 case LEFT:
@@ -827,6 +913,16 @@ public class ControllerManager {
      * Stop all motor vibration.
      */
     private void stopMotors() {
+        // Stop XInput vibration
+        if (useXInputVibration) {
+            try {
+                XInputVibration.stop(xinputControllerIndex);
+            } catch (Exception e) {
+                // Silently handle errors
+            }
+        }
+
+        // Stop JInput rumblers
         try {
             if (leftRumbler != null) {
                 leftRumbler.rumble(0);
