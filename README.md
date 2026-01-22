@@ -306,24 +306,45 @@ CREATING PROJECTILES:
 8. INVENTORY SYSTEM (ui/Inventory.java)
 --------------------------------------------------------------------------------
 
-The inventory manages player items with drag-and-drop support, hotbar quick
-access, and vault integration for persistent storage.
+The inventory manages player items with Minecraft-style navigation, drag-and-drop
+support, hotbar quick access, and vault integration for persistent storage.
 
 INVENTORY STRUCTURE:
   - 32 item slots in 8x4 grid
   - 5-slot hotbar for quick access (bottom of inventory)
   - Items stack up to their maxStackSize
   - Scroll wheel cycles hotbar selection
+  - Minecraft-style cursor navigation with D-pad/arrow keys
 
-INVENTORY INTERACTIONS:
+INVENTORY INTERACTIONS (Mouse Mode):
   Action        | Result
   --------------|----------------------------------------
-  Left Click    | Auto-equip item to hotbar
+  Left Click    | Select slot / start drag
   Drag & Drop   | Move item between slots
   Right Click   | Drop item to world
   Mouse Wheel   | Cycle hotbar / scroll inventory
-  E Key         | Equip hovered item
-  F Key         | Equip to specific slot (with item selected)
+  F Key         | Equip hovered item to hotbar
+
+INVENTORY NAVIGATION (Keyboard/Controller Mode):
+  The inventory supports Minecraft-style navigation using arrow keys or the
+  Xbox controller D-pad. Items can be picked up and placed in empty slots.
+
+  Action             | Keyboard      | Xbox Controller
+  -------------------|---------------|------------------
+  Open/Close         | I key         | Y Button
+  Navigate Grid      | Arrow Keys    | D-Pad
+  Pick Up/Place Item | Enter         | A Button
+  Equip to Hotbar    | F key         | (use navigation)
+  Scroll Inventory   | Mouse Wheel   | -
+  Select Hotbar Slot | 1-5 keys      | LB/RB Bumpers
+
+  Navigation Mode Features:
+  - Cyan highlight shows the currently selected slot
+  - Press Enter/A to pick up an item (item glows while held)
+  - Navigate to destination slot and press Enter/A to place
+  - If destination has an item, they swap positions
+  - Items can be placed in empty slots beyond current inventory
+  - Pressing I or closing inventory cancels any held item
 
 VAULT INVENTORY (ui/VaultInventory.java):
   - Up to 10,000 slots persistent storage
@@ -786,7 +807,8 @@ XBOX CONTROLLER SUPPORT:
     Right Trigger (RT)  | Click/Select/Drag  | Left mouse click
     Left Bumper (LB)    | Hotbar previous    | Scroll wheel up
     Right Bumper (RB)   | Hotbar next        | Scroll wheel down
-    A Button            | Jump               | Space
+    D-Pad Up/Down/L/R   | Inventory navigate | Arrow keys
+    A Button            | Jump / Inv. select | Space / Enter
     X Button            | Interact/Mine      | E key
     Y Button            | Inventory          | I key
     Start Button        | Menu/Settings      | M key

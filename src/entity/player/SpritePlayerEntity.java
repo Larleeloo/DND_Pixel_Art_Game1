@@ -485,6 +485,12 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             inventory.toggleOpen();
         }
 
+        // Handle Minecraft-style inventory navigation (D-pad/arrow keys)
+        // When inventory is open, arrow keys navigate the grid instead of mining direction
+        if (inventory.isOpen()) {
+            inventory.handleNavigationInput(input);
+        }
+
         // Number keys 1-5 to select hotbar slots
         for (char c = '1'; c <= '5'; c++) {
             if (input.isKeyJustPressed(c)) {
@@ -518,15 +524,18 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             syncHeldItemWithInventory();
         }
 
-        // Arrow keys change mining direction (only applies to selected block)
-        if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
-            blockHelper.setMiningDirection(0);  // Mine from above
-        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_RIGHT)) {
-            blockHelper.setMiningDirection(1);  // Mine from right
-        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_DOWN)) {
-            blockHelper.setMiningDirection(2);  // Mine from below
-        } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_LEFT)) {
-            blockHelper.setMiningDirection(3);  // Mine from left
+        // Arrow keys change mining direction (only when inventory is CLOSED)
+        // When inventory is open, arrow keys are used for navigation instead
+        if (!inventory.isOpen()) {
+            if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
+                blockHelper.setMiningDirection(0);  // Mine from above
+            } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_RIGHT)) {
+                blockHelper.setMiningDirection(1);  // Mine from right
+            } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_DOWN)) {
+                blockHelper.setMiningDirection(2);  // Mine from below
+            } else if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_LEFT)) {
+                blockHelper.setMiningDirection(3);  // Mine from left
+            }
         }
 
         // Validate selected block is still valid (not broken, still in range)

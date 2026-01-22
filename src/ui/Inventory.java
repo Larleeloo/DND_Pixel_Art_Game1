@@ -57,6 +57,12 @@ public class Inventory {
     private int lastMouseX = 0;
     private int lastMouseY = 0;
 
+    // Minecraft-style cursor navigation
+    private int cursorSlot = 0;  // Currently highlighted slot in the grid (0 to MAX_SLOTS-1)
+    private ItemEntity cursorHeldItem = null;  // Item currently "held" by cursor (picked up with Enter/A)
+    private int cursorHeldItemOriginalSlot = -1;  // Original slot index of the held item
+    private boolean navigationMode = false;  // True when using keyboard/controller navigation
+
     public Inventory() {
         this.items = new ArrayList<>();
         this.isOpen = false;
@@ -117,6 +123,14 @@ public class Inventory {
         isOpen = !isOpen;
         if (isOpen) {
             scrollOffset = 0;  // Reset scroll when opening
+            // Reset cursor to first slot when opening
+            cursorSlot = 0;
+            ensureCursorVisible();
+        } else {
+            // If closing with held item, drop it back to original slot
+            if (cursorHeldItem != null) {
+                cancelCursorHeldItem();
+            }
         }
     }
 
@@ -209,6 +223,11 @@ public class Inventory {
      * Call this during mouse move events.
      */
     public void updateMousePosition(int mouseX, int mouseY) {
+        // Switch off navigation mode when mouse moves significantly
+        if (isOpen && (Math.abs(mouseX - lastMouseX) > 3 || Math.abs(mouseY - lastMouseY) > 3)) {
+            navigationMode = false;
+        }
+
         lastMouseX = mouseX;
         lastMouseY = mouseY;
 
@@ -246,6 +265,200 @@ public class Inventory {
      */
     public int getHoveredSlotIndex() {
         return hoveredSlotIndex;
+    }
+
+    // ==================== Minecraft-Style Navigation ====================
+
+    /**
+     * Handles keyboard/controller navigation input.
+     * Call this each frame when inventory is open.
+     * @param input The InputManager for checking navigation keys
+     * @return true if navigation input was handled
+     */
+    public boolean handleNavigationInput(input.InputManager input) {
+        if (!isOpen) return false;
+
+        boolean handled = false;
+
+        // Check navigation directions
+        if (input.isNavigateUpJustPressed()) {
+            moveCursor(0, -1);
+            navigationMode = true;
+            handled = true;
+        }
+        if (input.isNavigateDownJustPressed()) {
+            moveCursor(0, 1);
+            navigationMode = true;
+            handled = true;
+        }
+        if (input.isNavigateLeftJustPressed()) {
+            moveCursor(-1, 0);
+            navigationMode = true;
+            handled = true;
+        }
+        if (input.isNavigateRightJustPressed()) {
+            moveCursor(1, 0);
+            navigationMode = true;
+            handled = true;
+        }
+
+        // Check select button (Enter/A)
+        if (input.isSelectJustPressed()) {
+            handleCursorSelect();
+            handled = true;
+        }
+
+        return handled;
+    }
+
+    /**
+     * Moves the cursor in the specified direction.
+     * @param dx Horizontal movement (-1 left, +1 right)
+     * @param dy Vertical movement (-1 up, +1 down)
+     */
+    private void moveCursor(int dx, int dy) {
+        int col = cursorSlot % COLS;
+        int row = cursorSlot / COLS;
+
+        // Calculate new position with wrapping
+        col = (col + dx + COLS) % COLS;
+        row = row + dy;
+
+        // Clamp rows to valid range
+        int totalRows = (int) Math.ceil(MAX_SLOTS / (double) COLS);
+        if (row < 0) row = 0;
+        if (row >= totalRows) row = totalRows - 1;
+
+        cursorSlot = row * COLS + col;
+
+        // Clamp to max slots
+        if (cursorSlot >= MAX_SLOTS) {
+            cursorSlot = MAX_SLOTS - 1;
+        }
+
+        // Ensure cursor is visible (auto-scroll)
+        ensureCursorVisible();
+    }
+
+    /**
+     * Ensures the cursor slot is visible by adjusting scroll offset.
+     */
+    private void ensureCursorVisible() {
+        int cursorRow = cursorSlot / COLS;
+        int firstVisibleRow = scrollOffset;
+        int lastVisibleRow = scrollOffset + VISIBLE_ROWS - 1;
+
+        if (cursorRow < firstVisibleRow) {
+            scrollOffset = cursorRow;
+        } else if (cursorRow > lastVisibleRow) {
+            scrollOffset = cursorRow - VISIBLE_ROWS + 1;
+        }
+
+        // Clamp scroll offset
+        int totalRows = (int) Math.ceil(MAX_SLOTS / (double) COLS);
+        int maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);
+        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset));
+    }
+
+    /**
+     * Handles cursor select action (Enter/A button).
+     * If no item is held, picks up item at cursor position.
+     * If item is held, places/swaps item at cursor position.
+     */
+    private void handleCursorSelect() {
+        if (cursorHeldItem == null) {
+            // Pick up item at cursor position
+            if (cursorSlot < items.size()) {
+                cursorHeldItem = items.get(cursorSlot);
+                cursorHeldItemOriginalSlot = cursorSlot;
+                System.out.println("Inventory: Picked up " + cursorHeldItem.getItemName() + " from slot " + cursorSlot);
+            }
+        } else {
+            // Place/swap item at cursor position
+            if (cursorSlot < items.size()) {
+                // Swap with existing item
+                ItemEntity targetItem = items.get(cursorSlot);
+                items.set(cursorSlot, cursorHeldItem);
+
+                if (cursorHeldItemOriginalSlot < items.size()) {
+                    items.set(cursorHeldItemOriginalSlot, targetItem);
+                    System.out.println("Inventory: Swapped items between slots " + cursorHeldItemOriginalSlot + " and " + cursorSlot);
+                } else {
+                    // Original slot no longer valid, add target item to end
+                    items.add(targetItem);
+                }
+
+                cursorHeldItem = null;
+                cursorHeldItemOriginalSlot = -1;
+            } else if (cursorSlot >= items.size()) {
+                // Place in empty slot
+                // First, remove from original position if it was in the list
+                if (cursorHeldItemOriginalSlot >= 0 && cursorHeldItemOriginalSlot < items.size()) {
+                    items.remove(cursorHeldItemOriginalSlot);
+                }
+                // Add to end of list (items are stored compactly)
+                items.add(cursorHeldItem);
+                System.out.println("Inventory: Placed " + cursorHeldItem.getItemName() + " in empty slot");
+
+                cursorHeldItem = null;
+                cursorHeldItemOriginalSlot = -1;
+            }
+        }
+    }
+
+    /**
+     * Cancels cursor held item by returning it to original slot.
+     */
+    private void cancelCursorHeldItem() {
+        if (cursorHeldItem != null && cursorHeldItemOriginalSlot >= 0) {
+            // Item is still in the list, just clear the held state
+            System.out.println("Inventory: Cancelled pickup, returning " + cursorHeldItem.getItemName());
+        }
+        cursorHeldItem = null;
+        cursorHeldItemOriginalSlot = -1;
+    }
+
+    /**
+     * Gets the current cursor slot index.
+     */
+    public int getCursorSlot() {
+        return cursorSlot;
+    }
+
+    /**
+     * Sets the cursor to a specific slot.
+     */
+    public void setCursorSlot(int slot) {
+        cursorSlot = Math.max(0, Math.min(MAX_SLOTS - 1, slot));
+        ensureCursorVisible();
+    }
+
+    /**
+     * Checks if an item is currently held by the cursor.
+     */
+    public boolean isCursorHoldingItem() {
+        return cursorHeldItem != null;
+    }
+
+    /**
+     * Gets the item currently held by the cursor.
+     */
+    public ItemEntity getCursorHeldItem() {
+        return cursorHeldItem;
+    }
+
+    /**
+     * Checks if navigation mode is active (keyboard/controller).
+     */
+    public boolean isNavigationMode() {
+        return navigationMode;
+    }
+
+    /**
+     * Sets navigation mode. Call with false when mouse is used.
+     */
+    public void setNavigationMode(boolean mode) {
+        this.navigationMode = mode;
     }
 
     /**
@@ -655,17 +868,65 @@ public class Inventory {
      * Call this AFTER drawing all inventory/vault UI to ensure proper z-order.
      */
     public void drawDraggedItemOverlay(Graphics g) {
-        if (!isOpen || !isDragging || draggedItem == null) return;
+        if (!isOpen) return;
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));
-        if (draggedItem.getSprite() != null) {
-            g2d.drawImage(draggedItem.getSprite(),
-                    dragX - slotSize/2, dragY - slotSize/2,
-                    slotSize, slotSize, null);
+
+        // Draw mouse-dragged item
+        if (isDragging && draggedItem != null) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));
+            if (draggedItem.getSprite() != null) {
+                g2d.drawImage(draggedItem.getSprite(),
+                        dragX - slotSize/2, dragY - slotSize/2,
+                        slotSize, slotSize, null);
+            }
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
         }
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+
+        // Draw cursor-held item (Minecraft style - follows cursor slot)
+        if (cursorHeldItem != null && navigationMode) {
+            // Calculate cursor slot position
+            int panelWidth = COLS * (slotSize + padding) + padding;
+            int panelX = (1920 - panelWidth) / 2;
+            int panelY = 150;
+
+            int displayIndex = cursorSlot - (scrollOffset * COLS);
+            if (displayIndex >= 0 && displayIndex < VISIBLE_ROWS * COLS) {
+                int col = displayIndex % COLS;
+                int row = displayIndex / COLS;
+                int slotX = panelX + padding + col * (slotSize + padding);
+                int slotY = panelY + 60 + row * (slotSize + padding);
+
+                // Draw the held item slightly offset and with glow effect
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.9f));
+                if (cursorHeldItem.getSprite() != null) {
+                    // Draw glow behind item
+                    g2d.setColor(new Color(0, 255, 255, 80));
+                    g2d.fillRoundRect(slotX - 2, slotY - 2, slotSize + 4, slotSize + 4, 10, 10);
+
+                    // Draw the item
+                    g2d.drawImage(cursorHeldItem.getSprite(),
+                            slotX + 5, slotY + 5,
+                            slotSize - 10, slotSize - 10, null);
+
+                    // Draw stack count if more than 1
+                    if (cursorHeldItem.getStackCount() > 1) {
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+                        String countStr = String.valueOf(cursorHeldItem.getStackCount());
+                        FontMetrics cfm = g2d.getFontMetrics();
+                        int countX = slotX + slotSize - cfm.stringWidth(countStr) - 5;
+                        int countY = slotY + slotSize - 5;
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(countStr, countX + 1, countY + 1);
+                        g2d.setColor(Color.WHITE);
+                        g2d.drawString(countStr, countX, countY);
+                    }
+                }
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            }
+        }
     }
 
     /**
@@ -852,8 +1113,12 @@ public class Inventory {
             }
             g2d.fillRoundRect(slotX, slotY, slotSize, slotSize, 8, 8);
 
-            // Slot border - highlight selected slot
-            if (i == selectedSlot) {
+            // Slot border - highlight cursor slot (navigation mode) or selected slot
+            if (navigationMode && i == cursorSlot) {
+                // Minecraft-style cursor highlight (cyan/bright)
+                g2d.setColor(new Color(0, 255, 255));  // Cyan for cursor
+                g2d.setStroke(new BasicStroke(4));
+            } else if (i == selectedSlot) {
                 g2d.setColor(Color.YELLOW);
                 g2d.setStroke(new BasicStroke(3));
             } else if (i < HOTBAR_SIZE) {
@@ -864,6 +1129,12 @@ public class Inventory {
                 g2d.setStroke(new BasicStroke(2));
             }
             g2d.drawRoundRect(slotX, slotY, slotSize, slotSize, 8, 8);
+
+            // Draw inner highlight for cursor slot
+            if (navigationMode && i == cursorSlot) {
+                g2d.setColor(new Color(0, 255, 255, 60));  // Semi-transparent cyan fill
+                g2d.fillRoundRect(slotX + 2, slotY + 2, slotSize - 4, slotSize - 4, 6, 6);
+            }
 
             // Draw hotbar number for first 5 slots
             if (i < HOTBAR_SIZE) {
@@ -879,8 +1150,10 @@ public class Inventory {
                 // Skip if item is null (safety check)
                 if (item == null) continue;
 
-                // Skip drawing if this is the item being dragged
-                if (isDragging && draggedIndex == i) {
+                // Skip drawing if this is the item being dragged or held by cursor
+                boolean isBeingHeld = (isDragging && draggedIndex == i) ||
+                                     (cursorHeldItem != null && cursorHeldItemOriginalSlot == i);
+                if (isBeingHeld) {
                     // Draw empty slot with dashed border
                     g2d.setColor(new Color(100, 100, 100, 100));
                     g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT,
@@ -912,10 +1185,23 @@ public class Inventory {
         // Instructions
         g2d.setColor(Color.LIGHT_GRAY);
         g2d.setFont(new Font("Arial", Font.ITALIC, 14));
-        String instructions = "[I] Close | [F] Equip hovered item | Scroll to browse | Drag to drop";
+        String instructions;
+        if (navigationMode) {
+            instructions = "[I] Close | [Arrows/D-Pad] Navigate | [Enter/A] Pick Up/Place | [F] Equip";
+        } else {
+            instructions = "[I] Close | [F] Equip | Drag to move | [Arrows/D-Pad] Navigate";
+        }
         FontMetrics fm = g2d.getFontMetrics();
         int textX = panelX + (panelWidth - fm.stringWidth(instructions)) / 2;
         g2d.drawString(instructions, textX, panelY + panelHeight - 15);
+
+        // Show "HOLDING" indicator if cursor is holding an item
+        if (cursorHeldItem != null) {
+            g2d.setColor(new Color(0, 255, 255));
+            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            String holdingText = "Holding: " + cursorHeldItem.getItemName();
+            g2d.drawString(holdingText, panelX + 20, panelY + panelHeight - 35);
+        }
 
         // Draw tooltip for hovered item
         if (hoveredSlotIndex >= 0 && hoveredSlotIndex < items.size()) {
