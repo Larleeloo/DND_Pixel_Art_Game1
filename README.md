@@ -765,6 +765,7 @@ Implements KeyListener, MouseListener, MouseWheelListener, and MouseMotionListen
 XBOX CONTROLLER SUPPORT:
   The game supports Xbox controllers (and compatible gamepads) via JInput library.
   When a controller is connected, inputs are automatically mapped to game actions.
+  A visible crosshair cursor appears when using the controller for UI navigation.
 
   CONTROLLER SETUP:
     1. Download JInput library (see lib/README.md for detailed instructions)
@@ -776,16 +777,23 @@ XBOX CONTROLLER SUPPORT:
   CONTROLLER MAPPINGS:
     Controller Input    | Game Action        | Keyboard Equivalent
     --------------------|--------------------|-----------------------
-    Right Stick Up      | Move up/climb      | W key
-    Right Stick Down    | Move down          | S key
-    Right Stick Left    | Move left          | A key
-    Right Stick Right   | Move right         | D key
-    Left Stick Move     | Mouse cursor       | Mouse movement
-    Left Stick Click    | Primary action     | Left mouse click
+    Left Stick Up       | Move up/climb      | W key
+    Left Stick Down     | Move down          | S key
+    Left Stick Left     | Move left          | A key
+    Left Stick Right    | Move right         | D key
+    Right Stick Move    | Mouse cursor       | Mouse movement
+    Right Stick Click   | Primary action     | Left mouse click
     A Button            | Jump               | Space
     X Button            | Interact/Mine      | E key
     Y Button            | Inventory          | I key
     Start Button        | Menu/Settings      | M key
+    Back Button         | Back/Cancel        | Escape key
+
+  CONTROLLER CURSOR:
+    When using the right stick to control the mouse cursor, a visible crosshair
+    appears on screen. This cursor shows where you are pointing and can be used
+    to navigate menus, click UI elements, and interact with the game. Press the
+    right stick (R3) to simulate a left mouse click for selecting options.
 
   CONTROLLER MANAGER USAGE:
     ControllerManager controller = ControllerManager.getInstance();
@@ -798,12 +806,15 @@ XBOX CONTROLLER SUPPORT:
     if (controller.isButtonXPressed()) { /* interact */ }
 
     // Get stick values (-1.0 to 1.0)
-    float moveX = controller.getRightStickX();
-    float moveY = controller.getRightStickY();
+    float moveX = controller.getLeftStickX();
+    float moveY = controller.getLeftStickY();
 
-    // Virtual mouse (controlled by left stick)
+    // Virtual mouse (controlled by right stick)
     int mouseX = controller.getVirtualMouseX();
     int mouseY = controller.getVirtualMouseY();
+
+    // Check if right stick click (R3) for left mouse action
+    if (controller.isRightStickJustClicked()) { /* click action */ }
 
   Note: InputManager automatically integrates controller input, so game code
   using InputManager.isKeyPressed() will work with both keyboard and controller.
@@ -1554,3 +1565,13 @@ RESOLVED ISSUES
   -> Placement checks for existing blocks and player collision
   -> Added block items to ItemRegistry (dirt, grass, stone, wood, brick, etc.)
   -> Block type is determined from held item name
+
+[FIXED] Xbox controller joysticks need to be switched and cursor invisible
+  -> Swapped left and right stick functionality:
+     - Left stick now controls movement (WASD)
+     - Right stick now controls mouse cursor
+  -> Right stick click (R3) now triggers left mouse click for UI navigation
+  -> Added Back button mapping to Escape key
+  -> Added visible crosshair cursor when using controller mode
+  -> Cursor is a golden-centered crosshair that appears at the virtual mouse position
+  -> Controller cursor allows menu and UI navigation without physical mouse
