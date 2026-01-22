@@ -203,6 +203,16 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     @Override
     public void keyPressed(KeyEvent e) {
+        // Forward to SceneManager for settings overlay key rebinding
+        try {
+            scene.SceneManager sceneManager = scene.SceneManager.getInstance();
+            if (sceneManager != null && sceneManager.handleKeyPressed(e.getKeyCode())) {
+                return; // Event consumed by settings overlay
+            }
+        } catch (Exception ex) {
+            // SceneManager not initialized yet, continue normally
+        }
+
         char c = Character.toLowerCase(e.getKeyChar());
         if (!pressed.contains(c)) {
             justPressed.add(c);

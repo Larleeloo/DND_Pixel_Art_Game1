@@ -571,82 +571,59 @@ public class GameScene implements Scene {
 
     /**
      * Create UI elements.
+     * Note: Most game controls are now in the Settings menu (press M).
      */
     private void createUI() {
-        // Exit button
-        UIButton exitButton = new UIButton(GamePanel.SCREEN_WIDTH - 150, 20, 120, 50, "Exit", () -> {
-            AudioManager audio = SceneManager.getInstance().getAudioManager();
-            if (audio != null) audio.dispose();
-            System.exit(0);
+        // Single settings button - all other controls moved to settings menu
+        UIButton settingsButton = new UIButton(GamePanel.SCREEN_WIDTH - 160, 20, 140, 50, "Settings (M)", () -> {
+            SceneManager.getInstance().toggleSettings();
         });
-        exitButton.setColors(
-                new Color(200, 50, 50, 200),
-                new Color(255, 80, 80, 230),
+        settingsButton.setColors(
+                new Color(70, 70, 90, 220),
+                new Color(100, 100, 130, 240),
                 Color.WHITE
         );
-        buttons.add(exitButton);
+        buttons.add(settingsButton);
 
-        // Music toggle button
-        UIButton musicButton = new UIButton(GamePanel.SCREEN_WIDTH - 290, 20, 120, 50, "Music", () -> {
-            AudioManager audio = SceneManager.getInstance().getAudioManager();
-            if (audio != null) audio.toggleMusic();
-        });
-        musicButton.setColors(
-                new Color(50, 100, 200, 200),
-                new Color(80, 130, 255, 230),
-                Color.WHITE
-        );
-        buttons.add(musicButton);
+        // Set up settings overlay callbacks for this scene
+        setupSettingsCallbacks();
+    }
 
-        // Menu button (to return to main menu)
-        UIButton menuButton = new UIButton(GamePanel.SCREEN_WIDTH - 430, 20, 120, 50, "Menu", () -> {
-            SceneManager.getInstance().setScene("mainMenu", SceneManager.TRANSITION_FADE);
-        });
-        menuButton.setColors(
-                new Color(50, 150, 50, 200),
-                new Color(80, 200, 80, 230),
-                Color.WHITE
-        );
-        buttons.add(menuButton);
+    /**
+     * Set up callbacks for the settings overlay to interact with this scene.
+     */
+    private void setupSettingsCallbacks() {
+        SettingsOverlay settings = SceneManager.getInstance().getSettingsOverlay();
+        if (settings == null) return;
 
-        // Day/Night toggle button (for debugging)
-        UIButton dayNightButton = new UIButton(GamePanel.SCREEN_WIDTH - 570, 20, 120, 50, "Day/Night", () -> {
+        // Day/Night toggle callback
+        settings.setOnDayNightToggle(() -> {
             if (lightingSystem != null) {
                 lightingSystem.toggleDayNight();
+                settings.setNightMode(lightingSystem.isNight());
                 String mode = lightingSystem.isNight() ? "Night" : "Day";
                 System.out.println("GameScene: Toggled to " + mode + " mode");
             }
         });
-        dayNightButton.setColors(
-                new Color(100, 50, 150, 200),
-                new Color(140, 80, 200, 230),
-                Color.WHITE
-        );
-        buttons.add(dayNightButton);
 
-        // Customize button (opens character customization for sprite-based players)
+        // Debug toggle callback
+        settings.setOnDebugToggle(() -> {
+            toggleDebugMode();
+            settings.setDebugMode(debugMode);
+        });
+
+        // Customize callback (only for sprite-based players)
         if (levelData.useSpriteAnimation) {
-            UIButton customizeButton = new UIButton(GamePanel.SCREEN_WIDTH - 710, 20, 120, 50, "Customize", () -> {
+            settings.setOnCustomize(() -> {
                 openCharacterCustomization();
             });
-            customizeButton.setColors(
-                    new Color(180, 120, 50, 200),
-                    new Color(220, 160, 80, 230),
-                    Color.WHITE
-            );
-            buttons.add(customizeButton);
         }
 
-        // Debug toggle button (F3 key also toggles)
-        UIButton debugButton = new UIButton(GamePanel.SCREEN_WIDTH - 850, 20, 120, 50, "Debug (F3)", () -> {
-            toggleDebugMode();
-        });
-        debugButton.setColors(
-                new Color(80, 80, 80, 200),
-                new Color(120, 120, 120, 230),
-                Color.WHITE
-        );
-        buttons.add(debugButton);
+        // Sync initial state
+        if (lightingSystem != null) {
+            settings.setNightMode(lightingSystem.isNight());
+        }
+        settings.setDebugMode(debugMode);
     }
 
     /**
@@ -1500,7 +1477,7 @@ public class GameScene implements Scene {
 
         // Draw controls hint
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
-        g2d.drawString("A/D: Move | SPACE: Jump | LMB/E: Mine | Scroll: Aim | I: Inventory", 10, 30);
+        g2d.drawString("A/D: Move | SPACE: Jump | LMB/E: Mine | I: Inventory | M: Settings", 10, 30);
 
         // Draw camera position debug info for scrolling levels
         if (levelData.scrollingEnabled && camera != null) {

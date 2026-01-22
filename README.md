@@ -144,20 +144,22 @@ RESOURCE SYSTEM:
   Mana      | 100         | Used for magic attacks, auto-regenerates
   Stamina   | 100         | Used for sprinting, regenerates when idle
 
-MOVEMENT CONTROLS:
+MOVEMENT CONTROLS (default keys, rebindable via Settings > Controls):
   Key       | Action
   ----------|----------------------------------------
   A/D       | Move left/right
   Space     | Jump (press again in air for multi-jump)
   Shift     | Sprint (drains stamina)
   W/S       | Climb ladders (when implemented)
+  M         | Open Settings menu
 
-COMBAT CONTROLS:
+COMBAT CONTROLS (default keys, rebindable via Settings > Controls):
   Key       | Action
   ----------|----------------------------------------
   Left Click| Attack/Mine/Place blocks
   Hold Left | Charge attack (bows, magic staffs)
   E         | Interact/Mine selected block
+  F         | Attack/Equip item
   Arrows    | Change mining direction
 
 --------------------------------------------------------------------------------
@@ -1077,6 +1079,108 @@ UI CLICK CONSUMPTION:
   // In UI button handler:
   input.consumeLeftClick();
 
+--------------------------------------------------------------------------------
+16. SETTINGS MENU (ui/SettingsOverlay.java, input/KeyBindings.java)
+--------------------------------------------------------------------------------
+
+The game features a comprehensive in-game settings menu accessible by pressing
+the M key or Start button on a controller. The menu replaces the previously
+scattered in-game buttons with a centralized, tabbed interface.
+
+OPENING THE SETTINGS MENU:
+  - Keyboard: Press M key
+  - Controller: Press Start button
+  - In-Game: Click the "Settings (M)" button in top-right corner
+  - Close: Press M, ESC, or click the X button
+
+SETTINGS TABS:
+
+  1. AUDIO TAB
+     - Music Volume slider (0-100%)
+     - Sound Effects Volume slider (0-100%)
+     - Mute All toggle button
+     - Volume changes take effect immediately
+
+  2. CONTROLS TAB
+     - Displays all rebindable keyboard controls in a grid layout
+     - Click any control to rebind it to a new key
+     - If the new key is already bound, keys are swapped automatically
+     - Press ESC to cancel rebinding
+     - "Reset to Defaults" button restores original key bindings
+     - Shows connected controller name (if any)
+
+     Rebindable Actions:
+       Action        | Default Key  | Description
+       --------------|--------------|----------------------------------
+       Move Left     | A            | Move player left
+       Move Right    | D            | Move player right
+       Move Up       | W            | Move up / climb
+       Move Down     | S            | Move down / descend
+       Jump          | Space        | Jump (multi-jump supported)
+       Sprint        | Shift        | Run faster (uses stamina)
+       Interact      | E            | Interact with objects / mine
+       Inventory     | I            | Open/close inventory
+       Attack/Equip  | F            | Attack or equip item
+
+  3. GAME TAB
+     - Vibration Toggle: Enable/disable controller vibration
+       (Shows "No Controller" if none connected)
+     - Day/Night Toggle: Switch between day and night lighting
+     - Debug Mode Toggle: Enable debug information overlay (F3)
+
+  4. ACTIONS TAB (Quick Actions)
+     - Return to Main Menu: Exit to the main menu with fade transition
+     - Customize Character: Open character customization screen
+     - Toggle Music: Quick on/off toggle for background music
+     - Exit Game: Exit the application
+
+KEY BINDINGS SYSTEM (input/KeyBindings.java):
+  Custom key bindings are saved to "saves/keybindings.dat" and persist
+  across game sessions.
+
+  Usage in code:
+    KeyBindings kb = KeyBindings.getInstance();
+
+    // Get bound key for an action
+    int jumpKey = kb.getKey(KeyBindings.JUMP);
+    char interactChar = kb.getKeyChar(KeyBindings.INTERACT);
+
+    // Check if key matches a binding
+    if (kb.matchesBinding(KeyBindings.JUMP, keyChar, keyCode)) {
+        // Handle jump
+    }
+
+    // Set a new binding (will swap if key already bound)
+    kb.setKey(KeyBindings.JUMP, KeyEvent.VK_W);
+
+    // Reset all to defaults
+    kb.resetAllToDefaults();
+
+  Available Action Constants:
+    KeyBindings.MOVE_LEFT, MOVE_RIGHT, MOVE_UP, MOVE_DOWN
+    KeyBindings.JUMP, SPRINT, INTERACT, INVENTORY
+    KeyBindings.MENU, ATTACK, DEBUG
+
+SETTINGS OVERLAY INTEGRATION:
+  GameScene sets up callbacks for settings actions:
+
+    SettingsOverlay settings = SceneManager.getInstance().getSettingsOverlay();
+
+    // Set callback for day/night toggle
+    settings.setOnDayNightToggle(() -> {
+        lightingSystem.toggleDayNight();
+    });
+
+    // Set callback for debug toggle
+    settings.setOnDebugToggle(() -> {
+        toggleDebugMode();
+    });
+
+    // Set callback for customize action
+    settings.setOnCustomize(() -> {
+        openCharacterCustomization();
+    });
+
   // In game logic:
   if (!input.isLeftClickConsumed()) {
       // Process game click
@@ -1262,11 +1366,13 @@ PLAYER STATUS BAR (PlayerStatusBar.java):
   - Stamina: Green bar (RGB: 50, 200, 50)
 
 SETTINGS OVERLAY (SettingsOverlay.java):
-  Global settings panel accessible via M key:
-  - Music volume slider
-  - SFX volume slider
-  - Mute all toggle
-  - Darkened background overlay
+  Comprehensive tabbed settings panel accessible via M key or Start button:
+  - Audio Tab: Music/SFX volume sliders, mute toggle
+  - Controls Tab: Key rebinding interface with swap detection
+  - Game Tab: Vibration toggle, day/night mode, debug toggle
+  - Actions Tab: Return to menu, customize character, toggle music, exit game
+  - Semi-transparent dark overlay, centered 700x550 panel
+  - See Section 16 for detailed documentation
 
 INVENTORY UI:
   - 8x4 grid (32 slots) with 5-slot hotbar
@@ -1419,9 +1525,10 @@ src/                    - Game engine source code (organized by package)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
   audio/                - Sound management (AudioManager)
-  input/                - Input handling (InputManager, ControllerManager, VibrationPattern)
+  input/                - Input handling (InputManager, ControllerManager, KeyBindings, VibrationPattern)
     - InputManager.java     - Keyboard and mouse input handling with controller integration
     - ControllerManager.java - Xbox controller support via JInput library with vibration/rumble
+    - KeyBindings.java      - Customizable key bindings with persistence (saves/keybindings.dat)
     - VibrationPattern.java - Enum defining haptic feedback patterns (minor, greater, intricate)
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
     - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)

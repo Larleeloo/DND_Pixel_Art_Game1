@@ -210,14 +210,10 @@ public class SceneManager {
             input.resetClickConsumed();
         }
 
-        // Handle 'M' key for settings toggle
+        // Handle 'M' key for settings toggle (when not rebinding)
         if (input != null && input.isKeyJustPressed('m')) {
-            if (settingsOverlay != null) {
-                if (settingsOverlay.isVisible()) {
-                    settingsOverlay.hide();
-                } else {
-                    settingsOverlay.show();
-                }
+            if (settingsOverlay != null && !settingsOverlay.isVisible()) {
+                settingsOverlay.show();
                 return; // Don't process other input this frame
             }
         }
@@ -230,6 +226,18 @@ public class SceneManager {
         if (currentScene != null && !transitioning && !isSettingsOpen()) {
             currentScene.update(input);
         }
+    }
+
+    /**
+     * Handle key pressed events for settings overlay (for key rebinding).
+     * @param keyCode The key code from KeyEvent
+     * @return true if the event was consumed
+     */
+    public boolean handleKeyPressed(int keyCode) {
+        if (settingsOverlay != null && settingsOverlay.isVisible()) {
+            return settingsOverlay.handleKeyPressed(keyCode);
+        }
+        return false;
     }
 
     /**
