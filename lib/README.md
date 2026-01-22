@@ -199,17 +199,71 @@ No Xbox controller found. Connect a controller and restart the game.
 | Y Button | I (Inventory) |
 | Start Button | M (Menu/Settings) |
 
+## Optional: Controller Vibration/Rumble Support
+
+Xbox controller vibration (rumble) requires additional setup because JInput's DirectInput
+plugin doesn't support XInput controller vibration. The game uses XInput directly for
+vibration on Windows.
+
+### Automatic Setup (Windows)
+
+On Windows with .NET Framework 4.x installed (standard on Windows 10/11), the game
+automatically compiles and uses a small helper program to enable XInput vibration.
+No additional setup is required.
+
+### Optional: JNA Setup (Recommended for best performance)
+
+For optimal vibration performance, you can add JNA (Java Native Access):
+
+1. **Download JNA**:
+   - https://github.com/java-native-access/jna/releases
+   - Download `jna-5.x.x.jar` and `jna-platform-5.x.x.jar`
+
+2. **Installation**:
+   - Place both JAR files in this `lib/` folder
+   - Add them to your project classpath (same as JLayer setup)
+
+3. **Verification**:
+   When the game starts with JNA:
+   ```
+   XInputVibration: Initialized with JNA backend
+   Controller vibration: Using XInput for Xbox controller
+   ```
+
+   Without JNA (using native helper):
+   ```
+   XInputVibration: JNA not available
+   XInputVibration: Initialized with native helper backend
+   Controller vibration: Using XInput for Xbox controller
+   ```
+
+### Vibration Patterns
+
+The game includes many vibration patterns:
+
+| Event | Pattern | Description |
+|-------|---------|-------------|
+| Jump | GREATER_JUMP | Medium pulse |
+| Double Jump | GREATER_DOUBLE_JUMP | Stronger pulse |
+| Take Damage | GREATER_DAMAGE_TAKEN | Strong impact |
+| Melee Attack | GREATER_MELEE_ATTACK | Attack feedback |
+| Item Pickup | MINOR_ITEM_PICKUP | Light pulse |
+| Chest Open | LOOT_CHEST_DAILY | Intricate sequence |
+| Legendary Item | LOOT_LEGENDARY_ITEM | Celebratory pattern |
+
 ## File Structure After Setup
 
 ```
 lib/
 ├── README.md                    (this file)
-├── jlayer-1.0.1.jar             (download and place here)
-├── jinput-2.0.10.jar            (optional - for controller support)
+├── jlayer-1.0.1.jar             (required - MP3 support)
+├── jinput-2.0.10.jar            (optional - controller support)
 ├── jinput-2.0.10-natives-all.jar (optional - contains native libraries)
 ├── jinput-dx8_64.dll            (extracted - Windows)
 ├── jinput-raw_64.dll            (extracted - Windows)
 ├── jinput-wintab.dll            (extracted - Windows)
 ├── libjinput-linux64.so         (extracted - Linux)
-└── libjinput-osx.jnilib         (extracted - macOS)
+├── libjinput-osx.jnilib         (extracted - macOS)
+├── jna-5.x.x.jar                (optional - better vibration support)
+└── jna-platform-5.x.x.jar       (optional - platform-specific natives)
 ```
