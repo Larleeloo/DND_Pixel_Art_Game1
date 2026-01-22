@@ -3,6 +3,7 @@ package scene.creative;
 import block.*;
 import entity.item.Item;
 import entity.item.ItemRegistry;
+import entity.mob.MobRegistry;
 import graphics.AssetLoader;
 
 import java.awt.*;
@@ -184,31 +185,26 @@ public class CreativePaletteManager {
 
     private void initializeMobPalette() {
         mobPalette = new ArrayList<>();
-        String[][] mobTypes = {
-            {"zombie", "Zombie", "sprite_humanoid"},
-            {"skeleton", "Skeleton", "sprite_humanoid"},
-            {"goblin", "Goblin", "sprite_humanoid"},
-            {"orc", "Orc", "sprite_humanoid"},
-            {"bandit", "Bandit", "sprite_humanoid"},
-            {"knight", "Knight", "sprite_humanoid"},
-            {"mage", "Mage", "sprite_humanoid"},
-            {"wolf", "Wolf", "sprite_quadruped"},
-            {"bear", "Bear", "sprite_quadruped"},
-            {"pig", "Pig", "sprite_quadruped"},
-            {"cow", "Cow", "sprite_quadruped"},
-            {"sheep", "Sheep", "sprite_quadruped"},
-            {"frog", "Frog", "frog"}
-        };
 
-        for (String[] mob : mobTypes) {
-            BufferedImage icon = createMobIcon(mob[0]);
+        // Initialize MobRegistry and get all registered mobs
+        MobRegistry.initialize();
+        List<MobRegistry.MobInfo> allMobs = MobRegistry.getAllMobInfos();
+
+        for (MobRegistry.MobInfo mobInfo : allMobs) {
+            // Create icon from mob sprites
+            BufferedImage icon = createMobIcon(mobInfo.id, mobInfo.spriteDir);
+
+            // Build mob data for level saving
             Map<String, String> mobData = new HashMap<>();
-            mobData.put("subType", mob[0]);
-            mobData.put("mobType", mob[2]);
-            mobData.put("behavior", mob[0].equals("pig") || mob[0].equals("cow") ||
-                        mob[0].equals("sheep") || mob[0].equals("frog") ? "passive" : "hostile");
-            mobPalette.add(new PaletteItem(mob[0], mob[1], icon, mobData));
+            mobData.put("subType", mobInfo.id);
+            mobData.put("mobType", mobInfo.getLevelMobType());
+            mobData.put("behavior", mobInfo.getBehaviorString());
+            mobData.put("spriteDir", mobInfo.spriteDir);
+
+            mobPalette.add(new PaletteItem(mobInfo.id, mobInfo.displayName, icon, mobData));
         }
+
+        System.out.println("CreativePaletteManager: Loaded " + mobPalette.size() + " mobs from MobRegistry");
     }
 
     private void initializeLightPalette() {
@@ -404,9 +400,27 @@ public class CreativePaletteManager {
         return icon;
     }
 
+    /**
+     * Creates a mob icon using the default sprite directory.
+     */
     public BufferedImage createMobIcon(String mobType) {
+        return createMobIcon(mobType, "assets/mobs/" + mobType);
+    }
+
+    /**
+     * Creates a mob icon using a specified sprite directory.
+     *
+     * @param mobType   The mob type ID (used for fallback color)
+     * @param spriteDir The sprite directory to load from
+     * @return A 48x48 icon image
+     */
+    public BufferedImage createMobIcon(String mobType, String spriteDir) {
+        // Try multiple common paths for the idle sprite
         String[] paths = {
-            "assets/mobs/" + mobType + "/idle.gif",
+            spriteDir + "/idle.gif",
+            spriteDir + "/sprites/idle.gif",
+            spriteDir + "/idle.png",
+            "assets/mobs/" + mobType + "/idle.gif",  // Fallback to default
             "assets/mobs/" + mobType + "/sprites/idle.gif",
             "assets/mobs/" + mobType + "/idle.png"
         };
@@ -418,7 +432,7 @@ public class CreativePaletteManager {
             }
         }
 
-        // Fallback placeholder
+        // Fallback: create colored placeholder
         BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = icon.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -426,11 +440,14 @@ public class CreativePaletteManager {
         Color color = getMobColor(mobType);
         g.setColor(color);
 
-        if (mobType.equals("wolf") || mobType.equals("bear") || mobType.equals("pig") ||
-            mobType.equals("cow") || mobType.equals("sheep") || mobType.equals("frog")) {
+        // Draw placeholder shape based on mob category
+        String category = MobRegistry.getCategory(mobType);
+        if ("quadruped".equals(category) || "special".equals(category)) {
+            // Quadruped/special: draw animal-like shape
             g.fillOval(6, 14, PALETTE_ITEM_SIZE - 12, PALETTE_ITEM_SIZE - 22);
             g.fillOval(8, 8, 16, 14);
         } else {
+            // Humanoid: draw humanoid shape
             g.fillOval(16, 4, 16, 16);
             g.fillRect(20, 20, 8, 16);
             g.fillRect(14, 36, 6, 8);
@@ -446,6 +463,7 @@ public class CreativePaletteManager {
 
     private Color getMobColor(String mobType) {
         switch (mobType) {
+            // Humanoid
             case "zombie": return new Color(100, 150, 100);
             case "skeleton": return new Color(220, 220, 200);
             case "goblin": return new Color(50, 150, 50);
@@ -453,11 +471,24 @@ public class CreativePaletteManager {
             case "bandit": return new Color(120, 80, 60);
             case "knight": return new Color(180, 180, 200);
             case "mage": return new Color(100, 50, 150);
+            // Quadruped
             case "wolf": return new Color(100, 100, 100);
             case "bear": return new Color(139, 90, 43);
-            case "pig": return new Color(255, 180, 180);
+            case "dog": return new Color(180, 140, 100);
+            case "cat": return new Color(200, 150, 100);
             case "cow": return new Color(100, 80, 60);
+            case "pig": return new Color(255, 180, 180);
             case "sheep": return new Color(240, 240, 240);
+            case "horse": return new Color(139, 90, 43);
+            case "deer": return new Color(180, 140, 100);
+            case "fox": return new Color(255, 140, 50);
+            // Special
+            case "slime": return new Color(50, 200, 50);
+            case "bat": return new Color(80, 60, 80);
+            case "spider": return new Color(50, 50, 50);
+            case "dragon": return new Color(200, 50, 50);
+            case "ogre": return new Color(100, 80, 60);
+            case "troll": return new Color(80, 120, 80);
             case "frog": return new Color(128, 60, 180);
             default: return Color.GRAY;
         }
