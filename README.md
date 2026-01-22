@@ -781,8 +781,11 @@ XBOX CONTROLLER SUPPORT:
     Left Stick Down     | Move down          | S key
     Left Stick Left     | Move left          | A key
     Left Stick Right    | Move right         | D key
+    Left Stick Click    | Sprint             | Shift key
     Right Stick Move    | Mouse cursor       | Mouse movement
-    Right Stick Click   | Primary action     | Left mouse click
+    Right Trigger (RT)  | Click/Select/Drag  | Left mouse click
+    Left Bumper (LB)    | Hotbar previous    | Scroll wheel up
+    Right Bumper (RB)   | Hotbar next        | Scroll wheel down
     A Button            | Jump               | Space
     X Button            | Interact/Mine      | E key
     Y Button            | Inventory          | I key
@@ -792,8 +795,9 @@ XBOX CONTROLLER SUPPORT:
   CONTROLLER CURSOR:
     When using the right stick to control the mouse cursor, a visible crosshair
     appears on screen. This cursor shows where you are pointing and can be used
-    to navigate menus, click UI elements, and interact with the game. Press the
-    right stick (R3) to simulate a left mouse click for selecting options.
+    to navigate menus, click UI elements, and interact with the game. Pull the
+    right trigger (RT) to click/select items, which also works for dragging
+    items around in inventory menus.
 
   CONTROLLER MANAGER USAGE:
     ControllerManager controller = ControllerManager.getInstance();
@@ -813,8 +817,15 @@ XBOX CONTROLLER SUPPORT:
     int mouseX = controller.getVirtualMouseX();
     int mouseY = controller.getVirtualMouseY();
 
-    // Check if right stick click (R3) for left mouse action
-    if (controller.isRightStickJustClicked()) { /* click action */ }
+    // Check right trigger for left mouse click action
+    if (controller.isRightTriggerJustPressed()) { /* click action */ }
+
+    // Hotbar navigation with bumpers
+    if (controller.isButtonLBJustPressed()) { /* previous slot */ }
+    if (controller.isButtonRBJustPressed()) { /* next slot */ }
+
+    // Sprint with left stick click
+    if (controller.isLeftStickClicked()) { /* sprinting */ }
 
   Note: InputManager automatically integrates controller input, so game code
   using InputManager.isKeyPressed() will work with both keyboard and controller.
@@ -1570,7 +1581,9 @@ RESOLVED ISSUES
   -> Swapped left and right stick functionality:
      - Left stick now controls movement (WASD)
      - Right stick now controls mouse cursor
-  -> Right stick click (R3) now triggers left mouse click for UI navigation
+  -> Left stick click (L3) now triggers sprint (Shift key)
+  -> Right Trigger (RT) now triggers left mouse click for UI navigation and item dragging
+  -> Left/Right Bumpers (LB/RB) now cycle hotbar slots (previous/next)
   -> Added Back button mapping to Escape key
   -> Added visible crosshair cursor when using controller mode
   -> Cursor is a golden-centered crosshair that appears at the virtual mouse position

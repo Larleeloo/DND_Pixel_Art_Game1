@@ -508,6 +508,16 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
             }
         }
 
+        // Controller bumpers for hotbar navigation (LB = previous, RB = next)
+        if (input.isHotbarPreviousPressed()) {
+            inventory.cycleSelectedSlot(-1);
+            syncHeldItemWithInventory();
+        }
+        if (input.isHotbarNextPressed()) {
+            inventory.cycleSelectedSlot(1);
+            syncHeldItemWithInventory();
+        }
+
         // Arrow keys change mining direction (only applies to selected block)
         if (input.isKeyJustPressed(java.awt.event.KeyEvent.VK_UP)) {
             blockHelper.setMiningDirection(0);  // Mine from above

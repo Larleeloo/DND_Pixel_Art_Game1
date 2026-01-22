@@ -14,9 +14,14 @@ import java.util.List;
  *   - LS Left → 'A' key
  *   - LS Up → 'W' key
  *   - LS Down → 'S' key
+ *   - LS Click (L3) → Shift (Sprint)
  * - Right Stick (RS): Mouse pointer control
  *   - RS Move → Virtual mouse cursor movement
- *   - RS Click (R3) → Left mouse click
+ * - Triggers:
+ *   - Right Trigger (RT) → Left mouse click
+ * - Bumpers:
+ *   - Left Bumper (LB) → Hotbar previous slot
+ *   - Right Bumper (RB) → Hotbar next slot
  * - Buttons:
  *   - A Button → Space (Jump)
  *   - X Button → 'E' key (Interact/Mine)
@@ -58,6 +63,13 @@ public class ControllerManager {
     private boolean prevButtonL3 = false;
     private boolean prevButtonR3 = false;
     private boolean prevButtonBack = false;
+    private boolean prevButtonLB = false;
+    private boolean prevButtonRB = false;
+
+    // Right trigger click state (for "just pressed" detection)
+    private boolean rightTriggerPressed = false;
+    private boolean prevRightTriggerPressed = false;
+    private static final float TRIGGER_THRESHOLD = 0.5f;
 
     // Triggers (0.0 to 1.0)
     private float leftTrigger = 0;
@@ -173,6 +185,9 @@ public class ControllerManager {
         prevButtonL3 = buttonL3;
         prevButtonR3 = buttonR3;
         prevButtonBack = buttonBack;
+        prevButtonLB = buttonLB;
+        prevButtonRB = buttonRB;
+        prevRightTriggerPressed = rightTriggerPressed;
 
         // Poll the controller
         if (!xboxController.poll()) {
@@ -238,6 +253,9 @@ public class ControllerManager {
 
         // Update virtual mouse position based on left stick
         updateVirtualMouse();
+
+        // Update right trigger pressed state (for click detection)
+        rightTriggerPressed = rightTrigger >= TRIGGER_THRESHOLD;
     }
 
     /**
@@ -387,17 +405,45 @@ public class ControllerManager {
     }
 
     /**
-     * Check if Right Stick is clicked (R3) - maps to left mouse click.
+     * Check if Left Stick is clicked (L3) - maps to Sprint/Shift.
      */
-    public boolean isRightStickClicked() {
-        return buttonR3;
+    public boolean isLeftStickClicked() {
+        return buttonL3;
     }
 
     /**
-     * Check if Right Stick was just clicked this frame.
+     * Check if Left Stick was just clicked this frame.
      */
-    public boolean isRightStickJustClicked() {
-        return buttonR3 && !prevButtonR3;
+    public boolean isLeftStickJustClicked() {
+        return buttonL3 && !prevButtonL3;
+    }
+
+    /**
+     * Check if Right Trigger is pressed (maps to left mouse click).
+     */
+    public boolean isRightTriggerPressed() {
+        return rightTriggerPressed;
+    }
+
+    /**
+     * Check if Right Trigger was just pressed this frame.
+     */
+    public boolean isRightTriggerJustPressed() {
+        return rightTriggerPressed && !prevRightTriggerPressed;
+    }
+
+    /**
+     * Check if Left Bumper (LB) was just pressed - for hotbar navigation left.
+     */
+    public boolean isButtonLBJustPressed() {
+        return buttonLB && !prevButtonLB;
+    }
+
+    /**
+     * Check if Right Bumper (RB) was just pressed - for hotbar navigation right.
+     */
+    public boolean isButtonRBJustPressed() {
+        return buttonRB && !prevButtonRB;
     }
 
     /**

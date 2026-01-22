@@ -13,9 +13,14 @@ import java.util.HashSet;
  *   - LS Left → 'A' key
  *   - LS Up → 'W' key
  *   - LS Down → 'S' key
+ *   - LS Click (L3) → Shift (Sprint)
  * - Right Stick (RS): Mouse pointer control
  *   - RS Move → Virtual mouse cursor movement
- *   - RS Click (R3) → Left mouse click
+ * - Triggers:
+ *   - Right Trigger (RT) → Left mouse click
+ * - Bumpers:
+ *   - Left Bumper (LB) → Hotbar previous slot
+ *   - Right Bumper (RB) → Hotbar next slot
  * - Buttons:
  *   - A Button → Space (Jump)
  *   - X Button → 'E' key (Interact/Mine)
@@ -120,14 +125,20 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
      * Use KeyEvent.VK_* constants.
      * Controller mappings:
      * - VK_ESCAPE → Back Button
+     * - VK_SHIFT → L3 (Left Stick Click) for Sprint
      */
     public boolean isKeyPressed(int keyCode) {
         if (keysPressed.contains(keyCode)) {
             return true;
         }
-        // Check controller Back button for Escape
-        if (keyCode == KeyEvent.VK_ESCAPE && controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isButtonBackPressed();
+        // Check controller mappings for special keys
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            if (keyCode == KeyEvent.VK_ESCAPE) {
+                return controllerManager.isButtonBackPressed();
+            }
+            if (keyCode == KeyEvent.VK_SHIFT) {
+                return controllerManager.isLeftStickClicked();
+            }
         }
         return false;
     }
@@ -255,16 +266,16 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Convenience method for left mouse button just pressed.
-     * Also returns true if controller right stick was just clicked (R3).
+     * Also returns true if controller right trigger was just pressed.
      */
     public boolean isLeftMouseJustPressed() {
         // Check physical mouse
         if (isMouseButtonJustPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller right stick click (R3)
+        // Check controller right trigger
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isRightStickJustClicked();
+            return controllerManager.isRightTriggerJustPressed();
         }
         return false;
     }
@@ -278,16 +289,16 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Check if left mouse button is currently pressed.
-     * Also returns true if controller right stick is clicked (R3).
+     * Also returns true if controller right trigger is pressed.
      */
     public boolean isLeftMousePressed() {
         // Check physical mouse
         if (isMouseButtonPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller right stick click (R3)
+        // Check controller right trigger
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isRightStickClicked();
+            return controllerManager.isRightTriggerPressed();
         }
         return false;
     }
@@ -351,6 +362,30 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
      */
     public ControllerManager getControllerManager() {
         return controllerManager;
+    }
+
+    // ========== Controller Hotbar Navigation ==========
+
+    /**
+     * Check if controller left bumper (LB) was just pressed.
+     * Used for cycling hotbar to previous slot.
+     */
+    public boolean isHotbarPreviousPressed() {
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isButtonLBJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if controller right bumper (RB) was just pressed.
+     * Used for cycling hotbar to next slot.
+     */
+    public boolean isHotbarNextPressed() {
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isButtonRBJustPressed();
+        }
+        return false;
     }
 
     // ========== MouseListener Implementation ==========
