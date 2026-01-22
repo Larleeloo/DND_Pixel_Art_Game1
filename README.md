@@ -493,8 +493,38 @@ NOTABLE SPECIAL ITEMS:
 10. MOB/ENEMY SYSTEM (entity/mob/)
 --------------------------------------------------------------------------------
 
-Enemies use an AI state machine for behavior. SpriteMobEntity is the modern
-GIF-based implementation (recommended over deprecated bone-based mobs).
+Enemies use an AI state machine for behavior. Each mob type has its own
+dedicated class file for easy customization of AI, textures, and functionality.
+
+MOB CLASS ARCHITECTURE:
+  All mobs are now implemented as individual Java classes that extend the
+  SpriteMobEntity base class. This allows:
+  - Per-mob customization of stats and behavior
+  - Override of base methods for unique AI patterns
+  - Clean separation of mob configuration from registry logic
+  - Easy addition of new mobs by creating a new class file
+
+MOB CLASS LOCATION (entity/mob/mobs/):
+  Category       | Location                          | Count
+  ---------------|-----------------------------------|-------
+  Humanoid       | mobs/humanoid/                    | 7
+  Quadruped      | mobs/quadruped/                   | 10
+  Special        | mobs/special/                     | 6
+  --------------------------------------------------------
+  TOTAL                                              | 23
+
+MOB REGISTRY USAGE:
+  The MobRegistry provides centralized mob creation. Use it to instantiate
+  mobs by type name:
+
+  // Create a mob at position (x, y)
+  SpriteMobEntity zombie = MobRegistry.create("zombie", 100, 500);
+
+  // Create with custom sprite directory
+  SpriteMobEntity wolf = MobRegistry.create("wolf", 200, 500, "assets/mobs/wolf/alpha");
+
+  // Check if type exists
+  if (MobRegistry.isRegistered("dragon")) { ... }
 
 AI STATE MACHINE:
   State  | Behavior
@@ -507,42 +537,107 @@ AI STATE MACHINE:
   FLEE   | Run away when health low
   DEAD   | Death animation, then despawn
 
-AI CONFIGURATION:
-  SpriteMobEntity mob = new SpriteMobEntity(x, y, "assets/mobs/zombie");
-  mob.setDetectionRange(300);      // Pixels to detect player
-  mob.setLoseTargetRange(500);     // Pixels to lose player
-  mob.setWanderSpeed(1.0);         // Movement speed when wandering
-  mob.setChaseSpeed(2.5);          // Movement speed when chasing
-  mob.setAttackDamage(15);         // Damage per attack
-  mob.setAttackRange(60);          // Melee attack distance
-  mob.setAttackCooldown(60);       // Frames between attacks
-  mob.setRangedAttack(true);       // Enable projectile attacks
-  mob.setProjectileType(ProjectileType.ARROW);
+HUMANOID MOBS (mobs/humanoid/):
+  Type     | Health | Damage | Speed  | Special
+  ---------|--------|--------|--------|------------------
+  zombie   | 50     | 8      | 60     | Slow, persistent
+  skeleton | 40     | 6      | 80     | Ranged bow attacks
+  goblin   | 40     | 5      | 100    | Very fast, double jump
+  orc      | 60     | 15     | 60     | Tank, heavy hitter
+  bandit   | 45     | 8      | 70     | Balanced
+  knight   | 55     | 12     | 50     | Reduced knockback
+  mage     | 40     | 15     | 40     | Fire/Ice/Arcane magic
 
-AUTO-CONFIGURED MOB TYPES:
-  Mob type is auto-detected from sprite directory name:
+QUADRUPED MOBS (mobs/quadruped/):
+  Type     | Health | Damage | Speed  | Behavior
+  ---------|--------|--------|--------|------------------
+  wolf     | 45     | 6      | 150    | Hostile, pack hunter
+  bear     | 55     | 12     | 100    | Neutral, high damage
+  dog      | 35     | 4      | 140    | Passive, fast
+  cat      | 25     | 3      | 120    | Passive, flees when hit
+  cow      | 40     | 3      | 80     | Passive, slow
+  pig      | 30     | 2      | 60     | Passive
+  sheep    | 35     | 2      | 70     | Passive, herding
+  horse    | 50     | 4      | 120    | Passive, rideable (future)
+  deer     | 40     | 3      | 110    | Passive, flees on sight
+  fox      | 30     | 5      | 130    | Neutral, double jump
 
-  Type     | Health | Damage | Speed | Special
-  ---------|--------|--------|-------|------------------
-  zombie   | 50     | 10     | 1.5   | Slow, persistent
-  skeleton | 40     | 15     | 2.0   | Ranged attacks
-  goblin   | 35     | 12     | 2.5   | Fast, weak
-  orc      | 80     | 20     | 1.8   | Tank, strong
-  bandit   | 45     | 18     | 2.2   | Balanced
-  knight   | 100    | 25     | 1.5   | Heavy armor
-  mage     | 30     | 30     | 1.0   | Magic attacks
-  wolf     | 40     | 15     | 3.0   | Fast, pack AI
-  bear     | 120    | 35     | 1.2   | Boss-tier
+SPECIAL MOBS (mobs/special/):
+  Type     | Health | Damage | Speed  | Special
+  ---------|--------|--------|--------|------------------
+  slime    | 25     | 3      | 60     | Small, bouncy, splits
+  bat      | 20     | 4      | 120    | Small, triple jump
+  spider   | 35     | 8      | 120    | Poison attack, climbing
+  dragon   | 150    | 25     | 80     | Boss, fire/ice breath
+  ogre     | 100    | 20     | 50     | Mini-boss, reduced knockback
+  troll    | 80     | 18     | 55     | Health regeneration
+
+CREATING NEW MOBS (Recommended - Individual Class):
+  // 1. Create a new class file in appropriate category folder
+  // Example: entity/mob/mobs/humanoid/VampireMob.java
+
+  package entity.mob.mobs.humanoid;
+
+  import entity.mob.SpriteMobEntity;
+
+  public class VampireMob extends SpriteMobEntity {
+      private static final String DEFAULT_SPRITE_DIR = "assets/mobs/vampire";
+
+      public VampireMob(int x, int y) {
+          this(x, y, DEFAULT_SPRITE_DIR);
+      }
+
+      public VampireMob(int x, int y, String spriteDir) {
+          super(x, y, spriteDir);
+          configureStats();
+      }
+
+      private void configureStats() {
+          this.maxHealth = 60;
+          this.currentHealth = maxHealth;
+          this.attackDamage = 10;
+          this.attackRange = 55;
+          this.wanderSpeed = 50;
+          this.chaseSpeed = 90;
+          setHostile(true);
+      }
+
+      // Override methods for unique behavior
+      @Override
+      public void takeDamage(int damage, double knockbackX, double knockbackY) {
+          // Vampires heal when they attack
+          super.takeDamage(damage, knockbackX, knockbackY);
+      }
+  }
+
+  // 2. Register in MobRegistry.initialize():
+  registerMob("vampire", VampireMob::new, "humanoid");
 
 REQUIRED MOB SPRITE FILES:
   assets/mobs/[mob_name]/
   ├── idle.gif      → Standing animation
   ├── walk.gif      → Walking animation
+  ├── run.gif       → (Optional) Running animation
   ├── attack.gif    → Attack animation
   ├── hurt.gif      → Damage reaction
   ├── death.gif     → Death animation
   ├── burning.gif   → (Optional) On fire variant
   └── frozen.gif    → (Optional) Frozen variant
+
+LEVEL JSON MOB FORMAT:
+  {
+    "mobs": [
+      // Using MobRegistry (RECOMMENDED)
+      {"x": 600, "y": 920, "mobType": "zombie", "behavior": "hostile"},
+      {"x": 800, "y": 920, "mobType": "wolf", "behavior": "hostile"},
+
+      // With custom sprites
+      {"x": 1000, "y": 920, "mobType": "skeleton", "spriteDir": "assets/mobs/skeleton/elite"},
+
+      // Legacy format (still supported)
+      {"x": 1200, "y": 920, "mobType": "quadruped", "subType": "wolf", "behavior": "hostile"}
+    ]
+  }
 
 --------------------------------------------------------------------------------
 11. ANIMATION SYSTEM (animation/)
@@ -1210,6 +1305,12 @@ src/                    - Game engine source code (organized by package)
     mob/                - Mob AI classes
       - MobEntity.java       - Base mob class with AI state machine
       - SpriteMobEntity.java - GIF-based mob with status effects, auto-configured HP/stats
+      - MobRegistry.java     - Registry that instantiates mobs from individual class files
+      - FrogSprite.java      - Specialized frog mob with hopping and tongue attack
+      mobs/               - 23 individual mob classes organized by category
+        humanoid/         - Humanoid mobs (ZombieMob, SkeletonMob, GoblinMob, etc.)
+        quadruped/        - Quadruped mobs (WolfMob, BearMob, DogMob, etc.)
+        special/          - Special mobs (SlimeMob, BatMob, DragonMob, etc.)
       old/                - Deprecated bone-based mob classes (legacy)
         - HumanoidMobEntity.java  - [DEPRECATED] Bone-based humanoid mobs
         - HumanoidVariants.java   - [DEPRECATED] Humanoid variant configurations
