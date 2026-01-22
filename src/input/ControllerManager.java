@@ -122,11 +122,22 @@ public class ControllerManager {
                 Controller.Type type = controller.getType();
                 String name = controller.getName().toLowerCase();
 
-                // Look for gamepad/stick type controllers or known Xbox controller names
-                if (type == Controller.Type.GAMEPAD || type == Controller.Type.STICK ||
-                    name.contains("xbox") || name.contains("xinput") ||
-                    name.contains("gamepad") || name.contains("controller")) {
+                // Skip known non-gamepad devices that have "controller" in the name
+                if (name.contains("led") || name.contains("aura") || name.contains("rgb") ||
+                    name.contains("lighting") || name.contains("chroma")) {
+                    continue;
+                }
 
+                // Primary check: Look for proper gamepad/stick type controllers
+                if (type == Controller.Type.GAMEPAD || type == Controller.Type.STICK) {
+                    xboxController = controller;
+                    controllerConnected = true;
+                    System.out.println("Xbox controller connected: " + controller.getName());
+                    return;
+                }
+
+                // Fallback: Check for known Xbox controller names that might not report correct type
+                if (name.contains("xbox") || name.contains("xinput")) {
                     xboxController = controller;
                     controllerConnected = true;
                     System.out.println("Xbox controller connected: " + controller.getName());
