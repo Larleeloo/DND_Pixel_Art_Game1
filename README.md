@@ -957,6 +957,93 @@ XBOX CONTROLLER SUPPORT:
   Note: InputManager automatically integrates controller input, so game code
   using InputManager.isKeyPressed() will work with both keyboard and controller.
 
+CONTROLLER VIBRATION/HAPTIC FEEDBACK:
+  The game supports controller vibration (rumble) for immersive haptic feedback.
+  Vibration patterns are triggered automatically during gameplay events.
+
+  VIBRATION PATTERN TYPES:
+    Pattern Type  | Intensity | Duration | Use Case
+    --------------|-----------|----------|----------------------------------
+    MINOR         | 0.08-0.25 | 30-100ms | UI clicks, item pickups, footsteps
+    GREATER       | 0.35-0.90 | 80-300ms | Damage, attacks, jumps, explosions
+    INTRICATE     | Variable  | 500-2000ms | Chest opening, boss encounters
+
+  MOTOR TYPES:
+    - LEFT_MOTOR: Low frequency rumble (bass), good for impacts
+    - RIGHT_MOTOR: High frequency rumble (treble), good for feedback
+    - BOTH: Simultaneous activation for powerful effects
+
+  VIBRATION TRIGGERS (Automatic):
+    Event                    | Pattern Used
+    -------------------------|------------------------------------
+    Jump (first)             | GREATER_JUMP
+    Double Jump              | GREATER_DOUBLE_JUMP
+    Triple Jump              | GREATER_TRIPLE_JUMP
+    Take Damage              | GREATER_DAMAGE_TAKEN
+    Critical Damage          | GREATER_CRITICAL_DAMAGE
+    Player Death             | PLAYER_DEATH (intricate)
+    Melee Attack             | GREATER_MELEE_ATTACK
+    Daily Chest Open         | LOOT_CHEST_DAILY (intricate)
+    Monthly Chest Open       | LOOT_CHEST_MONTHLY (intricate)
+    Collect Common/Uncommon  | MINOR_ITEM_PICKUP
+    Collect Rare/Epic        | GREATER_LEVEL_UP
+    Collect Legendary        | LOOT_LEGENDARY_ITEM (intricate)
+    Collect Mythic           | LOOT_MYTHIC_ITEM (intricate)
+
+  LOOT CHEST VIBRATION PATTERNS:
+    The daily and monthly loot chests feature unique multi-phase vibration
+    sequences that create anticipation and excitement:
+
+    Daily Chest (9 steps, ~750ms):
+      - Build-up phase: Escalating small pulses (60-80ms each)
+      - Climax: Strong opening burst (150ms)
+      - Resolution: Light confirmation pulse (80ms)
+
+    Monthly Chest (20 steps, ~2000ms):
+      - Phase 1: Initial awakening with subtle pulses
+      - Phase 2: Building anticipation with combined motors
+      - Phase 3: Pre-climax tension with deep rumbles
+      - Phase 4: Grand opening burst (200ms at 90% intensity)
+      - Phase 5: Magical resolution with fading pulses
+
+  VIBRATION MANAGER USAGE:
+    ControllerManager controller = ControllerManager.getInstance();
+
+    // Check if vibration is supported
+    if (controller.isVibrationSupported()) {
+        // Trigger a predefined pattern
+        controller.vibrate(VibrationPattern.GREATER_DAMAGE_TAKEN);
+
+        // Trigger custom vibration
+        controller.vibrate(0.5f, 200);  // 50% intensity, 200ms
+
+        // Trigger with specific motor
+        controller.vibrate(0.7f, 150, VibrationPattern.MotorType.LEFT);
+
+        // Stop vibration immediately
+        controller.stopVibration();
+    }
+
+    // Enable/disable vibration
+    controller.setVibrationEnabled(true);
+    controller.setVibrationEnabled(false);
+
+  AVAILABLE VIBRATION PATTERNS (VibrationPattern enum):
+    Minor patterns: MINOR_UI_CLICK, MINOR_ITEM_PICKUP, MINOR_HOTBAR_SWITCH,
+                    MINOR_FOOTSTEP_WALK, MINOR_FOOTSTEP_RUN, MINOR_INVENTORY_NAVIGATE,
+                    MINOR_EQUIP_ITEM, MINOR_CONSUME_ITEM, MINOR_BLOCK_PLACE
+
+    Greater patterns: GREATER_DAMAGE_TAKEN, GREATER_CRITICAL_DAMAGE, GREATER_MELEE_ATTACK,
+                      GREATER_RANGED_FIRE, GREATER_PROJECTILE_HIT, GREATER_JUMP,
+                      GREATER_DOUBLE_JUMP, GREATER_TRIPLE_JUMP, GREATER_LAND_IMPACT,
+                      GREATER_LAND_HEAVY, GREATER_BLOCK_SHIELD, GREATER_BLOCK_BREAK,
+                      GREATER_ENEMY_KILLED, GREATER_EXPLOSION, GREATER_STATUS_EFFECT,
+                      GREATER_LEVEL_UP, GREATER_DOOR_OPEN
+
+    Intricate patterns: LOOT_CHEST_DAILY, LOOT_CHEST_MONTHLY, LOOT_LEGENDARY_ITEM,
+                        LOOT_MYTHIC_ITEM, PLAYER_DEATH, BOSS_ENCOUNTER,
+                        VAULT_UNLOCK, ALCHEMY_SUCCESS
+
 KEYBOARD INPUT:
   InputManager input = InputManager.getInstance();
 
@@ -1332,9 +1419,10 @@ src/                    - Game engine source code (organized by package)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
   audio/                - Sound management (AudioManager)
-  input/                - Input handling (InputManager, ControllerManager)
+  input/                - Input handling (InputManager, ControllerManager, VibrationPattern)
     - InputManager.java     - Keyboard and mouse input handling with controller integration
-    - ControllerManager.java - Xbox controller support via JInput library
+    - ControllerManager.java - Xbox controller support via JInput library with vibration/rumble
+    - VibrationPattern.java - Enum defining haptic feedback patterns (minor, greater, intricate)
   ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
     - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)
     - ReverseCraftingUI.java - Drag-and-drop deconstruction interface (1 input, 3 outputs)

@@ -9,6 +9,8 @@ import entity.player.PlayableCharacter;
 import entity.player.PlayableCharacterRegistry;
 import block.*;
 import input.*;
+import input.ControllerManager;
+import input.VibrationPattern;
 import graphics.*;
 import audio.*;
 import ui.*;
@@ -512,6 +514,29 @@ public class LootGameScene implements Scene {
                     // Add to player inventory
                     player.getInventory().addItem(item);
                     item.collected = true;
+
+                    // Controller vibration based on item rarity
+                    ControllerManager controller = ControllerManager.getInstance();
+                    if (controller.isVibrationSupported() && item.getLinkedItem() != null) {
+                        entity.item.Item.ItemRarity rarity = item.getLinkedItem().getRarity();
+                        switch (rarity) {
+                            case MYTHIC:
+                                controller.vibrate(VibrationPattern.LOOT_MYTHIC_ITEM);
+                                break;
+                            case LEGENDARY:
+                                controller.vibrate(VibrationPattern.LOOT_LEGENDARY_ITEM);
+                                break;
+                            case EPIC:
+                            case RARE:
+                                controller.vibrate(VibrationPattern.GREATER_LEVEL_UP);
+                                break;
+                            default:
+                                controller.vibrate(VibrationPattern.MINOR_ITEM_PICKUP);
+                                break;
+                        }
+                    } else if (controller.isVibrationSupported()) {
+                        controller.vibrate(VibrationPattern.MINOR_ITEM_PICKUP);
+                    }
 
                     // Play collect sound
                     AudioManager audio = SceneManager.getInstance().getAudioManager();
