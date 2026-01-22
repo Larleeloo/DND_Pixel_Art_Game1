@@ -3,6 +3,27 @@ package input;
 import java.awt.event.*;
 import java.util.HashSet;
 
+/**
+ * Manages all input for the game including keyboard, mouse, and Xbox controller.
+ *
+ * Xbox Controller Support:
+ * When an Xbox controller is connected, the following mappings are active:
+ * - Right Stick (RS): Movement (WASD equivalent)
+ *   - RS Right → 'D' key
+ *   - RS Left → 'A' key
+ *   - RS Up → 'W' key
+ *   - RS Down → 'S' key
+ * - Left Stick (LS): Mouse pointer control
+ *   - LS Move → Virtual mouse cursor movement
+ *   - LS Click (L3) → Left mouse click
+ * - Buttons:
+ *   - A Button → Space (Jump)
+ *   - X Button → 'E' key (Interact/Mine)
+ *   - Y Button → 'I' key (Inventory)
+ *   - Start Button → 'M' key (Menu/Settings)
+ *
+ * Requires JInput library for controller support.
+ */
 public class InputManager implements KeyListener, MouseWheelListener, MouseListener, MouseMotionListener {
 
     private HashSet<Character> pressed = new HashSet<>();
@@ -29,8 +50,68 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     // UI click consumption - when true, clicks should be ignored by game logic
     private boolean clickConsumedByUI = false;
 
+    // Controller manager for Xbox controller support
+    private ControllerManager controllerManager;
+
+    // Track whether controller is actively being used (for mouse position)
+    private boolean usingController = false;
+
+    /**
+     * Initialize the controller manager. Call this once during game initialization.
+     */
+    public void initializeController() {
+        controllerManager = ControllerManager.getInstance();
+    }
+
+    /**
+     * Poll the controller for current state.
+     * Should be called once per frame from the game loop.
+     */
+    public void pollController() {
+        if (controllerManager != null) {
+            controllerManager.poll();
+
+            // Track if controller is being used for mouse position
+            if (controllerManager.isLeftStickActive()) {
+                usingController = true;
+            }
+        }
+    }
+
+    /**
+     * Check if a key is pressed (keyboard or controller equivalent).
+     * Controller mappings:
+     * - 'a' → RS Left
+     * - 'd' → RS Right
+     * - 'w' → RS Up
+     * - 's' → RS Down
+     * - ' ' (space) → A Button
+     * - 'e' → X Button
+     * - 'i' → Y Button
+     * - 'm' → Start Button
+     */
     public boolean isKeyPressed(char c) {
-        return pressed.contains(Character.toLowerCase(c));
+        // Check keyboard first
+        if (pressed.contains(Character.toLowerCase(c))) {
+            return true;
+        }
+
+        // Check controller mappings
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            char lower = Character.toLowerCase(c);
+            switch (lower) {
+                case 'a': return controllerManager.isRightStickLeft();
+                case 'd': return controllerManager.isRightStickRight();
+                case 'w': return controllerManager.isRightStickUp();
+                case 's': return controllerManager.isRightStickDown();
+                case ' ': return controllerManager.isButtonAPressed();
+                case 'e': return controllerManager.isButtonXPressed();
+                case 'i': return controllerManager.isButtonYPressed();
+                case 'm': return controllerManager.isButtonStartPressed();
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -52,12 +133,33 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
         return false;
     }
 
+    /**
+     * Check if a key was just pressed this frame (keyboard or controller equivalent).
+     * Controller mappings:
+     * - ' ' (space) → A Button just pressed
+     * - 'e' → X Button just pressed
+     * - 'i' → Y Button just pressed
+     * - 'm' → Start Button just pressed
+     */
     public boolean isKeyJustPressed(char c) {
         char lower = Character.toLowerCase(c);
+
+        // Check keyboard first
         if (justPressed.contains(lower)) {
             justPressed.remove(lower);
             return true;
         }
+
+        // Check controller mappings for "just pressed" buttons
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            switch (lower) {
+                case ' ': return controllerManager.isButtonAJustPressed();
+                case 'e': return controllerManager.isButtonXJustPressed();
+                case 'i': return controllerManager.isButtonYJustPressed();
+                case 'm': return controllerManager.isButtonStartJustPressed();
+            }
+        }
+
         return false;
     }
 
@@ -137,9 +239,18 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Convenience method for left mouse button just pressed.
+     * Also returns true if controller left stick was just clicked (L3).
      */
     public boolean isLeftMouseJustPressed() {
-        return isMouseButtonJustPressed(MouseEvent.BUTTON1);
+        // Check physical mouse
+        if (isMouseButtonJustPressed(MouseEvent.BUTTON1)) {
+            return true;
+        }
+        // Check controller left stick click (L3)
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isLeftStickJustClicked();
+        }
+        return false;
     }
 
     /**
@@ -147,6 +258,22 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
      */
     public boolean isRightMouseJustPressed() {
         return isMouseButtonJustPressed(MouseEvent.BUTTON3);
+    }
+
+    /**
+     * Check if left mouse button is currently pressed.
+     * Also returns true if controller left stick is clicked (L3).
+     */
+    public boolean isLeftMousePressed() {
+        // Check physical mouse
+        if (isMouseButtonPressed(MouseEvent.BUTTON1)) {
+            return true;
+        }
+        // Check controller left stick click (L3)
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isLeftStickClicked();
+        }
+        return false;
     }
 
     /**
@@ -176,16 +303,38 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Get the current mouse X position.
+     * Returns controller virtual mouse position if controller is being used.
      */
     public int getMouseX() {
+        if (usingController && controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.getVirtualMouseX();
+        }
         return mouseX;
     }
 
     /**
      * Get the current mouse Y position.
+     * Returns controller virtual mouse position if controller is being used.
      */
     public int getMouseY() {
+        if (usingController && controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.getVirtualMouseY();
+        }
         return mouseY;
+    }
+
+    /**
+     * Check if the controller's virtual mouse is active.
+     */
+    public boolean isUsingController() {
+        return usingController && controllerManager != null && controllerManager.isControllerConnected();
+    }
+
+    /**
+     * Get the controller manager for direct access to controller state.
+     */
+    public ControllerManager getControllerManager() {
+        return controllerManager;
     }
 
     // ========== MouseListener Implementation ==========
@@ -227,11 +376,23 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     public void mouseMoved(MouseEvent e) {
         mouseX = e.getX();
         mouseY = e.getY();
+        // Switch back to mouse control when mouse moves
+        usingController = false;
+        // Sync controller virtual mouse with real mouse position
+        if (controllerManager != null) {
+            controllerManager.setVirtualMousePosition(mouseX, mouseY);
+        }
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
         mouseX = e.getX();
         mouseY = e.getY();
+        // Switch back to mouse control when mouse moves
+        usingController = false;
+        // Sync controller virtual mouse with real mouse position
+        if (controllerManager != null) {
+            controllerManager.setVirtualMousePosition(mouseX, mouseY);
+        }
     }
 }
