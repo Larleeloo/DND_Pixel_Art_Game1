@@ -88,16 +88,16 @@ Download from one of these sources:
    https://mvnrepository.com/artifact/net.java.jinput/jinput/2.0.10
    Direct JAR: https://repo1.maven.org/maven2/net/java/jinput/jinput/2.0.10/jinput-2.0.10.jar
 
-2. **JInput Platform (Native libraries)**:
-   https://mvnrepository.com/artifact/net.java.jinput/jinput-platform/2.0.10
-   - Download the JAR for your platform (natives-windows, natives-linux, natives-osx)
-   - You need the native libraries for your operating system
+2. **JInput Natives (All platforms)**:
+   https://mvnrepository.com/artifact/net.java.jinput/jinput/2.0.10
+   - Download `jinput-2.0.10-natives-all.jar` (contains natives for Windows, Linux, macOS)
 
 ### Installation
 
 1. Download `jinput-2.0.10.jar`
-2. Download the platform-specific native library JAR (e.g., `jinput-platform-2.0.10-natives-windows.jar`)
-3. Extract the native DLL/SO files from the platform JAR to the project root or `lib/` folder
+2. Download `jinput-2.0.10-natives-all.jar`
+3. Extract the native DLL/SO files from the natives JAR to the `lib/` folder:
+   - Rename to .zip and extract, or run: `jar xf jinput-2.0.10-natives-all.jar`
 4. Place all JARs in this `lib/` folder
 5. Add the JARs to your project classpath (see IDE instructions below)
 
@@ -162,13 +162,13 @@ For native libraries, create `.vscode/launch.json`:
 
 ### Native Library Files
 
-JInput requires platform-specific native libraries:
+JInput requires platform-specific native libraries. Extract from `jinput-2.0.10-natives-all.jar`:
 
 | Platform | Files Required |
 |----------|----------------|
-| Windows  | jinput-dx8_64.dll, jinput-dx8.dll, jinput-raw_64.dll, jinput-raw.dll |
-| Linux    | libjinput-linux64.so, libjinput-linux.so |
-| macOS    | libjinput-osx.jnilib |
+| Windows (64-bit) | jinput-dx8_64.dll, jinput-raw_64.dll, jinput-wintab.dll |
+| Linux (64-bit) | libjinput-linux64.so |
+| macOS | libjinput-osx.jnilib |
 
 ### Verification
 
@@ -206,6 +206,10 @@ lib/
 ├── README.md                    (this file)
 ├── jlayer-1.0.1.jar             (download and place here)
 ├── jinput-2.0.10.jar            (optional - for controller support)
-├── jinput-platform-*.jar        (optional - platform natives)
-└── [native libraries]           (extracted from platform JAR)
+├── jinput-2.0.10-natives-all.jar (optional - contains native libraries)
+├── jinput-dx8_64.dll            (extracted - Windows)
+├── jinput-raw_64.dll            (extracted - Windows)
+├── jinput-wintab.dll            (extracted - Windows)
+├── libjinput-linux64.so         (extracted - Linux)
+└── libjinput-osx.jnilib         (extracted - macOS)
 ```
