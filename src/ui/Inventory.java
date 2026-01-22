@@ -629,7 +629,10 @@ public class Inventory {
 
     /**
      * Gets the slot index at the given screen position.
-     * @return slot index (0 to MAX_SLOTS-1), or -1 if not over a slot
+     * Uses proximity detection - if position is within the inventory grid area,
+     * returns the nearest slot even if not exactly inside a slot's bounds.
+     *
+     * @return slot index (0 to MAX_SLOTS-1), or -1 if not within inventory area
      */
     private int getSlotAtPosition(int mouseX, int mouseY) {
         if (!isOpen) return -1;
@@ -638,6 +641,75 @@ public class Inventory {
         int panelX = (1920 - panelWidth) / 2;
         int panelY = 150;
 
+        // Grid area starts after the title bar
+        int gridStartX = panelX + padding;
+        int gridStartY = panelY + 60;
+        int gridWidth = COLS * (slotSize + padding);
+        int gridHeight = VISIBLE_ROWS * (slotSize + padding);
+
+        // Check if position is within the grid area (with some tolerance)
+        int tolerance = padding;  // Allow clicks in padding area to count
+        if (mouseX < gridStartX - tolerance || mouseX > gridStartX + gridWidth + tolerance ||
+            mouseY < gridStartY - tolerance || mouseY > gridStartY + gridHeight + tolerance) {
+            return -1;  // Outside the grid area entirely
+        }
+
+        // Calculate the nearest column and row based on position
+        // Use the cell size (slot + padding) to determine grid position
+        int cellWidth = slotSize + padding;
+        int cellHeight = slotSize + padding;
+
+        // Calculate which cell the position falls into (or is nearest to)
+        int relativeX = mouseX - gridStartX;
+        int relativeY = mouseY - gridStartY;
+
+        // Clamp to valid range and find nearest column/row
+        int col = Math.max(0, Math.min(COLS - 1, relativeX / cellWidth));
+        int row = Math.max(0, Math.min(VISIBLE_ROWS - 1, relativeY / cellHeight));
+
+        // If position is past the last column, snap to last column
+        if (relativeX >= COLS * cellWidth) {
+            col = COLS - 1;
+        }
+        // If position is past the last row, snap to last row
+        if (relativeY >= VISIBLE_ROWS * cellHeight) {
+            row = VISIBLE_ROWS - 1;
+        }
+
+        // Convert to slot index
+        int slotIndex = (scrollOffset + row) * COLS + col;
+
+        // Ensure slot index is valid
+        if (slotIndex >= 0 && slotIndex < MAX_SLOTS) {
+            return slotIndex;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Gets the nearest slot index to the given screen position.
+     * Always returns a valid slot if the position is anywhere near the inventory.
+     * Used for cursor-based navigation and drop targeting.
+     *
+     * @return The nearest slot index, or cursorSlot as fallback
+     */
+    private int getNearestSlotToPosition(int mouseX, int mouseY) {
+        int slot = getSlotAtPosition(mouseX, mouseY);
+        if (slot >= 0) {
+            return slot;
+        }
+
+        // If getSlotAtPosition failed, try to find the nearest visible slot
+        int panelWidth = COLS * (slotSize + padding) + padding;
+        int panelX = (1920 - panelWidth) / 2;
+        int panelY = 150;
+        int gridStartX = panelX + padding;
+        int gridStartY = panelY + 60;
+
+        int nearestSlot = cursorSlot;  // Default fallback
+        double minDistance = Double.MAX_VALUE;
+
         int startIndex = scrollOffset * COLS;
         int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
 
@@ -645,15 +717,17 @@ public class Inventory {
             int displayIndex = i - startIndex;
             int col = displayIndex % COLS;
             int row = displayIndex / COLS;
-            int slotX = panelX + padding + col * (slotSize + padding);
-            int slotY = panelY + 60 + row * (slotSize + padding);
+            int slotCenterX = gridStartX + col * (slotSize + padding) + slotSize / 2;
+            int slotCenterY = gridStartY + row * (slotSize + padding) + slotSize / 2;
 
-            if (mouseX >= slotX && mouseX <= slotX + slotSize &&
-                    mouseY >= slotY && mouseY <= slotY + slotSize) {
-                return i;
+            double distance = Math.sqrt(Math.pow(mouseX - slotCenterX, 2) + Math.pow(mouseY - slotCenterY, 2));
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestSlot = i;
             }
         }
-        return -1;
+
+        return nearestSlot;
     }
 
     public ItemEntity handleMouseReleased(int mouseX, int mouseY) {
@@ -706,8 +780,13 @@ public class Inventory {
                 slots[draggedIndex] = null;
             }
         } else if (!outsideInventory && draggedItem != null) {
-            // Dropped inside inventory - check if dropped on a specific slot
+            // Dropped inside inventory - find the nearest slot
             int targetSlot = getSlotAtPosition(mouseX, mouseY);
+
+            // If exact position didn't match a slot, find the nearest one
+            if (targetSlot < 0) {
+                targetSlot = getNearestSlotToPosition(mouseX, mouseY);
+            }
 
             if (targetSlot >= 0 && targetSlot != draggedIndex && targetSlot < MAX_SLOTS) {
                 if (slots[targetSlot] != null) {
@@ -715,13 +794,15 @@ public class Inventory {
                     ItemEntity targetItem = slots[targetSlot];
                     slots[targetSlot] = draggedItem;
                     slots[draggedIndex] = targetItem;
+                    System.out.println("Inventory: Swapped items between slots " + draggedIndex + " and " + targetSlot);
                 } else {
                     // Target slot is empty - move item there
                     slots[targetSlot] = draggedItem;
                     slots[draggedIndex] = null;
+                    System.out.println("Inventory: Moved item from slot " + draggedIndex + " to " + targetSlot);
                 }
             }
-            // If dropped on same slot or invalid slot, item stays in place
+            // If dropped on same slot, item stays in place
         }
 
         // Reset drag state
@@ -1435,7 +1516,14 @@ public class Inventory {
 
                     // Try to place at the specific slot where item was dropped
                     int targetSlot = getSlotAtPosition(dropX, dropY);
+
+                    // If exact position didn't match, find nearest slot
+                    if (targetSlot < 0) {
+                        targetSlot = getNearestSlotToPosition(dropX, dropY);
+                    }
+
                     if (targetSlot >= 0) {
+                        System.out.println("Inventory: Vault drop targeting slot " + targetSlot);
                         return addItemToSlot(item, targetSlot);
                     }
                     return addItem(item);
