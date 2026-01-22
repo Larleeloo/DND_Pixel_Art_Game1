@@ -125,6 +125,87 @@ public class Inventory {
         return false; // No room
     }
 
+    /**
+     * Adds an item to the inventory, preferring the cursor slot when in navigation mode.
+     * If in navigation mode and cursor slot is empty, places item there.
+     * Otherwise falls back to normal addItem behavior (stacking or first empty slot).
+     *
+     * @param item The item to add
+     * @return true if successfully added, false if inventory is full
+     */
+    public boolean addItemAtCursorSlot(ItemEntity item) {
+        // Try to stack with existing items first (regardless of mode)
+        if (item.isStackable()) {
+            for (int i = 0; i < MAX_SLOTS; i++) {
+                if (slots[i] != null && slots[i].canStackWith(item)) {
+                    int remaining = slots[i].addToStack(item);
+                    if (remaining == 0) {
+                        return true; // Fully stacked
+                    }
+                    // Continue looking for more stacks if there's overflow
+                }
+            }
+        }
+
+        // If item still has count remaining, try cursor slot first (when in navigation mode)
+        if (item.getStackCount() > 0) {
+            // When in navigation mode and inventory is open, prefer cursor slot
+            if (navigationMode && isOpen && cursorSlot >= 0 && cursorSlot < MAX_SLOTS && slots[cursorSlot] == null) {
+                slots[cursorSlot] = item;
+                System.out.println("Inventory: Added " + item.getItemName() + " to cursor slot " + cursorSlot);
+                return true;
+            }
+
+            // Otherwise find first empty slot
+            for (int i = 0; i < MAX_SLOTS; i++) {
+                if (slots[i] == null) {
+                    slots[i] = item;
+                    return true;
+                }
+            }
+        }
+
+        // Check if fully consumed during stacking
+        if (item.getStackCount() == 0) {
+            return true;
+        }
+
+        return false; // No room
+    }
+
+    /**
+     * Adds an item to a specific slot index.
+     * If the slot is occupied, attempts to stack. If stacking fails, returns false.
+     *
+     * @param item The item to add
+     * @param slotIndex The target slot index
+     * @return true if successfully added, false if slot is occupied and can't stack
+     */
+    public boolean addItemToSlot(ItemEntity item, int slotIndex) {
+        if (slotIndex < 0 || slotIndex >= MAX_SLOTS) {
+            return addItem(item); // Invalid slot, fall back to normal add
+        }
+
+        // If slot is empty, place directly
+        if (slots[slotIndex] == null) {
+            slots[slotIndex] = item;
+            return true;
+        }
+
+        // If slot has item, try to stack
+        if (item.isStackable() && slots[slotIndex].canStackWith(item)) {
+            int remaining = slots[slotIndex].addToStack(item);
+            if (remaining == 0) {
+                return true; // Fully stacked
+            }
+            // Partial stack, try to add remainder elsewhere
+            return addItem(item);
+        }
+
+        // Slot occupied and can't stack, fall back to normal add
+        return addItem(item);
+    }
+
     public void toggleOpen() {
         isOpen = !isOpen;
         if (isOpen) {
@@ -1330,13 +1411,13 @@ public class Inventory {
         if (vaultInventory == null) {
             vaultInventory = new VaultInventory();
 
-            // Set callback for when items are taken from vault (via click)
+            // Set callback for when items are taken from vault (via click or navigation)
             vaultInventory.setItemTakenCallback((itemId, count) -> {
-                // Try to add item to player inventory
+                // Try to add item to player inventory (uses cursor slot in navigation mode)
                 ItemEntity item = new ItemEntity(0, 0, itemId);
                 item.setLinkedItem(ItemRegistry.create(itemId));
                 item.setStackCount(count);
-                if (!addItem(item)) {
+                if (!addItemAtCursorSlot(item)) {
                     // If inventory full, put back in vault
                     vaultInventory.addItem(itemId, count);
                     System.out.println("Inventory: Inventory full, item returned to vault");
@@ -1347,10 +1428,16 @@ public class Inventory {
             vaultInventory.setInventoryDropCallback(new VaultInventory.InventoryDropCallback() {
                 @Override
                 public boolean onDropToInventory(String itemId, int count, int dropX, int dropY) {
-                    // Try to add item to player inventory
+                    // Try to add item to player inventory at the drop position
                     ItemEntity item = new ItemEntity(0, 0, itemId);
                     item.setLinkedItem(ItemRegistry.create(itemId));
                     item.setStackCount(count);
+
+                    // Try to place at the specific slot where item was dropped
+                    int targetSlot = getSlotAtPosition(dropX, dropY);
+                    if (targetSlot >= 0) {
+                        return addItemToSlot(item, targetSlot);
+                    }
                     return addItem(item);
                 }
 

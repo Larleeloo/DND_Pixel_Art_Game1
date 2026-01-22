@@ -231,7 +231,7 @@ public class LootGameScene implements Scene {
         // Create Alchemy UIs
         alchemyUI = new AlchemyTableUI(false);
         alchemyUI.setItemProducedCallback((itemId, count) -> {
-            // Add produced item to player inventory
+            // Add produced item to player inventory (uses cursor slot in navigation mode)
             if (player != null && player.getInventory() != null) {
                 ItemEntity item = new ItemEntity(0, 0, itemId);
                 item.setStackCount(count);
@@ -239,14 +239,14 @@ public class LootGameScene implements Scene {
                 if (linked != null) {
                     item.setLinkedItem(linked);
                 }
-                player.getInventory().addItem(item);
+                player.getInventory().addItemAtCursorSlot(item);
                 System.out.println("LootGameScene: Crafted " + count + "x " + itemId);
             }
         });
 
         reverseCraftingUI = new ReverseCraftingUI();
         reverseCraftingUI.setItemProducedCallback((itemId, count) -> {
-            // Add deconstructed items to player inventory
+            // Add deconstructed items to player inventory (uses cursor slot in navigation mode)
             if (player != null && player.getInventory() != null) {
                 ItemEntity item = new ItemEntity(0, 0, itemId);
                 item.setStackCount(count);
@@ -254,7 +254,7 @@ public class LootGameScene implements Scene {
                 if (linked != null) {
                     item.setLinkedItem(linked);
                 }
-                player.getInventory().addItem(item);
+                player.getInventory().addItemAtCursorSlot(item);
                 System.out.println("LootGameScene: Deconstructed to " + count + "x " + itemId);
             }
         });
