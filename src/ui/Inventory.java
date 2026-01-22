@@ -14,17 +14,19 @@ import java.util.List;
  * Manages collected items and displays inventory UI.
  *
  * Features:
- * - 32 slot maximum inventory capacity
+ * - 32 slot maximum inventory capacity (fixed slots)
  * - 5-slot hotbar for quick access
  * - Scroll wheel support for inventory navigation
  * - Left-click to auto-equip items to hotbar
  * - Drag and drop for item management
  * - Stack display for stackable items
  * - Vault integration for persistent storage
+ * - Minecraft-style cursor navigation with D-pad/arrow keys
  */
 public class Inventory {
 
-    private ArrayList<ItemEntity> items;
+    // Fixed-size slot array for Minecraft-style inventory where items stay in specific slots
+    private ItemEntity[] slots;
     private static final int MAX_SLOTS = 32;  // Fixed 32 slot limit
     private boolean isOpen;
 
@@ -64,7 +66,7 @@ public class Inventory {
     private boolean navigationMode = false;  // True when using keyboard/controller navigation
 
     public Inventory() {
-        this.items = new ArrayList<>();
+        this.slots = new ItemEntity[MAX_SLOTS];  // Fixed-size array, null = empty slot
         this.isOpen = false;
 
         // UI settings
@@ -94,9 +96,9 @@ public class Inventory {
     public boolean addItem(ItemEntity item) {
         // Try to stack with existing items first
         if (item.isStackable()) {
-            for (ItemEntity existing : items) {
-                if (existing.canStackWith(item)) {
-                    int remaining = existing.addToStack(item);
+            for (int i = 0; i < MAX_SLOTS; i++) {
+                if (slots[i] != null && slots[i].canStackWith(item)) {
+                    int remaining = slots[i].addToStack(item);
                     if (remaining == 0) {
                         return true; // Fully stacked
                     }
@@ -105,10 +107,14 @@ public class Inventory {
             }
         }
 
-        // If item still has count remaining, add as new slot
-        if (item.getStackCount() > 0 && items.size() < MAX_SLOTS) {
-            items.add(item);
-            return true;
+        // If item still has count remaining, find first empty slot
+        if (item.getStackCount() > 0) {
+            for (int i = 0; i < MAX_SLOTS; i++) {
+                if (slots[i] == null) {
+                    slots[i] = item;
+                    return true;
+                }
+            }
         }
 
         // Check if fully consumed during stacking
@@ -139,7 +145,11 @@ public class Inventory {
     }
 
     public int getItemCount() {
-        return items.size();
+        int count = 0;
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            if (slots[i] != null) count++;
+        }
+        return count;
     }
 
     /**
@@ -154,8 +164,8 @@ public class Inventory {
             // Forward scroll to vault inventory when vault is open
             vaultInventory.handleScroll(scrollDirection);
         } else if (isOpen) {
-            // Scroll through inventory
-            int totalRows = (int) Math.ceil(items.size() / (double) COLS);
+            // Scroll through inventory (fixed 32 slots = 4 rows)
+            int totalRows = (int) Math.ceil(MAX_SLOTS / (double) COLS);
             int maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - scrollDirection));
         } else {
@@ -180,11 +190,12 @@ public class Inventory {
         int panelX = (1920 - panelWidth) / 2;
         int panelY = 150;
 
-        // Check if clicking on an item slot - update hovered slot
-        for (int i = 0; i < items.size(); i++) {
-            int displayIndex = i - (scrollOffset * COLS);
-            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+        // Check if clicking on any slot (empty or with item)
+        int startIndex = scrollOffset * COLS;
+        int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
 
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
             int col = displayIndex % COLS;
             int row = displayIndex / COLS;
             int slotX = panelX + padding + col * (slotSize + padding);
@@ -207,8 +218,8 @@ public class Inventory {
      * @return true if an item was equipped
      */
     public boolean handleEquipKey() {
-        System.out.println("Inventory.handleEquipKey: isOpen=" + isOpen + ", hoveredSlotIndex=" + hoveredSlotIndex + ", items.size=" + items.size());
-        if (!isOpen || hoveredSlotIndex < 0 || hoveredSlotIndex >= items.size()) {
+        System.out.println("Inventory.handleEquipKey: isOpen=" + isOpen + ", hoveredSlotIndex=" + hoveredSlotIndex);
+        if (!isOpen || hoveredSlotIndex < 0 || hoveredSlotIndex >= MAX_SLOTS || slots[hoveredSlotIndex] == null) {
             return false;
         }
 
@@ -242,10 +253,11 @@ public class Inventory {
         int panelY = 150;
 
         hoveredSlotIndex = -1;
-        for (int i = 0; i < items.size(); i++) {
-            int displayIndex = i - (scrollOffset * COLS);
-            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+        int startIndex = scrollOffset * COLS;
+        int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
 
+        for (int i = startIndex; i < endIndex; i++) {
+            int displayIndex = i - startIndex;
             int col = displayIndex % COLS;
             int row = displayIndex / COLS;
             int slotX = panelX + padding + col * (slotSize + padding);
@@ -368,37 +380,27 @@ public class Inventory {
     private void handleCursorSelect() {
         if (cursorHeldItem == null) {
             // Pick up item at cursor position
-            if (cursorSlot < items.size()) {
-                cursorHeldItem = items.get(cursorSlot);
+            if (cursorSlot >= 0 && cursorSlot < MAX_SLOTS && slots[cursorSlot] != null) {
+                cursorHeldItem = slots[cursorSlot];
                 cursorHeldItemOriginalSlot = cursorSlot;
+                slots[cursorSlot] = null;  // Remove from original slot
                 System.out.println("Inventory: Picked up " + cursorHeldItem.getItemName() + " from slot " + cursorSlot);
             }
         } else {
             // Place/swap item at cursor position
-            if (cursorSlot < items.size()) {
-                // Swap with existing item
-                ItemEntity targetItem = items.get(cursorSlot);
-                items.set(cursorSlot, cursorHeldItem);
-
-                if (cursorHeldItemOriginalSlot < items.size()) {
-                    items.set(cursorHeldItemOriginalSlot, targetItem);
+            if (cursorSlot >= 0 && cursorSlot < MAX_SLOTS) {
+                if (slots[cursorSlot] != null) {
+                    // Swap with existing item
+                    ItemEntity targetItem = slots[cursorSlot];
+                    slots[cursorSlot] = cursorHeldItem;
+                    slots[cursorHeldItemOriginalSlot] = targetItem;
                     System.out.println("Inventory: Swapped items between slots " + cursorHeldItemOriginalSlot + " and " + cursorSlot);
                 } else {
-                    // Original slot no longer valid, add target item to end
-                    items.add(targetItem);
+                    // Place in empty slot
+                    slots[cursorSlot] = cursorHeldItem;
+                    // Original slot is already null from when we picked it up
+                    System.out.println("Inventory: Placed " + cursorHeldItem.getItemName() + " in slot " + cursorSlot);
                 }
-
-                cursorHeldItem = null;
-                cursorHeldItemOriginalSlot = -1;
-            } else if (cursorSlot >= items.size()) {
-                // Place in empty slot
-                // First, remove from original position if it was in the list
-                if (cursorHeldItemOriginalSlot >= 0 && cursorHeldItemOriginalSlot < items.size()) {
-                    items.remove(cursorHeldItemOriginalSlot);
-                }
-                // Add to end of list (items are stored compactly)
-                items.add(cursorHeldItem);
-                System.out.println("Inventory: Placed " + cursorHeldItem.getItemName() + " in empty slot");
 
                 cursorHeldItem = null;
                 cursorHeldItemOriginalSlot = -1;
@@ -411,8 +413,9 @@ public class Inventory {
      */
     private void cancelCursorHeldItem() {
         if (cursorHeldItem != null && cursorHeldItemOriginalSlot >= 0) {
-            // Item is still in the list, just clear the held state
-            System.out.println("Inventory: Cancelled pickup, returning " + cursorHeldItem.getItemName());
+            // Return item to original slot
+            slots[cursorHeldItemOriginalSlot] = cursorHeldItem;
+            System.out.println("Inventory: Cancelled pickup, returning " + cursorHeldItem.getItemName() + " to slot " + cursorHeldItemOriginalSlot);
         }
         cursorHeldItem = null;
         cursorHeldItemOriginalSlot = -1;
@@ -490,23 +493,13 @@ public class Inventory {
      * If the hotbar slot has an item, they swap positions.
      */
     private void autoEquipItem(int sourceIndex) {
-        if (sourceIndex < 0 || sourceIndex >= items.size()) return;
+        if (sourceIndex < 0 || sourceIndex >= MAX_SLOTS || slots[sourceIndex] == null) return;
         if (sourceIndex == selectedSlot) return;  // Already in selected slot
 
-        // If selected slot has an item, swap
-        if (selectedSlot < items.size()) {
-            // Swap items
-            ItemEntity temp = items.get(selectedSlot);
-            items.set(selectedSlot, items.get(sourceIndex));
-            items.set(sourceIndex, temp);
-        } else {
-            // Move to selected slot (fill gaps first)
-            ItemEntity item = items.remove(sourceIndex);
-
-            // Ensure we don't go past the items list
-            int targetSlot = Math.min(selectedSlot, items.size());
-            items.add(targetSlot, item);
-        }
+        // Swap items (works even if selectedSlot is empty - just moves the item)
+        ItemEntity temp = slots[selectedSlot];
+        slots[selectedSlot] = slots[sourceIndex];
+        slots[sourceIndex] = temp;
     }
 
     public void handleMousePressed(int mouseX, int mouseY) {
@@ -517,10 +510,13 @@ public class Inventory {
         int panelY = 150;
 
         // Check if clicking on an item slot for dragging
-        for (int i = 0; i < items.size(); i++) {
-            int displayIndex = i - (scrollOffset * COLS);
-            if (displayIndex < 0 || displayIndex >= VISIBLE_ROWS * COLS) continue;
+        int startIndex = scrollOffset * COLS;
+        int endIndex = Math.min(startIndex + VISIBLE_ROWS * COLS, MAX_SLOTS);
 
+        for (int i = startIndex; i < endIndex; i++) {
+            if (slots[i] == null) continue;  // Skip empty slots
+
+            int displayIndex = i - startIndex;
             int col = displayIndex % COLS;
             int row = displayIndex / COLS;
             int slotX = panelX + padding + col * (slotSize + padding);
@@ -529,7 +525,7 @@ public class Inventory {
             if (mouseX >= slotX && mouseX <= slotX + slotSize &&
                     mouseY >= slotY && mouseY <= slotY + slotSize) {
                 // Start dragging this item
-                draggedItem = items.get(i);
+                draggedItem = slots[i];
                 draggedIndex = i;
                 isDragging = true;
                 dragX = mouseX;
@@ -612,7 +608,7 @@ public class Inventory {
                     int overflow = vaultInventory.addItem(itemId, draggedItem.getStackCount());
                     if (overflow == 0) {
                         // Successfully transferred entire stack to vault
-                        items.remove(draggedIndex);
+                        slots[draggedIndex] = null;
                         System.out.println("Inventory: Transferred " + itemId + " to vault");
                     } else if (overflow < draggedItem.getStackCount()) {
                         // Partially transferred
@@ -626,23 +622,22 @@ public class Inventory {
             } else {
                 // Drop the item into the world
                 droppedItem = draggedItem;
-                items.remove(draggedIndex);
+                slots[draggedIndex] = null;
             }
         } else if (!outsideInventory && draggedItem != null) {
             // Dropped inside inventory - check if dropped on a specific slot
             int targetSlot = getSlotAtPosition(mouseX, mouseY);
 
-            if (targetSlot >= 0 && targetSlot != draggedIndex) {
-                if (targetSlot < items.size()) {
+            if (targetSlot >= 0 && targetSlot != draggedIndex && targetSlot < MAX_SLOTS) {
+                if (slots[targetSlot] != null) {
                     // Target slot has an item - SWAP the items
-                    ItemEntity targetItem = items.get(targetSlot);
-                    items.set(targetSlot, draggedItem);
-                    items.set(draggedIndex, targetItem);
+                    ItemEntity targetItem = slots[targetSlot];
+                    slots[targetSlot] = draggedItem;
+                    slots[draggedIndex] = targetItem;
                 } else {
-                    // Target slot is empty (beyond current items)
-                    // Remove from original position and add at end
-                    items.remove(draggedIndex);
-                    items.add(draggedItem);
+                    // Target slot is empty - move item there
+                    slots[targetSlot] = draggedItem;
+                    slots[draggedIndex] = null;
                 }
             }
             // If dropped on same slot or invalid slot, item stays in place
@@ -657,7 +652,13 @@ public class Inventory {
     }
 
     public boolean removeItem(ItemEntity item) {
-        return items.remove(item);
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            if (slots[i] == item) {
+                slots[i] = null;
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -671,8 +672,10 @@ public class Inventory {
         String lowerAmmoName = ammoName.toLowerCase();
 
         // Search through inventory for matching ammo
-        for (int i = 0; i < items.size(); i++) {
-            ItemEntity item = items.get(i);
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            ItemEntity item = slots[i];
+            if (item == null) continue;
+
             String itemName = item.getItemName().toLowerCase();
             String itemType = item.getItemType().toLowerCase();
             String itemId = item.getItemId();
@@ -700,7 +703,7 @@ public class Inventory {
                     return item; // Return reference for damage calculations
                 } else {
                     // Remove the item from inventory when stack is exhausted
-                    items.remove(i);
+                    slots[i] = null;
                     return item;
                 }
             }
@@ -719,7 +722,10 @@ public class Inventory {
 
         String lowerAmmoName = ammoName.toLowerCase();
 
-        for (ItemEntity item : items) {
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            ItemEntity item = slots[i];
+            if (item == null) continue;
+
             String itemName = item.getItemName().toLowerCase();
             String itemId = item.getItemId();
 
@@ -745,7 +751,10 @@ public class Inventory {
         String lowerAmmoName = ammoName.toLowerCase();
         int count = 0;
 
-        for (ItemEntity item : items) {
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            ItemEntity item = slots[i];
+            if (item == null) continue;
+
             String itemName = item.getItemName().toLowerCase();
             String itemId = item.getItemId();
 
@@ -766,13 +775,14 @@ public class Inventory {
      * @return The item (for reference), or null if slot was empty
      */
     public ItemEntity removeItemAtSlot(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < items.size()) {
-            ItemEntity item = items.get(slotIndex);
+        if (slotIndex >= 0 && slotIndex < MAX_SLOTS && slots[slotIndex] != null) {
+            ItemEntity item = slots[slotIndex];
             if (item.getStackCount() > 1) {
                 item.decrementStack();
                 return item; // Return reference, item still in inventory
             } else {
-                return items.remove(slotIndex); // Remove last item in stack
+                slots[slotIndex] = null; // Remove last item in stack
+                return item;
             }
         }
         return null;
@@ -784,8 +794,8 @@ public class Inventory {
      * @return The item at that slot, or null if empty
      */
     public ItemEntity getItemAtSlot(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < items.size()) {
-            return items.get(slotIndex);
+        if (slotIndex >= 0 && slotIndex < MAX_SLOTS) {
+            return slots[slotIndex];
         }
         return null;
     }
@@ -818,8 +828,8 @@ public class Inventory {
      * @return The held item, or null if slot is empty
      */
     public ItemEntity getHeldItem() {
-        if (selectedSlot < items.size()) {
-            return items.get(selectedSlot);
+        if (selectedSlot >= 0 && selectedSlot < MAX_SLOTS) {
+            return slots[selectedSlot];
         }
         return null;
     }
@@ -948,8 +958,8 @@ public class Inventory {
      * Used when the item is transferred to another UI (like alchemy table).
      */
     public void consumeDraggedItem() {
-        if (isDragging && draggedIndex >= 0 && draggedIndex < items.size()) {
-            items.remove(draggedIndex);
+        if (isDragging && draggedIndex >= 0 && draggedIndex < MAX_SLOTS) {
+            slots[draggedIndex] = null;
         }
         draggedItem = null;
         draggedIndex = -1;
@@ -998,8 +1008,8 @@ public class Inventory {
             g2d.drawRoundRect(slotX, slotY, hotbarSlotSize, hotbarSlotSize, 6, 6);
 
             // Draw item if present
-            if (i < items.size()) {
-                ItemEntity item = items.get(i);
+            if (slots[i] != null) {
+                ItemEntity item = slots[i];
                 if (item.getSprite() != null) {
                     g2d.drawImage(item.getSprite(), slotX + 5, slotY + 5,
                             hotbarSlotSize - 10, hotbarSlotSize - 10, null);
@@ -1041,7 +1051,7 @@ public class Inventory {
         // Draw inventory count and hint
         g2d.setColor(new Color(200, 200, 200, 150));
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        String hint = "[I] Inventory (" + items.size() + "/" + MAX_SLOTS + ") | [1-5] Select | Scroll to cycle";
+        String hint = "[I] Inventory (" + getItemCount() + "/" + MAX_SLOTS + ") | [1-5] Select | Scroll to cycle";
         g2d.drawString(hint, 10, 1080 - 10);
     }
 
@@ -1070,11 +1080,11 @@ public class Inventory {
         // Item count
         g2d.setFont(new Font("Arial", Font.PLAIN, 14));
         g2d.setColor(new Color(180, 180, 180));
-        String countText = items.size() + " / " + MAX_SLOTS + " items";
+        String countText = getItemCount() + " / " + MAX_SLOTS + " items";
         g2d.drawString(countText, panelX + panelWidth - 120, panelY + 35);
 
-        // Draw scroll indicator if needed
-        int totalRows = (int) Math.ceil(items.size() / (double) COLS);
+        // Draw scroll indicator if needed (always show all 4 rows since slots are fixed)
+        int totalRows = (int) Math.ceil(MAX_SLOTS / (double) COLS);
         if (totalRows > VISIBLE_ROWS) {
             int scrollBarX = panelX + panelWidth - 15;
             int scrollBarY = panelY + 60;
@@ -1106,7 +1116,7 @@ public class Inventory {
             // Slot background - different colors for hotbar slots
             if (i < HOTBAR_SIZE) {
                 g2d.setColor(new Color(100, 80, 60, 200));  // Hotbar slots are orange-ish
-            } else if (i < items.size()) {
+            } else if (slots[i] != null) {
                 g2d.setColor(new Color(80, 80, 120, 200));
             } else {
                 g2d.setColor(new Color(60, 60, 60, 200));
@@ -1144,11 +1154,8 @@ public class Inventory {
             }
 
             // Draw item if present
-            if (i < items.size()) {
-                ItemEntity item = items.get(i);
-
-                // Skip if item is null (safety check)
-                if (item == null) continue;
+            if (slots[i] != null) {
+                ItemEntity item = slots[i];
 
                 // Skip drawing if this is the item being dragged or held by cursor
                 boolean isBeingHeld = (isDragging && draggedIndex == i) ||
@@ -1204,11 +1211,8 @@ public class Inventory {
         }
 
         // Draw tooltip for hovered item
-        if (hoveredSlotIndex >= 0 && hoveredSlotIndex < items.size()) {
-            ItemEntity hoveredItem = items.get(hoveredSlotIndex);
-            if (hoveredItem != null) {
-                drawTooltip(g2d, hoveredItem);
-            }
+        if (hoveredSlotIndex >= 0 && hoveredSlotIndex < MAX_SLOTS && slots[hoveredSlotIndex] != null) {
+            drawTooltip(g2d, slots[hoveredSlotIndex]);
         }
     }
 
@@ -1561,7 +1565,10 @@ public class Inventory {
     public int transferAllToVault() {
         List<SavedItem> savedItems = new ArrayList<>();
 
-        for (ItemEntity item : items) {
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            ItemEntity item = slots[i];
+            if (item == null) continue;
+
             String itemId = resolveItemId(item);
 
             if (itemId != null && !itemId.isEmpty()) {
@@ -1571,7 +1578,7 @@ public class Inventory {
 
         int overflow = SaveManager.getInstance().transferToVault(savedItems);
         if (overflow == 0) {
-            items.clear();
+            clear();
             System.out.println("Inventory: All items transferred to vault");
         } else {
             System.out.println("Inventory: Vault overflow - " + overflow + " items couldn't be stored");
@@ -1633,7 +1640,10 @@ public class Inventory {
     public List<SavedItem> getItemsAsSavedItems() {
         List<SavedItem> savedItems = new ArrayList<>();
 
-        for (ItemEntity item : items) {
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            ItemEntity item = slots[i];
+            if (item == null) continue;
+
             String itemId = resolveItemId(item);
 
             if (itemId != null && !itemId.isEmpty()) {
@@ -1648,6 +1658,8 @@ public class Inventory {
      * Clears all items from the inventory.
      */
     public void clear() {
-        items.clear();
+        for (int i = 0; i < MAX_SLOTS; i++) {
+            slots[i] = null;
+        }
     }
 }
