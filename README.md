@@ -573,6 +573,9 @@ SPECIAL MOBS (mobs/special/):
   troll    | 80     | 18     | 55     | Health regeneration
 
 CREATING NEW MOBS (Recommended - Individual Class):
+  New mobs are automatically registered to the Creative Mode palette when added
+  to the MobRegistry. Follow these steps:
+
   // 1. Create a new class file in appropriate category folder
   // Example: entity/mob/mobs/humanoid/VampireMob.java
 
@@ -611,7 +614,14 @@ CREATING NEW MOBS (Recommended - Individual Class):
   }
 
   // 2. Register in MobRegistry.initialize():
-  registerMob("vampire", VampireMob::new, "humanoid");
+  // Signature: registerMob(id, displayName, factory, category, behavior)
+  registerMob("vampire", "Vampire", VampireMob::new, "humanoid", MobBehavior.HOSTILE);
+
+  // Behaviors: HOSTILE (attacks on sight), NEUTRAL (attacks when provoked), PASSIVE (never attacks)
+  // Categories: "humanoid", "quadruped", "special"
+
+  // 3. Add sprite files to assets/mobs/vampire/
+  //    The mob will automatically appear in Creative Mode's Mob palette!
 
 REQUIRED MOB SPRITE FILES:
   assets/mobs/[mob_name]/
