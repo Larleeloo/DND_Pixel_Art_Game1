@@ -142,14 +142,21 @@ public class ReverseCraftingUI {
     }
 
     /**
-     * Opens the UI positioned to the right of the inventory.
+     * Opens the UI positioned to the right of the inventory, next to the lower right quadrant.
      * @param screenWidth Screen width for positioning
      * @param screenHeight Screen height for positioning
      */
     public void open(int screenWidth, int screenHeight) {
-        // Position to the right of the inventory
-        this.x = 420;
-        this.y = screenHeight / 2 - height / 2 - 50;
+        // Position to the right of the inventory, aligned with lower portion
+        // Inventory panel: centered horizontally, width ~552, starts at y=150, height ~380
+        int inventoryWidth = 8 * (60 + 8) + 8;  // COLS * (slotSize + padding) + padding
+        int inventoryX = (screenWidth - inventoryWidth) / 2;
+        int inventoryY = 150;
+        int inventoryHeight = 4 * (60 + 8) + 8 + 100;  // VISIBLE_ROWS * (slotSize + padding) + padding + 100
+
+        // Position this UI to the right of inventory, aligned with lower right quadrant
+        this.x = inventoryX + inventoryWidth + 16;  // 16px gap from inventory right edge
+        this.y = inventoryY + inventoryHeight - height - 20;  // Align with lower portion of inventory
 
         // Position slots
         int slotY = y + PANEL_PADDING + 40;  // Below title

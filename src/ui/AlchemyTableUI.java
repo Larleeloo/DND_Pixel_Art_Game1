@@ -154,15 +154,20 @@ public class AlchemyTableUI {
     }
 
     /**
-     * Opens the UI positioned to the right of the inventory.
+     * Opens the UI positioned to the right of the inventory, next to the upper right quadrant.
      * @param screenWidth Screen width for positioning
      * @param screenHeight Screen height for positioning
      */
     public void open(int screenWidth, int screenHeight) {
-        // Position to the right of the inventory (inventory is typically on the left side)
-        // Inventory is around x=50-400, so we position this starting around x=420
-        this.x = 420;
-        this.y = screenHeight / 2 - height / 2 - 50;  // Slightly above center
+        // Position to the right of the inventory, aligned with upper portion
+        // Inventory panel: centered horizontally, width ~552, starts at y=150
+        int inventoryWidth = 8 * (60 + 8) + 8;  // COLS * (slotSize + padding) + padding
+        int inventoryX = (screenWidth - inventoryWidth) / 2;
+        int inventoryY = 150;
+
+        // Position this UI to the right of inventory, aligned with upper right quadrant
+        this.x = inventoryX + inventoryWidth + 16;  // 16px gap from inventory right edge
+        this.y = inventoryY + 20;  // Align with upper portion of inventory
 
         // Position slots
         int slotY = y + PANEL_PADDING + 40;  // Below title
