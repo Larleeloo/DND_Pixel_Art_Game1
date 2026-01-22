@@ -4,6 +4,9 @@ import entity.*;
 import entity.item.*;
 import entity.player.*;
 import entity.mob.*;
+import entity.mob.mobs.humanoid.*;
+import entity.mob.mobs.quadruped.*;
+import entity.mob.mobs.special.*;
 import entity.mob.old.*;  // Deprecated bone-based mobs (HumanoidMobEntity, QuadrupedMobEntity)
 import block.*;
 import animation.bone.*;
@@ -1765,6 +1768,7 @@ public class GameScene implements Scene {
 
     /**
      * Creates a sprite mob entity for button-triggered spawns.
+     * Uses MobRegistry to create mobs with proper stats and behaviors.
      *
      * @param mobType The type of mob to spawn (e.g., "bear", "wolf", "zombie")
      * @param x Spawn X position
@@ -1776,11 +1780,15 @@ public class GameScene implements Scene {
 
         String type = mobType.toLowerCase();
 
-        // Try to create a sprite-based mob
-        String spriteDir = "assets/mobs/" + type;
+        // Try to create mob using MobRegistry (preferred)
+        SpriteMobEntity mob = MobRegistry.create(type, x, y);
 
-        // Create mob (body type is auto-detected from sprite directory)
-        SpriteMobEntity mob = new SpriteMobEntity(x, y, spriteDir);
+        if (mob == null) {
+            // Fallback: create generic SpriteMobEntity with auto-detected type
+            String spriteDir = "assets/mobs/" + type;
+            mob = new SpriteMobEntity(x, y, spriteDir);
+        }
+
         mob.setGroundY(levelData.groundY);
 
         System.out.println("GameScene: Created spawned " + type + " mob at (" + x + ", " + y + ")");
@@ -1789,6 +1797,15 @@ public class GameScene implements Scene {
 
     /**
      * Creates a mob entity from level data.
+     * Uses MobRegistry for modern sprite-based mobs, with fallback to legacy bone-based mobs.
+     *
+     * Supported mobType values:
+     *   - Direct mob names (zombie, skeleton, wolf, etc.) - Uses MobRegistry (RECOMMENDED)
+     *   - "quadruped" with subType - Legacy bone-based quadruped
+     *   - "humanoid" with subType - Legacy bone-based humanoid
+     *   - "sprite_quadruped" with spriteDir - Generic sprite mob
+     *   - "sprite_humanoid" with spriteDir - Generic sprite mob
+     *   - "frog" - FrogSprite mob
      *
      * @param m The mob data from level JSON
      * @return A MobEntity instance, or null if type is unknown
@@ -1798,6 +1815,35 @@ public class GameScene implements Scene {
 
         String type = m.mobType.toLowerCase();
         String subType = m.subType != null ? m.subType.toLowerCase() : "";
+
+        // ==================== Modern Mob Creation via MobRegistry ====================
+        // First, try to create using MobRegistry (recommended approach)
+        if (MobRegistry.isRegistered(type)) {
+            SpriteMobEntity mob;
+
+            // Use custom sprite directory if provided, otherwise use defaults
+            if (m.spriteDir != null && !m.spriteDir.isEmpty()) {
+                mob = MobRegistry.create(type, m.x, m.y, m.spriteDir);
+            } else {
+                mob = MobRegistry.create(type, m.x, m.y);
+            }
+
+            if (mob != null) {
+                // Apply behavior from level data
+                applyMobBehavior(mob, m.behavior);
+
+                // Enable debug drawing if requested
+                if (m.debugDraw) {
+                    mob.setDebugDraw(true);
+                }
+
+                System.out.println("GameScene: Created " + type + " mob at (" + m.x + "," + m.y + ") via MobRegistry");
+                return mob;
+            }
+        }
+
+        // ==================== Legacy Bone-Based Mobs ====================
+        // Fallback for legacy level files using old mob system
 
         if (type.equals("quadruped")) {
             // Parse animal type
@@ -1850,117 +1896,51 @@ public class GameScene implements Scene {
                 return new HumanoidMobEntity(m.x, m.y, variantType);
             }
 
-        } else if (type.equals("sprite_quadruped")) {
-            // Sprite-based quadruped mob using GIF animations
+        } else if (type.equals("sprite_quadruped") || type.equals("sprite_humanoid")) {
+            // Generic sprite-based mob using GIF animations
             if (m.spriteDir == null || m.spriteDir.isEmpty()) {
-                System.err.println("GameScene: sprite_quadruped requires spriteDir");
+                System.err.println("GameScene: " + type + " requires spriteDir");
                 return null;
             }
 
             SpriteMobEntity mob = new SpriteMobEntity(m.x, m.y, m.spriteDir);
-
-            // Set behavior based on level data
-            if (m.behavior != null) {
-                switch (m.behavior.toLowerCase()) {
-                    case "hostile":
-                        mob.setHostile(true);
-                        mob.setAggroRange(300);
-                        break;
-                    case "neutral":
-                        mob.setHostile(false);
-                        mob.setAggroRange(150); // Will aggro if attacked
-                        break;
-                    case "passive":
-                    default:
-                        mob.setHostile(false);
-                        mob.setAggroRange(0);
-                        break;
-                }
-            }
+            applyMobBehavior(mob, m.behavior);
 
             // Enable debug drawing if requested
             if (m.debugDraw) {
                 mob.setDebugDraw(true);
             }
 
-            System.out.println("GameScene: Created sprite_quadruped mob at (" + m.x + "," + m.y + ") with sprites from " + m.spriteDir);
+            System.out.println("GameScene: Created " + type + " mob at (" + m.x + "," + m.y + ") with sprites from " + m.spriteDir);
             return mob;
-
-        } else if (type.equals("sprite_humanoid")) {
-            // Sprite-based humanoid mob using GIF animations
-            if (m.spriteDir == null || m.spriteDir.isEmpty()) {
-                System.err.println("GameScene: sprite_humanoid requires spriteDir");
-                return null;
-            }
-
-            SpriteMobEntity mob = new SpriteMobEntity(m.x, m.y, m.spriteDir);
-
-            // Set behavior based on level data
-            if (m.behavior != null) {
-                switch (m.behavior.toLowerCase()) {
-                    case "hostile":
-                        mob.setHostile(true);
-                        mob.setAggroRange(350);
-                        break;
-                    case "neutral":
-                        mob.setHostile(false);
-                        mob.setAggroRange(200);
-                        break;
-                    case "passive":
-                    default:
-                        mob.setHostile(false);
-                        mob.setAggroRange(0);
-                        break;
-                }
-            }
-
-            // Enable debug drawing if requested
-            if (m.debugDraw) {
-                mob.setDebugDraw(true);
-            }
-
-            System.out.println("GameScene: Created sprite_humanoid mob at (" + m.x + "," + m.y + ") with sprites from " + m.spriteDir);
-            return mob;
-
-        } else if (type.equals("frog")) {
-            // Frog mob using FrogSprite class with custom animations
-            String spriteDir = m.spriteDir;
-            // Default to purple_frog variant if not specified or using base frog directory
-            if (spriteDir == null || spriteDir.isEmpty() || spriteDir.equals("assets/mobs/frog")) {
-                spriteDir = "assets/mobs/frog/purple_frog";
-            }
-
-            FrogSprite frog = new FrogSprite(m.x, m.y, spriteDir);
-
-            // Set behavior based on level data (frogs are passive by default)
-            if (m.behavior != null) {
-                switch (m.behavior.toLowerCase()) {
-                    case "hostile":
-                        frog.setHostile(true);
-                        frog.setAggroRange(150);
-                        break;
-                    case "neutral":
-                        frog.setHostile(false);
-                        frog.setAggroRange(100);
-                        break;
-                    case "passive":
-                    default:
-                        frog.setHostile(false);
-                        frog.setAggroRange(0);
-                        break;
-                }
-            }
-
-            // Enable debug drawing if requested
-            if (m.debugDraw) {
-                frog.setDebugDraw(true);
-            }
-
-            System.out.println("GameScene: Created frog mob at (" + m.x + "," + m.y + ") with sprites from " + spriteDir);
-            return frog;
         }
 
         System.err.println("GameScene: Unknown mobType: " + type);
         return null;
+    }
+
+    /**
+     * Applies behavior settings to a sprite mob based on level data.
+     *
+     * @param mob      The mob to configure
+     * @param behavior The behavior string from level data (hostile, neutral, passive)
+     */
+    private void applyMobBehavior(SpriteMobEntity mob, String behavior) {
+        if (behavior == null) return;
+
+        switch (behavior.toLowerCase()) {
+            case "hostile":
+                mob.setHostile(true);
+                break;
+            case "neutral":
+                mob.setHostile(false);
+                mob.setAggroRange(150); // Will aggro if attacked
+                break;
+            case "passive":
+            default:
+                mob.setHostile(false);
+                mob.setAggroRange(0);
+                break;
+        }
     }
 }
