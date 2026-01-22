@@ -34,6 +34,14 @@ public class UIButton {
         this.textColor = text;
     }
 
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return this.text;
+    }
+
     public boolean contains(int mouseX, int mouseY) {
         return mouseX >= x && mouseX <= x + width &&
                 mouseY >= y && mouseY <= y + height;
