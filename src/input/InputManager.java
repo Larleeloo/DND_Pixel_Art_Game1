@@ -388,6 +388,41 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
         return false;
     }
 
+    // ========== Controller Click Events (for UI/Menu navigation) ==========
+
+    /**
+     * Check if controller triggered a "click" event (right trigger just pressed).
+     * Used to trigger mouse click events for UI navigation.
+     */
+    public boolean isControllerClickJustPressed() {
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isRightTriggerJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if controller click is being held (right trigger held).
+     * Used for drag operations.
+     */
+    public boolean isControllerClickHeld() {
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isRightTriggerPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if controller click was just released (right trigger released).
+     * Used to trigger mouse release events.
+     */
+    public boolean isControllerClickJustReleased() {
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isRightTriggerJustReleased();
+        }
+        return false;
+    }
+
     // ========== MouseListener Implementation ==========
 
     @Override

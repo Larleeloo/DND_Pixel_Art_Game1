@@ -433,6 +433,13 @@ public class ControllerManager {
     }
 
     /**
+     * Check if Right Trigger was just released this frame.
+     */
+    public boolean isRightTriggerJustReleased() {
+        return !rightTriggerPressed && prevRightTriggerPressed;
+    }
+
+    /**
      * Check if Left Bumper (LB) was just pressed - for hotbar navigation left.
      */
     public boolean isButtonLBJustPressed() {

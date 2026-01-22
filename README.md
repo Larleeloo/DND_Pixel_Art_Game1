@@ -1582,7 +1582,10 @@ RESOLVED ISSUES
      - Left stick now controls movement (WASD)
      - Right stick now controls mouse cursor
   -> Left stick click (L3) now triggers sprint (Shift key)
-  -> Right Trigger (RT) now triggers left mouse click for UI navigation and item dragging
+  -> Right Trigger (RT) now fully emulates left mouse button:
+     - Triggers press, click, drag, and release events
+     - Works for navigating main menu and all UI screens
+     - Supports dragging items in inventory
   -> Left/Right Bumpers (LB/RB) now cycle hotbar slots (previous/next)
   -> Added Back button mapping to Escape key
   -> Added visible crosshair cursor when using controller mode

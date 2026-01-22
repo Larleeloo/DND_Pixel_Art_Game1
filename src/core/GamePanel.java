@@ -149,11 +149,47 @@ public class GamePanel extends JPanel implements Runnable {
         return new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT);
     }
 
+    // Track if controller was clicking last frame (for drag detection)
+    private boolean controllerWasClicking = false;
+
     private void update() {
         // Poll Xbox controller for input
         inputManager.pollController();
 
+        // Handle controller click events for UI/menu navigation
+        handleControllerClickEvents();
+
         sceneManager.update(inputManager);
+    }
+
+    /**
+     * Handles controller right trigger as mouse click events.
+     * This allows the controller to navigate menus and drag items.
+     */
+    private void handleControllerClickEvents() {
+        if (!inputManager.isUsingController()) {
+            controllerWasClicking = false;
+            return;
+        }
+
+        int mouseX = inputManager.getMouseX();
+        int mouseY = inputManager.getMouseY();
+
+        // Right trigger just pressed → mouse press and click
+        if (inputManager.isControllerClickJustPressed()) {
+            sceneManager.onMousePressed(mouseX, mouseY);
+            sceneManager.onMouseClicked(mouseX, mouseY);
+            controllerWasClicking = true;
+        }
+        // Right trigger held → mouse drag (if position changed)
+        else if (inputManager.isControllerClickHeld() && controllerWasClicking) {
+            sceneManager.onMouseDragged(mouseX, mouseY);
+        }
+        // Right trigger just released → mouse release
+        else if (inputManager.isControllerClickJustReleased()) {
+            sceneManager.onMouseReleased(mouseX, mouseY);
+            controllerWasClicking = false;
+        }
     }
 
     public AudioManager getAudioManager() {
