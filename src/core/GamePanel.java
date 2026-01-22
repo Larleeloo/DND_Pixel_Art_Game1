@@ -168,5 +168,68 @@ public class GamePanel extends JPanel implements Runnable {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         sceneManager.draw(g);
+
+        // Draw controller cursor when using controller
+        drawControllerCursor(g);
+    }
+
+    /**
+     * Draws a visible cursor when using the Xbox controller.
+     * The cursor appears at the virtual mouse position controlled by the right stick.
+     */
+    private void drawControllerCursor(Graphics g) {
+        if (!inputManager.isUsingController()) {
+            return;
+        }
+
+        int cursorX = inputManager.getMouseX();
+        int cursorY = inputManager.getMouseY();
+
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Cursor size
+        int outerSize = 24;
+        int innerSize = 8;
+        int crosshairLength = 12;
+        int crosshairGap = 6;
+
+        // Draw outer circle (white with black outline for visibility)
+        g2d.setStroke(new BasicStroke(3));
+        g2d.setColor(Color.BLACK);
+        g2d.drawOval(cursorX - outerSize/2, cursorY - outerSize/2, outerSize, outerSize);
+
+        g2d.setStroke(new BasicStroke(2));
+        g2d.setColor(Color.WHITE);
+        g2d.drawOval(cursorX - outerSize/2, cursorY - outerSize/2, outerSize, outerSize);
+
+        // Draw center dot
+        g2d.setColor(Color.BLACK);
+        g2d.fillOval(cursorX - innerSize/2 - 1, cursorY - innerSize/2 - 1, innerSize + 2, innerSize + 2);
+        g2d.setColor(new Color(255, 200, 50)); // Golden yellow center
+        g2d.fillOval(cursorX - innerSize/2, cursorY - innerSize/2, innerSize, innerSize);
+
+        // Draw crosshair lines (with gap in center)
+        g2d.setStroke(new BasicStroke(3));
+        g2d.setColor(Color.BLACK);
+        // Top line
+        g2d.drawLine(cursorX, cursorY - crosshairGap - crosshairLength, cursorX, cursorY - crosshairGap);
+        // Bottom line
+        g2d.drawLine(cursorX, cursorY + crosshairGap, cursorX, cursorY + crosshairGap + crosshairLength);
+        // Left line
+        g2d.drawLine(cursorX - crosshairGap - crosshairLength, cursorY, cursorX - crosshairGap, cursorY);
+        // Right line
+        g2d.drawLine(cursorX + crosshairGap, cursorY, cursorX + crosshairGap + crosshairLength, cursorY);
+
+        g2d.setStroke(new BasicStroke(2));
+        g2d.setColor(Color.WHITE);
+        // Top line
+        g2d.drawLine(cursorX, cursorY - crosshairGap - crosshairLength, cursorX, cursorY - crosshairGap);
+        // Bottom line
+        g2d.drawLine(cursorX, cursorY + crosshairGap, cursorX, cursorY + crosshairGap + crosshairLength);
+        // Left line
+        g2d.drawLine(cursorX - crosshairGap - crosshairLength, cursorY, cursorX - crosshairGap, cursorY);
+        // Right line
+        g2d.drawLine(cursorX + crosshairGap, cursorY, cursorX + crosshairGap + crosshairLength, cursorY);
     }
 }

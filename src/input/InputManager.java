@@ -8,19 +8,20 @@ import java.util.HashSet;
  *
  * Xbox Controller Support:
  * When an Xbox controller is connected, the following mappings are active:
- * - Right Stick (RS): Movement (WASD equivalent)
- *   - RS Right → 'D' key
- *   - RS Left → 'A' key
- *   - RS Up → 'W' key
- *   - RS Down → 'S' key
- * - Left Stick (LS): Mouse pointer control
- *   - LS Move → Virtual mouse cursor movement
- *   - LS Click (L3) → Left mouse click
+ * - Left Stick (LS): Movement (WASD equivalent)
+ *   - LS Right → 'D' key
+ *   - LS Left → 'A' key
+ *   - LS Up → 'W' key
+ *   - LS Down → 'S' key
+ * - Right Stick (RS): Mouse pointer control
+ *   - RS Move → Virtual mouse cursor movement
+ *   - RS Click (R3) → Left mouse click
  * - Buttons:
  *   - A Button → Space (Jump)
  *   - X Button → 'E' key (Interact/Mine)
  *   - Y Button → 'I' key (Inventory)
  *   - Start Button → 'M' key (Menu/Settings)
+ *   - Back Button → Escape key
  *
  * Requires JInput library for controller support.
  */
@@ -72,7 +73,7 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
             controllerManager.poll();
 
             // Track if controller is being used for mouse position
-            if (controllerManager.isLeftStickActive()) {
+            if (controllerManager.isRightStickActive()) {
                 usingController = true;
             }
         }
@@ -81,10 +82,10 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     /**
      * Check if a key is pressed (keyboard or controller equivalent).
      * Controller mappings:
-     * - 'a' → RS Left
-     * - 'd' → RS Right
-     * - 'w' → RS Up
-     * - 's' → RS Down
+     * - 'a' → LS Left
+     * - 'd' → LS Right
+     * - 'w' → LS Up
+     * - 's' → LS Down
      * - ' ' (space) → A Button
      * - 'e' → X Button
      * - 'i' → Y Button
@@ -100,10 +101,10 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
         if (controllerManager != null && controllerManager.isControllerConnected()) {
             char lower = Character.toLowerCase(c);
             switch (lower) {
-                case 'a': return controllerManager.isRightStickLeft();
-                case 'd': return controllerManager.isRightStickRight();
-                case 'w': return controllerManager.isRightStickUp();
-                case 's': return controllerManager.isRightStickDown();
+                case 'a': return controllerManager.isLeftStickLeft();
+                case 'd': return controllerManager.isLeftStickRight();
+                case 'w': return controllerManager.isLeftStickUp();
+                case 's': return controllerManager.isLeftStickDown();
                 case ' ': return controllerManager.isButtonAPressed();
                 case 'e': return controllerManager.isButtonXPressed();
                 case 'i': return controllerManager.isButtonYPressed();
@@ -117,18 +118,33 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     /**
      * Check if a key is pressed by key code (for special keys like Shift, Ctrl, arrows).
      * Use KeyEvent.VK_* constants.
+     * Controller mappings:
+     * - VK_ESCAPE → Back Button
      */
     public boolean isKeyPressed(int keyCode) {
-        return keysPressed.contains(keyCode);
+        if (keysPressed.contains(keyCode)) {
+            return true;
+        }
+        // Check controller Back button for Escape
+        if (keyCode == KeyEvent.VK_ESCAPE && controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isButtonBackPressed();
+        }
+        return false;
     }
 
     /**
      * Check if a key was just pressed by key code.
+     * Controller mappings:
+     * - VK_ESCAPE → Back Button just pressed
      */
     public boolean isKeyJustPressed(int keyCode) {
         if (keysJustPressed.contains(keyCode)) {
             keysJustPressed.remove(keyCode);
             return true;
+        }
+        // Check controller Back button for Escape
+        if (keyCode == KeyEvent.VK_ESCAPE && controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isButtonBackJustPressed();
         }
         return false;
     }
@@ -239,16 +255,16 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Convenience method for left mouse button just pressed.
-     * Also returns true if controller left stick was just clicked (L3).
+     * Also returns true if controller right stick was just clicked (R3).
      */
     public boolean isLeftMouseJustPressed() {
         // Check physical mouse
         if (isMouseButtonJustPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller left stick click (L3)
+        // Check controller right stick click (R3)
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isLeftStickJustClicked();
+            return controllerManager.isRightStickJustClicked();
         }
         return false;
     }
@@ -262,16 +278,16 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Check if left mouse button is currently pressed.
-     * Also returns true if controller left stick is clicked (L3).
+     * Also returns true if controller right stick is clicked (R3).
      */
     public boolean isLeftMousePressed() {
         // Check physical mouse
         if (isMouseButtonPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller left stick click (L3)
+        // Check controller right stick click (R3)
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isLeftStickClicked();
+            return controllerManager.isRightStickClicked();
         }
         return false;
     }

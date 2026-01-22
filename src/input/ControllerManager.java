@@ -9,19 +9,20 @@ import java.util.List;
  * Maps controller inputs to virtual keyboard/mouse events that the game understands.
  *
  * Controller Mappings:
- * - Right Stick (RS): Movement (WASD equivalent)
- *   - RS Right → 'D' key
- *   - RS Left → 'A' key
- *   - RS Up → 'W' key
- *   - RS Down → 'S' key
- * - Left Stick (LS): Mouse pointer control
- *   - LS Move → Virtual mouse cursor movement
- *   - LS Click (L3) → Left mouse click
+ * - Left Stick (LS): Movement (WASD equivalent)
+ *   - LS Right → 'D' key
+ *   - LS Left → 'A' key
+ *   - LS Up → 'W' key
+ *   - LS Down → 'S' key
+ * - Right Stick (RS): Mouse pointer control
+ *   - RS Move → Virtual mouse cursor movement
+ *   - RS Click (R3) → Left mouse click
  * - Buttons:
  *   - A Button → Space (Jump)
  *   - X Button → 'E' key (Interact/Mine)
  *   - Y Button → 'I' key (Inventory)
  *   - Start Button → 'M' key (Menu/Settings)
+ *   - Back Button → Escape key
  */
 public class ControllerManager {
 
@@ -55,6 +56,8 @@ public class ControllerManager {
     private boolean prevButtonY = false;
     private boolean prevButtonStart = false;
     private boolean prevButtonL3 = false;
+    private boolean prevButtonR3 = false;
+    private boolean prevButtonBack = false;
 
     // Triggers (0.0 to 1.0)
     private float leftTrigger = 0;
@@ -66,7 +69,7 @@ public class ControllerManager {
     private boolean dpadLeft = false;
     private boolean dpadRight = false;
 
-    // Virtual mouse position (controlled by left stick)
+    // Virtual mouse position (controlled by right stick)
     private float virtualMouseX = 960;  // Center of 1920x1080 screen
     private float virtualMouseY = 540;
     private static final float MOUSE_SENSITIVITY = 12.0f;  // Pixels per frame at full stick deflection
@@ -168,6 +171,8 @@ public class ControllerManager {
         prevButtonY = buttonY;
         prevButtonStart = buttonStart;
         prevButtonL3 = buttonL3;
+        prevButtonR3 = buttonR3;
+        prevButtonBack = buttonBack;
 
         // Poll the controller
         if (!xboxController.poll()) {
@@ -280,12 +285,12 @@ public class ControllerManager {
     }
 
     /**
-     * Update virtual mouse position based on left stick movement.
+     * Update virtual mouse position based on right stick movement.
      */
     private void updateVirtualMouse() {
-        if (leftStickX != 0 || leftStickY != 0) {
-            virtualMouseX += leftStickX * MOUSE_SENSITIVITY;
-            virtualMouseY += leftStickY * MOUSE_SENSITIVITY;
+        if (rightStickX != 0 || rightStickY != 0) {
+            virtualMouseX += rightStickX * MOUSE_SENSITIVITY;
+            virtualMouseY += rightStickY * MOUSE_SENSITIVITY;
 
             // Clamp to screen bounds
             virtualMouseX = Math.max(0, Math.min(1920, virtualMouseX));
@@ -293,34 +298,34 @@ public class ControllerManager {
         }
     }
 
-    // ========== Virtual Keyboard Mappings (Right Stick → WASD) ==========
+    // ========== Virtual Keyboard Mappings (Left Stick → WASD) ==========
 
     /**
-     * Check if right stick simulates 'W' key (RS Up).
+     * Check if left stick simulates 'W' key (LS Up).
      */
-    public boolean isRightStickUp() {
-        return rightStickY < -STICK_PRESS_THRESHOLD;
+    public boolean isLeftStickUp() {
+        return leftStickY < -STICK_PRESS_THRESHOLD;
     }
 
     /**
-     * Check if right stick simulates 'S' key (RS Down).
+     * Check if left stick simulates 'S' key (LS Down).
      */
-    public boolean isRightStickDown() {
-        return rightStickY > STICK_PRESS_THRESHOLD;
+    public boolean isLeftStickDown() {
+        return leftStickY > STICK_PRESS_THRESHOLD;
     }
 
     /**
-     * Check if right stick simulates 'A' key (RS Left).
+     * Check if left stick simulates 'A' key (LS Left).
      */
-    public boolean isRightStickLeft() {
-        return rightStickX < -STICK_PRESS_THRESHOLD;
+    public boolean isLeftStickLeft() {
+        return leftStickX < -STICK_PRESS_THRESHOLD;
     }
 
     /**
-     * Check if right stick simulates 'D' key (RS Right).
+     * Check if left stick simulates 'D' key (LS Right).
      */
-    public boolean isRightStickRight() {
-        return rightStickX > STICK_PRESS_THRESHOLD;
+    public boolean isLeftStickRight() {
+        return leftStickX > STICK_PRESS_THRESHOLD;
     }
 
     // ========== Virtual Button Mappings ==========
@@ -382,40 +387,47 @@ public class ControllerManager {
     }
 
     /**
-     * Check if Left Stick is clicked (L3) - maps to left mouse click.
+     * Check if Right Stick is clicked (R3) - maps to left mouse click.
      */
-    public boolean isLeftStickClicked() {
-        return buttonL3;
+    public boolean isRightStickClicked() {
+        return buttonR3;
     }
 
     /**
-     * Check if Left Stick was just clicked this frame.
+     * Check if Right Stick was just clicked this frame.
      */
-    public boolean isLeftStickJustClicked() {
-        return buttonL3 && !prevButtonL3;
+    public boolean isRightStickJustClicked() {
+        return buttonR3 && !prevButtonR3;
     }
 
-    // ========== Virtual Mouse (Left Stick) ==========
+    /**
+     * Check if Back button is pressed (maps to Escape key).
+     */
+    public boolean isButtonBackJustPressed() {
+        return buttonBack && !prevButtonBack;
+    }
+
+    // ========== Virtual Mouse (Right Stick) ==========
 
     /**
-     * Get virtual mouse X position controlled by left stick.
+     * Get virtual mouse X position controlled by right stick.
      */
     public int getVirtualMouseX() {
         return Math.round(virtualMouseX);
     }
 
     /**
-     * Get virtual mouse Y position controlled by left stick.
+     * Get virtual mouse Y position controlled by right stick.
      */
     public int getVirtualMouseY() {
         return Math.round(virtualMouseY);
     }
 
     /**
-     * Check if left stick is being moved (for mouse control).
+     * Check if right stick is being moved (for mouse control).
      */
-    public boolean isLeftStickActive() {
-        return leftStickX != 0 || leftStickY != 0;
+    public boolean isRightStickActive() {
+        return rightStickX != 0 || rightStickY != 0;
     }
 
     /**
