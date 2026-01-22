@@ -341,11 +341,40 @@ INVENTORY METHODS:
   inv.hasItem(item, count);      // Check if has enough
 
 --------------------------------------------------------------------------------
-9. ITEM SYSTEM (entity/Item.java, entity/ItemRegistry.java)
+9. ITEM SYSTEM (entity/item/)
 --------------------------------------------------------------------------------
 
-Items are defined with categories, rarities, and various properties. The
-ItemRegistry contains all predefined items.
+Items are defined with categories, rarities, and various properties. Each item
+has its own dedicated class file in entity/item/items/ for easy customization.
+
+ITEM CLASS ARCHITECTURE:
+  All items are now implemented as individual Java classes that extend the
+  Item base class. This allows:
+  - Per-item customization of textures and behavior
+  - Override of base Item methods for unique functionality
+  - Clean separation of item configuration from registry logic
+  - Easy addition of new items by creating a new class file
+
+ITEM CLASS LOCATION (entity/item/items/):
+  Category       | Location                          | Count
+  ---------------|-----------------------------------|-------
+  Melee Weapons  | items/weapons/melee/              | 22
+  Ranged Weapons | items/weapons/ranged/             | 16
+  Throwing       | items/weapons/throwing/           | 3
+  Ammo           | items/ammo/                       | 6
+  Throwables     | items/throwables/                 | 2
+  Tools          | items/tools/                      | 10
+  Armor          | items/armor/                      | 20
+  Food           | items/food/                       | 11
+  Potions        | items/potions/                    | 14
+  Materials      | items/materials/                  | 24
+  Keys           | items/keys/                       | 4
+  Clothing       | items/clothing/                   | 12
+  Collectibles   | items/collectibles/               | 36
+  Accessories    | items/accessories/                | 1
+  Blocks         | items/blocks/                     | 9
+  --------------------------------------------------------
+  TOTAL                                              | 190
 
 ITEM CATEGORIES (ItemCategory enum):
   Category      | Description
@@ -388,21 +417,56 @@ ITEM ANIMATION STATES (for held item overlays):
   - CHARGE, CAST, GLOW        → Magic
   - MINE, CHOP, IMPACT        → Tools
 
-CREATING NEW ITEMS:
-  // In ItemRegistry.initialize():
-  Item flameSword = new Item("Flame Sword", ItemCategory.WEAPON, ItemRarity.EPIC);
-  flameSword.setDamage(45);
-  flameSword.setAttackSpeed(1.2);
-  flameSword.setSpecialEffect("burn");
-  flameSword.setSpritePath("assets/items/flame_sword.gif");
-  register(flameSword);
+CREATING NEW ITEMS (Recommended - Individual Class):
+  // 1. Create a new class file in appropriate category folder
+  // Example: entity/item/items/weapons/melee/FlameSword.java
+
+  package entity.item.items.weapons.melee;
+
+  import entity.item.Item;
+
+  public class FlameSword extends Item {
+      public FlameSword() {
+          super("Flame Sword", ItemCategory.WEAPON);
+          setRarity(ItemRarity.EPIC);
+          setDamage(45);
+          setAttackSpeed(1.2f);
+          setRange(65);
+          setSpecialEffect("Burns enemies on hit");
+          setDescription("A blade wreathed in eternal flame");
+          setScalesWithStrength(true);
+      }
+
+      @Override
+      public Item copy() {
+          return new FlameSword();
+      }
+
+      // Optional: Override methods for unique behavior
+      // @Override
+      // public void onUse(Entity user, Entity target) { ... }
+  }
+
+  // 2. Register in ItemRegistry.initialize():
+  templates.put("flame_sword", new FlameSword());
+
+ITEM CLASS PATTERN:
+  Every item class follows this pattern:
+  1. Extend Item base class
+  2. Call super() with name and category
+  3. Configure all properties in constructor
+  4. Override copy() to return new instance
+  5. Optionally override methods for unique behavior
 
 NOTABLE SPECIAL ITEMS:
-  - Mirror to Other Realms: Cycles through 3 realms every 400ms
+  - Mirror to Other Realms (MirrorToOtherRealms.java):
+    - Complex custom item with realm-cycling projectiles
+    - Cycles through 3 realms every 400ms
     - Volcano Realm → Fires fireballs
     - Forest Realm → Fires arrows
     - Ocean Realm → Fires tiny fish
     - Fires 3 projectiles per use, 25 mana cost
+    - Example of advanced item customization with unique methods
 
 --------------------------------------------------------------------------------
 10. MOB/ENEMY SYSTEM (entity/mob/)
@@ -1026,10 +1090,28 @@ src/                    - Game engine source code (organized by package)
   scene/                - Scene management (Scene, SceneManager, GameScene, menus)
   entity/               - Base entity classes (Entity, EntityManager, SpriteEntity)
     - Item.java             - Item class with categories, rarities, and held item overlay support
-    - ItemRegistry.java     - Predefined items (weapons, armor, consumables, etc.)
+    - ItemRegistry.java     - Registry that instantiates items from individual class files
     - ProjectileEntity.java - Projectile system for ranged attacks and thrown items
     - RecipeManager.java    - Loads and manages crafting recipes from JSON
     - AlchemyTableEntity.java - Interactable alchemy/reverse crafting tables
+    - MirrorToOtherRealms.java - Special item with realm-cycling projectiles
+    item/               - Item class hierarchy
+      items/            - 190 individual item classes organized by category
+        weapons/melee/  - Melee weapons (WoodenSword, IronSword, etc.)
+        weapons/ranged/ - Ranged weapons (WoodenBow, FireStaff, etc.)
+        weapons/throwing/ - Throwing weapons (ThrowingKnife, etc.)
+        ammo/           - Ammunition (Arrow, Bolt, etc.)
+        throwables/     - Consumable throwables (Bomb, ThrowingPotion)
+        tools/          - Tools (WoodenPickaxe, IronAxeTool, etc.)
+        armor/          - Armor pieces (IronHelmet, DragonScaleArmor, etc.)
+        food/           - Food items (Bread, GoldenApple, etc.)
+        potions/        - Potions (HealthPotion, StrengthPotion, etc.)
+        materials/      - Crafting materials (IronIngot, Diamond, etc.)
+        keys/           - Keys (BronzeKey, SkeletonKey, etc.)
+        clothing/       - Clothing items (GreenDress, ChameleonCloak, etc.)
+        collectibles/   - Collectible items (Orb, TreasureMap, etc.)
+        accessories/    - Accessories (RubySkull)
+        blocks/         - Placeable blocks (DirtBlock, StoneBlock, etc.)
     player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
       - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
       - AbilityScores.java      - DnD-style ability score system (CHA, STR, CON, INT, WIS, DEX)
