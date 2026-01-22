@@ -423,6 +423,93 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
         return false;
     }
 
+    // ========== Inventory Navigation (Arrow Keys / D-Pad) ==========
+
+    /**
+     * Check if navigation up was just pressed (arrow key or D-pad).
+     * Used for Minecraft-style inventory navigation.
+     */
+    public boolean isNavigateUpJustPressed() {
+        // Check arrow key
+        if (keysJustPressed.contains(KeyEvent.VK_UP)) {
+            keysJustPressed.remove(KeyEvent.VK_UP);
+            return true;
+        }
+        // Check controller D-pad
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isDPadUpJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if navigation down was just pressed (arrow key or D-pad).
+     * Used for Minecraft-style inventory navigation.
+     */
+    public boolean isNavigateDownJustPressed() {
+        // Check arrow key
+        if (keysJustPressed.contains(KeyEvent.VK_DOWN)) {
+            keysJustPressed.remove(KeyEvent.VK_DOWN);
+            return true;
+        }
+        // Check controller D-pad
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isDPadDownJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if navigation left was just pressed (arrow key or D-pad).
+     * Used for Minecraft-style inventory navigation.
+     */
+    public boolean isNavigateLeftJustPressed() {
+        // Check arrow key
+        if (keysJustPressed.contains(KeyEvent.VK_LEFT)) {
+            keysJustPressed.remove(KeyEvent.VK_LEFT);
+            return true;
+        }
+        // Check controller D-pad
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isDPadLeftJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if navigation right was just pressed (arrow key or D-pad).
+     * Used for Minecraft-style inventory navigation.
+     */
+    public boolean isNavigateRightJustPressed() {
+        // Check arrow key
+        if (keysJustPressed.contains(KeyEvent.VK_RIGHT)) {
+            keysJustPressed.remove(KeyEvent.VK_RIGHT);
+            return true;
+        }
+        // Check controller D-pad
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isDPadRightJustPressed();
+        }
+        return false;
+    }
+
+    /**
+     * Check if select/confirm was just pressed (Enter key or A button).
+     * Used for Minecraft-style inventory item selection.
+     */
+    public boolean isSelectJustPressed() {
+        // Check Enter key
+        if (keysJustPressed.contains(KeyEvent.VK_ENTER)) {
+            keysJustPressed.remove(KeyEvent.VK_ENTER);
+            return true;
+        }
+        // Check controller A button
+        if (controllerManager != null && controllerManager.isControllerConnected()) {
+            return controllerManager.isButtonAJustPressed();
+        }
+        return false;
+    }
+
     // ========== MouseListener Implementation ==========
 
     @Override

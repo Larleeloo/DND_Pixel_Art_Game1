@@ -81,6 +81,12 @@ public class ControllerManager {
     private boolean dpadLeft = false;
     private boolean dpadRight = false;
 
+    // Previous D-Pad states for "just pressed" detection
+    private boolean prevDpadUp = false;
+    private boolean prevDpadDown = false;
+    private boolean prevDpadLeft = false;
+    private boolean prevDpadRight = false;
+
     // Virtual mouse position (controlled by right stick)
     private float virtualMouseX = 960;  // Center of 1920x1080 screen
     private float virtualMouseY = 540;
@@ -188,6 +194,12 @@ public class ControllerManager {
         prevButtonLB = buttonLB;
         prevButtonRB = buttonRB;
         prevRightTriggerPressed = rightTriggerPressed;
+
+        // Save previous D-Pad states
+        prevDpadUp = dpadUp;
+        prevDpadDown = dpadDown;
+        prevDpadLeft = dpadLeft;
+        prevDpadRight = dpadRight;
 
         // Poll the controller
         if (!xboxController.poll()) {
@@ -514,6 +526,26 @@ public class ControllerManager {
     public boolean isDPadDown() { return dpadDown; }
     public boolean isDPadLeft() { return dpadLeft; }
     public boolean isDPadRight() { return dpadRight; }
+
+    /**
+     * Check if D-Pad Up was just pressed this frame.
+     */
+    public boolean isDPadUpJustPressed() { return dpadUp && !prevDpadUp; }
+
+    /**
+     * Check if D-Pad Down was just pressed this frame.
+     */
+    public boolean isDPadDownJustPressed() { return dpadDown && !prevDpadDown; }
+
+    /**
+     * Check if D-Pad Left was just pressed this frame.
+     */
+    public boolean isDPadLeftJustPressed() { return dpadLeft && !prevDpadLeft; }
+
+    /**
+     * Check if D-Pad Right was just pressed this frame.
+     */
+    public boolean isDPadRightJustPressed() { return dpadRight && !prevDpadRight; }
 
     // ========== Status ==========
 
