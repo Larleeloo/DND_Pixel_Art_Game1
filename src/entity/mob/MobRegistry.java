@@ -154,6 +154,11 @@ public class MobRegistry {
             (x, y) -> new FrogSprite(x, y, "assets/mobs/frog/purple_frog"),
             "special", MobBehavior.PASSIVE, "assets/mobs/frog/purple_frog");
 
+        // Rabbit uses RabbitSprite class - passive hopping mob with no attack
+        registerMob("rabbit", "Rabbit",
+            (x, y) -> new RabbitSprite(x, y, "assets/mobs/rabbit"),
+            "special", MobBehavior.PASSIVE, "assets/mobs/rabbit");
+
         System.out.println("MobRegistry: Initialized with " + mobFactories.size() + " mob types");
     }
 
@@ -276,6 +281,7 @@ public class MobRegistry {
             case "ogre": return new OgreMob(x, y, spriteDir);
             case "troll": return new TrollMob(x, y, spriteDir);
             case "frog": return new FrogSprite(x, y, spriteDir);
+            case "rabbit": return new RabbitSprite(x, y, spriteDir);
 
             default:
                 System.err.println("MobRegistry: Unknown mob type for custom sprites: " + mobType);
