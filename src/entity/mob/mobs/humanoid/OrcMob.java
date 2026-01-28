@@ -1,6 +1,11 @@
 package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
+import entity.item.Item;
+import entity.item.items.weapons.melee.BattleAxe;
+import entity.item.items.weapons.melee.Mace;
+import entity.item.items.weapons.melee.ThunderHammer;
+import entity.item.items.weapons.throwing.ThrowingAxe;
 
 /**
  * Orc mob - a strong, tank-like enemy.
@@ -70,6 +75,48 @@ public class OrcMob extends SpriteMobEntity {
 
         // Orcs are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Orcs use melee weapons and can throw axes
+        setWeaponPreference(WeaponPreference.MELEE_AND_THROWABLE);
+
+        // Initialize inventory with weapons
+        initializeOrcInventory();
+    }
+
+    /**
+     * Initializes the orc's inventory with appropriate heavy weapons.
+     * Orcs prefer axes, maces, and hammers.
+     */
+    private void initializeOrcInventory() {
+        Item mainWeapon;
+
+        // Random loadout selection - orcs have heavy weapons
+        double roll = Math.random();
+        if (roll < 0.05) {
+            // 5% chance for legendary thunder hammer
+            mainWeapon = new ThunderHammer();
+        } else if (roll < 0.5) {
+            // 45% chance for battle axe
+            mainWeapon = new BattleAxe();
+        } else {
+            // 50% chance for mace
+            mainWeapon = new Mace();
+        }
+
+        addToInventory(mainWeapon);
+        equipWeapon(mainWeapon);
+
+        // Add throwing axes (1-2)
+        int numAxes = 1 + (int)(Math.random() * 2);
+        for (int i = 0; i < numAxes; i++) {
+            addToInventory(new ThrowingAxe());
+        }
+
+        // Configure ranged attack range for throwables
+        this.preferredAttackRange = 180;
+        this.projectileCooldown = 2.0;  // Slow throw rate
     }
 
     /**

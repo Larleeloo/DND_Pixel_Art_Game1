@@ -100,6 +100,31 @@ public class SpriteMobEntity extends MobEntity {
     protected List<ItemEntity> pendingDroppedItems = new ArrayList<>();
     protected boolean hasDroppedItems = false;
 
+    // ==================== Mana System for Spell-casting Mobs ====================
+
+    protected int maxMana = 100;
+    protected int currentMana = 100;
+    protected double manaRegenRate = 5.0;  // Mana per second
+    protected double manaRegenAccumulator = 0.0;  // For fractional mana regen
+
+    // ==================== Weapon Usage AI System ====================
+
+    // Weapon type preferences for AI weapon selection
+    public enum WeaponPreference {
+        MELEE_ONLY,           // Only uses melee weapons (zombies, knights)
+        RANGED_ONLY,          // Only uses ranged weapons (skeletons, mages)
+        MELEE_AND_THROWABLE,  // Uses melee and throwables (bandits, goblins)
+        MAGIC_ONLY,           // Only uses magic weapons (mages)
+        ANY                   // Uses any available weapon
+    }
+
+    protected WeaponPreference weaponPreference = WeaponPreference.ANY;
+    protected double weaponSwitchCooldown = 0;  // Prevents rapid weapon switching
+    protected static final double WEAPON_SWITCH_DELAY = 1.0;  // Seconds between weapon switches
+
+    // Mana cost for magic weapon attacks
+    protected int magicAttackManaCost = 10;
+
     // ==================== Status Effect System ====================
 
     /**
@@ -652,6 +677,12 @@ public class SpriteMobEntity extends MobEntity {
     protected void performAttack() {
         if (target == null) return;
 
+        // Humanoid mobs with weapons use the weapon-based attack system
+        if (isHumanoid && (equippedWeapon != null || !inventory.isEmpty())) {
+            performWeaponAttack();
+            return;
+        }
+
         double dist = getDistanceToTargetFace();
 
         // Check for ranged attack first
@@ -1036,6 +1067,443 @@ public class SpriteMobEntity extends MobEntity {
         return 0;
     }
 
+    // ==================== Mana System Methods ====================
+
+    /**
+     * Gets the current mana.
+     */
+    public int getMana() {
+        return currentMana;
+    }
+
+    /**
+     * Gets the maximum mana.
+     */
+    public int getMaxMana() {
+        return maxMana;
+    }
+
+    /**
+     * Sets the current mana (clamped to 0-maxMana).
+     */
+    public void setMana(int mana) {
+        this.currentMana = Math.max(0, Math.min(maxMana, mana));
+    }
+
+    /**
+     * Sets the maximum mana.
+     */
+    public void setMaxMana(int maxMana) {
+        this.maxMana = maxMana;
+        if (currentMana > maxMana) {
+            currentMana = maxMana;
+        }
+    }
+
+    /**
+     * Uses mana for an action.
+     * @return true if mana was consumed successfully
+     */
+    public boolean useMana(int amount) {
+        if (currentMana >= amount) {
+            currentMana -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the mob has enough mana.
+     */
+    public boolean hasMana(int amount) {
+        return currentMana >= amount;
+    }
+
+    /**
+     * Restores mana.
+     */
+    public void restoreMana(int amount) {
+        currentMana = Math.min(maxMana, currentMana + amount);
+    }
+
+    /**
+     * Gets the mana regeneration rate.
+     */
+    public double getManaRegenRate() {
+        return manaRegenRate;
+    }
+
+    /**
+     * Sets the mana regeneration rate.
+     */
+    public void setManaRegenRate(double rate) {
+        this.manaRegenRate = rate;
+    }
+
+    /**
+     * Updates mana regeneration based on elapsed time.
+     */
+    protected void updateManaRegeneration(double deltaTime) {
+        if (currentMana < maxMana) {
+            manaRegenAccumulator += manaRegenRate * deltaTime;
+            if (manaRegenAccumulator >= 1.0) {
+                int manaToAdd = (int) manaRegenAccumulator;
+                currentMana = Math.min(maxMana, currentMana + manaToAdd);
+                manaRegenAccumulator -= manaToAdd;
+            }
+        }
+    }
+
+    // ==================== Weapon Usage AI Methods ====================
+
+    /**
+     * Sets the weapon preference for this mob.
+     */
+    public void setWeaponPreference(WeaponPreference preference) {
+        this.weaponPreference = preference;
+    }
+
+    /**
+     * Gets the weapon preference.
+     */
+    public WeaponPreference getWeaponPreference() {
+        return weaponPreference;
+    }
+
+    /**
+     * Sets the mana cost for magic attacks.
+     */
+    public void setMagicAttackManaCost(int cost) {
+        this.magicAttackManaCost = cost;
+    }
+
+    /**
+     * Checks if an item matches the mob's weapon preference.
+     */
+    protected boolean isPreferredWeaponType(Item item) {
+        if (item == null) return false;
+
+        Item.ItemCategory category = item.getCategory();
+        boolean isMelee = category == Item.ItemCategory.WEAPON;
+        boolean isRanged = category == Item.ItemCategory.RANGED_WEAPON;
+        boolean isThrowable = category == Item.ItemCategory.THROWABLE;
+        boolean isMagic = item.scalesWithIntelligence();
+
+        switch (weaponPreference) {
+            case MELEE_ONLY:
+                return isMelee;
+            case RANGED_ONLY:
+                return isRanged;
+            case MELEE_AND_THROWABLE:
+                return isMelee || isThrowable;
+            case MAGIC_ONLY:
+                return isMagic && (isRanged || item.getProjectileType() != null);
+            case ANY:
+            default:
+                return isMelee || isRanged || isThrowable;
+        }
+    }
+
+    /**
+     * Selects the best weapon from inventory based on situation.
+     * Called periodically during combat to optimize weapon choice.
+     *
+     * @param distanceToTarget Distance to the target
+     */
+    protected void selectBestWeapon(double distanceToTarget) {
+        if (weaponSwitchCooldown > 0) return;
+        if (!isHumanoid) return;
+
+        Item bestWeapon = null;
+        int bestScore = -1;
+
+        // Check equipped weapon first
+        if (equippedWeapon != null && isPreferredWeaponType(equippedWeapon)) {
+            bestScore = scoreWeapon(equippedWeapon, distanceToTarget);
+            bestWeapon = equippedWeapon;
+        }
+
+        // Check inventory for better weapons
+        for (Item item : inventory) {
+            if (!isPreferredWeaponType(item)) continue;
+
+            int score = scoreWeapon(item, distanceToTarget);
+            if (score > bestScore) {
+                bestScore = score;
+                bestWeapon = item;
+            }
+        }
+
+        // Equip the best weapon if different from current
+        if (bestWeapon != null && bestWeapon != equippedWeapon) {
+            equipWeapon(bestWeapon);
+            weaponSwitchCooldown = WEAPON_SWITCH_DELAY;
+        }
+    }
+
+    /**
+     * Scores a weapon based on current combat situation.
+     * Higher scores are better.
+     */
+    protected int scoreWeapon(Item weapon, double distanceToTarget) {
+        if (weapon == null) return 0;
+
+        int score = weapon.getDamage();
+
+        // Ranged weapons score higher at distance
+        if (weapon.isRangedWeapon() || weapon.getCategory() == Item.ItemCategory.THROWABLE) {
+            if (distanceToTarget > attackRange) {
+                score += 50;  // Bonus for being able to attack at range
+            }
+            // Check if we have enough mana for magic weapons
+            if (weapon.scalesWithIntelligence() && !hasMana(magicAttackManaCost)) {
+                score -= 100;  // Penalty if we can't use the weapon
+            }
+        } else {
+            // Melee weapons score higher at close range
+            if (distanceToTarget <= weapon.getRange()) {
+                score += 30;
+            }
+        }
+
+        // Rarity bonus
+        score += weapon.getRarity().ordinal() * 5;
+
+        return score;
+    }
+
+    /**
+     * Uses a throwable item from inventory.
+     * Removes the item after throwing if it's stackable.
+     *
+     * @param throwable The throwable item to use
+     * @return true if the item was thrown successfully
+     */
+    protected boolean useThrowableItem(Item throwable) {
+        if (throwable == null || target == null) return false;
+        if (!throwable.isRangedWeapon()) return false;
+
+        // Calculate direction to target
+        Rectangle targetBounds = target.getBounds();
+        double targetCenterX = targetBounds.x + targetBounds.width / 2;
+        double targetCenterY = targetBounds.y + targetBounds.height / 2;
+
+        double dx = targetCenterX - posX;
+        double dy = targetCenterY - (posY - spriteHeight / 2);
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            dx /= length;
+            dy /= length;
+        }
+
+        // Create projectile from the throwable item
+        int projX = (int)posX;
+        int projY = (int)(posY - spriteHeight / 2);
+
+        ProjectileEntity projectile = throwable.createProjectile(
+            projX, projY, dx, dy, false
+        );
+
+        if (projectile != null) {
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+
+            // Consume the throwable item
+            removeFromInventory(throwable);
+
+            setAnimationState("fire");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Uses a magic weapon, consuming mana.
+     *
+     * @param weapon The magic weapon to use
+     * @return true if the attack was successful
+     */
+    protected boolean useMagicWeapon(Item weapon) {
+        if (weapon == null || target == null) return false;
+        if (!weapon.isRangedWeapon()) return false;
+
+        // Determine mana cost
+        int manaCost = weapon.getChargeManaCost() > 0 ? weapon.getChargeManaCost() / 3 : magicAttackManaCost;
+
+        // Check if we have enough mana
+        if (!useMana(manaCost)) {
+            return false;
+        }
+
+        // Calculate direction to target
+        Rectangle targetBounds = target.getBounds();
+        double targetCenterX = targetBounds.x + targetBounds.width / 2;
+        double targetCenterY = targetBounds.y + targetBounds.height / 2;
+
+        double dx = targetCenterX - posX;
+        double dy = targetCenterY - (posY - spriteHeight / 2);
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            dx /= length;
+            dy /= length;
+        }
+
+        // Create projectile from the weapon
+        int projX = (int)posX;
+        int projY = (int)(posY - spriteHeight / 2);
+
+        ProjectileEntity projectile = weapon.createProjectile(
+            projX, projY, dx, dy, false
+        );
+
+        if (projectile != null) {
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+
+            setAnimationState("cast");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Uses the currently equipped melee weapon to attack.
+     */
+    protected void useMeleeWeapon() {
+        if (target == null || equippedWeapon == null) return;
+
+        double dist = getDistanceToTargetFace();
+        int weaponRange = equippedWeapon.getRange();
+
+        if (dist <= weaponRange) {
+            Rectangle playerBounds = target.getBounds();
+            double playerCenterX = playerBounds.x + playerBounds.width / 2;
+            double knockbackDir = posX < playerCenterX ? 1 : -1;
+
+            int damage = equippedWeapon.getDamage();
+            target.takeDamage(damage, knockbackDir * 5, -3);
+            attackTimer = 1.0 / Math.max(0.1f, equippedWeapon.getAttackSpeed());
+            setAnimationState("attack");
+        }
+    }
+
+    /**
+     * Performs a weapon-based attack using equipped or inventory weapons.
+     * Called when the mob is in attack state and attack timer is ready.
+     *
+     * Subclasses can override this to customize attack behavior.
+     */
+    protected void performWeaponAttack() {
+        if (target == null) return;
+
+        double dist = getDistanceToTargetFace();
+
+        // First, try to select the best weapon for the situation
+        selectBestWeapon(dist);
+
+        // If we have an equipped weapon, use it
+        if (equippedWeapon != null) {
+            if (equippedWeapon.isRangedWeapon()) {
+                // Ranged weapon attack
+                if (equippedWeapon.scalesWithIntelligence()) {
+                    // Magic weapon - uses mana
+                    if (useMagicWeapon(equippedWeapon)) {
+                        projectileTimer = projectileCooldown;
+                        return;
+                    }
+                } else if (equippedWeapon.getCategory() == Item.ItemCategory.THROWABLE) {
+                    // Throwable - consumes item
+                    if (useThrowableItem(equippedWeapon)) {
+                        projectileTimer = projectileCooldown;
+                        // Find next throwable in inventory
+                        for (Item item : inventory) {
+                            if (item.getCategory() == Item.ItemCategory.THROWABLE) {
+                                equipWeapon(item);
+                                break;
+                            }
+                        }
+                        return;
+                    }
+                } else {
+                    // Regular ranged weapon (bow, crossbow)
+                    if (dist <= preferredAttackRange && projectileTimer <= 0) {
+                        fireProjectileFromWeapon(equippedWeapon);
+                        projectileTimer = projectileCooldown;
+                        return;
+                    }
+                }
+            } else {
+                // Melee weapon attack
+                if (dist <= equippedWeapon.getRange()) {
+                    useMeleeWeapon();
+                    return;
+                }
+            }
+        }
+
+        // Check inventory for throwables if we don't have a ranged weapon
+        if (dist > attackRange) {
+            for (Item item : new ArrayList<>(inventory)) {
+                if (item.getCategory() == Item.ItemCategory.THROWABLE) {
+                    if (useThrowableItem(item)) {
+                        projectileTimer = projectileCooldown;
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Fall back to default ranged attack if configured
+        if (canFireProjectiles && dist <= preferredAttackRange && projectileTimer <= 0) {
+            fireProjectile();
+            return;
+        }
+
+        // Fall back to basic melee attack
+        if (attackTimer <= 0 && dist <= attackRange) {
+            Rectangle playerBounds = target.getBounds();
+            double playerCenterX = playerBounds.x + playerBounds.width / 2;
+            double knockbackDir = posX < playerCenterX ? 1 : -1;
+            target.takeDamage(attackDamage, knockbackDir * 5, -3);
+            attackTimer = attackCooldown;
+            setAnimationState("attack");
+        }
+    }
+
+    /**
+     * Fires a projectile using the specified ranged weapon.
+     */
+    protected void fireProjectileFromWeapon(Item weapon) {
+        if (weapon == null || target == null || !weapon.isRangedWeapon()) return;
+
+        Rectangle targetBounds = target.getBounds();
+        double targetCenterX = targetBounds.x + targetBounds.width / 2;
+        double targetCenterY = targetBounds.y + targetBounds.height / 2;
+
+        double dx = targetCenterX - posX;
+        double dy = targetCenterY - (posY - spriteHeight / 2);
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            dx /= length;
+            dy /= length;
+        }
+
+        int projX = (int)posX;
+        int projY = (int)(posY - spriteHeight / 2);
+
+        ProjectileEntity projectile = weapon.createProjectile(projX, projY, dx, dy, false);
+        if (projectile != null) {
+            projectile.setSource(this);
+            activeProjectiles.add(projectile);
+            setAnimationState("fire");
+        }
+    }
+
     /**
      * Equips an overlay item (like clothing/armor visual).
      * @param slot Equipment slot enum
@@ -1321,6 +1789,14 @@ public class SpriteMobEntity extends MobEntity {
             if (eatTimer <= 0) {
                 isEating = false;
             }
+        }
+
+        // Update mana regeneration
+        updateManaRegeneration(deltaTime);
+
+        // Update weapon switch cooldown
+        if (weaponSwitchCooldown > 0) {
+            weaponSwitchCooldown -= deltaTime;
         }
 
         // Determine if sprinting (when chasing and has sprint speed set)

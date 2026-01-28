@@ -1,6 +1,10 @@
 package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
+import entity.item.Item;
+import entity.item.items.weapons.melee.WoodenSword;
+import entity.item.items.weapons.melee.IronSword;
+import entity.item.items.weapons.melee.Mace;
 
 /**
  * Zombie mob - a slow, persistent undead enemy.
@@ -69,6 +73,43 @@ public class ZombieMob extends SpriteMobEntity {
 
         // Zombies are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Zombies only use melee weapons (no finesse required)
+        setWeaponPreference(WeaponPreference.MELEE_ONLY);
+
+        // Initialize inventory with crude weapons (some zombies are unarmed)
+        initializeZombieInventory();
+    }
+
+    /**
+     * Initializes the zombie's inventory with crude melee weapons.
+     * Not all zombies carry weapons - some fight with bare hands.
+     */
+    private void initializeZombieInventory() {
+        // Only 60% of zombies carry weapons
+        if (Math.random() > 0.6) {
+            return;  // Unarmed zombie uses base damage
+        }
+
+        Item weapon;
+
+        // Random loadout selection - zombies have crude or scavenged weapons
+        double roll = Math.random();
+        if (roll < 0.2) {
+            // 20% chance for mace (heavier damage)
+            weapon = new Mace();
+        } else if (roll < 0.5) {
+            // 30% chance for iron sword (better weapon)
+            weapon = new IronSword();
+        } else {
+            // 50% chance for wooden sword (basic weapon)
+            weapon = new WoodenSword();
+        }
+
+        addToInventory(weapon);
+        equipWeapon(weapon);
     }
 
     /**

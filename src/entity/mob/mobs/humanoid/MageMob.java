@@ -2,6 +2,11 @@ package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
 import entity.ProjectileEntity;
+import entity.item.Item;
+import entity.item.items.weapons.ranged.MagicWand;
+import entity.item.items.weapons.ranged.FireStaff;
+import entity.item.items.weapons.ranged.IceStaff;
+import entity.item.items.weapons.ranged.ArcaneStaff;
 
 /**
  * Mage mob - a ranged spellcaster enemy.
@@ -86,6 +91,60 @@ public class MageMob extends SpriteMobEntity {
 
         // Mages are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Mages prefer magic weapons only
+        setWeaponPreference(WeaponPreference.MAGIC_ONLY);
+
+        // Configure mana for spellcasting
+        setMaxMana(150);
+        setMana(150);
+        setManaRegenRate(8.0);  // Fast mana regen for frequent casting
+        setMagicAttackManaCost(15);
+
+        // Initialize inventory with appropriate magic weapon
+        initializeMageInventory();
+    }
+
+    /**
+     * Initializes the mage's inventory with magic weapons based on magic type.
+     */
+    private void initializeMageInventory() {
+        Item weapon;
+
+        switch (magicType) {
+            case FIRE:
+                weapon = new FireStaff();
+                break;
+            case ICE:
+                weapon = new IceStaff();
+                break;
+            case ARCANE:
+            default:
+                // Random chance for better weapon
+                if (Math.random() < 0.3) {
+                    weapon = new ArcaneStaff();
+                } else {
+                    weapon = new MagicWand();
+                }
+                break;
+        }
+
+        // Add and equip the weapon
+        addToInventory(weapon);
+        equipWeapon(weapon);
+
+        // Update ranged attack configuration based on equipped weapon
+        if (weapon.isRangedWeapon()) {
+            setRangedAttack(
+                weapon.getProjectileType(),
+                weapon.getProjectileDamage(),
+                weapon.getProjectileSpeed(),
+                2.0,  // Cooldown
+                weapon.getRange() > 0 ? weapon.getRange() : 280
+            );
+        }
     }
 
     /**

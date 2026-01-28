@@ -2,6 +2,11 @@ package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
 import entity.ProjectileEntity;
+import entity.item.Item;
+import entity.item.items.weapons.ranged.WoodenBow;
+import entity.item.items.weapons.ranged.Longbow;
+import entity.item.items.weapons.ranged.Crossbow;
+import entity.item.items.weapons.melee.IronSword;
 
 /**
  * Skeleton mob - a fast, ranged undead enemy.
@@ -72,19 +77,56 @@ public class SkeletonMob extends SpriteMobEntity {
         this.detectionRange = 300;
         this.loseTargetRange = 500;
 
-        // Configure ranged attack if enabled
-        if (hasRangedAttack) {
-            setRangedAttack(
-                ProjectileEntity.ProjectileType.ARROW,
-                8,      // damage
-                10.0,   // projectile speed
-                2.0,    // cooldown
-                250     // preferred attack range
-            );
-        }
-
         // Skeletons are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Skeletons prefer ranged weapons
+        setWeaponPreference(WeaponPreference.RANGED_ONLY);
+
+        // Initialize inventory with weapons
+        initializeSkeletonInventory();
+    }
+
+    /**
+     * Initializes the skeleton's inventory with bows and a backup melee weapon.
+     */
+    private void initializeSkeletonInventory() {
+        Item rangedWeapon;
+
+        // Random loadout selection based on hasRangedAttack
+        if (hasRangedAttack) {
+            double roll = Math.random();
+            if (roll < 0.1) {
+                // 10% chance for crossbow
+                rangedWeapon = new Crossbow();
+            } else if (roll < 0.4) {
+                // 30% chance for longbow
+                rangedWeapon = new Longbow();
+            } else {
+                // 60% chance for wooden bow
+                rangedWeapon = new WoodenBow();
+            }
+
+            addToInventory(rangedWeapon);
+            equipWeapon(rangedWeapon);
+
+            // Configure ranged attack based on equipped weapon
+            if (rangedWeapon.isRangedWeapon()) {
+                setRangedAttack(
+                    rangedWeapon.getProjectileType(),
+                    rangedWeapon.getProjectileDamage(),
+                    rangedWeapon.getProjectileSpeed(),
+                    2.0,  // Cooldown
+                    250   // Preferred attack range
+                );
+            }
+        }
+
+        // Add a backup melee weapon
+        Item backupWeapon = new IronSword();
+        addToInventory(backupWeapon);
     }
 
     /**
