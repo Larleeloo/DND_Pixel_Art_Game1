@@ -1,6 +1,10 @@
 package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
+import entity.item.Item;
+import entity.item.items.weapons.melee.SteelSword;
+import entity.item.items.weapons.melee.LegendarySword;
+import entity.item.items.weapons.melee.Mace;
 
 /**
  * Knight mob - an armored, powerful enemy.
@@ -70,6 +74,38 @@ public class KnightMob extends SpriteMobEntity {
 
         // Knights are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Knights only use melee weapons
+        setWeaponPreference(WeaponPreference.MELEE_ONLY);
+
+        // Initialize inventory with weapons
+        initializeKnightInventory();
+    }
+
+    /**
+     * Initializes the knight's inventory with appropriate melee weapons.
+     * Knights carry heavy swords and maces.
+     */
+    private void initializeKnightInventory() {
+        Item mainWeapon;
+
+        // Random loadout selection - knights have good weapons
+        double roll = Math.random();
+        if (roll < 0.1) {
+            // 10% chance for legendary sword
+            mainWeapon = new LegendarySword();
+        } else if (roll < 0.5) {
+            // 40% chance for steel sword
+            mainWeapon = new SteelSword();
+        } else {
+            // 50% chance for mace
+            mainWeapon = new Mace();
+        }
+
+        addToInventory(mainWeapon);
+        equipWeapon(mainWeapon);
     }
 
     /**

@@ -1,6 +1,11 @@
 package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
+import entity.item.Item;
+import entity.item.items.weapons.melee.Dagger;
+import entity.item.items.weapons.melee.PoisonDagger;
+import entity.item.items.weapons.throwing.ThrowingKnife;
+import entity.item.items.weapons.throwing.Rock;
 
 /**
  * Goblin mob - a fast, weak enemy that attacks in groups.
@@ -73,6 +78,54 @@ public class GoblinMob extends SpriteMobEntity {
 
         // Goblins are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Goblins use daggers and throwables
+        setWeaponPreference(WeaponPreference.MELEE_AND_THROWABLE);
+
+        // Initialize inventory with weapons
+        initializeGoblinInventory();
+    }
+
+    /**
+     * Initializes the goblin's inventory with light weapons and throwables.
+     * Goblins prefer quick daggers and throwing rocks/knives.
+     */
+    private void initializeGoblinInventory() {
+        Item mainWeapon;
+
+        // Random loadout selection - goblins have light weapons
+        double roll = Math.random();
+        if (roll < 0.2) {
+            // 20% chance for poison dagger
+            mainWeapon = new PoisonDagger();
+        } else {
+            // 80% chance for regular dagger
+            mainWeapon = new Dagger();
+        }
+
+        addToInventory(mainWeapon);
+        equipWeapon(mainWeapon);
+
+        // Add throwables (mix of rocks and throwing knives)
+        if (Math.random() < 0.4) {
+            // 40% chance for throwing knives (1-2)
+            int numKnives = 1 + (int)(Math.random() * 2);
+            for (int i = 0; i < numKnives; i++) {
+                addToInventory(new ThrowingKnife());
+            }
+        } else {
+            // 60% chance for rocks (2-4)
+            int numRocks = 2 + (int)(Math.random() * 3);
+            for (int i = 0; i < numRocks; i++) {
+                addToInventory(new Rock());
+            }
+        }
+
+        // Configure ranged attack range for throwables
+        this.preferredAttackRange = 150;
+        this.projectileCooldown = 1.0;  // Fast throw rate
     }
 
     /**

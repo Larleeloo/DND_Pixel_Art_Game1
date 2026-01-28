@@ -550,6 +550,53 @@ HUMANOID MOBS (mobs/humanoid/):
   knight   | 55     | 12     | 50     | Reduced knockback
   mage     | 40     | 15     | 40     | Fire/Ice/Arcane magic
 
+HUMANOID MOB WEAPON USAGE AI:
+  All humanoid mobs have an intelligent weapon usage system. They carry appropriate
+  weapons in their inventory and use them during combat based on their class.
+
+  Mob      | Weapon Preference      | Starting Loadout
+  ---------|------------------------|------------------------------------------
+  zombie   | MELEE_ONLY             | 60% armed: wooden sword, iron sword, mace
+  skeleton | RANGED_ONLY            | Wooden bow, longbow, or crossbow + backup sword
+  goblin   | MELEE_AND_THROWABLE    | Dagger or poison dagger + rocks/throwing knives
+  orc      | MELEE_AND_THROWABLE    | Battle axe or mace + throwing axes
+  bandit   | MELEE_AND_THROWABLE    | Iron/steel sword or dagger + throwing knives/axes
+  knight   | MELEE_ONLY             | Steel sword, mace, or legendary sword
+  mage     | MAGIC_ONLY             | Magic wand, fire staff, ice staff, or arcane staff
+
+  WEAPON PREFERENCE TYPES:
+    - MELEE_ONLY:           Only uses melee weapons (swords, axes, maces)
+    - RANGED_ONLY:          Only uses ranged weapons (bows, crossbows)
+    - MELEE_AND_THROWABLE:  Uses melee weapons and throws items (knives, axes, rocks)
+    - MAGIC_ONLY:           Only uses magic weapons (wands, staffs) - requires mana
+    - ANY:                  Uses any available weapon type
+
+  MANA SYSTEM FOR MAGIC-USING MOBS:
+    Magic-using mobs (like Mage) have their own mana pool that regenerates over time.
+    Magic weapons consume mana when used. When out of mana, mobs will wait for
+    regeneration before casting again.
+
+    Mage Stats:
+      - Max Mana: 150
+      - Mana Regen: 8 per second
+      - Magic Attack Cost: 15 mana
+
+  THROWABLE ITEM CONSUMPTION:
+    Throwable items (throwing knives, axes, rocks) are consumed when used.
+    Mobs will automatically switch to the next throwable in their inventory
+    or fall back to melee when they run out.
+
+  AI WEAPON SELECTION:
+    Mobs intelligently select weapons based on:
+    - Distance to target (ranged at distance, melee when close)
+    - Weapon damage and rarity
+    - Available mana for magic weapons
+    - Remaining throwable items
+
+  ITEM DROPS:
+    When mobs die, they drop their equipped weapon and all inventory items.
+    This creates a risk/reward loop where powerful mobs drop valuable gear.
+
 QUADRUPED MOBS (mobs/quadruped/):
   Type     | Health | Damage | Speed  | Behavior
   ---------|--------|--------|--------|------------------

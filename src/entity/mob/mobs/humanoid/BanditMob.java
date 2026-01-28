@@ -1,6 +1,12 @@
 package entity.mob.mobs.humanoid;
 
 import entity.mob.SpriteMobEntity;
+import entity.item.Item;
+import entity.item.items.weapons.melee.IronSword;
+import entity.item.items.weapons.melee.Dagger;
+import entity.item.items.weapons.melee.SteelSword;
+import entity.item.items.weapons.throwing.ThrowingKnife;
+import entity.item.items.weapons.throwing.ThrowingAxe;
 
 /**
  * Bandit mob - a balanced human enemy.
@@ -70,6 +76,57 @@ public class BanditMob extends SpriteMobEntity {
 
         // Bandits are always hostile
         setHostile(true);
+
+        // ==================== Weapon Usage Configuration ====================
+
+        // Bandits use melee weapons and throwables
+        setWeaponPreference(WeaponPreference.MELEE_AND_THROWABLE);
+
+        // Initialize inventory with weapons
+        initializeBanditInventory();
+    }
+
+    /**
+     * Initializes the bandit's inventory with appropriate weapons.
+     * Bandits carry melee weapons and some throwables.
+     */
+    private void initializeBanditInventory() {
+        // Random loadout selection
+        double roll = Math.random();
+
+        Item mainWeapon;
+        if (roll < 0.3) {
+            // 30% chance for steel sword
+            mainWeapon = new SteelSword();
+        } else if (roll < 0.6) {
+            // 30% chance for iron sword
+            mainWeapon = new IronSword();
+        } else {
+            // 40% chance for dagger
+            mainWeapon = new Dagger();
+        }
+
+        addToInventory(mainWeapon);
+        equipWeapon(mainWeapon);
+
+        // Add throwables (2-4 throwing knives or 1-2 throwing axes)
+        if (Math.random() < 0.6) {
+            // 60% chance for throwing knives
+            int numKnives = 2 + (int)(Math.random() * 3);  // 2-4 knives
+            for (int i = 0; i < numKnives; i++) {
+                addToInventory(new ThrowingKnife());
+            }
+        } else {
+            // 40% chance for throwing axes
+            int numAxes = 1 + (int)(Math.random() * 2);  // 1-2 axes
+            for (int i = 0; i < numAxes; i++) {
+                addToInventory(new ThrowingAxe());
+            }
+        }
+
+        // Configure ranged attack range for throwables
+        this.preferredAttackRange = 200;
+        this.projectileCooldown = 1.5;
     }
 
     /**
