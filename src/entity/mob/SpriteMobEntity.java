@@ -740,6 +740,7 @@ public class SpriteMobEntity extends MobEntity {
 
     /**
      * Configures this mob for ranged attacks.
+     * Also updates attackRange to allow AI to enter attack state at range.
      */
     public void setRangedAttack(ProjectileEntity.ProjectileType type, int damage, double speed, double cooldown, double range) {
         this.canFireProjectiles = true;
@@ -748,6 +749,8 @@ public class SpriteMobEntity extends MobEntity {
         this.projectileSpeed = speed;
         this.projectileCooldown = cooldown;
         this.preferredAttackRange = range;
+        // Also update attackRange so AI enters attack state at the right distance
+        this.attackRange = range;
     }
 
     /**
@@ -995,7 +998,8 @@ public class SpriteMobEntity extends MobEntity {
     public boolean equipWeapon(Item item) {
         if (!isHumanoid) return false;
         if (item.getCategory() != Item.ItemCategory.WEAPON &&
-            item.getCategory() != Item.ItemCategory.RANGED_WEAPON) return false;
+            item.getCategory() != Item.ItemCategory.RANGED_WEAPON &&
+            item.getCategory() != Item.ItemCategory.THROWABLE) return false;
 
         // Unequip current weapon
         if (equippedWeapon != null) {
@@ -1007,17 +1011,26 @@ public class SpriteMobEntity extends MobEntity {
 
         // Update attack damage based on weapon
         this.attackDamage = item.getDamage();
-        this.attackRange = item.getRange();
 
-        // If ranged weapon, configure ranged attack
-        if (item.isRangedWeapon()) {
+        // For ranged/throwable weapons, use proper attack range
+        // Default range (60) is melee range - ranged weapons need larger range
+        if (item.isRangedWeapon() || item.getCategory() == Item.ItemCategory.THROWABLE) {
+            // Use item range if it's been explicitly set higher than default,
+            // otherwise use a reasonable ranged attack range
+            int effectiveRange = item.getRange() > 80 ? item.getRange() : 250;
+            this.attackRange = effectiveRange;
+
+            // Configure ranged attack
             setRangedAttack(
                 item.getProjectileType(),
-                item.getDamage(),
+                item.getProjectileDamage() > 0 ? item.getProjectileDamage() : item.getDamage(),
                 item.getProjectileSpeed(),
                 1.5,  // Cooldown
-                item.getRange()
+                effectiveRange
             );
+        } else {
+            // Melee weapon - use item's range directly
+            this.attackRange = item.getRange();
         }
 
         return true;
@@ -1408,6 +1421,11 @@ public class SpriteMobEntity extends MobEntity {
         // If we have an equipped weapon, use it
         if (equippedWeapon != null) {
             if (equippedWeapon.isRangedWeapon()) {
+                // Check cooldown for all ranged attacks
+                if (projectileTimer > 0) {
+                    return;  // Still on cooldown
+                }
+
                 // Ranged weapon attack
                 if (equippedWeapon.scalesWithIntelligence()) {
                     // Magic weapon - uses mana
@@ -1430,7 +1448,7 @@ public class SpriteMobEntity extends MobEntity {
                     }
                 } else {
                     // Regular ranged weapon (bow, crossbow)
-                    if (dist <= preferredAttackRange && projectileTimer <= 0) {
+                    if (dist <= preferredAttackRange) {
                         fireProjectileFromWeapon(equippedWeapon);
                         projectileTimer = projectileCooldown;
                         return;
@@ -1438,7 +1456,7 @@ public class SpriteMobEntity extends MobEntity {
                 }
             } else {
                 // Melee weapon attack
-                if (dist <= equippedWeapon.getRange()) {
+                if (dist <= equippedWeapon.getRange() && attackTimer <= 0) {
                     useMeleeWeapon();
                     return;
                 }
