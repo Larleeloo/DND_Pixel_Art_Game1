@@ -678,15 +678,16 @@ public class SpriteMobEntity extends MobEntity {
     protected void performAttack() {
         if (target == null) return;
 
-        // Humanoid mobs with weapons use the weapon-based attack system
-        if (isHumanoid && (equippedWeapon != null || !inventory.isEmpty())) {
+        // Humanoid mobs always use the weapon-based attack system
+        // This ensures they don't fall back to infinite fireProjectile() when out of ammo
+        if (isHumanoid) {
             performWeaponAttack();
             return;
         }
 
         double dist = getDistanceToTargetFace();
 
-        // Check for ranged attack first
+        // Non-humanoid mobs use natural ranged attacks (e.g., spider webs, dragon breath)
         if (canFireProjectiles && dist <= preferredAttackRange && projectileTimer <= 0) {
             fireProjectile();
             return;
@@ -986,8 +987,11 @@ public class SpriteMobEntity extends MobEntity {
         if (hasDroppedItems) return;  // Only drop once
         hasDroppedItems = true;
 
+        System.out.println("[MOB DROP] " + getClass().getSimpleName() + " dropping items on death:");
+
         // Drop equipped weapon
         if (equippedWeapon != null) {
+            System.out.println("  - Equipped weapon: " + equippedWeapon.getName());
             ItemEntity dropped = createDroppedItem(equippedWeapon);
             if (dropped != null) {
                 pendingDroppedItems.add(dropped);
@@ -997,6 +1001,7 @@ public class SpriteMobEntity extends MobEntity {
 
         // Drop equipped armor
         if (equippedArmor != null) {
+            System.out.println("  - Equipped armor: " + equippedArmor.getName());
             ItemEntity dropped = createDroppedItem(equippedArmor);
             if (dropped != null) {
                 pendingDroppedItems.add(dropped);
@@ -1005,13 +1010,17 @@ public class SpriteMobEntity extends MobEntity {
         }
 
         // Drop all inventory items
+        System.out.println("  - Inventory items: " + inventory.size());
         for (Item item : inventory) {
+            System.out.println("    * " + item.getName());
             ItemEntity dropped = createDroppedItem(item);
             if (dropped != null) {
                 pendingDroppedItems.add(dropped);
             }
         }
         inventory.clear();
+
+        System.out.println("  - Total pending drops: " + pendingDroppedItems.size());
     }
 
     /**
@@ -1416,8 +1425,12 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             // Set the source item ID for recoverable throwables (knives, axes, rocks)
-            if (throwable.getRegistryId() != null) {
-                projectile.setSourceItemId(throwable.getRegistryId());
+            String registryId = throwable.getRegistryId();
+            if (registryId != null) {
+                projectile.setSourceItemId(registryId);
+                System.out.println("[MOB THROW] " + throwable.getName() + " with registryId: " + registryId);
+            } else {
+                System.out.println("[MOB THROW] " + throwable.getName() + " has NO registryId - won't drop on impact!");
             }
             activeProjectiles.add(projectile);
             // Add to pending list for EntityManager to collect
@@ -1425,6 +1438,7 @@ public class SpriteMobEntity extends MobEntity {
 
             // Consume the throwable item from inventory
             removeFromInventory(throwable);
+            System.out.println("[MOB THROW] Inventory now has " + inventory.size() + " items");
 
             // Also unequip if this was the equipped weapon
             if (equippedWeapon == throwable) {
@@ -2295,20 +2309,7 @@ public class SpriteMobEntity extends MobEntity {
 
         // Draw hitbox in debug mode
         if (debugDraw) {
-            g2d.setColor(new Color(255, 0, 0, 100));
-            Rectangle hitbox = getBounds();
-            g2d.fillRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
-            g2d.setColor(Color.RED);
-            g2d.drawRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
-
-            // Draw position marker
-            g2d.setColor(Color.YELLOW);
-            g2d.fillOval((int)posX - 3, (int)posY - 3, 6, 6);
-
-            // Draw state text
-            g2d.setColor(Color.WHITE);
-            g2d.drawString(currentState.name(), (int)posX - 20, (int)posY - spriteHeight - 10);
-            g2d.drawString("HP: " + currentHealth + "/" + maxHealth, (int)posX - 30, (int)posY - spriteHeight - 25);
+            drawDebugOverlay(g2d);
         }
 
         // Draw health bar
@@ -2351,6 +2352,144 @@ public class SpriteMobEntity extends MobEntity {
         // Border
         g2d.setColor(Color.BLACK);
         g2d.drawRect(barX, barY, barWidth, barHeight);
+    }
+
+    /**
+     * Draws comprehensive debug information above the mob.
+     * Shows AI state, inventory, equipped items, ammo counts, etc.
+     */
+    protected void drawDebugOverlay(Graphics2D g2d) {
+        // Draw hitbox
+        g2d.setColor(new Color(255, 0, 0, 100));
+        Rectangle hitbox = getBounds();
+        g2d.fillRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+        g2d.setColor(Color.RED);
+        g2d.drawRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+
+        // Draw position marker
+        g2d.setColor(Color.YELLOW);
+        g2d.fillOval((int)posX - 3, (int)posY - 3, 6, 6);
+
+        // Setup text rendering
+        Font smallFont = new Font("Monospaced", Font.PLAIN, 10);
+        g2d.setFont(smallFont);
+        FontMetrics fm = g2d.getFontMetrics();
+
+        // Build debug info lines
+        java.util.List<String> lines = new ArrayList<>();
+
+        // AI State and basic info
+        lines.add("State: " + currentState.name());
+        lines.add("HP: " + currentHealth + "/" + maxHealth);
+        if (currentMana > 0 || maxMana > 0) {
+            lines.add("MP: " + currentMana + "/" + maxMana);
+        }
+
+        // Equipped weapon
+        if (equippedWeapon != null) {
+            String weaponInfo = "Weapon: " + equippedWeapon.getName();
+            if (equippedWeapon.getRegistryId() != null) {
+                weaponInfo += " [" + equippedWeapon.getRegistryId() + "]";
+            }
+            lines.add(weaponInfo);
+
+            // Show ammo requirement for ranged weapons
+            String ammoType = equippedWeapon.getAmmoItemName();
+            if (ammoType != null && !ammoType.isEmpty() && !ammoType.equals("mana")) {
+                int ammoCount = countAmmoInInventory(ammoType);
+                lines.add("  Ammo (" + ammoType + "): " + ammoCount);
+            }
+        } else {
+            lines.add("Weapon: None");
+        }
+
+        // Equipped armor
+        if (equippedArmor != null) {
+            lines.add("Armor: " + equippedArmor.getName());
+        }
+
+        // Inventory contents
+        lines.add("Inventory (" + inventory.size() + "/" + maxInventorySize + "):");
+        if (inventory.isEmpty()) {
+            lines.add("  (empty)");
+        } else {
+            // Group items by name for cleaner display
+            java.util.Map<String, Integer> itemCounts = new java.util.LinkedHashMap<>();
+            for (Item item : inventory) {
+                String name = item.getName();
+                itemCounts.put(name, itemCounts.getOrDefault(name, 0) + 1);
+            }
+            for (java.util.Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
+                String itemLine = "  " + entry.getKey();
+                if (entry.getValue() > 1) {
+                    itemLine += " x" + entry.getValue();
+                }
+                lines.add(itemLine);
+            }
+        }
+
+        // Attack info
+        lines.add("AttackRange: " + (int)attackRange);
+        if (canFireProjectiles) {
+            lines.add("CanFire: " + projectileType);
+        }
+
+        // Calculate panel dimensions
+        int padding = 4;
+        int lineHeight = fm.getHeight();
+        int maxWidth = 0;
+        for (String line : lines) {
+            maxWidth = Math.max(maxWidth, fm.stringWidth(line));
+        }
+        int panelWidth = maxWidth + padding * 2;
+        int panelHeight = lines.size() * lineHeight + padding * 2;
+
+        // Position panel above the mob
+        int panelX = (int)posX - panelWidth / 2;
+        int panelY = (int)posY - spriteHeight - panelHeight - 20;
+
+        // Draw semi-transparent background
+        g2d.setColor(new Color(0, 0, 0, 200));
+        g2d.fillRect(panelX, panelY, panelWidth, panelHeight);
+        g2d.setColor(new Color(100, 100, 100));
+        g2d.drawRect(panelX, panelY, panelWidth, panelHeight);
+
+        // Draw text lines
+        g2d.setColor(Color.WHITE);
+        int textY = panelY + padding + fm.getAscent();
+        for (String line : lines) {
+            // Color code certain lines
+            if (line.startsWith("State:")) {
+                g2d.setColor(new Color(255, 200, 100));
+            } else if (line.startsWith("Weapon:")) {
+                g2d.setColor(new Color(150, 200, 255));
+            } else if (line.startsWith("Inventory")) {
+                g2d.setColor(new Color(200, 255, 150));
+            } else if (line.startsWith("  Ammo")) {
+                // Color based on ammo count
+                g2d.setColor(line.contains(": 0") ? new Color(255, 100, 100) : new Color(100, 255, 100));
+            } else {
+                g2d.setColor(Color.WHITE);
+            }
+            g2d.drawString(line, panelX + padding, textY);
+            textY += lineHeight;
+        }
+    }
+
+    /**
+     * Counts how many items of a given ammo type are in inventory.
+     */
+    protected int countAmmoInInventory(String ammoType) {
+        if (ammoType == null || ammoType.isEmpty()) return 0;
+        int count = 0;
+        for (Item item : inventory) {
+            if (item != null && item.getName() != null) {
+                if (item.getName().toLowerCase().contains(ammoType.toLowerCase())) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     /**
