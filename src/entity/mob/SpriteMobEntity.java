@@ -733,13 +733,12 @@ public class SpriteMobEntity extends MobEntity {
         }
 
         // Calculate approximate time to reach target horizontally
-        // Assume mostly horizontal travel (reasonable for aimed shots)
-        double timeToTarget = distanceX / speed;
+        // Speed is pixels-per-frame, so distanceX / speed gives frames directly
+        double framesInFlight = distanceX / speed;
 
         // Calculate how much the projectile will drop due to gravity
         // Using kinematic equation: drop = 0.5 * g * t^2
-        // Note: gravity is per-frame, so we need to scale by assumed frame rate (60 FPS)
-        double framesInFlight = timeToTarget * 60.0;  // Convert seconds to frames at 60 FPS
+        // Gravity is per-frame acceleration, framesInFlight is in frames
         double drop = 0.5 * gravity * framesInFlight * framesInFlight;
 
         // Aim higher to compensate for the drop
@@ -1602,10 +1601,52 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
+     * Finds and consumes ammo from inventory for a weapon.
+     * Each Item in mob inventory represents a single ammo unit.
+     * @param ammoType The name of the ammo type required (e.g., "arrow", "bolt")
+     * @return The consumed ammo item, or null if not found
+     */
+    protected Item consumeAmmoFromInventory(String ammoType) {
+        if (ammoType == null || ammoType.isEmpty() || ammoType.equals("mana")) {
+            return null;  // No physical ammo needed
+        }
+
+        // Look for matching ammo in inventory
+        for (int i = 0; i < inventory.size(); i++) {
+            Item item = inventory.get(i);
+            if (item != null && item.getName() != null) {
+                String itemName = item.getName().toLowerCase();
+                // Match if item name contains the ammo type (e.g., "arrow" matches "arrow", "fire arrow", etc.)
+                if (itemName.contains(ammoType.toLowerCase())) {
+                    // Found matching ammo - consume it (each Item instance is one unit)
+                    inventory.remove(i);
+                    return item;
+                }
+            }
+        }
+        return null;  // No matching ammo found
+    }
+
+    /**
      * Fires a projectile using the specified ranged weapon.
+     * Consumes ammo from inventory if the weapon requires it.
      */
     protected void fireProjectileFromWeapon(Item weapon) {
         if (weapon == null || target == null || !weapon.isRangedWeapon()) return;
+
+        // Check for and consume ammo if weapon requires it
+        String ammoType = weapon.getAmmoItemName();
+        Item consumedAmmo = null;
+        String ammoRegistryId = null;
+
+        if (ammoType != null && !ammoType.isEmpty() && !ammoType.equals("mana")) {
+            consumedAmmo = consumeAmmoFromInventory(ammoType);
+            if (consumedAmmo == null) {
+                // No ammo available - can't fire
+                return;
+            }
+            ammoRegistryId = consumedAmmo.getRegistryId();
+        }
 
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2;
@@ -1626,6 +1667,28 @@ public class SpriteMobEntity extends MobEntity {
         ProjectileEntity projectile = weapon.createProjectile(projX, projY, dx, dy, false);
         if (projectile != null) {
             projectile.setSource(this);
+
+            // Set source item ID so arrows/bolts can drop on impact
+            if (ammoRegistryId != null) {
+                projectile.setSourceItemId(ammoRegistryId);
+            }
+
+            // Apply bonus damage and status effects from special ammo
+            if (consumedAmmo != null) {
+                int bonusDamage = consumedAmmo.getDamage();
+                if (bonusDamage > 0) {
+                    projectile.setDamage(projectile.getDamage() + bonusDamage);
+                }
+                if (consumedAmmo.hasStatusEffect()) {
+                    projectile.setStatusEffect(
+                        consumedAmmo.getStatusEffectType(),
+                        consumedAmmo.getStatusEffectDuration(),
+                        consumedAmmo.getStatusEffectDamagePerTick(),
+                        consumedAmmo.getStatusEffectDamageMultiplier()
+                    );
+                }
+            }
+
             activeProjectiles.add(projectile);
             // Add to pending list for EntityManager to collect
             pendingProjectiles.add(projectile);
@@ -2037,15 +2100,39 @@ public class SpriteMobEntity extends MobEntity {
             return item;
         }
 
-        // Create basic item
+        // Create basic item with proper category detection
         Item.ItemCategory category = Item.ItemCategory.MATERIAL;
         String type = entity.getItemType().toLowerCase();
         switch (type) {
-            case "weapon": category = Item.ItemCategory.WEAPON; break;
+            case "weapon":
+            case "melee":
+                category = Item.ItemCategory.WEAPON;
+                break;
             case "ranged_weapon":
-            case "bow": category = Item.ItemCategory.RANGED_WEAPON; break;
-            case "armor": category = Item.ItemCategory.ARMOR; break;
-            case "food": category = Item.ItemCategory.FOOD; break;
+            case "ranged":
+            case "bow":
+                category = Item.ItemCategory.RANGED_WEAPON;
+                break;
+            case "armor":
+                category = Item.ItemCategory.ARMOR;
+                break;
+            case "food":
+                category = Item.ItemCategory.FOOD;
+                break;
+            case "throwable":
+                category = Item.ItemCategory.THROWABLE;
+                break;
+            case "ammo":
+                // Ammo items are stored as MATERIAL (arrows, bolts, etc.)
+                category = Item.ItemCategory.MATERIAL;
+                break;
+            case "tool":
+                category = Item.ItemCategory.TOOL;
+                break;
+            case "consumable":
+            case "potion":
+                category = Item.ItemCategory.POTION;
+                break;
         }
 
         Item basicItem = new Item(entity.getItemName(), category);
@@ -2055,14 +2142,20 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
-     * Checks if this mob can equip the given item.
+     * Checks if this mob can pick up and use the given item.
+     * Humanoid mobs can use all items (like players).
+     * Quadrupeds are more limited.
      */
     protected boolean canEquipItem(Item item) {
+        if (item == null) return false;
+
         if (!isHumanoid) {
             // Quadrupeds can only use certain items
             return item.getCategory() == Item.ItemCategory.FOOD ||
                    item.getCategory() == Item.ItemCategory.MATERIAL;
         }
+
+        // Humanoid mobs can use all items like the player
         return true;
     }
 

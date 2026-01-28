@@ -1170,8 +1170,8 @@ public class ProjectileEntity extends Entity {
 
     /**
      * Checks if this projectile type should drop an item on impact.
-     * Recoverable throwables (knives, axes, rocks) drop items.
-     * Consumable throwables (bombs, potions) do not drop items.
+     * All physical throwables drop items so they can be recovered.
+     * Only magical projectiles (that have no physical form) don't drop.
      *
      * @return true if this projectile should drop an item on impact
      */
@@ -1180,21 +1180,24 @@ public class ProjectileEntity extends Entity {
             return false;
         }
 
+        // All physical projectiles drop on impact - only magical ones don't
         switch (type) {
-            case THROWING_KNIFE:
-            case THROWING_AXE:
-            case ROCK:
-                return true;
-            case BOMB:
-            case POTION:
             case FIREBALL:
             case ICEBALL:
             case MAGIC_BOLT:
+                // Magical projectiles don't drop physical items
+                return false;
+            case THROWING_KNIFE:
+            case THROWING_AXE:
+            case ROCK:
+            case BOMB:
+            case POTION:
             case ARROW:
             case BOLT:
             case FISH:
             default:
-                return false;
+                // All physical projectiles drop on impact
+                return true;
         }
     }
 
