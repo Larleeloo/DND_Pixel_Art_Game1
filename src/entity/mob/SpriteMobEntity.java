@@ -83,7 +83,7 @@ public class SpriteMobEntity extends MobEntity {
     protected double projectileTimer = 0;
     protected double preferredAttackRange = 200; // Range to start firing
     protected List<ProjectileEntity> activeProjectiles = new ArrayList<>();
-    protected List<Entity> entitiesReference = null;  // Reference to main entities list for projectile drawing
+    protected List<ProjectileEntity> pendingProjectiles = new ArrayList<>();  // Projectiles to add to game (collected by EntityManager)
 
     // Eating animation (for herbivore mobs)
     protected boolean isEating = false;
@@ -734,10 +734,8 @@ public class SpriteMobEntity extends MobEntity {
         );
         projectile.setSource(this);
         activeProjectiles.add(projectile);
-        // Add to main entities list so projectile is drawn by EntityManager
-        if (entitiesReference != null) {
-            entitiesReference.add(projectile);
-        }
+        // Add to pending list for EntityManager to collect (avoids ConcurrentModificationException)
+        pendingProjectiles.add(projectile);
 
         projectileTimer = projectileCooldown;
         setAnimationState("fire");
@@ -980,6 +978,23 @@ public class SpriteMobEntity extends MobEntity {
      */
     public boolean hasPendingDroppedItems() {
         return !pendingDroppedItems.isEmpty();
+    }
+
+    /**
+     * Gets and clears any pending projectiles.
+     * Call this from EntityManager to add projectiles to the game world.
+     */
+    public List<ProjectileEntity> collectPendingProjectiles() {
+        List<ProjectileEntity> projectiles = new ArrayList<>(pendingProjectiles);
+        pendingProjectiles.clear();
+        return projectiles;
+    }
+
+    /**
+     * Checks if there are pending projectiles to collect.
+     */
+    public boolean hasPendingProjectiles() {
+        return !pendingProjectiles.isEmpty();
     }
 
     /**
@@ -1326,10 +1341,8 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
-            // Add to main entities list so projectile is drawn
-            if (entitiesReference != null) {
-                entitiesReference.add(projectile);
-            }
+            // Add to pending list for EntityManager to collect
+            pendingProjectiles.add(projectile);
 
             // Consume the throwable item
             removeFromInventory(throwable);
@@ -1384,10 +1397,8 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
-            // Add to main entities list so projectile is drawn
-            if (entitiesReference != null) {
-                entitiesReference.add(projectile);
-            }
+            // Add to pending list for EntityManager to collect
+            pendingProjectiles.add(projectile);
 
             setAnimationState("cast");
             return true;
@@ -1531,10 +1542,8 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
-            // Add to main entities list so projectile is drawn
-            if (entitiesReference != null) {
-                entitiesReference.add(projectile);
-            }
+            // Add to pending list for EntityManager to collect
+            pendingProjectiles.add(projectile);
             setAnimationState("fire");
         }
     }
@@ -1808,9 +1817,6 @@ public class SpriteMobEntity extends MobEntity {
 
     @Override
     public void update(double deltaTime, List<Entity> entities) {
-        // Store reference to entities list for projectile spawning
-        this.entitiesReference = entities;
-
         // Update timers
         long currentTime = System.currentTimeMillis();
         long elapsed = currentTime - lastUpdateTime;
