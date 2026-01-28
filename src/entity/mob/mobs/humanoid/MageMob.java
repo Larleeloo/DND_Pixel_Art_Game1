@@ -109,6 +109,8 @@ public class MageMob extends SpriteMobEntity {
 
     /**
      * Initializes the mage's inventory with magic weapons based on magic type.
+     * Note: updateMagicType() already configures the ranged attack settings correctly,
+     * so we just need to add the weapon to inventory for drops on death and visuals.
      */
     private void initializeMageInventory() {
         Item weapon;
@@ -131,20 +133,17 @@ public class MageMob extends SpriteMobEntity {
                 break;
         }
 
-        // Add and equip the weapon
+        // Add weapon to inventory for drops on death
         addToInventory(weapon);
-        equipWeapon(weapon);
 
-        // Update ranged attack configuration based on equipped weapon
-        if (weapon.isRangedWeapon()) {
-            setRangedAttack(
-                weapon.getProjectileType(),
-                weapon.getProjectileDamage(),
-                weapon.getProjectileSpeed(),
-                2.0,  // Cooldown
-                weapon.getRange() > 0 ? weapon.getRange() : 280
-            );
-        }
+        // Set as equipped weapon directly (don't use equipWeapon() which would
+        // override the attack range configured by updateMagicType())
+        equippedWeapon = weapon;
+        inventory.remove(weapon);
+
+        // Restore the proper attack range from magic type configuration
+        // (equipWeapon would have overridden this, so we don't call it)
+        updateMagicType();
     }
 
     /**
