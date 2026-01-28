@@ -86,6 +86,7 @@ public class Item {
     private ItemRarity rarity;
     private boolean stackable;
     private int maxStackSize;
+    private String registryId;  // Registry ID for item lookup (e.g., "throwing_knife")
 
     // Item icon for inventory display
     private BufferedImage icon;
@@ -219,6 +220,7 @@ public class Item {
         this.rarity = original.rarity;
         this.stackable = original.stackable;
         this.maxStackSize = original.maxStackSize;
+        this.registryId = original.registryId;
         this.icon = original.icon;
         this.iconAnimation = original.iconAnimation;
         this.texturePath = original.texturePath;
@@ -660,6 +662,14 @@ public class Item {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getRegistryId() {
+        return registryId;
+    }
+
+    public void setRegistryId(String id) {
+        this.registryId = id;
     }
 
     public String getDescription() {

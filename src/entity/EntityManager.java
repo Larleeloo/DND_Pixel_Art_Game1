@@ -105,6 +105,14 @@ public class EntityManager {
                 // Just check if they're inactive and need removal
                 ProjectileEntity proj = (ProjectileEntity) e;
                 if (!proj.isActive()) {
+                    // Collect dropped items from recoverable throwables (knives, axes, rocks)
+                    if (proj.hasPendingDroppedItem()) {
+                        ItemEntity droppedItem = proj.collectDroppedItem();
+                        if (droppedItem != null) {
+                            droppedItem.setEntityList(entities);
+                            toAdd.add(droppedItem);
+                        }
+                    }
                     toRemove.add(e);
                 }
             } else {
