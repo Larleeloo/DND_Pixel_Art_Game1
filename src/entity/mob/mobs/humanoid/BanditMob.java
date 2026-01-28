@@ -126,6 +126,7 @@ public class BanditMob extends SpriteMobEntity {
 
         // Configure ranged attack range for throwables
         this.preferredAttackRange = 200;
+        this.attackRange = 200;  // Match attackRange so AI enters attack state at range
         this.projectileCooldown = 1.5;
     }
 

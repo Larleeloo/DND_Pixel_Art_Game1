@@ -116,6 +116,7 @@ public class OrcMob extends SpriteMobEntity {
 
         // Configure ranged attack range for throwables
         this.preferredAttackRange = 180;
+        this.attackRange = 180;  // Match attackRange so AI enters attack state at range
         this.projectileCooldown = 2.0;  // Slow throw rate
     }
 
