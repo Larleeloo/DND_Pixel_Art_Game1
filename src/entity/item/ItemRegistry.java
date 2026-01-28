@@ -586,7 +586,10 @@ public class ItemRegistry {
         Item template = templates.get(id);
         if (template != null) {
             // Use copy() to preserve subclass types (e.g., MirrorToOtherRealms)
-            return template.copy();
+            Item copy = template.copy();
+            // Set the registry ID so throwables can track their source for drops
+            copy.setRegistryId(id);
+            return copy;
         }
         System.err.println("ItemRegistry: Unknown item ID: " + id);
         return null;

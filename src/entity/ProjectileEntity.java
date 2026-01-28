@@ -3,6 +3,9 @@ package entity;
 import entity.player.*;
 import entity.mob.*;
 import entity.mob.SpriteMobEntity.StatusEffect;
+import entity.item.ItemEntity;
+import entity.item.ItemRegistry;
+import entity.item.Item;
 import block.*;
 import graphics.*;
 import animation.*;
@@ -101,6 +104,10 @@ public class ProjectileEntity extends Entity {
     private double explosionDuration = 0.3;
     private int explosionFrame = 0;
     private List<Entity> entitiesReference;  // Reference to entities for explosion damage
+
+    // Source item tracking for throwables that can be recovered
+    private String sourceItemId = null;  // Registry ID for creating dropped items
+    private entity.item.ItemEntity pendingDroppedItem = null;  // Item to drop on impact
 
     // Timing
     private long lastUpdateTime;
@@ -842,6 +849,8 @@ public class ProjectileEntity extends Entity {
             velX = 0;
             velY = 0;
         } else {
+            // Create dropped item for recoverable throwables (knives, axes, rocks)
+            createDroppedItem();
             active = false;
         }
     }
@@ -1138,6 +1147,93 @@ public class ProjectileEntity extends Entity {
             case POISONED: return StatusEffect.POISONED;
             default: return StatusEffect.NONE;
         }
+    }
+
+    // ==================== Throwable Item Drop Methods ====================
+
+    /**
+     * Sets the source item ID for this projectile.
+     * Used to create dropped items when recoverable throwables impact.
+     *
+     * @param itemId The registry ID of the source item
+     */
+    public void setSourceItemId(String itemId) {
+        this.sourceItemId = itemId;
+    }
+
+    /**
+     * Gets the source item ID.
+     */
+    public String getSourceItemId() {
+        return sourceItemId;
+    }
+
+    /**
+     * Checks if this projectile type should drop an item on impact.
+     * Recoverable throwables (knives, axes, rocks) drop items.
+     * Consumable throwables (bombs, potions) do not drop items.
+     *
+     * @return true if this projectile should drop an item on impact
+     */
+    public boolean shouldDropOnImpact() {
+        if (sourceItemId == null || sourceItemId.isEmpty()) {
+            return false;
+        }
+
+        switch (type) {
+            case THROWING_KNIFE:
+            case THROWING_AXE:
+            case ROCK:
+                return true;
+            case BOMB:
+            case POTION:
+            case FIREBALL:
+            case ICEBALL:
+            case MAGIC_BOLT:
+            case ARROW:
+            case BOLT:
+            case FISH:
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Creates a dropped item at the current projectile position.
+     * Called on impact for recoverable throwables.
+     */
+    private void createDroppedItem() {
+        if (!shouldDropOnImpact() || sourceItemId == null) {
+            return;
+        }
+
+        // Create the dropped item entity at impact location
+        ItemEntity dropped = new ItemEntity(x, y, sourceItemId);
+        dropped.setStackCount(1);  // Single item drop
+        dropped.enablePhysics(0, -2, 720);  // Small upward bounce
+        dropped.setShowLightBeam(true);
+
+        // Store for collection by EntityManager
+        this.pendingDroppedItem = dropped;
+    }
+
+    /**
+     * Gets and clears the pending dropped item.
+     * Call this from EntityManager to add dropped items to the world.
+     *
+     * @return The dropped item, or null if none
+     */
+    public ItemEntity collectDroppedItem() {
+        ItemEntity item = this.pendingDroppedItem;
+        this.pendingDroppedItem = null;
+        return item;
+    }
+
+    /**
+     * Checks if there is a pending dropped item.
+     */
+    public boolean hasPendingDroppedItem() {
+        return pendingDroppedItem != null;
     }
 
     @Override

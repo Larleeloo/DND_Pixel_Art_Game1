@@ -705,29 +705,105 @@ public class SpriteMobEntity extends MobEntity {
     }
 
     /**
+     * Calculates a gravity-compensated aim direction for projectiles.
+     * Adjusts the aim upward to account for the projectile's arc when gravity is applied.
+     *
+     * @param startX Starting X position of the projectile
+     * @param startY Starting Y position of the projectile
+     * @param targetX Target X position
+     * @param targetY Target Y position
+     * @param speed Projectile speed
+     * @param gravity Gravity value applied to the projectile per frame
+     * @return double[] containing [dirX, dirY] normalized direction
+     */
+    protected double[] calculateGravityCompensatedAim(double startX, double startY,
+                                                       double targetX, double targetY,
+                                                       double speed, double gravity) {
+        double dx = targetX - startX;
+        double dy = targetY - startY;
+        double distanceX = Math.abs(dx);
+
+        // If gravity is negligible or target is very close, use direct aim
+        if (gravity < 0.05 || distanceX < 50) {
+            double length = Math.sqrt(dx * dx + dy * dy);
+            if (length > 0) {
+                return new double[] { dx / length, dy / length };
+            }
+            return new double[] { dx > 0 ? 1 : -1, 0 };
+        }
+
+        // Calculate approximate time to reach target horizontally
+        // Assume mostly horizontal travel (reasonable for aimed shots)
+        double timeToTarget = distanceX / speed;
+
+        // Calculate how much the projectile will drop due to gravity
+        // Using kinematic equation: drop = 0.5 * g * t^2
+        // Note: gravity is per-frame, so we need to scale by assumed frame rate (60 FPS)
+        double framesInFlight = timeToTarget * 60.0;  // Convert seconds to frames at 60 FPS
+        double drop = 0.5 * gravity * framesInFlight * framesInFlight;
+
+        // Aim higher to compensate for the drop
+        double compensatedTargetY = targetY - drop;
+
+        // Calculate new direction to compensated target
+        double compensatedDy = compensatedTargetY - startY;
+        double length = Math.sqrt(dx * dx + compensatedDy * compensatedDy);
+
+        if (length > 0) {
+            return new double[] { dx / length, compensatedDy / length };
+        }
+        return new double[] { dx > 0 ? 1 : -1, 0 };
+    }
+
+    /**
+     * Gets the gravity value for a given projectile type.
+     * This mirrors the values set in ProjectileEntity.configureForType().
+     *
+     * @param type The projectile type
+     * @return Gravity value per frame
+     */
+    protected double getProjectileGravity(ProjectileEntity.ProjectileType type) {
+        if (type == null) return 0.0;
+
+        switch (type) {
+            case ARROW:           return 0.3;
+            case BOLT:            return 0.2;
+            case MAGIC_BOLT:      return 0.0;
+            case FIREBALL:        return 0.0;
+            case ICEBALL:         return 0.1;
+            case THROWING_KNIFE:  return 0.4;
+            case THROWING_AXE:    return 0.5;
+            case ROCK:            return 0.6;
+            case POTION:          return 0.5;
+            case BOMB:            return 0.4;
+            case FISH:            return 0.2;
+            default:              return 0.0;
+        }
+    }
+
+    /**
      * Fires a projectile at the target.
      */
     protected void fireProjectile() {
         if (target == null || projectileType == null) return;
 
-        // Calculate direction to target
+        // Calculate direction to target with gravity compensation
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2;
         double targetCenterY = targetBounds.y + targetBounds.height / 2;
 
-        double dx = targetCenterX - posX;
-        double dy = targetCenterY - (posY - spriteHeight / 2);
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length > 0) {
-            dx /= length;
-            dy /= length;
-        }
-
-        // Create projectile
         int projX = (int)posX;
         int projY = (int)(posY - spriteHeight / 2);
 
+        // Calculate gravity-compensated aim direction
+        double gravity = getProjectileGravity(projectileType);
+        double[] aim = calculateGravityCompensatedAim(
+            projX, projY, targetCenterX, targetCenterY, projectileSpeed, gravity
+        );
+        double dx = aim[0];
+        double dy = aim[1];
+
+        // Create projectile
         ProjectileEntity projectile = new ProjectileEntity(
             projX, projY, projectileType, projectileDamage,
             dx * projectileSpeed, dy * projectileSpeed, false
@@ -1316,23 +1392,23 @@ public class SpriteMobEntity extends MobEntity {
         if (throwable == null || target == null) return false;
         if (!throwable.isRangedWeapon()) return false;
 
-        // Calculate direction to target
+        // Calculate direction to target with gravity compensation
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2;
         double targetCenterY = targetBounds.y + targetBounds.height / 2;
 
-        double dx = targetCenterX - posX;
-        double dy = targetCenterY - (posY - spriteHeight / 2);
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length > 0) {
-            dx /= length;
-            dy /= length;
-        }
-
         // Create projectile from the throwable item
         int projX = (int)posX;
         int projY = (int)(posY - spriteHeight / 2);
+
+        // Calculate gravity-compensated aim direction
+        double gravity = getProjectileGravity(throwable.getProjectileType());
+        double speed = throwable.getProjectileSpeed();
+        double[] aim = calculateGravityCompensatedAim(
+            projX, projY, targetCenterX, targetCenterY, speed, gravity
+        );
+        double dx = aim[0];
+        double dy = aim[1];
 
         ProjectileEntity projectile = throwable.createProjectile(
             projX, projY, dx, dy, false
@@ -1340,12 +1416,21 @@ public class SpriteMobEntity extends MobEntity {
 
         if (projectile != null) {
             projectile.setSource(this);
+            // Set the source item ID for recoverable throwables (knives, axes, rocks)
+            if (throwable.getRegistryId() != null) {
+                projectile.setSourceItemId(throwable.getRegistryId());
+            }
             activeProjectiles.add(projectile);
             // Add to pending list for EntityManager to collect
             pendingProjectiles.add(projectile);
 
-            // Consume the throwable item
+            // Consume the throwable item from inventory
             removeFromInventory(throwable);
+
+            // Also unequip if this was the equipped weapon
+            if (equippedWeapon == throwable) {
+                equippedWeapon = null;
+            }
 
             setAnimationState("fire");
             return true;
@@ -1372,23 +1457,23 @@ public class SpriteMobEntity extends MobEntity {
             return false;
         }
 
-        // Calculate direction to target
+        // Calculate direction to target with gravity compensation
         Rectangle targetBounds = target.getBounds();
         double targetCenterX = targetBounds.x + targetBounds.width / 2;
         double targetCenterY = targetBounds.y + targetBounds.height / 2;
 
-        double dx = targetCenterX - posX;
-        double dy = targetCenterY - (posY - spriteHeight / 2);
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length > 0) {
-            dx /= length;
-            dy /= length;
-        }
-
         // Create projectile from the weapon
         int projX = (int)posX;
         int projY = (int)(posY - spriteHeight / 2);
+
+        // Calculate gravity-compensated aim direction (mostly negligible for magic)
+        double gravity = getProjectileGravity(weapon.getProjectileType());
+        double speed = weapon.getProjectileSpeed();
+        double[] aim = calculateGravityCompensatedAim(
+            projX, projY, targetCenterX, targetCenterY, speed, gravity
+        );
+        double dx = aim[0];
+        double dy = aim[1];
 
         ProjectileEntity projectile = weapon.createProjectile(
             projX, projY, dx, dy, false
@@ -1526,17 +1611,17 @@ public class SpriteMobEntity extends MobEntity {
         double targetCenterX = targetBounds.x + targetBounds.width / 2;
         double targetCenterY = targetBounds.y + targetBounds.height / 2;
 
-        double dx = targetCenterX - posX;
-        double dy = targetCenterY - (posY - spriteHeight / 2);
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length > 0) {
-            dx /= length;
-            dy /= length;
-        }
-
         int projX = (int)posX;
         int projY = (int)(posY - spriteHeight / 2);
+
+        // Calculate gravity-compensated aim direction
+        double gravity = getProjectileGravity(weapon.getProjectileType());
+        double speed = weapon.getProjectileSpeed();
+        double[] aim = calculateGravityCompensatedAim(
+            projX, projY, targetCenterX, targetCenterY, speed, gravity
+        );
+        double dx = aim[0];
+        double dy = aim[1];
 
         ProjectileEntity projectile = weapon.createProjectile(projX, projY, dx, dy, false);
         if (projectile != null) {
