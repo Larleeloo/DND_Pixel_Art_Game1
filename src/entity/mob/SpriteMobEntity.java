@@ -1992,7 +1992,9 @@ public class SpriteMobEntity extends MobEntity {
 
             if (!proj.isActive()) {
                 iterator.remove();
-                entities.remove(proj);
+                // Don't remove from entities here - it causes ConcurrentModificationException
+                // The projectile will stop drawing/updating when inactive
+                // EntityManager will clean up inactive projectiles
             }
         }
     }

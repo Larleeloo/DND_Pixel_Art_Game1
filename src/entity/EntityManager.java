@@ -100,18 +100,25 @@ public class EntityManager {
                 ItemEntity item = (ItemEntity) e;
                 item.setEntityList(entities);
                 item.update(input);
+            } else if (e instanceof ProjectileEntity) {
+                // Projectiles are updated by the mob/player that fired them
+                // Just check if they're inactive and need removal
+                ProjectileEntity proj = (ProjectileEntity) e;
+                if (!proj.isActive()) {
+                    toRemove.add(e);
+                }
             } else {
                 // Regular entity update
                 e.update(input);
             }
         }
 
-        // Add dropped items to the world
+        // Add dropped items and projectiles to the world
         for (Entity e : toAdd) {
             entities.add(e);
         }
 
-        // Remove dead mobs
+        // Remove dead mobs and inactive projectiles
         for (Entity e : toRemove) {
             entities.remove(e);
         }
