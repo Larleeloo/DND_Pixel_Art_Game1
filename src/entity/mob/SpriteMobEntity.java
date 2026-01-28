@@ -1583,11 +1583,9 @@ public class SpriteMobEntity extends MobEntity {
             }
         }
 
-        // Fall back to default ranged attack if configured
-        if (canFireProjectiles && dist <= preferredAttackRange && projectileTimer <= 0) {
-            fireProjectile();
-            return;
-        }
+        // NOTE: Do NOT fall back to fireProjectile() here - humanoid mobs with weapons
+        // should only attack using their equipped weapons and ammo. The fireProjectile()
+        // method is for non-humanoid mobs with natural ranged attacks (like spiders).
 
         // Fall back to basic melee attack
         if (attackTimer <= 0 && dist <= attackRange) {
