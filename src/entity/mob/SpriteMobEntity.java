@@ -83,6 +83,7 @@ public class SpriteMobEntity extends MobEntity {
     protected double projectileTimer = 0;
     protected double preferredAttackRange = 200; // Range to start firing
     protected List<ProjectileEntity> activeProjectiles = new ArrayList<>();
+    protected List<Entity> entitiesReference = null;  // Reference to main entities list for projectile drawing
 
     // Eating animation (for herbivore mobs)
     protected boolean isEating = false;
@@ -733,6 +734,10 @@ public class SpriteMobEntity extends MobEntity {
         );
         projectile.setSource(this);
         activeProjectiles.add(projectile);
+        // Add to main entities list so projectile is drawn by EntityManager
+        if (entitiesReference != null) {
+            entitiesReference.add(projectile);
+        }
 
         projectileTimer = projectileCooldown;
         setAnimationState("fire");
@@ -1321,6 +1326,10 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
+            // Add to main entities list so projectile is drawn
+            if (entitiesReference != null) {
+                entitiesReference.add(projectile);
+            }
 
             // Consume the throwable item
             removeFromInventory(throwable);
@@ -1375,6 +1384,10 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
+            // Add to main entities list so projectile is drawn
+            if (entitiesReference != null) {
+                entitiesReference.add(projectile);
+            }
 
             setAnimationState("cast");
             return true;
@@ -1518,6 +1531,10 @@ public class SpriteMobEntity extends MobEntity {
         if (projectile != null) {
             projectile.setSource(this);
             activeProjectiles.add(projectile);
+            // Add to main entities list so projectile is drawn
+            if (entitiesReference != null) {
+                entitiesReference.add(projectile);
+            }
             setAnimationState("fire");
         }
     }
@@ -1791,6 +1808,9 @@ public class SpriteMobEntity extends MobEntity {
 
     @Override
     public void update(double deltaTime, List<Entity> entities) {
+        // Store reference to entities list for projectile spawning
+        this.entitiesReference = entities;
+
         // Update timers
         long currentTime = System.currentTimeMillis();
         long elapsed = currentTime - lastUpdateTime;

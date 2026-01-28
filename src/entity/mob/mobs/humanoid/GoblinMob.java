@@ -125,6 +125,7 @@ public class GoblinMob extends SpriteMobEntity {
 
         // Configure ranged attack range for throwables
         this.preferredAttackRange = 150;
+        this.attackRange = 150;  // Match attackRange so AI enters attack state at range
         this.projectileCooldown = 1.0;  // Fast throw rate
     }
 
