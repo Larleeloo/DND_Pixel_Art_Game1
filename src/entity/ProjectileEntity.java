@@ -1206,9 +1206,16 @@ public class ProjectileEntity extends Entity {
      * Called on impact for recoverable throwables.
      */
     private void createDroppedItem() {
-        if (!shouldDropOnImpact() || sourceItemId == null) {
+        if (!shouldDropOnImpact()) {
+            System.out.println("[PROJECTILE] " + type + " shouldDropOnImpact=false (sourceItemId=" + sourceItemId + ")");
             return;
         }
+        if (sourceItemId == null) {
+            System.out.println("[PROJECTILE] " + type + " sourceItemId is null - cannot drop");
+            return;
+        }
+
+        System.out.println("[PROJECTILE] " + type + " creating drop for: " + sourceItemId + " at (" + x + "," + y + ")");
 
         // Create the dropped item entity at impact location
         ItemEntity dropped = new ItemEntity(x, y, sourceItemId);
