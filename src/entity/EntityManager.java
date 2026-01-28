@@ -73,7 +73,7 @@ public class EntityManager {
                 MobEntity mob = (MobEntity) e;
                 mob.update(deltaTime, entities);
 
-                // Collect dropped items from sprite mobs
+                // Collect dropped items and fired projectiles from sprite mobs
                 if (mob instanceof SpriteMobEntity) {
                     SpriteMobEntity spriteMob = (SpriteMobEntity) mob;
                     if (spriteMob.hasPendingDroppedItems()) {
@@ -83,6 +83,11 @@ public class EntityManager {
                             item.setEntityList(entities);
                         }
                         toAdd.addAll(droppedItems);
+                    }
+                    // Collect fired projectiles (deferred to avoid ConcurrentModificationException)
+                    if (spriteMob.hasPendingProjectiles()) {
+                        List<ProjectileEntity> projectiles = spriteMob.collectPendingProjectiles();
+                        toAdd.addAll(projectiles);
                     }
                 }
 
