@@ -1880,7 +1880,24 @@ public class GameScene implements Scene {
                 return null;
             }
 
-            SpriteMobEntity mob = new SpriteMobEntity(m.x, m.y, m.spriteDir);
+            // Try to auto-detect mob type from spriteDir (e.g., "assets/mobs/mage" -> "mage")
+            // This allows using proper mob classes (MageMob, SkeletonMob, etc.) with their
+            // configured stats instead of generic SpriteMobEntity with default stats
+            String detectedType = extractMobTypeFromSpriteDir(m.spriteDir);
+            SpriteMobEntity mob = null;
+
+            if (detectedType != null && MobRegistry.isRegistered(detectedType)) {
+                mob = MobRegistry.create(detectedType, m.x, m.y, m.spriteDir);
+                if (mob != null) {
+                    System.out.println("GameScene: Auto-detected " + detectedType + " mob from spriteDir");
+                }
+            }
+
+            // Fallback to generic SpriteMobEntity if no matching type found
+            if (mob == null) {
+                mob = new SpriteMobEntity(m.x, m.y, m.spriteDir);
+            }
+
             applyMobBehavior(mob, m.behavior);
 
             // Enable debug drawing if requested
@@ -1894,6 +1911,42 @@ public class GameScene implements Scene {
 
         System.err.println("GameScene: Unknown mobType: " + type);
         return null;
+    }
+
+    /**
+     * Extracts the mob type from a sprite directory path.
+     * For example, "assets/mobs/mage" -> "mage", "assets/mobs/mage/sprites" -> "mage"
+     *
+     * @param spriteDir The sprite directory path
+     * @return The extracted mob type, or null if cannot be determined
+     */
+    private String extractMobTypeFromSpriteDir(String spriteDir) {
+        if (spriteDir == null || spriteDir.isEmpty()) return null;
+
+        // Normalize path separators
+        String normalized = spriteDir.replace("\\", "/");
+
+        // Remove trailing slash if present
+        if (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+
+        // Get the last part of the path
+        String[] parts = normalized.split("/");
+        if (parts.length == 0) return null;
+
+        // Check if last part is "sprites" and get the second-to-last
+        String candidate = parts[parts.length - 1];
+        if (candidate.equals("sprites") && parts.length > 1) {
+            candidate = parts[parts.length - 2];
+        }
+
+        // Only return if it looks like a mob type (not a generic folder like "assets")
+        if (candidate.equals("assets") || candidate.equals("mobs")) {
+            return null;
+        }
+
+        return candidate.toLowerCase();
     }
 
     /**
