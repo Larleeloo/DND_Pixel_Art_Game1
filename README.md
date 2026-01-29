@@ -400,9 +400,9 @@ ITEM CLASS LOCATION (entity/item/items/):
   Clothing       | items/clothing/                   | 12
   Collectibles   | items/collectibles/               | 36
   Accessories    | items/accessories/                | 1
-  Blocks         | items/blocks/                     | 9
+  Blocks         | items/blocks/                     | 17
   --------------------------------------------------------
-  TOTAL                                              | 190
+  TOTAL                                              | 198
 
 ITEM CATEGORIES (ItemCategory enum):
   WEAPON, RANGED_WEAPON, TOOL, ARMOR, CLOTHING, BLOCK, FOOD, POTION,
@@ -565,7 +565,7 @@ BLOCK TYPES (BlockType enum):
   STONE       | Yes   | Hard rock
   COBBLESTONE | Yes   | Broken stone
   WOOD        | Yes   | Tree wood
-  LEAVES      | Yes   | Tree foliage
+  LEAVES      | No    | Tree foliage (passable)
   BRICK       | Yes   | Construction
   SAND        | Yes   | Beach/desert
   WATER       | No    | Liquid (non-solid)
@@ -573,6 +573,10 @@ BLOCK TYPES (BlockType enum):
   COAL_ORE    | Yes   | Mineable ore
   IRON_ORE    | Yes   | Mineable ore
   GOLD_ORE    | Yes   | Mineable ore
+  SNOW        | Yes   | Packed snow block
+  ICE         | No    | Frozen ice (slippery)
+  MOSS        | Yes   | Moss-covered block
+  VINES       | No    | Hanging vines (passable)
   PLATFORM    | Semi  | One-way platform
 
 BLOCK OVERLAYS (BlockOverlay enum):

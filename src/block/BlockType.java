@@ -32,6 +32,12 @@ public enum BlockType {
     IRON_ORE("assets/textures/blocks/iron_ore.png", true, "Iron Ore"),
     GOLD_ORE("assets/textures/blocks/gold_ore.png", true, "Gold Ore"),
 
+    // Weather/Environment blocks
+    SNOW("assets/textures/blocks/snow.png", true, "Snow"),
+    ICE("assets/textures/blocks/ice.png", false, "Ice"),
+    MOSS("assets/textures/blocks/moss.png", true, "Moss"),
+    VINES("assets/textures/blocks/vines.png", false, "Vines"),
+
     // Platform block (for backwards compatibility with obstacle.png)
     PLATFORM("assets/obstacle.png", true, "Platform");
 
