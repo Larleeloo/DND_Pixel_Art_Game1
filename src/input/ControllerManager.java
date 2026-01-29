@@ -85,9 +85,11 @@ public class ControllerManager {
     private boolean prevButtonLB = false;
     private boolean prevButtonRB = false;
 
-    // Right trigger click state (for "just pressed" detection)
+    // Trigger click states (for "just pressed" detection)
     private boolean rightTriggerPressed = false;
     private boolean prevRightTriggerPressed = false;
+    private boolean leftTriggerPressed = false;
+    private boolean prevLeftTriggerPressed = false;
     private static final float TRIGGER_THRESHOLD = 0.5f;
 
     // Triggers (0.0 to 1.0)
@@ -215,6 +217,7 @@ public class ControllerManager {
         prevButtonLB = buttonLB;
         prevButtonRB = buttonRB;
         prevRightTriggerPressed = rightTriggerPressed;
+        prevLeftTriggerPressed = leftTriggerPressed;
 
         // Save previous D-Pad states
         prevDpadUp = dpadUp;
@@ -298,8 +301,9 @@ public class ControllerManager {
         // Update virtual mouse position based on left stick
         updateVirtualMouse();
 
-        // Update right trigger pressed state (for click detection)
+        // Update trigger pressed states (for click detection)
         rightTriggerPressed = rightTrigger >= TRIGGER_THRESHOLD;
+        leftTriggerPressed = leftTrigger >= TRIGGER_THRESHOLD;
     }
 
     /**
@@ -481,6 +485,27 @@ public class ControllerManager {
      */
     public boolean isRightTriggerJustReleased() {
         return !rightTriggerPressed && prevRightTriggerPressed;
+    }
+
+    /**
+     * Check if Left Trigger is pressed (maps to left mouse click for firing).
+     */
+    public boolean isLeftTriggerPressed() {
+        return leftTriggerPressed;
+    }
+
+    /**
+     * Check if Left Trigger was just pressed this frame.
+     */
+    public boolean isLeftTriggerJustPressed() {
+        return leftTriggerPressed && !prevLeftTriggerPressed;
+    }
+
+    /**
+     * Check if Left Trigger was just released this frame.
+     */
+    public boolean isLeftTriggerJustReleased() {
+        return !leftTriggerPressed && prevLeftTriggerPressed;
     }
 
     /**
