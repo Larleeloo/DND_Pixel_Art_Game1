@@ -247,14 +247,25 @@ public class ControllerManager {
             } else if (id == Component.Identifier.Axis.RY) {
                 rightStickY = applyDeadZone(value);
             }
-            // Triggers
+            // Triggers - handle controllers that use combined Z axis for both triggers
             else if (id == Component.Identifier.Axis.Z) {
-                // Some controllers map triggers to Z axis
+                // Some controllers map both triggers to Z axis (positive = RT, negative = LT)
                 if (value > 0) {
                     rightTrigger = value;
-                } else {
+                    leftTrigger = 0;  // Reset left trigger when right is pressed
+                } else if (value < 0) {
                     leftTrigger = -value;
+                    rightTrigger = 0;  // Reset right trigger when left is pressed
+                } else {
+                    // Value is 0 - both triggers released
+                    leftTrigger = 0;
+                    rightTrigger = 0;
                 }
+            }
+            // Some controllers use RZ axis specifically for right trigger
+            else if (id == Component.Identifier.Axis.RZ) {
+                // RZ axis is typically 0.0 to 1.0 for right trigger
+                rightTrigger = Math.max(0, value);
             }
             // Buttons (Xbox controller button mapping)
             else if (id == Component.Identifier.Button._0) {
