@@ -152,7 +152,7 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Represents a parallax layer in the level
+     * Represents a parallax layer in the level with editable placement properties
      */
     private static class ParallaxLayerEntry {
         String name;
@@ -161,6 +161,9 @@ public class CreativeScene implements Scene {
         int zOrder;
         double scale;
         double opacity;
+        int offsetX;
+        int offsetY;
+        String positionLabel;
         BufferedImage icon;
 
         ParallaxLayerEntry(String name, String imagePath, double scrollSpeedX, int zOrder, BufferedImage icon) {
@@ -170,6 +173,24 @@ public class CreativeScene implements Scene {
             this.zOrder = zOrder;
             this.scale = 10.0;  // Scale up to cover screen (matches LevelData default)
             this.opacity = 1.0;
+            this.offsetX = 0;
+            this.offsetY = 0;
+            this.positionLabel = "";
+            this.icon = icon;
+        }
+
+        ParallaxLayerEntry(String name, String imagePath, double scrollSpeedX, int zOrder,
+                          double scale, double opacity, int offsetX, int offsetY,
+                          String positionLabel, BufferedImage icon) {
+            this.name = name;
+            this.imagePath = imagePath;
+            this.scrollSpeedX = scrollSpeedX;
+            this.zOrder = zOrder;
+            this.scale = scale;
+            this.opacity = opacity;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
+            this.positionLabel = positionLabel;
             this.icon = icon;
         }
     }
@@ -1736,37 +1757,43 @@ public class CreativeScene implements Scene {
                 break;
 
             case PARALLAX:
-                // For parallax, clicking adds/removes the layer to the level
+                // For parallax, clicking toggles the layer or opens config dialog if active
                 @SuppressWarnings("unchecked")
                 Map<String, String> parallaxData = (Map<String, String>) selected.data;
                 String layerName = parallaxData.get("name");
 
                 // Check if layer already exists
-                boolean exists = false;
+                ParallaxLayerEntry existingLayer = null;
                 for (ParallaxLayerEntry layer : parallaxLayers) {
                     if (layer.name.equals(layerName)) {
-                        exists = true;
+                        existingLayer = layer;
                         break;
                     }
                 }
 
-                if (exists) {
-                    // Remove the layer
-                    parallaxLayers.removeIf(l -> l.name.equals(layerName));
-                    setStatus("Removed parallax layer: " + selected.displayName);
+                if (existingLayer != null) {
+                    // Layer exists - show config dialog for editing placement
+                    showParallaxConfigDialog(existingLayer, selected.displayName);
                 } else {
-                    // Add the layer
+                    // Add the layer with default properties from palette
+                    double scale = Double.parseDouble(parallaxData.getOrDefault("scale", "10.0"));
+                    double opacity = Double.parseDouble(parallaxData.getOrDefault("opacity", "1.0"));
+                    int offsetX = Integer.parseInt(parallaxData.getOrDefault("offsetX", "0"));
+                    int offsetY = Integer.parseInt(parallaxData.getOrDefault("offsetY", "0"));
+                    String positionLabel = parallaxData.getOrDefault("positionLabel", "");
+
                     ParallaxLayerEntry newLayer = new ParallaxLayerEntry(
                         layerName,
                         parallaxData.get("path"),
                         Double.parseDouble(parallaxData.get("scrollSpeed")),
                         Integer.parseInt(parallaxData.get("zOrder")),
+                        scale, opacity, offsetX, offsetY, positionLabel,
                         selected.icon
                     );
                     parallaxLayers.add(newLayer);
                     // Sort by z-order
                     parallaxLayers.sort((a, b) -> Integer.compare(a.zOrder, b.zOrder));
-                    setStatus("Added parallax layer: " + selected.displayName);
+                    setStatus("Added parallax layer: " + selected.displayName + " - Click again to configure");
                 }
                 levelData.parallaxEnabled = !parallaxLayers.isEmpty();
                 break;
@@ -1957,15 +1984,17 @@ public class CreativeScene implements Scene {
             levelData.lightSources.add(lightData);
         }
 
-        // Add parallax layers
+        // Add parallax layers with full placement properties
         for (ParallaxLayerEntry layer : parallaxLayers) {
             LevelData.ParallaxLayerData parallaxData = new LevelData.ParallaxLayerData();
             parallaxData.name = layer.name;
             parallaxData.imagePath = layer.imagePath;
             parallaxData.scrollSpeedX = layer.scrollSpeedX;
             parallaxData.zOrder = layer.zOrder;
-            parallaxData.scale = layer.scale;  // Should be 10.0 for proper sizing
+            parallaxData.scale = layer.scale;
             parallaxData.opacity = layer.opacity;
+            parallaxData.offsetX = layer.offsetX;
+            parallaxData.offsetY = layer.offsetY;
             parallaxData.tileHorizontal = true;
             parallaxData.anchorBottom = true;  // Anchor to bottom for proper positioning
             levelData.parallaxLayers.add(parallaxData);
@@ -2158,7 +2187,7 @@ public class CreativeScene implements Scene {
                 writer.println("  \"triggers\": [],");
                 writer.println();
 
-                // Parallax layers
+                // Parallax layers with placement properties
                 writer.println("  \"parallaxEnabled\": " + levelData.parallaxEnabled + ",");
                 writer.println("  \"parallaxLayers\": [");
                 for (int i = 0; i < levelData.parallaxLayers.size(); i++) {
@@ -2170,6 +2199,8 @@ public class CreativeScene implements Scene {
                         ", \"zOrder\": " + p.zOrder +
                         ", \"scale\": " + p.scale +
                         ", \"opacity\": " + p.opacity +
+                        ", \"offsetX\": " + p.offsetX +
+                        ", \"offsetY\": " + p.offsetY +
                         ", \"tileHorizontal\": " + p.tileHorizontal +
                         ", \"anchorBottom\": " + p.anchorBottom + "}" + comma);
                 }
@@ -2308,15 +2339,16 @@ public class CreativeScene implements Scene {
                 placedLights.add(entity);
             }
 
-            // Restore parallax layers
+            // Restore parallax layers with full placement properties
             parallaxLayers.clear();
             for (LevelData.ParallaxLayerData p : levelData.parallaxLayers) {
                 BufferedImage icon = paletteManager.createParallaxIcon(p.imagePath);
+                // Determine position label based on zOrder
+                String positionLabel = getPositionLabelForZOrder(p.zOrder);
                 ParallaxLayerEntry entry = new ParallaxLayerEntry(
-                    p.name, p.imagePath, p.scrollSpeedX, p.zOrder, icon
+                    p.name, p.imagePath, p.scrollSpeedX, p.zOrder,
+                    p.scale, p.opacity, p.offsetX, p.offsetY, positionLabel, icon
                 );
-                entry.scale = p.scale;
-                entry.opacity = p.opacity;
                 parallaxLayers.add(entry);
             }
             // Sort by z-order
@@ -2409,9 +2441,11 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Show the new level properties dialog
+     * Show the new level properties dialog with block-based size selection
      */
     public void showNewLevelDialog() {
+        final int BLOCK_SIZE = 64; // Standard block size in pixels
+
         JDialog dialog = new JDialog((Frame) null, "New Creative Level", true);
         dialog.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -2422,55 +2456,153 @@ public class CreativeScene implements Scene {
         gbc.gridx = 0; gbc.gridy = 0;
         dialog.add(new JLabel("Level Name:"), gbc);
         JTextField nameField = new JTextField("My Creative Level", 20);
-        gbc.gridx = 1;
+        gbc.gridx = 1; gbc.gridwidth = 2;
         dialog.add(nameField, gbc);
+        gbc.gridwidth = 1;
 
-        // Width
+        // Size presets dropdown
         gbc.gridx = 0; gbc.gridy = 1;
-        dialog.add(new JLabel("Width (pixels):"), gbc);
-        JTextField widthField = new JTextField("3840", 10);
-        gbc.gridx = 1;
-        dialog.add(widthField, gbc);
+        dialog.add(new JLabel("Size Preset:"), gbc);
+        String[] presets = {
+            "Custom",
+            "Small (30x17 blocks)",
+            "Medium (60x17 blocks)",
+            "Large (100x17 blocks)",
+            "Extra Large (150x25 blocks)",
+            "Vertical (30x40 blocks)",
+            "Square (50x50 blocks)"
+        };
+        JComboBox<String> presetCombo = new JComboBox<>(presets);
+        presetCombo.setSelectedIndex(2); // Default to Medium
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        dialog.add(presetCombo, gbc);
+        gbc.gridwidth = 1;
 
-        // Height
+        // Width in blocks
         gbc.gridx = 0; gbc.gridy = 2;
-        dialog.add(new JLabel("Height (pixels):"), gbc);
-        JTextField heightField = new JTextField("1080", 10);
+        dialog.add(new JLabel("Width (blocks):"), gbc);
+        JSpinner widthBlocksSpinner = new JSpinner(new SpinnerNumberModel(60, 10, 500, 5));
         gbc.gridx = 1;
-        dialog.add(heightField, gbc);
+        dialog.add(widthBlocksSpinner, gbc);
+        JLabel widthPixelsLabel = new JLabel("= 3840 px");
+        widthPixelsLabel.setForeground(new Color(100, 100, 100));
+        gbc.gridx = 2;
+        dialog.add(widthPixelsLabel, gbc);
 
-        // Ground Y
+        // Height in blocks
         gbc.gridx = 0; gbc.gridy = 3;
+        dialog.add(new JLabel("Height (blocks):"), gbc);
+        JSpinner heightBlocksSpinner = new JSpinner(new SpinnerNumberModel(17, 10, 200, 5));
+        gbc.gridx = 1;
+        dialog.add(heightBlocksSpinner, gbc);
+        JLabel heightPixelsLabel = new JLabel("= 1088 px");
+        heightPixelsLabel.setForeground(new Color(100, 100, 100));
+        gbc.gridx = 2;
+        dialog.add(heightPixelsLabel, gbc);
+
+        // Update pixel labels when spinners change
+        widthBlocksSpinner.addChangeListener(e -> {
+            int blocks = (Integer) widthBlocksSpinner.getValue();
+            widthPixelsLabel.setText("= " + (blocks * BLOCK_SIZE) + " px");
+            presetCombo.setSelectedIndex(0); // Switch to Custom
+        });
+        heightBlocksSpinner.addChangeListener(e -> {
+            int blocks = (Integer) heightBlocksSpinner.getValue();
+            heightPixelsLabel.setText("= " + (blocks * BLOCK_SIZE) + " px");
+            presetCombo.setSelectedIndex(0); // Switch to Custom
+        });
+
+        // Preset selection handler
+        presetCombo.addActionListener(e -> {
+            int idx = presetCombo.getSelectedIndex();
+            switch (idx) {
+                case 1: // Small
+                    widthBlocksSpinner.setValue(30);
+                    heightBlocksSpinner.setValue(17);
+                    break;
+                case 2: // Medium
+                    widthBlocksSpinner.setValue(60);
+                    heightBlocksSpinner.setValue(17);
+                    break;
+                case 3: // Large
+                    widthBlocksSpinner.setValue(100);
+                    heightBlocksSpinner.setValue(17);
+                    break;
+                case 4: // Extra Large
+                    widthBlocksSpinner.setValue(150);
+                    heightBlocksSpinner.setValue(25);
+                    break;
+                case 5: // Vertical
+                    widthBlocksSpinner.setValue(30);
+                    heightBlocksSpinner.setValue(40);
+                    break;
+                case 6: // Square
+                    widthBlocksSpinner.setValue(50);
+                    heightBlocksSpinner.setValue(50);
+                    break;
+            }
+        });
+
+        // Ground Y (auto-calculated based on height)
+        gbc.gridx = 0; gbc.gridy = 4;
         dialog.add(new JLabel("Ground Y:"), gbc);
         JTextField groundField = new JTextField("920", 10);
         gbc.gridx = 1;
         dialog.add(groundField, gbc);
+        JLabel groundHint = new JLabel("(from top)");
+        groundHint.setForeground(new Color(100, 100, 100));
+        gbc.gridx = 2;
+        dialog.add(groundHint, gbc);
+
+        // Auto-update ground Y when height changes
+        heightBlocksSpinner.addChangeListener(e -> {
+            int heightBlocks = (Integer) heightBlocksSpinner.getValue();
+            int heightPx = heightBlocks * BLOCK_SIZE;
+            // Ground at 2.5 blocks from bottom
+            int suggestedGround = heightPx - (int)(2.5 * BLOCK_SIZE);
+            groundField.setText(String.valueOf(suggestedGround));
+        });
 
         // Scrolling enabled
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 5;
         dialog.add(new JLabel("Enable Scrolling:"), gbc);
         JCheckBox scrollCheck = new JCheckBox("", true);
         gbc.gridx = 1;
         dialog.add(scrollCheck, gbc);
 
+        // Vertical scroll enabled
+        gbc.gridx = 0; gbc.gridy = 6;
+        dialog.add(new JLabel("Vertical Scrolling:"), gbc);
+        JCheckBox vertScrollCheck = new JCheckBox("", true);
+        gbc.gridx = 1;
+        dialog.add(vertScrollCheck, gbc);
+
         // Buttons
         JPanel buttonPanel = new JPanel();
-        JButton createBtn = new JButton("Create");
+        JButton createBtn = new JButton("Create Level");
         JButton cancelBtn = new JButton("Cancel");
         buttonPanel.add(createBtn);
         buttonPanel.add(cancelBtn);
 
-        gbc.gridx = 0; gbc.gridy = 5;
-        gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridwidth = 3;
         dialog.add(buttonPanel, gbc);
+
+        // Initialize with Medium preset values
+        widthBlocksSpinner.setValue(60);
+        heightBlocksSpinner.setValue(17);
 
         createBtn.addActionListener(e -> {
             try {
+                int widthBlocks = (Integer) widthBlocksSpinner.getValue();
+                int heightBlocks = (Integer) heightBlocksSpinner.getValue();
+
                 levelData.name = nameField.getText();
-                levelData.levelWidth = Integer.parseInt(widthField.getText());
-                levelData.levelHeight = Integer.parseInt(heightField.getText());
+                levelData.levelWidth = widthBlocks * BLOCK_SIZE;
+                levelData.levelHeight = heightBlocks * BLOCK_SIZE;
                 levelData.groundY = Integer.parseInt(groundField.getText());
                 levelData.scrollingEnabled = scrollCheck.isSelected();
+                levelData.verticalScrollEnabled = vertScrollCheck.isSelected();
                 levelData.playerSpawnX = 200;
                 levelData.playerSpawnY = levelData.groundY - 70;
 
@@ -2484,16 +2616,12 @@ public class CreativeScene implements Scene {
                 placedDoors.clear();
                 placedButtons.clear();
                 placedVaults.clear();
+                parallaxLayers.clear();
 
                 showPropertiesDialog = false;
                 dialog.dispose();
-                setStatus("Created new level: " + levelData.name);
+                setStatus("Created level: " + levelData.name + " (" + widthBlocks + "x" + heightBlocks + " blocks)");
             } catch (NumberFormatException ex) {
-                // Reset fields to defaults and show error in status
-                widthField.setText("3840");
-                heightField.setText("1080");
-                groundField.setText("920");
-                // Show error via dialog title change (avoid JOptionPane)
                 dialog.setTitle("Error: Please enter valid numbers!");
             }
         });
@@ -2502,6 +2630,125 @@ public class CreativeScene implements Scene {
             showPropertiesDialog = false;
             dialog.dispose();
         });
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Show configuration dialog for editing a parallax layer's placement properties
+     */
+    /**
+     * Get a human-readable position label based on z-order depth
+     */
+    private String getPositionLabelForZOrder(int zOrder) {
+        if (zOrder <= -5) return "Furthest (Sky)";
+        if (zOrder == -4) return "Very Far";
+        if (zOrder == -3) return "Far";
+        if (zOrder == -2) return "Near";
+        if (zOrder == -1) return "Behind Player";
+        if (zOrder == 0) return "Player Level";
+        if (zOrder == 1) return "In Front";
+        if (zOrder >= 2) return "Closest (Front)";
+        return "Z: " + zOrder;
+    }
+
+    /**
+     * Show configuration dialog for editing a parallax layer's placement properties
+     */
+    private void showParallaxConfigDialog(ParallaxLayerEntry layer, String displayName) {
+        JDialog dialog = new JDialog((Frame) null, "Configure Parallax Layer", true);
+        dialog.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Layer info header
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        JLabel headerLabel = new JLabel(displayName);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        dialog.add(headerLabel, gbc);
+        gbc.gridwidth = 1;
+
+        // Position label
+        gbc.gridx = 0; gbc.gridy = 1;
+        dialog.add(new JLabel("Depth Position:"), gbc);
+        gbc.gridx = 1;
+        String posInfo = layer.positionLabel.isEmpty() ? "Z-Order: " + layer.zOrder : layer.positionLabel + " (Z: " + layer.zOrder + ")";
+        dialog.add(new JLabel(posInfo), gbc);
+
+        // Offset X
+        gbc.gridx = 0; gbc.gridy = 2;
+        dialog.add(new JLabel("Offset X (pixels):"), gbc);
+        JTextField offsetXField = new JTextField(String.valueOf(layer.offsetX), 10);
+        gbc.gridx = 1;
+        dialog.add(offsetXField, gbc);
+
+        // Offset Y
+        gbc.gridx = 0; gbc.gridy = 3;
+        dialog.add(new JLabel("Offset Y (pixels):"), gbc);
+        JTextField offsetYField = new JTextField(String.valueOf(layer.offsetY), 10);
+        gbc.gridx = 1;
+        dialog.add(offsetYField, gbc);
+
+        // Scroll Speed
+        gbc.gridx = 0; gbc.gridy = 4;
+        dialog.add(new JLabel("Scroll Speed (0.0-2.0):"), gbc);
+        JTextField scrollSpeedField = new JTextField(String.format("%.2f", layer.scrollSpeedX), 10);
+        gbc.gridx = 1;
+        dialog.add(scrollSpeedField, gbc);
+
+        // Scale
+        gbc.gridx = 0; gbc.gridy = 5;
+        dialog.add(new JLabel("Scale:"), gbc);
+        JTextField scaleField = new JTextField(String.format("%.1f", layer.scale), 10);
+        gbc.gridx = 1;
+        dialog.add(scaleField, gbc);
+
+        // Opacity
+        gbc.gridx = 0; gbc.gridy = 6;
+        dialog.add(new JLabel("Opacity (0.0-1.0):"), gbc);
+        JTextField opacityField = new JTextField(String.format("%.2f", layer.opacity), 10);
+        gbc.gridx = 1;
+        dialog.add(opacityField, gbc);
+
+        // Buttons panel
+        JPanel buttonPanel = new JPanel();
+        JButton applyBtn = new JButton("Apply");
+        JButton removeBtn = new JButton("Remove Layer");
+        JButton cancelBtn = new JButton("Cancel");
+        removeBtn.setForeground(new Color(180, 50, 50));
+        buttonPanel.add(applyBtn);
+        buttonPanel.add(removeBtn);
+        buttonPanel.add(cancelBtn);
+
+        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        dialog.add(buttonPanel, gbc);
+
+        applyBtn.addActionListener(e -> {
+            try {
+                layer.offsetX = Integer.parseInt(offsetXField.getText().trim());
+                layer.offsetY = Integer.parseInt(offsetYField.getText().trim());
+                layer.scrollSpeedX = Double.parseDouble(scrollSpeedField.getText().trim());
+                layer.scale = Double.parseDouble(scaleField.getText().trim());
+                layer.opacity = Math.max(0.0, Math.min(1.0, Double.parseDouble(opacityField.getText().trim())));
+                dialog.dispose();
+                setStatus("Updated parallax layer: " + layer.name);
+            } catch (NumberFormatException ex) {
+                dialog.setTitle("Error: Please enter valid numbers!");
+            }
+        });
+
+        removeBtn.addActionListener(e -> {
+            parallaxLayers.removeIf(l -> l.name.equals(layer.name));
+            levelData.parallaxEnabled = !parallaxLayers.isEmpty();
+            dialog.dispose();
+            setStatus("Removed parallax layer: " + layer.name);
+        });
+
+        cancelBtn.addActionListener(e -> dialog.dispose());
 
         dialog.pack();
         dialog.setLocationRelativeTo(null);
