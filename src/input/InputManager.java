@@ -276,16 +276,17 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Convenience method for left mouse button just pressed.
-     * Also returns true if controller right trigger was just pressed.
+     * Also returns true if controller right trigger or left trigger was just pressed.
      */
     public boolean isLeftMouseJustPressed() {
         // Check physical mouse
         if (isMouseButtonJustPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller right trigger
+        // Check controller triggers (both RT and LT can fire)
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isRightTriggerJustPressed();
+            return controllerManager.isRightTriggerJustPressed() ||
+                   controllerManager.isLeftTriggerJustPressed();
         }
         return false;
     }
@@ -299,16 +300,17 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
 
     /**
      * Check if left mouse button is currently pressed.
-     * Also returns true if controller right trigger is pressed.
+     * Also returns true if controller right trigger or left trigger is pressed.
      */
     public boolean isLeftMousePressed() {
         // Check physical mouse
         if (isMouseButtonPressed(MouseEvent.BUTTON1)) {
             return true;
         }
-        // Check controller right trigger
+        // Check controller triggers (both RT and LT can fire)
         if (controllerManager != null && controllerManager.isControllerConnected()) {
-            return controllerManager.isRightTriggerPressed();
+            return controllerManager.isRightTriggerPressed() ||
+                   controllerManager.isLeftTriggerPressed();
         }
         return false;
     }

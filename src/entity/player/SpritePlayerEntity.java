@@ -545,22 +545,32 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
         updatePlacementPreview(input, entities);
 
         // Handle charged shot system for ranged weapons
-        boolean leftMouseHeld = input.isMouseButtonPressed(java.awt.event.MouseEvent.BUTTON1);
+        // Fire button = left mouse + controller triggers (RT/LT) + X button when holding ranged weapon
+        boolean leftMouseHeld = input.isLeftMousePressed();
         boolean leftMouseJustPressed = input.isLeftMouseJustPressed();
+
+        // X button (E key) also works for firing ranged weapons
+        boolean xButtonHeld = input.isKeyPressed('e');
+        boolean xButtonJustPressed = input.isKeyJustPressed('e');
+
+        // Combine all fire inputs for ranged weapon handling
+        boolean isHoldingRangedWeapon = heldItem != null && heldItem.isRangedWeapon();
+        boolean fireButtonHeld = leftMouseHeld || (isHoldingRangedWeapon && xButtonHeld);
+        boolean fireButtonJustPressed = leftMouseJustPressed || (isHoldingRangedWeapon && xButtonJustPressed);
 
         // Check if UI consumed the click (e.g., clicking on a UI button)
         boolean clickConsumedByUI = input.isClickConsumedByUI();
 
-        // Left Mouse Click - click on blocks to select/mine them or fire projectiles
+        // Fire button - click on blocks to select/mine them or fire projectiles
         // Blocks work like UI elements - click to select, arrow keys to choose direction, click again to mine
         // Skip if click was consumed by UI elements
-        if (leftMouseJustPressed && !clickConsumedByUI) {
+        if (fireButtonJustPressed && !clickConsumedByUI) {
             if (inventory.isOpen()) {
-                // Try auto-equip in open inventory
-                if (inventory.handleLeftClick(input.getMouseX(), input.getMouseY())) {
+                // Try auto-equip in open inventory (only for mouse click, not X button)
+                if (leftMouseJustPressed && inventory.handleLeftClick(input.getMouseX(), input.getMouseY())) {
                     syncHeldItemWithInventory();
                 }
-            } else if (heldItem != null && heldItem.isRangedWeapon()) {
+            } else if (isHoldingRangedWeapon) {
                 if (heldItem.isChargeable()) {
                     // Start charging for chargeable weapons
                     startCharging();
@@ -568,30 +578,23 @@ public class SpritePlayerEntity extends Entity implements PlayerBase,
                     // Fire immediately for non-chargeable weapons
                     fireProjectile(entities);
                 }
-            } else {
-                // Click-to-select block mining system
+            } else if (leftMouseJustPressed) {
+                // Click-to-select block mining system (only for mouse click)
                 handleBlockClick(entities, input);
+            } else if (xButtonJustPressed && blockHelper.getSelectedBlock() != null) {
+                // X button mines selected block when not holding ranged weapon
+                mineSelectedBlock(entities);
             }
         }
 
-        // Update charging while left mouse is held
-        if (isCharging && leftMouseHeld) {
+        // Update charging while fire button is held
+        if (isCharging && fireButtonHeld) {
             updateCharging(deltaSeconds);
         }
 
-        // Fire charged shot when mouse is released
-        if (isCharging && !leftMouseHeld) {
+        // Fire charged shot when fire button is released
+        if (isCharging && !fireButtonHeld) {
             fireChargedProjectile(entities);
-        }
-
-        // E key - fires ranged weapon or mines selected block
-        if (input.isKeyJustPressed('e')) {
-            if (heldItem != null && heldItem.isRangedWeapon()) {
-                fireProjectile(entities);
-            } else if (blockHelper.getSelectedBlock() != null) {
-                // Mine the selected block from the current direction
-                mineSelectedBlock(entities);
-            }
         }
 
         // Right Mouse Click - place block, attack, or use item
