@@ -137,6 +137,7 @@ public class CreativeScene implements Scene {
         String type; // "block", "item", "mob", "light"
         Object data; // Type-specific data
         BufferedImage icon;
+        String overlay; // Block overlay type (e.g., "SNOW", "ICE", "GRASS", "MOSS", "VINES")
 
         PlacedEntity(int x, int y, String type, Object data, BufferedImage icon) {
             this.x = x;
@@ -144,11 +145,16 @@ public class CreativeScene implements Scene {
             this.type = type;
             this.data = data;
             this.icon = icon;
+            this.overlay = null;
         }
 
         Rectangle getBounds() {
             int size = type.equals("block") ? GRID_SIZE : 32;
             return new Rectangle(x, y, size, size);
+        }
+
+        boolean hasOverlay() {
+            return overlay != null && !overlay.isEmpty();
         }
     }
 
@@ -1749,6 +1755,41 @@ public class CreativeScene implements Scene {
                 setStatus("Placed moving block (" + pattern + ") - Right-click to remove");
                 break;
 
+            case OVERLAYS:
+                // Snap to grid
+                placeX = (worldMouseX / GRID_SIZE) * GRID_SIZE;
+                placeY = (worldMouseY / GRID_SIZE) * GRID_SIZE;
+
+                BlockOverlay overlayType = (BlockOverlay) selected.data;
+
+                // Find block at this position and apply overlay
+                boolean appliedToBlock = false;
+                for (PlacedEntity entity : placedBlocks) {
+                    if (entity.x == placeX && entity.y == placeY) {
+                        entity.overlay = overlayType.name();
+                        appliedToBlock = true;
+                        setStatus("Applied " + overlayType.getDisplayName() + " overlay to block");
+                        break;
+                    }
+                }
+
+                // Also check moving blocks
+                if (!appliedToBlock) {
+                    for (PlacedEntity entity : placedMovingBlocks) {
+                        if (entity.x == placeX && entity.y == placeY) {
+                            entity.overlay = overlayType.name();
+                            appliedToBlock = true;
+                            setStatus("Applied " + overlayType.getDisplayName() + " overlay to moving block");
+                            break;
+                        }
+                    }
+                }
+
+                if (!appliedToBlock) {
+                    setStatus("No block at this position - place a block first");
+                }
+                break;
+
             case ITEMS:
                 placeX = worldMouseX - 16;
                 placeY = worldMouseY - 16;
@@ -2005,6 +2046,9 @@ public class CreativeScene implements Scene {
             blockData.y = entity.gridY;
             blockData.blockType = ((BlockType) entity.data).name();
             blockData.useGridCoords = true;
+            if (entity.hasOverlay()) {
+                blockData.overlay = entity.overlay;
+            }
             levelData.blocks.add(blockData);
         }
 
@@ -2126,6 +2170,9 @@ public class CreativeScene implements Scene {
             movingData.speed = ((Number) movingInfo.getOrDefault("speed", 2.0)).doubleValue();
             movingData.pauseTime = ((Number) movingInfo.getOrDefault("pauseTime", 30)).intValue();
             movingData.radius = ((Number) movingInfo.getOrDefault("radius", 100.0)).doubleValue();
+            if (entity.hasOverlay()) {
+                movingData.overlay = entity.overlay;
+            }
             levelData.movingBlocks.add(movingData);
         }
     }
@@ -2379,6 +2426,9 @@ public class CreativeScene implements Scene {
                 PlacedEntity entity = new PlacedEntity(px, py, "block", type, paletteManager.getBlockTextures().get(type));
                 entity.gridX = b.useGridCoords ? b.x : b.x / GRID_SIZE;
                 entity.gridY = b.useGridCoords ? b.y : b.y / GRID_SIZE;
+                if (b.hasOverlay()) {
+                    entity.overlay = b.overlay;
+                }
                 placedBlocks.add(entity);
             }
 
@@ -2485,6 +2535,9 @@ public class CreativeScene implements Scene {
                 PlacedEntity entity = new PlacedEntity(px, py, "moving_block", movingData, icon);
                 entity.gridX = mb.useGridCoords ? mb.x : mb.x / GRID_SIZE;
                 entity.gridY = mb.useGridCoords ? mb.y : mb.y / GRID_SIZE;
+                if (mb.hasOverlay()) {
+                    entity.overlay = mb.overlay;
+                }
                 placedMovingBlocks.add(entity);
             }
 

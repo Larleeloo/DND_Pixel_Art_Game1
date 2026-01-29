@@ -416,6 +416,12 @@ public class GameScene implements Scene {
 
             movingBlock.setPauseTime(mb.pauseTime);
 
+            // Apply overlay if specified (GRASS, SNOW, ICE, MOSS, VINES)
+            if (mb.hasOverlay()) {
+                BlockOverlay overlay = BlockOverlay.fromName(mb.overlay);
+                movingBlock.setOverlay(overlay);
+            }
+
             // Apply tint if set
             if (mb.hasTint()) {
                 movingBlock.setTint(mb.tintRed, mb.tintGreen, mb.tintBlue);

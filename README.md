@@ -101,6 +101,7 @@ PALETTE CATEGORIES (Tab to cycle):
   --------------|--------------------------------------------------
   BLOCKS        | All block types from BlockRegistry
   MOVING_BLOCKS | Blocks with movement patterns (horizontal/vertical/circular)
+  OVERLAYS      | Block masks (grass, snow, ice, moss, vines) - apply to blocks
   ITEMS         | All items from ItemRegistry
   MOBS          | All mobs from MobRegistry (auto-populated)
   LIGHTS        | Torch, campfire, lantern, magic, crystal

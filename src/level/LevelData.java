@@ -625,6 +625,9 @@ public class LevelData {
         public int tintGreen = -1;
         public int tintBlue = -1;
 
+        // Optional overlay (e.g., "GRASS", "SNOW", "ICE", "MOSS", "VINES")
+        public String overlay = null;
+
         public MovingBlockData() {
             blockType = "STONE";
             useGridCoords = true;
@@ -645,6 +648,10 @@ public class LevelData {
 
         public boolean hasTint() {
             return tintRed >= 0 && tintGreen >= 0 && tintBlue >= 0;
+        }
+
+        public boolean hasOverlay() {
+            return overlay != null && !overlay.isEmpty();
         }
 
         public boolean hasWaypoints() {
