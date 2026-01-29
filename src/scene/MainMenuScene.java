@@ -143,16 +143,41 @@ public class MainMenuScene implements Scene {
                 () -> {
                     System.out.println("MainMenuScene: Playing debug cutscene before Loot Game");
 
-                    // DEBUG: Test cutscene before entering Loot Game
+                    // DEBUG: Test cutscene with dialogue options
                     List<CutsceneOverlay.CutsceneFrame> frames = new ArrayList<>();
-                    frames.add(new CutsceneOverlay.CutsceneFrame(
+
+                    // Frame 1: Introduction with speaker name
+                    CutsceneOverlay.CutsceneFrame introFrame = new CutsceneOverlay.CutsceneFrame(
                         "assets/chests/daily_chest.gif",
-                        "Welcome to the Loot Game! Click to continue..."
-                    ));
-                    frames.add(new CutsceneOverlay.CutsceneFrame(
+                        "Greetings, adventurer! I am the Keeper of the Treasure Room. Before you enter, I must ask you a question...",
+                        "Treasure Keeper"
+                    );
+                    frames.add(introFrame);
+
+                    // Frame 2: Question with multiple choice options
+                    CutsceneOverlay.CutsceneFrame questionFrame = new CutsceneOverlay.CutsceneFrame(
                         "assets/chests/monthly_chest.gif",
-                        "Open chests to find treasure! Press E to interact."
-                    ));
+                        "What brings you to the Loot Game today?",
+                        "Treasure Keeper"
+                    );
+                    questionFrame.addOption("I seek riches and glory!", () -> {
+                        System.out.println("Player chose: Riches and glory");
+                    });
+                    questionFrame.addOption("I'm here to test my luck.", () -> {
+                        System.out.println("Player chose: Test luck");
+                    });
+                    questionFrame.addOption("Just exploring, thanks.", () -> {
+                        System.out.println("Player chose: Just exploring");
+                    });
+                    frames.add(questionFrame);
+
+                    // Frame 3: Response
+                    CutsceneOverlay.CutsceneFrame responseFrame = new CutsceneOverlay.CutsceneFrame(
+                        "assets/chests/daily_chest.gif",
+                        "A worthy answer! May fortune smile upon you. Remember: Press E to interact with chests, and walk over items to collect them.",
+                        "Treasure Keeper"
+                    );
+                    frames.add(responseFrame);
 
                     SceneManager.getInstance().startCutscene(frames, () -> {
                         System.out.println("MainMenuScene: Cutscene complete, opening Loot Game");

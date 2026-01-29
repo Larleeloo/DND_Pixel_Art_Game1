@@ -462,8 +462,9 @@ public class SceneManager {
     }
 
     public void onMouseMoved(int x, int y) {
-        // Handle cutscene overlay first (consume all events while visible)
+        // Handle cutscene overlay first (for hover effects on dialogue options)
         if (cutsceneOverlay != null && cutsceneOverlay.isVisible()) {
+            cutsceneOverlay.handleMouseMoved(x, y);
             return;
         }
 
