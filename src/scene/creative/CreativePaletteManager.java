@@ -27,6 +27,7 @@ public class CreativePaletteManager {
     // Palette data
     private List<PaletteItem> blockPalette;
     private List<PaletteItem> movingBlockPalette;
+    private List<PaletteItem> overlayPalette;
     private List<PaletteItem> itemPalette;
     private List<PaletteItem> mobPalette;
     private List<PaletteItem> lightPalette;
@@ -49,6 +50,7 @@ public class CreativePaletteManager {
     public enum PaletteCategory {
         BLOCKS("Blocks"),
         MOVING_BLOCKS("Moving"),
+        OVERLAYS("Overlays"),
         ITEMS("Items"),
         MOBS("Mobs"),
         LIGHTS("Lights"),
@@ -117,6 +119,7 @@ public class CreativePaletteManager {
 
         initializeBlockPalette();
         initializeMovingBlockPalette();
+        initializeOverlayPalette();
         initializeItemPalette();
         initializeMobPalette();
         initializeLightPalette();
@@ -167,6 +170,62 @@ public class CreativePaletteManager {
                 }
             }
         }
+    }
+
+    private void initializeOverlayPalette() {
+        overlayPalette = new ArrayList<>();
+
+        // Add all block overlays (skip NONE)
+        for (BlockOverlay overlay : BlockOverlay.values()) {
+            if (overlay == BlockOverlay.NONE) continue;
+
+            BufferedImage icon = createOverlayIcon(overlay);
+            overlayPalette.add(new PaletteItem(overlay.name(), overlay.getDisplayName(), icon, overlay));
+        }
+    }
+
+    /**
+     * Creates an icon for a block overlay.
+     * Shows the overlay texture on a semi-transparent block background.
+     */
+    public BufferedImage createOverlayIcon(BlockOverlay overlay) {
+        BufferedImage icon = new BufferedImage(PALETTE_ITEM_SIZE, PALETTE_ITEM_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw a semi-transparent block background
+        g.setColor(new Color(100, 100, 100, 150));
+        g.fillRect(4, 4, PALETTE_ITEM_SIZE - 8, PALETTE_ITEM_SIZE - 8);
+
+        // Get and draw the overlay texture
+        BufferedImage overlayTexture = BlockRegistry.getInstance().getOverlayTexture(overlay);
+        if (overlayTexture != null) {
+            g.drawImage(scaleImage(overlayTexture, PALETTE_ITEM_SIZE - 8, PALETTE_ITEM_SIZE - 8), 4, 4, null);
+        } else {
+            // Fallback: draw colored pattern based on overlay type
+            Color overlayColor;
+            switch (overlay) {
+                case GRASS: overlayColor = new Color(50, 180, 50, 200); break;
+                case SNOW: overlayColor = new Color(240, 250, 255, 220); break;
+                case ICE: overlayColor = new Color(150, 220, 255, 180); break;
+                case MOSS: overlayColor = new Color(80, 140, 60, 200); break;
+                case VINES: overlayColor = new Color(40, 120, 40, 200); break;
+                default: overlayColor = new Color(128, 128, 128, 150);
+            }
+            g.setColor(overlayColor);
+            // Draw pattern
+            for (int i = 0; i < 4; i++) {
+                g.fillOval(8 + i * 10, 8, 8, 12);
+                g.fillOval(4 + i * 10, 24, 6, 10);
+            }
+        }
+
+        // Draw border
+        g.setColor(new Color(80, 80, 80));
+        g.drawRect(4, 4, PALETTE_ITEM_SIZE - 9, PALETTE_ITEM_SIZE - 9);
+
+        g.dispose();
+        return icon;
     }
 
     private void initializeItemPalette() {
@@ -668,6 +727,7 @@ public class CreativePaletteManager {
         switch (currentCategory) {
             case BLOCKS: return blockPalette;
             case MOVING_BLOCKS: return movingBlockPalette;
+            case OVERLAYS: return overlayPalette;
             case ITEMS: return sortedItemPalette != null ? sortedItemPalette : itemPalette;
             case MOBS: return mobPalette;
             case LIGHTS: return lightPalette;

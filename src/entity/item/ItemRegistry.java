@@ -287,15 +287,32 @@ public class ItemRegistry {
 
         // ==================== BLOCKS (Placeable) ====================
 
+        // Terrain blocks
         templates.put("dirt_block", new DirtBlock());
         templates.put("grass_block", new GrassBlock());
         templates.put("stone_block", new StoneBlock());
         templates.put("cobblestone_block", new CobblestoneBlock());
-        templates.put("wood_block", new WoodBlock());
-        templates.put("brick_block", new BrickBlock());
         templates.put("sand_block", new SandBlock());
-        templates.put("glass_block", new GlassBlock());
+
+        // Nature blocks
+        templates.put("wood_block", new WoodBlock());
         templates.put("leaves_block", new LeavesBlock());
+
+        // Special blocks
+        templates.put("brick_block", new BrickBlock());
+        templates.put("glass_block", new GlassBlock());
+        templates.put("water_block", new WaterBlock());
+
+        // Ore blocks
+        templates.put("coal_ore_block", new CoalOreBlock());
+        templates.put("iron_ore_block", new IronOreBlock());
+        templates.put("gold_ore_block", new GoldOreBlock());
+
+        // Weather/Environment blocks (block masks)
+        templates.put("snow_block", new SnowBlock());
+        templates.put("ice_block", new IceBlock());
+        templates.put("moss_block", new MossBlock());
+        templates.put("vines_block", new VinesBlock());
 
         // ==================== SPECIAL CRYSTAL EDITIONS ====================
 
