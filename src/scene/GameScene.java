@@ -21,7 +21,10 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Scene implementation for actual gameplay.
@@ -42,6 +45,9 @@ public class GameScene implements Scene {
     private Map<String, ButtonEntity> buttonsByLinkId;
     private PlayerBase player;
     private boolean initialized;
+
+    // Cutscene tracking
+    private Set<String> playedCutsceneIds;  // Track cutscenes that have been played (for playOnce)
 
     // Camera for scrolling levels
     private Camera camera;
@@ -118,6 +124,7 @@ public class GameScene implements Scene {
             movingBlocks = new ArrayList<>();
             doorsByLinkId = new HashMap<>();
             buttonsByLinkId = new HashMap<>();
+            playedCutsceneIds = new HashSet<>();
 
             // Load level data if we have a path
             if (levelPath != null && levelData == null) {
@@ -138,6 +145,9 @@ public class GameScene implements Scene {
 
             initialized = true;
             System.out.println("GameScene: Initialized level '" + levelData.name + "'");
+
+            // Check for level-start cutscenes
+            playLevelStartCutscenes();
         } catch (Exception e) {
             System.err.println("GameScene: Error during initialization: " + e.getMessage());
             e.printStackTrace();
@@ -786,7 +796,13 @@ public class GameScene implements Scene {
             Rectangle playerBounds = player.getBounds();
             for (TriggerEntity trigger : triggers) {
                 if (trigger.checkTrigger(playerBounds)) {
-                    trigger.execute();
+                    // Handle cutscene triggers specially
+                    if (trigger.isCutsceneTrigger()) {
+                        String cutsceneId = trigger.getTarget();
+                        playCutsceneById(cutsceneId, null);
+                    } else {
+                        trigger.execute();
+                    }
                 }
             }
         }
@@ -1978,5 +1994,126 @@ public class GameScene implements Scene {
                 mob.setAggroRange(0);
                 break;
         }
+    }
+
+    // ===================== Cutscene Methods =====================
+
+    /**
+     * Plays cutscenes that are marked to play on level start.
+     * Called automatically after level initialization.
+     */
+    private void playLevelStartCutscenes() {
+        if (levelData == null || levelData.cutscenes == null) return;
+
+        for (LevelData.CutsceneData cutscene : levelData.cutscenes) {
+            if (cutscene.playOnLevelStart && cutscene.hasFrames()) {
+                // Check if already played (for playOnce cutscenes)
+                if (cutscene.playOnce && playedCutsceneIds.contains(cutscene.id)) {
+                    System.out.println("GameScene: Skipping already-played cutscene: " + cutscene.id);
+                    continue;
+                }
+
+                System.out.println("GameScene: Playing level-start cutscene: " + cutscene.id);
+                playCutscene(cutscene, null);
+                break; // Only play one cutscene at a time
+            }
+        }
+    }
+
+    /**
+     * Plays a cutscene by its ID.
+     * @param cutsceneId The ID of the cutscene to play
+     * @param onComplete Optional callback when cutscene completes
+     */
+    public void playCutsceneById(String cutsceneId, Runnable onComplete) {
+        if (cutsceneId == null || levelData == null || levelData.cutscenes == null) {
+            System.out.println("GameScene: Cannot play cutscene - invalid ID or no cutscenes");
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // Find the cutscene by ID
+        LevelData.CutsceneData cutscene = null;
+        for (LevelData.CutsceneData cs : levelData.cutscenes) {
+            if (cutsceneId.equals(cs.id)) {
+                cutscene = cs;
+                break;
+            }
+        }
+
+        if (cutscene == null) {
+            System.out.println("GameScene: Cutscene not found: " + cutsceneId);
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // Check if already played (for playOnce cutscenes)
+        if (cutscene.playOnce && playedCutsceneIds.contains(cutsceneId)) {
+            System.out.println("GameScene: Cutscene already played: " + cutsceneId);
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        playCutscene(cutscene, onComplete);
+    }
+
+    /**
+     * Plays a cutscene using the CutsceneOverlay.
+     * @param cutscene The cutscene data to play
+     * @param onComplete Optional callback when cutscene completes
+     */
+    private void playCutscene(LevelData.CutsceneData cutscene, Runnable onComplete) {
+        if (cutscene == null || !cutscene.hasFrames()) {
+            System.out.println("GameScene: Cannot play cutscene - no frames");
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // Convert LevelData frames to CutsceneOverlay frames
+        List<CutsceneOverlay.CutsceneFrame> frames = new ArrayList<>();
+        for (LevelData.CutsceneFrameData frameData : cutscene.frames) {
+            CutsceneOverlay.CutsceneFrame frame = new CutsceneOverlay.CutsceneFrame(
+                frameData.gifPath,
+                frameData.text
+            );
+            frames.add(frame);
+        }
+
+        // Mark as played for playOnce cutscenes
+        final String cutsceneId = cutscene.id;
+        final boolean playOnce = cutscene.playOnce;
+        final Runnable userCallback = onComplete;
+
+        // Start the cutscene via SceneManager
+        SceneManager.getInstance().startCutscene(frames, () -> {
+            // Mark as played
+            if (playOnce && cutsceneId != null) {
+                playedCutsceneIds.add(cutsceneId);
+            }
+
+            System.out.println("GameScene: Cutscene completed: " + cutsceneId);
+
+            // Run user callback if provided
+            if (userCallback != null) {
+                userCallback.run();
+            }
+        });
+
+        System.out.println("GameScene: Started cutscene: " + cutsceneId + " with " + frames.size() + " frames");
+    }
+
+    /**
+     * Checks if a cutscene is currently playing.
+     * @return true if a cutscene is active
+     */
+    public boolean isCutscenePlaying() {
+        return SceneManager.getInstance().isCutscenePlaying();
+    }
+
+    /**
+     * Skips the current cutscene if one is playing.
+     */
+    public void skipCurrentCutscene() {
+        SceneManager.getInstance().skipCutscene();
     }
 }

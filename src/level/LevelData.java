@@ -72,6 +72,7 @@ public class LevelData {
     public List<ButtonData> buttons;  // Interactive buttons/switches
     public List<VaultData> vaults;  // Interactive vaults/chests
     public List<MovingBlockData> movingBlocks;  // Moving/animated blocks
+    public List<CutsceneData> cutscenes;  // GIF-based cutscenes
 
     // Parallax settings
     public boolean parallaxEnabled = false;  // If true, use parallax background system
@@ -91,6 +92,7 @@ public class LevelData {
         buttons = new ArrayList<>();
         vaults = new ArrayList<>();
         movingBlocks = new ArrayList<>();
+        cutscenes = new ArrayList<>();
 
         // Defaults
         name = "Untitled Level";
@@ -672,6 +674,57 @@ public class LevelData {
     }
 
     /**
+     * Data class for GIF-based cutscene configuration.
+     * Cutscenes are triggered by TriggerEntity with type "cutscene" or on level start.
+     * Supports multi-frame cutscenes with click-through prompts.
+     */
+    public static class CutsceneData {
+        public String id;                    // Unique identifier for this cutscene
+        public List<CutsceneFrameData> frames = new ArrayList<>(); // Frames in the cutscene
+        public boolean playOnLevelStart = false;  // If true, plays when level loads
+        public boolean playOnce = true;           // If true, only plays once per session
+
+        public CutsceneData() {}
+
+        public CutsceneData(String id) {
+            this.id = id;
+        }
+
+        public CutsceneData(String id, boolean playOnLevelStart) {
+            this.id = id;
+            this.playOnLevelStart = playOnLevelStart;
+        }
+
+        public boolean hasFrames() {
+            return frames != null && !frames.isEmpty();
+        }
+    }
+
+    /**
+     * Data class for a single frame within a cutscene.
+     * Each frame displays a GIF image and optional text prompt.
+     */
+    public static class CutsceneFrameData {
+        public String gifPath;   // Path to the GIF file (1920x1080 recommended)
+        public String text;      // Optional text to display as a prompt
+
+        public CutsceneFrameData() {}
+
+        public CutsceneFrameData(String gifPath) {
+            this.gifPath = gifPath;
+        }
+
+        public CutsceneFrameData(String gifPath, String text) {
+            this.gifPath = gifPath;
+            this.text = text;
+        }
+
+        public boolean hasText() {
+            return text != null && !text.isEmpty();
+        }
+    }
+
+    /**
      * Create a builder for easier level creation.
      */
     public static Builder builder() {
@@ -1086,6 +1139,62 @@ public class LevelData {
             return this;
         }
 
+        /**
+         * Add a cutscene that plays on level start.
+         * @param id Unique ID for the cutscene
+         * @param gifPaths Array of GIF file paths for each frame
+         */
+        public Builder addLevelStartCutscene(String id, String... gifPaths) {
+            CutsceneData cutscene = new CutsceneData(id, true);
+            for (String path : gifPaths) {
+                cutscene.frames.add(new CutsceneFrameData(path));
+            }
+            data.cutscenes.add(cutscene);
+            return this;
+        }
+
+        /**
+         * Add a cutscene that can be triggered by ID.
+         * @param id Unique ID for the cutscene (used in trigger target)
+         * @param gifPaths Array of GIF file paths for each frame
+         */
+        public Builder addCutscene(String id, String... gifPaths) {
+            CutsceneData cutscene = new CutsceneData(id);
+            for (String path : gifPaths) {
+                cutscene.frames.add(new CutsceneFrameData(path));
+            }
+            data.cutscenes.add(cutscene);
+            return this;
+        }
+
+        /**
+         * Add a cutscene with text prompts for each frame.
+         * @param id Unique ID for the cutscene
+         * @param playOnStart If true, plays when level loads
+         * @param frames Array of CutsceneFrameData
+         */
+        public Builder addCutsceneWithText(String id, boolean playOnStart, CutsceneFrameData... frames) {
+            CutsceneData cutscene = new CutsceneData(id, playOnStart);
+            for (CutsceneFrameData frame : frames) {
+                cutscene.frames.add(frame);
+            }
+            data.cutscenes.add(cutscene);
+            return this;
+        }
+
+        /**
+         * Add a trigger that starts a cutscene when entered.
+         * @param x X position
+         * @param y Y position
+         * @param width Trigger width
+         * @param height Trigger height
+         * @param cutsceneId ID of the cutscene to play
+         */
+        public Builder addCutsceneTrigger(int x, int y, int width, int height, String cutsceneId) {
+            data.triggers.add(new TriggerData(x, y, width, height, "cutscene", cutsceneId));
+            return this;
+        }
+
         public LevelData build() {
             return data;
         }
@@ -1104,6 +1213,7 @@ public class LevelData {
                 ", buttons=" + buttons.size() +
                 ", vaults=" + vaults.size() +
                 ", movingBlocks=" + movingBlocks.size() +
+                ", cutscenes=" + cutscenes.size() +
                 '}';
     }
 }

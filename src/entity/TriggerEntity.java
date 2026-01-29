@@ -25,6 +25,7 @@ public class TriggerEntity extends Entity {
     public static final String TYPE_LEVEL_TRANSITION = "level_transition";
     public static final String TYPE_CHECKPOINT = "checkpoint";
     public static final String TYPE_EVENT = "event";
+    public static final String TYPE_CUTSCENE = "cutscene";
 
     public TriggerEntity(int x, int y, int width, int height, String type, String target) {
         super(x, y);
@@ -104,9 +105,23 @@ public class TriggerEntity extends Entity {
                 System.out.println("Event triggered: " + target);
                 break;
 
+            case TYPE_CUTSCENE:
+                // Cutscene playback is handled by GameScene
+                // The trigger just signals that cutscene should be shown
+                System.out.println("Cutscene triggered: " + target);
+                break;
+
             default:
                 System.out.println("Unknown trigger type: " + triggerType);
         }
+    }
+
+    /**
+     * Check if this is a cutscene trigger.
+     * @return true if this trigger starts a cutscene
+     */
+    public boolean isCutsceneTrigger() {
+        return TYPE_CUTSCENE.equals(triggerType);
     }
 
     public String getTriggerType() {

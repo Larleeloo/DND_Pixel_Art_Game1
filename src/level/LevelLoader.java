@@ -451,6 +451,35 @@ public class LevelLoader {
                 }
             }
 
+            // Parse cutscenes (GIF-based cutscene sequences)
+            if (root.containsKey("cutscenes")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> cutsceneList = (List<Map<String, Object>>) root.get("cutscenes");
+                for (Map<String, Object> cs : cutsceneList) {
+                    // Skip comment entries
+                    if (cs.containsKey("_comment")) continue;
+
+                    LevelData.CutsceneData cutscene = new LevelData.CutsceneData();
+                    if (cs.containsKey("id")) cutscene.id = (String) cs.get("id");
+                    if (cs.containsKey("playOnLevelStart")) cutscene.playOnLevelStart = toBool(cs.get("playOnLevelStart"));
+                    if (cs.containsKey("playOnce")) cutscene.playOnce = toBool(cs.get("playOnce"));
+
+                    // Parse frames array
+                    if (cs.containsKey("frames")) {
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> frameList = (List<Map<String, Object>>) cs.get("frames");
+                        for (Map<String, Object> f : frameList) {
+                            LevelData.CutsceneFrameData frame = new LevelData.CutsceneFrameData();
+                            if (f.containsKey("gifPath")) frame.gifPath = (String) f.get("gifPath");
+                            if (f.containsKey("text")) frame.text = (String) f.get("text");
+                            cutscene.frames.add(frame);
+                        }
+                    }
+
+                    data.cutscenes.add(cutscene);
+                }
+            }
+
             System.out.println("LevelLoader: Loaded level '" + data.name + "' with " +
                     data.platforms.size() + " platforms, " +
                     data.items.size() + " items, " +
@@ -461,6 +490,7 @@ public class LevelLoader {
                     data.buttons.size() + " buttons, " +
                     data.vaults.size() + " vaults, " +
                     data.movingBlocks.size() + " moving blocks, " +
+                    data.cutscenes.size() + " cutscenes, " +
                     data.parallaxLayers.size() + " parallax layers");
 
         } catch (Exception e) {
@@ -901,6 +931,30 @@ public class LevelLoader {
             }
             sb.append(" }");
             if (i < data.movingBlocks.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
+
+        // Cutscenes
+        sb.append("  \"cutscenes\": [\n");
+        for (int i = 0; i < data.cutscenes.size(); i++) {
+            LevelData.CutsceneData cs = data.cutscenes.get(i);
+            sb.append("    { \"id\": \"").append(escape(cs.id)).append("\"");
+            sb.append(", \"playOnLevelStart\": ").append(cs.playOnLevelStart);
+            sb.append(", \"playOnce\": ").append(cs.playOnce);
+            sb.append(", \"frames\": [\n");
+            for (int j = 0; j < cs.frames.size(); j++) {
+                LevelData.CutsceneFrameData frame = cs.frames.get(j);
+                sb.append("      { \"gifPath\": \"").append(escape(frame.gifPath)).append("\"");
+                if (frame.hasText()) {
+                    sb.append(", \"text\": \"").append(escape(frame.text)).append("\"");
+                }
+                sb.append(" }");
+                if (j < cs.frames.size() - 1) sb.append(",");
+                sb.append("\n");
+            }
+            sb.append("    ] }");
+            if (i < data.cutscenes.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append("  ]\n");
