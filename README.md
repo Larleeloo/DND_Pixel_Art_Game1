@@ -118,6 +118,7 @@ PALETTE CATEGORIES (Tab to cycle):
 
 PARALLAX LAYER SYSTEM:
   Parallax layers add depth with scrolling backgrounds at different speeds.
+  Supports both horizontal and vertical parallax scrolling.
 
   Available Layers (sorted by depth):
     Layer Name        | Position Label      | Z-Order | Speed
@@ -131,14 +132,27 @@ PARALLAX LAYER SYSTEM:
 
   Layer Configuration Dialog:
     Click on an active (checkmarked) parallax layer to open the config dialog:
-    - Offset X/Y (pixels)   → Position adjustment for the layer
-    - Scroll Speed (0-2.0)  → Parallax movement rate
-    - Scale                 → Layer size multiplier
-    - Opacity (0-1.0)       → Layer transparency
-    - Remove Layer button   → Delete from level
+    - Offset X/Y (pixels)     → Position adjustment for the layer
+    - Scroll Speed X (0-2.0)  → Horizontal parallax movement rate
+    - Scroll Speed Y (0-2.0)  → Vertical parallax movement rate
+    - Scale                   → Layer size multiplier
+    - Opacity (0-1.0)         → Layer transparency
+    - Remove Layer button     → Delete from level
 
   Lower Z-Order = further back (slower parallax)
   Higher Z-Order = closer to camera (faster parallax)
+
+  VERTICAL PARALLAX SCROLLING:
+    When verticalScrollEnabled is true in the level settings, parallax layers
+    will scroll vertically as the camera moves up/down. Each layer's scrollSpeedY
+    controls the vertical parallax rate:
+    - 0.0 = Static (no vertical movement)
+    - 0.5 = Moves at half camera speed (distant background effect)
+    - 1.0 = Moves with camera (same as world entities)
+    - >1.0 = Moves faster than camera (foreground effect)
+
+    Depth level presets (background, distant, mid, near, foreground) now
+    automatically set both scrollSpeedX and scrollSpeedY to matching values.
 
   ANIMATED GIF SUPPORT:
     Parallax layers support animated GIF files for dynamic backgrounds.
@@ -160,6 +174,7 @@ PARALLAX LAYER SYSTEM:
       "name": "animated_clouds",
       "imagePath": "assets/parallax/clouds.gif",
       "scrollSpeedX": 0.05,
+      "scrollSpeedY": 0.05,
       "zOrder": -5,
       "scale": 10.0,
       "opacity": 0.8
@@ -195,6 +210,7 @@ LEVEL JSON FORMAT:
         "name": "sky",
         "imagePath": "assets/parallax/sky.png",
         "scrollSpeedX": 0.05,
+        "scrollSpeedY": 0.05,
         "zOrder": -5,
         "scale": 10.0,
         "opacity": 1.0,
@@ -1961,6 +1977,11 @@ RESOLVED ISSUES
   -> Black bars only drawn when parallax background is not enabled
   -> Parallax layers now properly support vertical scrolling with anchorBottom property
   -> verticalMargin can be set to 0 to eliminate letterboxing
+
+[FIXED] Parallax backgrounds not scrolling vertically when vertical scrolling is enabled
+  -> Depth level presets (applyDepthDefaults) now set scrollSpeedY in addition to scrollSpeedX
+  -> All depth levels (background, distant, mid, near, foreground) now have matching vertical scroll speeds
+  -> Levels using depthLevel presets will automatically have vertical parallax without manual scrollSpeedY configuration
 
 [FIXED] Effect for night and darkness is too opaque
   -> Lighting buffer now properly cleared to transparent before drawing darkness overlay

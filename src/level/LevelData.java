@@ -386,6 +386,7 @@ public class LevelData {
 
         /**
          * Apply default values based on depth level preset.
+         * Sets both horizontal and vertical scroll speeds appropriate for each depth.
          */
         public void applyDepthDefaults() {
             if (depthLevel == null) return;
@@ -395,29 +396,34 @@ public class LevelData {
                 case "sky":
                     zOrder = -2;
                     scrollSpeedX = 0.1;
+                    scrollSpeedY = 0.1;
                     opacity = 1.0;
                     break;
                 case "middleground_3":
                 case "distant":
                     zOrder = -1;
                     scrollSpeedX = 0.3;
+                    scrollSpeedY = 0.3;
                     opacity = 0.8;
                     break;
                 case "middleground_2":
                 case "mid":
                     zOrder = 0;
                     scrollSpeedX = 0.5;
+                    scrollSpeedY = 0.5;
                     opacity = 0.9;
                     break;
                 case "middleground_1":
                 case "near":
                     zOrder = 1;
                     scrollSpeedX = 0.7;
+                    scrollSpeedY = 0.7;
                     opacity = 1.0;
                     break;
                 case "foreground":
                     zOrder = 2;
                     scrollSpeedX = 1.2;
+                    scrollSpeedY = 1.2;
                     opacity = 0.7;
                     break;
             }
