@@ -96,15 +96,6 @@ NEW LEVEL CREATION:
     - Square (50x50 blocks)    → Exploration-focused maps
     - Custom                   → Any dimensions (10-500 blocks)
 
-  Block Size: 64x64 pixels (standard)
-
-  Level Properties:
-    - Level Name              → Display name for the level
-    - Width/Height in blocks  → Spinner controls with pixel preview
-    - Ground Y position       → Auto-calculated from height
-    - Horizontal Scrolling    → Enable camera panning
-    - Vertical Scrolling      → Enable vertical camera movement
-
 PALETTE CATEGORIES (Tab to cycle):
   Category      | Contents
   --------------|--------------------------------------------------
@@ -121,64 +112,18 @@ PARALLAX LAYER SYSTEM:
   Supports both horizontal and vertical parallax scrolling.
 
   Available Layers (sorted by depth):
-    Layer Name        | Position Label      | Z-Order | Speed
-    ------------------|---------------------|---------|-------
-    Sky Background    | Furthest (Sky)      | -5      | 0.05
-    Distant Buildings | Very Far            | -4      | 0.15
-    Mid Buildings     | Far                 | -3      | 0.35
-    Near Buildings    | Near                | -2      | 0.55
-    Main Background   | Behind Player       | -1      | 0.20
-    Foreground        | Closest (Front)     | +2      | 1.15
-
-  Layer Configuration Dialog:
-    Click on an active (checkmarked) parallax layer to open the config dialog:
-    - Offset X/Y (pixels)     → Position adjustment for the layer
-    - Scroll Speed X (0-2.0)  → Horizontal parallax movement rate
-    - Scroll Speed Y (0-2.0)  → Vertical parallax movement rate
-    - Scale                   → Layer size multiplier
-    - Opacity (0-1.0)         → Layer transparency
-    - Remove Layer button     → Delete from level
-
-  Lower Z-Order = further back (slower parallax)
-  Higher Z-Order = closer to camera (faster parallax)
-
-  VERTICAL PARALLAX SCROLLING:
-    When verticalScrollEnabled is true in the level settings, parallax layers
-    will scroll vertically as the camera moves up/down. Each layer's scrollSpeedY
-    controls the vertical parallax rate:
-    - 0.0 = Static (no vertical movement)
-    - 0.5 = Moves at half camera speed (distant background effect)
-    - 1.0 = Moves with camera (same as world entities)
-    - >1.0 = Moves faster than camera (foreground effect)
-
-    Depth level presets (background, distant, mid, near, foreground) now
-    automatically set both scrollSpeedX and scrollSpeedY to matching values.
+    Layer Name        | Z-Order | Speed
+    ------------------|---------|-------
+    Sky Background    | -5      | 0.05
+    Distant Buildings | -4      | 0.15
+    Mid Buildings     | -3      | 0.35
+    Near Buildings    | -2      | 0.55
+    Main Background   | -1      | 0.20
+    Foreground        | +2      | 1.15
 
   ANIMATED GIF SUPPORT:
     Parallax layers support animated GIF files for dynamic backgrounds.
-    - Place .gif files in assets/parallax/ alongside .png files
-    - GIF animations play automatically when the level loads
-    - Per-frame timing from GIF metadata is respected
-    - Supports transparency and proper frame disposal methods
-    - Works with tiling, scaling, and opacity settings
-
-    Example uses:
-    - Animated clouds drifting across the sky
-    - Flickering torches or fires in the background
-    - Flowing water or waterfalls
-    - Swaying trees or grass
-    - Animated city lights at night
-
-    JSON Example:
-    {
-      "name": "animated_clouds",
-      "imagePath": "assets/parallax/clouds.gif",
-      "scrollSpeedX": 0.05,
-      "scrollSpeedY": 0.05,
-      "zOrder": -5,
-      "scale": 10.0,
-      "opacity": 0.8
-    }
+    Place .gif files in assets/parallax/ alongside .png files.
 
 EDITOR CONTROLS:
   Key/Action      | Function
@@ -196,32 +141,8 @@ EDITOR CONTROLS:
 
 LEVEL JSON FORMAT:
   Levels are saved as JSON files in the levels/ directory.
-  Key fields include:
-  {
-    "name": "Level Name",
-    "levelWidth": 3840,        // Pixels (blocks * 64)
-    "levelHeight": 1088,       // Pixels (blocks * 64)
-    "groundY": 920,
-    "scrollingEnabled": true,
-    "verticalScrollEnabled": true,
-    "parallaxEnabled": true,
-    "parallaxLayers": [
-      {
-        "name": "sky",
-        "imagePath": "assets/parallax/sky.png",
-        "scrollSpeedX": 0.05,
-        "scrollSpeedY": 0.05,
-        "zOrder": -5,
-        "scale": 10.0,
-        "opacity": 1.0,
-        "offsetX": 0,
-        "offsetY": 0
-      }
-    ],
-    "blocks": [...],
-    "items": [...],
-    "mobs": [...]
-  }
+  Key fields: name, levelWidth, levelHeight, groundY, scrollingEnabled,
+  verticalScrollEnabled, parallaxEnabled, parallaxLayers, blocks, items, mobs
 
 --------------------------------------------------------------------------------
 3. ENTITY SYSTEM (entity/)
@@ -240,8 +161,6 @@ ENTITY HIERARCHY:
   ├── MobEntity
   │   ├── SpriteMobEntity        → Modern GIF-based enemies (RECOMMENDED)
   │   └── old/                   → Deprecated bone-based mobs
-  │       ├── HumanoidMobEntity  → [DEPRECATED]
-  │       └── QuadrupedMobEntity → [DEPRECATED]
   ├── ProjectileEntity           → Arrows, fireballs, thrown items
   ├── BlockEntity                → Placeable/mineable blocks
   ├── LootChestEntity            → Treasure chests
@@ -344,7 +263,6 @@ PLAYABLE CHARACTERS:
 
 CHARACTER SELECTION:
   - Access via "Customize Character" from main menu
-  - Character panel shows all 7 playable characters
   - Ability scores displayed with color coding (green = high, red = low)
   - Selected character's sprites are used in gameplay
   - Selection persists across game sessions
@@ -354,18 +272,6 @@ CHARACTER FILES:
   - AbilityScores.java         → Ability score calculations and modifiers
   - PlayableCharacter.java     → Character data class
   - PlayableCharacterRegistry.java → Registry of all characters
-
-SPRITE LOCATIONS:
-  assets/characters/[character_id]/sprites/
-  - idle.gif, walk.gif, jump.gif (copied from base player sprites)
-
-ABILITY SCORE METHODS (SpritePlayerEntity):
-  - getAbilityScores()               → Get current ability scores
-  - getAttackDamage()                → Applies STR/INT modifiers automatically
-  - canUseAncientArtifact(wisdom)    → Check wisdom requirement
-  - useItemWithDexterity(...)        → Calculate DEX-based item usage
-  - getStatusEffectDurationModifier()→ Get CON-based status effect modifier
-  - getCarryingCapacityModifier()    → Get STR+CON carrying capacity modifier
 
 --------------------------------------------------------------------------------
 6. COMBAT SYSTEM
@@ -397,11 +303,9 @@ ATTACK TYPES:
      - Hold attack button to charge (up to 5 seconds)
      - Damage multiplier: 1x (no charge) to 3x (full charge)
      - Visual feedback: projectile grows during charge
-     - Mana/arrow cost scales with charge level
 
 DAMAGE CALCULATION:
   finalDamage = baseDamage * weaponMultiplier * chargeMultiplier * critMultiplier
-  - Crit chance and multiplier configurable per weapon
   - Knockback pushes target away from attacker
   - Invincibility frames prevent damage stacking
 
@@ -409,8 +313,7 @@ DAMAGE CALCULATION:
 7. PROJECTILE SYSTEM (entity/ProjectileEntity.java)
 --------------------------------------------------------------------------------
 
-Projectiles are fired by players and mobs for ranged attacks. Each projectile
-type has unique properties and behaviors.
+Projectiles are fired by players and mobs for ranged attacks.
 
 PROJECTILE TYPES:
   Type           | Source              | Properties
@@ -427,31 +330,12 @@ PROJECTILE TYPES:
   BOMB           | Thrown              | Explosion radius
   FISH           | Mirror to Realms    | Special weapon projectile
 
-PROJECTILE PROPERTIES:
-  - velocityX, velocityY    → Movement per frame
-  - gravity                 → Vertical acceleration (optional)
-  - damage                  → Damage on hit
-  - knockbackX, knockbackY  → Push force on hit
-  - lifetime                → Frames before despawn
-  - piercing                → Can pass through enemies
-  - explosionRadius         → Area damage on impact
-
 STATUS EFFECTS (applied on hit):
   Effect   | Duration | Damage/Tick | Special
   ---------|----------|-------------|------------------
   BURNING  | 3 sec    | 5 damage    | Orange tint, fire particles
   FROZEN   | 4 sec    | 3 damage    | Blue tint, 50% slow, ice particles
   POISONED | 5 sec    | 2 damage    | Green tint, bubble particles
-
-CREATING PROJECTILES:
-  ProjectileEntity proj = new ProjectileEntity(
-      x, y,                    // Start position
-      velocityX, velocityY,    // Direction and speed
-      ProjectileType.ARROW,    // Type
-      damage,                  // Damage amount
-      owner                    // Entity that fired it
-  );
-  entityManager.addEntity(proj);
 
 --------------------------------------------------------------------------------
 8. INVENTORY SYSTEM (ui/Inventory.java)
@@ -477,25 +361,13 @@ INVENTORY INTERACTIONS (Mouse Mode):
   F Key         | Equip hovered item to hotbar
 
 INVENTORY NAVIGATION (Keyboard/Controller Mode):
-  The inventory supports Minecraft-style navigation using arrow keys or the
-  Xbox controller D-pad. Items can be picked up and placed in empty slots.
-
   Action             | Keyboard      | Xbox Controller
   -------------------|---------------|------------------
   Open/Close         | I key         | Y Button
   Navigate Grid      | Arrow Keys    | D-Pad
   Pick Up/Place Item | Enter         | A Button
   Equip to Hotbar    | F key         | (use navigation)
-  Scroll Inventory   | Mouse Wheel   | -
   Select Hotbar Slot | 1-5 keys      | LB/RB Bumpers
-
-  Navigation Mode Features:
-  - Cyan highlight shows the currently selected slot
-  - Press Enter/A to pick up an item (item glows while held)
-  - Navigate to destination slot and press Enter/A to place
-  - If destination has an item, they swap positions
-  - Items can be placed in empty slots beyond current inventory
-  - Pressing I or closing inventory cancels any held item
 
 VAULT INVENTORY (ui/VaultInventory.java):
   - Up to 10,000 slots persistent storage
@@ -504,28 +376,12 @@ VAULT INVENTORY (ui/VaultInventory.java):
   - Sorting: by rarity or alphabetical
   - Drag/drop between vault and player inventory
 
-INVENTORY METHODS:
-  Inventory inv = player.getInventory();
-  inv.addItem(item, count);      // Add items, returns leftover
-  inv.removeItem(item, count);   // Remove items
-  inv.getHotbarItem(slot);       // Get item in hotbar slot 0-4
-  inv.getSelectedItem();         // Currently selected hotbar item
-  inv.hasItem(item, count);      // Check if has enough
-
 --------------------------------------------------------------------------------
 9. ITEM SYSTEM (entity/item/)
 --------------------------------------------------------------------------------
 
 Items are defined with categories, rarities, and various properties. Each item
 has its own dedicated class file in entity/item/items/ for easy customization.
-
-ITEM CLASS ARCHITECTURE:
-  All items are now implemented as individual Java classes that extend the
-  Item base class. This allows:
-  - Per-item customization of textures and behavior
-  - Override of base Item methods for unique functionality
-  - Clean separation of item configuration from registry logic
-  - Easy addition of new items by creating a new class file
 
 ITEM CLASS LOCATION (entity/item/items/):
   Category       | Location                          | Count
@@ -549,20 +405,8 @@ ITEM CLASS LOCATION (entity/item/items/):
   TOTAL                                              | 190
 
 ITEM CATEGORIES (ItemCategory enum):
-  Category      | Description
-  --------------|----------------------------------------
-  WEAPON        | Melee weapons (swords, axes, maces)
-  RANGED_WEAPON | Bows, crossbows, wands, staffs
-  TOOL          | Pickaxes, shovels, axes
-  ARMOR         | Helmets, chestplates, leggings, boots
-  CLOTHING      | Cosmetic equipment
-  BLOCK         | Placeable blocks
-  FOOD          | Consumable food items
-  POTION        | Healing and effect potions
-  MATERIAL      | Crafting materials
-  KEY           | Door/chest keys
-  ACCESSORY     | Rings, amulets, belts
-  THROWABLE     | Grenades, throwing knives
+  WEAPON, RANGED_WEAPON, TOOL, ARMOR, CLOTHING, BLOCK, FOOD, POTION,
+  MATERIAL, KEY, ACCESSORY, THROWABLE
 
 ITEM RARITY (ItemRarity enum):
   Rarity    | Color  | Drop Rate
@@ -582,78 +426,18 @@ ITEM PROPERTIES:
   - specialEffect             → Unique item abilities
   - maxStackSize              → Inventory stacking limit
 
-ITEM ANIMATION STATES (for held item overlays):
-  - IDLE, USE, BREAK          → General usage
-  - ATTACK, BLOCK, CRITICAL   → Combat
-  - DRAW, FIRE, RELOAD        → Ranged weapons
-  - CHARGE, CAST, GLOW        → Magic
-  - MINE, CHOP, IMPACT        → Tools
-
-CREATING NEW ITEMS (Recommended - Individual Class):
-  // 1. Create a new class file in appropriate category folder
-  // Example: entity/item/items/weapons/melee/FlameSword.java
-
-  package entity.item.items.weapons.melee;
-
-  import entity.item.Item;
-
-  public class FlameSword extends Item {
-      public FlameSword() {
-          super("Flame Sword", ItemCategory.WEAPON);
-          setRarity(ItemRarity.EPIC);
-          setDamage(45);
-          setAttackSpeed(1.2f);
-          setRange(65);
-          setSpecialEffect("Burns enemies on hit");
-          setDescription("A blade wreathed in eternal flame");
-          setScalesWithStrength(true);
-      }
-
-      @Override
-      public Item copy() {
-          return new FlameSword();
-      }
-
-      // Optional: Override methods for unique behavior
-      // @Override
-      // public void onUse(Entity user, Entity target) { ... }
-  }
-
-  // 2. Register in ItemRegistry.initialize():
-  templates.put("flame_sword", new FlameSword());
-
-ITEM CLASS PATTERN:
-  Every item class follows this pattern:
-  1. Extend Item base class
-  2. Call super() with name and category
-  3. Configure all properties in constructor
-  4. Override copy() to return new instance
-  5. Optionally override methods for unique behavior
-
 NOTABLE SPECIAL ITEMS:
   - Mirror to Other Realms (MirrorToOtherRealms.java):
-    - Complex custom item with realm-cycling projectiles
     - Cycles through 3 realms every 400ms
-    - Volcano Realm → Fires fireballs
-    - Forest Realm → Fires arrows
-    - Ocean Realm → Fires tiny fish
+    - Volcano Realm → Fireballs, Forest Realm → Arrows, Ocean Realm → Fish
     - Fires 3 projectiles per use, 25 mana cost
-    - Example of advanced item customization with unique methods
 
 --------------------------------------------------------------------------------
 10. MOB/ENEMY SYSTEM (entity/mob/)
 --------------------------------------------------------------------------------
 
 Enemies use an AI state machine for behavior. Each mob type has its own
-dedicated class file for easy customization of AI, textures, and functionality.
-
-MOB CLASS ARCHITECTURE:
-  All mobs are now implemented as individual Java classes that extend the
-  SpriteMobEntity base class. This allows:
-  - Per-mob customization of stats and behavior
-  - Override of base methods for unique AI patterns
-  - Clean separation of mob configuration from registry logic
-  - Easy addition of new mobs by creating a new class file
+dedicated class file for easy customization.
 
 MOB CLASS LOCATION (entity/mob/mobs/):
   Category       | Location                          | Count
@@ -665,17 +449,8 @@ MOB CLASS LOCATION (entity/mob/mobs/):
   TOTAL                                              | 23
 
 MOB REGISTRY USAGE:
-  The MobRegistry provides centralized mob creation. Use it to instantiate
-  mobs by type name:
-
-  // Create a mob at position (x, y)
   SpriteMobEntity zombie = MobRegistry.create("zombie", 100, 500);
-
-  // Create with custom sprite directory
   SpriteMobEntity wolf = MobRegistry.create("wolf", 200, 500, "assets/mobs/wolf/alpha");
-
-  // Check if type exists
-  if (MobRegistry.isRegistered("dragon")) { ... }
 
 AI STATE MACHINE:
   State  | Behavior
@@ -700,51 +475,15 @@ HUMANOID MOBS (mobs/humanoid/):
   mage     | 40     | 15     | 40     | Fire/Ice/Arcane magic
 
 HUMANOID MOB WEAPON USAGE AI:
-  All humanoid mobs have an intelligent weapon usage system. They carry appropriate
-  weapons in their inventory and use them during combat based on their class.
-
   Mob      | Weapon Preference      | Starting Loadout
   ---------|------------------------|------------------------------------------
   zombie   | MELEE_ONLY             | 60% armed: wooden sword, iron sword, mace
-  skeleton | RANGED_ONLY            | Wooden bow, longbow, or crossbow + backup sword
-  goblin   | MELEE_AND_THROWABLE    | Dagger or poison dagger + rocks/throwing knives
-  orc      | MELEE_AND_THROWABLE    | Battle axe or mace + throwing axes
-  bandit   | MELEE_AND_THROWABLE    | Iron/steel sword or dagger + throwing knives/axes
+  skeleton | RANGED_ONLY            | Bow + backup sword
+  goblin   | MELEE_AND_THROWABLE    | Dagger + rocks/throwing knives
+  orc      | MELEE_AND_THROWABLE    | Battle axe + throwing axes
+  bandit   | MELEE_AND_THROWABLE    | Sword + throwing knives/axes
   knight   | MELEE_ONLY             | Steel sword, mace, or legendary sword
-  mage     | MAGIC_ONLY             | Magic wand, fire staff, ice staff, or arcane staff
-
-  WEAPON PREFERENCE TYPES:
-    - MELEE_ONLY:           Only uses melee weapons (swords, axes, maces)
-    - RANGED_ONLY:          Only uses ranged weapons (bows, crossbows)
-    - MELEE_AND_THROWABLE:  Uses melee weapons and throws items (knives, axes, rocks)
-    - MAGIC_ONLY:           Only uses magic weapons (wands, staffs) - requires mana
-    - ANY:                  Uses any available weapon type
-
-  MANA SYSTEM FOR MAGIC-USING MOBS:
-    Magic-using mobs (like Mage) have their own mana pool that regenerates over time.
-    Magic weapons consume mana when used. When out of mana, mobs will wait for
-    regeneration before casting again.
-
-    Mage Stats:
-      - Max Mana: 150
-      - Mana Regen: 8 per second
-      - Magic Attack Cost: 15 mana
-
-  THROWABLE ITEM CONSUMPTION:
-    Throwable items (throwing knives, axes, rocks) are consumed when used.
-    Mobs will automatically switch to the next throwable in their inventory
-    or fall back to melee when they run out.
-
-  AI WEAPON SELECTION:
-    Mobs intelligently select weapons based on:
-    - Distance to target (ranged at distance, melee when close)
-    - Weapon damage and rarity
-    - Available mana for magic weapons
-    - Remaining throwable items
-
-  ITEM DROPS:
-    When mobs die, they drop their equipped weapon and all inventory items.
-    This creates a risk/reward loop where powerful mobs drop valuable gear.
+  mage     | MAGIC_ONLY             | Magic wand, fire/ice/arcane staff
 
 QUADRUPED MOBS (mobs/quadruped/):
   Type     | Health | Damage | Speed  | Behavior
@@ -770,82 +509,11 @@ SPECIAL MOBS (mobs/special/):
   ogre     | 100    | 20     | 50     | Mini-boss, reduced knockback
   troll    | 80     | 18     | 55     | Health regeneration
 
-CREATING NEW MOBS (Recommended - Individual Class):
-  New mobs are automatically registered to the Creative Mode palette when added
-  to the MobRegistry. Follow these steps:
-
-  // 1. Create a new class file in appropriate category folder
-  // Example: entity/mob/mobs/humanoid/VampireMob.java
-
-  package entity.mob.mobs.humanoid;
-
-  import entity.mob.SpriteMobEntity;
-
-  public class VampireMob extends SpriteMobEntity {
-      private static final String DEFAULT_SPRITE_DIR = "assets/mobs/vampire";
-
-      public VampireMob(int x, int y) {
-          this(x, y, DEFAULT_SPRITE_DIR);
-      }
-
-      public VampireMob(int x, int y, String spriteDir) {
-          super(x, y, spriteDir);
-          configureStats();
-      }
-
-      private void configureStats() {
-          this.maxHealth = 60;
-          this.currentHealth = maxHealth;
-          this.attackDamage = 10;
-          this.attackRange = 55;
-          this.wanderSpeed = 50;
-          this.chaseSpeed = 90;
-          setHostile(true);
-      }
-
-      // Override methods for unique behavior
-      @Override
-      public void takeDamage(int damage, double knockbackX, double knockbackY) {
-          // Vampires heal when they attack
-          super.takeDamage(damage, knockbackX, knockbackY);
-      }
-  }
-
-  // 2. Register in MobRegistry.initialize():
-  // Signature: registerMob(id, displayName, factory, category, behavior)
-  registerMob("vampire", "Vampire", VampireMob::new, "humanoid", MobBehavior.HOSTILE);
-
-  // Behaviors: HOSTILE (attacks on sight), NEUTRAL (attacks when provoked), PASSIVE (never attacks)
-  // Categories: "humanoid", "quadruped", "special"
-
-  // 3. Add sprite files to assets/mobs/vampire/
-  //    The mob will automatically appear in Creative Mode's Mob palette!
-
 REQUIRED MOB SPRITE FILES:
   assets/mobs/[mob_name]/
-  ├── idle.gif      → Standing animation
-  ├── walk.gif      → Walking animation
-  ├── run.gif       → (Optional) Running animation
-  ├── attack.gif    → Attack animation
-  ├── hurt.gif      → Damage reaction
-  ├── death.gif     → Death animation
-  ├── burning.gif   → (Optional) On fire variant
-  └── frozen.gif    → (Optional) Frozen variant
-
-LEVEL JSON MOB FORMAT:
-  {
-    "mobs": [
-      // Using MobRegistry (RECOMMENDED)
-      {"x": 600, "y": 920, "mobType": "zombie", "behavior": "hostile"},
-      {"x": 800, "y": 920, "mobType": "wolf", "behavior": "hostile"},
-
-      // With custom sprites
-      {"x": 1000, "y": 920, "mobType": "skeleton", "spriteDir": "assets/mobs/skeleton/elite"},
-
-      // Legacy format (still supported)
-      {"x": 1200, "y": 920, "mobType": "quadruped", "subType": "wolf", "behavior": "hostile"}
-    ]
-  }
+  ├── idle.gif, walk.gif, run.gif (optional), attack.gif
+  ├── hurt.gif, death.gif
+  └── burning.gif (optional), frozen.gif (optional)
 
 --------------------------------------------------------------------------------
 11. ANIMATION SYSTEM (animation/)
@@ -865,15 +533,8 @@ ACTION STATES (ActionState enum):
   Reactions: HURT, DEAD
   Effects:  BURNING, FROZEN, POISONED
 
-ANIMATION FEATURES:
-  - Automatic frame cycling with configurable timing
-  - Direction flipping for left/right facing
-  - Smooth state transitions
-  - Frame synchronization for overlay alignment
-
 EQUIPMENT OVERLAY (animation/EquipmentOverlay.java):
   Renders equipment on top of the player sprite:
-
   Slot       | Render Order | Description
   -----------|--------------|---------------------------
   HAIR_BACK  | Behind       | Ponytails, long hair back
@@ -889,20 +550,12 @@ ANIMATED TEXTURE (animation/AnimatedTexture.java):
   - Extracts frames from GIF files
   - Respects per-frame delays from GIF metadata
   - Provides getCurrentFrame() for rendering
-  - update() method advances animation
-
-LEGACY BONE ANIMATION (animation/bone/):
-  - Skeleton-based hierarchical animation
-  - Keyframe blending between poses
-  - Still functional but deprecated
-  - Use for reference only
 
 --------------------------------------------------------------------------------
 12. BLOCK SYSTEM (block/)
 --------------------------------------------------------------------------------
 
-Blocks form the destructible/constructible terrain. Each block type has
-unique textures and properties.
+Blocks form the destructible/constructible terrain.
 
 BLOCK TYPES (BlockType enum):
   Type        | Solid | Description
@@ -934,85 +587,37 @@ BLOCK INTERACTION:
   1. Click block within 3-block radius to select
   2. Selected block shows yellow highlight
   3. Arrow keys change mining direction indicator
-  4. Click again (or press E) to mine from chosen direction
-  5. If block has overlay, overlay breaks first
+  4. Click selected block again (or press E) to mine from the chosen direction
+  5. Clicking elsewhere or moving out of range deselects the block
 
 BLOCK PLACEMENT:
   - Player must hold a BLOCK category item
   - Left click empty space within 3-block radius
-  - Cannot place where player is standing
-  - Cannot place on existing blocks
-
-BLOCK REGISTRY (Singleton):
-  - Caches block textures (loaded once, shared)
-  - Pre-scales textures to 64x64 rendered size
-  - Supports animated blocks (GIF textures)
-  - Fallback magenta/black checkerboard for missing textures
+  - Cannot place where player is standing or on existing blocks
 
 --------------------------------------------------------------------------------
 13. LEVEL SYSTEM (level/)
 --------------------------------------------------------------------------------
 
-Levels are defined in JSON files in the levels/ directory. LevelLoader parses
-these files and creates the game world.
+Levels are defined in JSON files in the levels/ directory.
 
 LEVEL JSON STRUCTURE:
   {
     "name": "Level Name",
     "description": "Level description",
-
-    // Player spawn
-    "playerSpawnX": 100,
-    "playerSpawnY": 620,
-    "playerSpritePath": "assets/player/sprites",
-    "useSpriteAnimation": true,
-
-    // Level dimensions
-    "levelWidth": 1920,
-    "levelHeight": 1080,
+    "playerSpawnX": 100, "playerSpawnY": 620,
+    "levelWidth": 1920, "levelHeight": 1080,
     "groundY": 720,
-
-    // Camera settings
-    "scrollingEnabled": true,
-    "verticalScrollEnabled": false,
-    "verticalMargin": 0,
-
-    // Lighting
-    "nightMode": false,
-    "nightDarkness": 0.8,
-    "ambientLight": 0.12,
-    "playerLightEnabled": false,
-
-    // Parallax background
-    "parallaxEnabled": true,
-    "parallaxLayers": [ /* layer data */ ],
-
-    // Game objects
-    "platforms": [ /* platform data */ ],
-    "blocks": [ /* block grid */ ],
-    "items": [ /* item spawns */ ],
-    "mobs": [ /* enemy spawns */ ],
-    "doors": [ /* door connections */ ],
-    "buttons": [ /* switches */ ],
-    "vaults": [ /* chest locations */ ],
-    "triggers": [ /* trigger zones */ ]
+    "scrollingEnabled": true, "verticalScrollEnabled": false,
+    "nightMode": false, "nightDarkness": 0.8, "ambientLight": 0.12,
+    "parallaxEnabled": true, "parallaxLayers": [...],
+    "platforms": [...], "blocks": [...], "items": [...], "mobs": [...],
+    "doors": [...], "buttons": [...], "vaults": [...], "triggers": [...]
   }
 
 LEVEL DATA CLASSES:
-  - PlatformData    → Sprite-based obstacles
-  - BlockData       → Block type and position
-  - ItemData        → Item spawn with rarity
-  - MobData         → Enemy type, position, AI config
-  - DoorData        → Door ID and destination link
-  - ButtonData      → Switch with linked door ID
-  - VaultData       → Chest type (daily, monthly, regular)
-  - TriggerData     → Zone bounds and action
-  - LightSourceData → Position, color, radius
-  - ParallaxLayerData → Image path, depth, scroll speed
-
-LEVEL LOADER USAGE:
-  LevelData level = LevelLoader.loadLevel("levels/forest_1.json");
-  // Access level.mobs, level.blocks, level.items, etc.
+  PlatformData, BlockData, ItemData, MobData, DoorData, ButtonData,
+  VaultData, TriggerData, LightSourceData, ParallaxLayerData
 
 --------------------------------------------------------------------------------
 14. GRAPHICS SYSTEM (graphics/)
@@ -1026,26 +631,11 @@ CAMERA (Camera.java):
   - Clamps to level bounds
   - Converts screen ↔ world coordinates
 
-  Camera camera = new Camera(screenWidth, screenHeight);
-  camera.setTarget(player);
-  camera.update();
-
-  // In rendering:
-  g.translate(-camera.getX(), -camera.getY());
-  // Draw world objects
-  g.translate(camera.getX(), camera.getY());
-  // Draw UI (screen space)
-
 LIGHTING SYSTEM (LightingSystem.java):
   - Day/night cycle support
   - Dynamic point light sources
   - Ambient lighting level
   - Darkness overlay with light cutouts
-
-  LightingSystem lighting = new LightingSystem();
-  lighting.setDarknessLevel(0.7);  // 70% dark
-  lighting.addLightSource(new LightSource(x, y, radius, color));
-  lighting.draw(g, camera);
 
 PARALLAX BACKGROUND (ParallaxBackground.java, ParallaxLayer.java):
   Layers at different depths scroll at different speeds.
@@ -1058,30 +648,6 @@ PARALLAX BACKGROUND (ParallaxBackground.java, ParallaxLayer.java):
   Z_MIDDLEGROUND_2 | 0       | 0.5x
   Z_MIDDLEGROUND_1 | 1       | 0.7x
   Z_FOREGROUND     | 2       | 1.2x (fastest)
-
-  GIF Animation Support:
-  - Animated GIFs auto-play when loaded as parallax layers
-  - Frame timing from GIF metadata is preserved
-  - Supports GIF disposal methods (none, restoreToBackground, restoreToPrevious)
-  - Works seamlessly with tiling, scaling, and opacity
-
-  ParallaxBackground bg = new ParallaxBackground();
-  bg.addLayer("clouds", "assets/parallax/clouds.gif", 0.1, -2);  // Animated GIF layer
-  bg.update(deltaMs);  // Call each frame to advance animations
-  bg.drawAll(g, camera);
-
-ASSET LOADER (AssetLoader.java):
-  Static methods for loading images and GIFs:
-
-  ImageAsset asset = AssetLoader.load("path/to/image.png");
-  BufferedImage img = asset.staticImage;
-
-  // For GIFs:
-  ImageAsset gifAsset = AssetLoader.load("path/to/anim.gif");
-  AnimatedTexture anim = gifAsset.animatedTexture;
-  anim.playForward();  // Start animation (paused by default)
-  anim.update(deltaMs);  // Call each frame with delta time in milliseconds
-  BufferedImage frame = anim.getCurrentFrame();
 
 RENDER PIPELINE ORDER:
   1. Clear screen
@@ -1097,210 +663,60 @@ RENDER PIPELINE ORDER:
 --------------------------------------------------------------------------------
 
 Singleton that captures all keyboard, mouse, and Xbox controller input.
-Implements KeyListener, MouseListener, MouseWheelListener, and MouseMotionListener.
 
 XBOX CONTROLLER SUPPORT:
-  The game supports Xbox controllers (and compatible gamepads) via JInput library.
-  When a controller is connected, inputs are automatically mapped to game actions.
-  A visible crosshair cursor appears when using the controller for UI navigation.
+  The game supports Xbox controllers via JInput library.
+  When a controller is connected, a visible crosshair cursor appears.
 
   CONTROLLER SETUP:
-    1. Download JInput library (see lib/README.md for detailed instructions)
+    1. Download JInput library (see lib/README.md)
     2. Place jinput-2.0.10.jar in lib/ folder
-    3. Extract platform-specific native libraries to lib/ or project root
-    4. Add JARs to project classpath
-    5. Configure VM args: -Djava.library.path=lib
+    3. Add JARs to project classpath
+    4. Configure VM args: -Djava.library.path=lib
 
   CONTROLLER MAPPINGS:
     Controller Input    | Game Action        | Keyboard Equivalent
     --------------------|--------------------|-----------------------
-    Left Stick Up       | Move up/climb      | W key
-    Left Stick Down     | Move down          | S key
-    Left Stick Left     | Move left          | A key
-    Left Stick Right    | Move right         | D key
+    Left Stick          | Movement           | WASD keys
     Left Stick Click    | Sprint             | Shift key
-    Right Stick Move    | Mouse cursor       | Mouse movement
+    Right Stick         | Mouse cursor       | Mouse movement
     Right Trigger (RT)  | Click/Select/Drag  | Left mouse click
-    Left Bumper (LB)    | Hotbar previous    | Scroll wheel up
-    Right Bumper (RB)   | Hotbar next        | Scroll wheel down
-    D-Pad Up/Down/L/R   | Inventory navigate | Arrow keys
+    Left/Right Bumper   | Hotbar prev/next   | Scroll wheel
+    D-Pad               | Inventory navigate | Arrow keys
     A Button            | Jump / Inv. select | Space / Enter
     X Button            | Interact/Mine      | E key
     Y Button            | Inventory          | I key
     Start Button        | Menu/Settings      | M key
     Back Button         | Back/Cancel        | Escape key
 
-  CONTROLLER CURSOR:
-    When using the right stick to control the mouse cursor, a visible crosshair
-    appears on screen. This cursor shows where you are pointing and can be used
-    to navigate menus, click UI elements, and interact with the game. Pull the
-    right trigger (RT) to click/select items, which also works for dragging
-    items around in inventory menus.
-
-  CONTROLLER MANAGER USAGE:
-    ControllerManager controller = ControllerManager.getInstance();
-
-    // Poll each frame (done automatically in GamePanel)
-    controller.poll();
-
-    // Check button states
-    if (controller.isButtonAJustPressed()) { /* jump */ }
-    if (controller.isButtonXPressed()) { /* interact */ }
-
-    // Get stick values (-1.0 to 1.0)
-    float moveX = controller.getLeftStickX();
-    float moveY = controller.getLeftStickY();
-
-    // Virtual mouse (controlled by right stick)
-    int mouseX = controller.getVirtualMouseX();
-    int mouseY = controller.getVirtualMouseY();
-
-    // Check right trigger for left mouse click action
-    if (controller.isRightTriggerJustPressed()) { /* click action */ }
-
-    // Hotbar navigation with bumpers
-    if (controller.isButtonLBJustPressed()) { /* previous slot */ }
-    if (controller.isButtonRBJustPressed()) { /* next slot */ }
-
-    // Sprint with left stick click
-    if (controller.isLeftStickClicked()) { /* sprinting */ }
-
-  Note: InputManager automatically integrates controller input, so game code
-  using InputManager.isKeyPressed() will work with both keyboard and controller.
-
 CONTROLLER VIBRATION/HAPTIC FEEDBACK:
-  The game supports controller vibration (rumble) for immersive haptic feedback.
-  Vibration patterns are triggered automatically during gameplay events.
-
-  VIBRATION PATTERN TYPES:
-    Pattern Type  | Intensity | Duration | Use Case
-    --------------|-----------|----------|----------------------------------
-    MINOR         | 0.08-0.25 | 30-100ms | UI clicks, item pickups, footsteps
-    GREATER       | 0.35-0.90 | 80-300ms | Damage, attacks, jumps, explosions
-    INTRICATE     | Variable  | 500-2000ms | Chest opening, boss encounters
-
-  MOTOR TYPES:
-    - LEFT_MOTOR: Low frequency rumble (bass), good for impacts
-    - RIGHT_MOTOR: High frequency rumble (treble), good for feedback
-    - BOTH: Simultaneous activation for powerful effects
-
-  VIBRATION TRIGGERS (Automatic):
-    Event                    | Pattern Used
-    -------------------------|------------------------------------
-    Jump (first)             | GREATER_JUMP
-    Double Jump              | GREATER_DOUBLE_JUMP
-    Triple Jump              | GREATER_TRIPLE_JUMP
-    Take Damage              | GREATER_DAMAGE_TAKEN
-    Critical Damage          | GREATER_CRITICAL_DAMAGE
-    Player Death             | PLAYER_DEATH (intricate)
-    Melee Attack             | GREATER_MELEE_ATTACK
-    Daily Chest Open         | LOOT_CHEST_DAILY (intricate)
-    Monthly Chest Open       | LOOT_CHEST_MONTHLY (intricate)
-    Collect Common/Uncommon  | MINOR_ITEM_PICKUP
-    Collect Rare/Epic        | GREATER_LEVEL_UP
-    Collect Legendary        | LOOT_LEGENDARY_ITEM (intricate)
-    Collect Mythic           | LOOT_MYTHIC_ITEM (intricate)
-
-  LOOT CHEST VIBRATION PATTERNS:
-    The daily and monthly loot chests feature unique multi-phase vibration
-    sequences that create anticipation and excitement:
-
-    Daily Chest (9 steps, ~750ms):
-      - Build-up phase: Escalating small pulses (60-80ms each)
-      - Climax: Strong opening burst (150ms)
-      - Resolution: Light confirmation pulse (80ms)
-
-    Monthly Chest (20 steps, ~2000ms):
-      - Phase 1: Initial awakening with subtle pulses
-      - Phase 2: Building anticipation with combined motors
-      - Phase 3: Pre-climax tension with deep rumbles
-      - Phase 4: Grand opening burst (200ms at 90% intensity)
-      - Phase 5: Magical resolution with fading pulses
-
-  VIBRATION MANAGER USAGE:
-    ControllerManager controller = ControllerManager.getInstance();
-
-    // Check if vibration is supported
-    if (controller.isVibrationSupported()) {
-        // Trigger a predefined pattern
-        controller.vibrate(VibrationPattern.GREATER_DAMAGE_TAKEN);
-
-        // Trigger custom vibration
-        controller.vibrate(0.5f, 200);  // 50% intensity, 200ms
-
-        // Trigger with specific motor
-        controller.vibrate(0.7f, 150, VibrationPattern.MotorType.LEFT);
-
-        // Stop vibration immediately
-        controller.stopVibration();
-    }
-
-    // Enable/disable vibration
-    controller.setVibrationEnabled(true);
-    controller.setVibrationEnabled(false);
-
-  AVAILABLE VIBRATION PATTERNS (VibrationPattern enum):
-    Minor patterns: MINOR_UI_CLICK, MINOR_ITEM_PICKUP, MINOR_HOTBAR_SWITCH,
-                    MINOR_FOOTSTEP_WALK, MINOR_FOOTSTEP_RUN, MINOR_INVENTORY_NAVIGATE,
-                    MINOR_EQUIP_ITEM, MINOR_CONSUME_ITEM, MINOR_BLOCK_PLACE
-
-    Greater patterns: GREATER_DAMAGE_TAKEN, GREATER_CRITICAL_DAMAGE, GREATER_MELEE_ATTACK,
-                      GREATER_RANGED_FIRE, GREATER_PROJECTILE_HIT, GREATER_JUMP,
-                      GREATER_DOUBLE_JUMP, GREATER_TRIPLE_JUMP, GREATER_LAND_IMPACT,
-                      GREATER_LAND_HEAVY, GREATER_BLOCK_SHIELD, GREATER_BLOCK_BREAK,
-                      GREATER_ENEMY_KILLED, GREATER_EXPLOSION, GREATER_STATUS_EFFECT,
-                      GREATER_LEVEL_UP, GREATER_DOOR_OPEN
-
-    Intricate patterns: LOOT_CHEST_DAILY, LOOT_CHEST_MONTHLY, LOOT_LEGENDARY_ITEM,
-                        LOOT_MYTHIC_ITEM, PLAYER_DEATH, BOSS_ENCOUNTER,
-                        VAULT_UNLOCK, ALCHEMY_SUCCESS
+  Pattern Type  | Intensity | Duration | Use Case
+  --------------|-----------|----------|----------------------------------
+  MINOR         | 0.08-0.25 | 30-100ms | UI clicks, item pickups, footsteps
+  GREATER       | 0.35-0.90 | 80-300ms | Damage, attacks, jumps, explosions
+  INTRICATE     | Variable  | 500-2000ms | Chest opening, boss encounters
 
 KEYBOARD INPUT:
   InputManager input = InputManager.getInstance();
-
-  // Check if key currently held
   if (input.isKeyPressed('a')) { /* move left */ }
-  if (input.isKeyPressed(' ')) { /* space held */ }
-
-  // Check if key just pressed this frame (one-shot)
   if (input.isKeyJustPressed('e')) { /* interact */ }
-
-  // Special keys via KeyEvent codes
-  if (input.isKeyPressed(KeyEvent.VK_SHIFT)) { /* sprinting */ }
-  if (input.isKeyPressed(KeyEvent.VK_LEFT))  { /* arrow key */ }
 
 MOUSE INPUT:
   int mouseX = input.getMouseX();
-  int mouseY = input.getMouseY();
-
   if (input.isLeftMousePressed()) { /* attack/mine */ }
-  if (input.isRightMousePressed()) { /* place/drop */ }
   if (input.isLeftMouseJustPressed()) { /* one-shot click */ }
-
-SCROLL WHEEL:
-  int scroll = input.getScrollDirection();
-  // Returns: -1 (up), 0 (none), 1 (down)
-  // Has threshold (1.5) to prevent accidental scrolling
-
-UI CLICK CONSUMPTION:
-  When UI handles a click, it should consume it to prevent game actions:
-
-  // In UI button handler:
-  input.consumeLeftClick();
 
 --------------------------------------------------------------------------------
 16. SETTINGS MENU (ui/SettingsOverlay.java, input/KeyBindings.java)
 --------------------------------------------------------------------------------
 
 The game features a comprehensive in-game settings menu accessible by pressing
-the M key or Start button on a controller. The menu replaces the previously
-scattered in-game buttons with a centralized, tabbed interface.
+the M key or Start button on a controller.
 
 OPENING THE SETTINGS MENU:
   - Keyboard: Press M key
   - Controller: Press Start button
   - In-Game: Click the "Settings (M)" button in top-right corner
-  - Close: Press M, ESC, or click the X button
 
 SETTINGS TABS:
 
@@ -1308,149 +724,41 @@ SETTINGS TABS:
      - Music Volume slider (0-100%)
      - Sound Effects Volume slider (0-100%)
      - Mute All toggle button
-     - Volume changes take effect immediately
 
   2. CONTROLS TAB
-     - Toggle between Keyboard and Controller bindings at the top
+     - Toggle between Keyboard and Controller bindings
      - Click any control to rebind it
      - If a key/button is already bound, bindings are swapped automatically
-     - Press ESC to cancel rebinding
      - "Reset to Defaults" button restores original bindings
-     - Shows connected controller name (if any)
 
-     KEYBOARD BINDINGS (Blue buttons):
-       Action        | Default Key  | Description
-       --------------|--------------|----------------------------------
-       Move Left     | A            | Move player left
-       Move Right    | D            | Move player right
-       Move Up       | W            | Move up / climb
-       Move Down     | S            | Move down / descend
-       Jump          | Space        | Jump (multi-jump supported)
-       Sprint        | Shift        | Run faster (uses stamina)
-       Interact      | E            | Interact with objects / mine
-       Inventory     | I            | Open/close inventory
-       Attack/Equip  | F            | Attack or equip item
+     KEYBOARD BINDINGS:
+       Move Left (A), Move Right (D), Move Up (W), Move Down (S),
+       Jump (Space), Sprint (Shift), Interact (E), Inventory (I), Attack (F)
 
-     CONTROLLER BINDINGS (Green buttons):
-       Button        | Default Action    | Description
-       --------------|-------------------|----------------------------------
-       A Button      | Jump              | Jump action
-       B Button      | Back/Cancel       | Go back or cancel
-       X Button      | Interact/Mine     | Interact with objects
-       Y Button      | Inventory         | Open/close inventory
-       LB            | Hotbar Previous   | Select previous hotbar slot
-       RB            | Hotbar Next       | Select next hotbar slot
-       Start         | Menu/Settings     | Open settings menu
-       Back          | Back/Cancel       | Go back or cancel
-       L3            | Sprint            | Sprint while moving
-       R3            | Attack/Click      | Attack action
-       RT            | Attack/Click      | Primary action (like mouse click)
-       LT            | Interact/Mine     | Secondary interact
+     CONTROLLER BINDINGS:
+       A (Jump), B (Back), X (Interact), Y (Inventory),
+       LB/RB (Hotbar), Start (Menu), Back (Cancel), L3 (Sprint), RT (Attack)
 
   3. GAME TAB
-     - Vibration Toggle: Enable/disable controller vibration
-       (Shows "No Controller" if none connected)
-     - Day/Night Toggle: Switch between day and night lighting
-     - Debug Mode Toggle: Enable debug information overlay (F3)
+     - Vibration Toggle
+     - Day/Night Toggle
+     - Debug Mode Toggle (F3)
 
-  4. ACTIONS TAB (Quick Actions)
-     - Return to Main Menu: Exit to the main menu with fade transition
-     - Customize Character: Open character customization screen
-     - Toggle Music: Quick on/off toggle for background music
-     - Exit Game: Exit the application
+  4. ACTIONS TAB
+     - Return to Main Menu
+     - Customize Character
+     - Toggle Music
+     - Exit Game
 
-KEY BINDINGS SYSTEM (input/KeyBindings.java):
-  Custom key bindings are saved to "saves/keybindings.dat" and persist
-  across game sessions.
-
-  Usage in code:
-    KeyBindings kb = KeyBindings.getInstance();
-
-    // Get bound key for an action
-    int jumpKey = kb.getKey(KeyBindings.JUMP);
-    char interactChar = kb.getKeyChar(KeyBindings.INTERACT);
-
-    // Check if key matches a binding
-    if (kb.matchesBinding(KeyBindings.JUMP, keyChar, keyCode)) {
-        // Handle jump
-    }
-
-    // Set a new binding (will swap if key already bound)
-    kb.setKey(KeyBindings.JUMP, KeyEvent.VK_W);
-
-    // Reset all to defaults
-    kb.resetAllToDefaults();
-
-  Available Action Constants:
-    KeyBindings.MOVE_LEFT, MOVE_RIGHT, MOVE_UP, MOVE_DOWN
-    KeyBindings.JUMP, SPRINT, INTERACT, INVENTORY
-    KeyBindings.MENU, ATTACK, DEBUG
-
-CONTROLLER BINDINGS SYSTEM (input/ControllerBindings.java):
-  Custom controller bindings are saved to "saves/controller_bindings.dat"
-  and persist across game sessions.
-
-  Usage in code:
-    ControllerBindings cb = ControllerBindings.getInstance();
-
-    // Get action bound to a button
-    String action = cb.getAction(ControllerBindings.BUTTON_A);
-
-    // Get button bound to an action
-    String button = cb.getButtonForAction(ControllerBindings.ACTION_JUMP);
-
-    // Check if button is bound to an action
-    if (cb.isButtonBoundTo(ControllerBindings.BUTTON_A, ControllerBindings.ACTION_JUMP)) {
-        // Handle jump
-    }
-
-    // Set a new binding (will swap if button already bound)
-    cb.setBinding(ControllerBindings.BUTTON_X, ControllerBindings.ACTION_JUMP);
-
-    // Reset all to defaults
-    cb.resetAllToDefaults();
-
-  Available Button Constants:
-    ControllerBindings.BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y
-    ControllerBindings.BUTTON_LB, BUTTON_RB, BUTTON_START, BUTTON_BACK
-    ControllerBindings.BUTTON_L3, BUTTON_R3, RIGHT_TRIGGER, LEFT_TRIGGER
-
-  Available Action Constants:
-    ControllerBindings.ACTION_JUMP, ACTION_INTERACT, ACTION_INVENTORY
-    ControllerBindings.ACTION_MENU, ACTION_BACK, ACTION_SPRINT
-    ControllerBindings.ACTION_ATTACK, ACTION_HOTBAR_PREV, ACTION_HOTBAR_NEXT
-
-SETTINGS OVERLAY INTEGRATION:
-  GameScene sets up callbacks for settings actions:
-
-    SettingsOverlay settings = SceneManager.getInstance().getSettingsOverlay();
-
-    // Set callback for day/night toggle
-    settings.setOnDayNightToggle(() -> {
-        lightingSystem.toggleDayNight();
-    });
-
-    // Set callback for debug toggle
-    settings.setOnDebugToggle(() -> {
-        toggleDebugMode();
-    });
-
-    // Set callback for customize action
-    settings.setOnCustomize(() -> {
-        openCharacterCustomization();
-    });
-
-  // In game logic:
-  if (!input.isLeftClickConsumed()) {
-      // Process game click
-  }
+KEY BINDINGS PERSISTENCE:
+  - Keyboard: saves/keybindings.dat
+  - Controller: saves/controller_bindings.dat
 
 --------------------------------------------------------------------------------
-16. SAVE SYSTEM (save/SaveManager.java)
+17. SAVE SYSTEM (save/SaveManager.java)
 --------------------------------------------------------------------------------
 
-Singleton that handles JSON-based persistence of player data, inventory,
-and vault contents.
+Singleton that handles JSON-based persistence.
 
 SAVE FILE LOCATION: saves/player_data.json
 
@@ -1465,20 +773,9 @@ SAVED DATA:
 
 SAVE MANAGER USAGE:
   SaveManager save = SaveManager.getInstance();
-
-  // Save current state
   save.saveInventory(player.getInventory());
-  save.saveVault(vaultInventory);
-
-  // Load state
   save.loadInventory(player.getInventory());
-  VaultInventory vault = save.loadVault();
-
-  // Check chest cooldowns
-  if (save.canOpenDailyChest()) {
-      // Open chest
-      save.recordDailyChestOpened();
-  }
+  if (save.canOpenDailyChest()) { save.recordDailyChestOpened(); }
 
 CHEST COOLDOWNS:
   - DAILY_COOLDOWN = 24 hours
@@ -1486,122 +783,41 @@ CHEST COOLDOWNS:
   - Cooldowns reset in developer mode for testing
 
 --------------------------------------------------------------------------------
-17. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
+18. AUDIO SYSTEM (audio/AudioManager.java, audio/SoundAction.java)
 --------------------------------------------------------------------------------
 
 Manages background music and sound effects with MP3 support via JLayer.
-Supports both WAV files (legacy) and MP3 files (recommended for compression).
 
 JLAYER SETUP (Required for MP3 support):
-  1. Download jlayer-1.0.1.jar from:
-     https://repo1.maven.org/maven2/javazoom/jlayer/1.0.1/jlayer-1.0.1.jar
+  1. Download jlayer-1.0.1.jar from Maven repository
   2. Place the JAR in the lib/ folder
-  3. Add lib/jlayer-1.0.1.jar to your project classpath:
-     - IntelliJ: File > Project Structure > Modules > Dependencies > + > JARs
-     - Eclipse: Project > Properties > Java Build Path > Libraries > Add JARs
-     - VS Code: Add "lib/**/*.jar" to java.project.referencedLibraries
-  4. See lib/README.md for detailed IDE setup instructions
+  3. Add lib/jlayer-1.0.1.jar to your project classpath
 
 SUPPORTED FORMATS:
-  - MP3 files (via JLayer) - recommended for compressed audio
+  - MP3 files (via JLayer) - recommended
   - WAV files (via javax.sound.sampled) - legacy support
-  - Automatic fallback: tries MP3 first, then WAV
 
 AUDIO MANAGER USAGE:
   AudioManager audio = new AudioManager();
-
-  // Action-based playback (RECOMMENDED)
-  // Uses SoundAction enum for type-safe sound routing
   audio.playAction(SoundAction.JUMP);
   audio.playAction(SoundAction.USE_BATTLE_AXE);
-  audio.playAction(SoundAction.OPEN_MONTHLY_CHEST);
-  audio.playAction(SoundAction.MUSIC_LEVEL_1);
-
-  // String-based action playback
-  audio.playAction("JUMP");
-  audio.playAction("USE_SWORD");
-
-  // Direct MP3 playback
-  audio.playMP3Sound("sounds/compressed/player/jump.mp3");
-
-  // Legacy WAV playback (still supported)
-  audio.playSound("jump");
-  audio.playSoundFromPath("sounds/jump.wav");
-
-  // Music control
   audio.loadMusicMP3("sounds/compressed/music/music_level_1.mp3");
-  audio.loadMusic("sounds/music.wav");  // WAV fallback
   audio.playMusic();
-  audio.stopMusic();
-  audio.setMusicVolume(0.7f);  // 0.0 to 1.0
-
-  // SFX volume
+  audio.setMusicVolume(0.7f);
   audio.setSFXVolume(0.8f);
-
-  // Mute controls
   audio.setMuteAll(true);
-  audio.toggleMusic();
-  audio.toggleSFX();
 
 SOUND ACTION CATEGORIES:
-  The SoundAction enum provides 300+ predefined game actions organized by category:
-
-  Category     | Examples
-  -------------|--------------------------------------------------
-  player       | JUMP, DOUBLE_JUMP, WALK, RUN, HURT, DEAD
-  combat/melee | USE_SWORD, USE_BATTLE_AXE, USE_MACE, USE_DAGGER
-  combat/ranged| FIRE_BOW, FIRE_CROSSBOW, FIRE_WAND, DRAW_BOW
-  combat/throw | THROW_KNIFE, THROW_AXE, THROW_BOMB
-  combat/impact| IMPACT_ARROW, IMPACT_FIREBALL, EXPLOSION
-  effects      | BURNING, FROZEN, POISONED, HEALING
-  items        | EAT, DRINK, CAST_SPELL, READ_SCROLL
-  tools        | USE_PICKAXE, USE_AXE, USE_SHOVEL
-  blocks/break | BREAK_DIRT, BREAK_STONE, BREAK_GLASS
-  blocks/place | PLACE_DIRT, PLACE_STONE, PLACE_WOOD
-  footsteps    | STEP_GRASS, STEP_STONE, STEP_WOOD
-  inventory    | COLLECT, DROP, EQUIP, HOTBAR_SWITCH
-  chests       | OPEN_CHEST, OPEN_DAILY_CHEST, OPEN_MONTHLY_CHEST
-  doors        | DOOR_OPEN, DOOR_CLOSE, DOOR_LOCKED
-  mobs/*       | ZOMBIE_ATTACK, SKELETON_DEATH, WOLF_HOWL, etc.
-  ui           | UI_BUTTON_CLICK, MENU_OPEN, NOTIFICATION
-  music        | MUSIC_MENU, MUSIC_LEVEL_1, MUSIC_BOSS
-  ambient      | AMBIENT_WIND, AMBIENT_RAIN, AMBIENT_CAVE
-  events       | LEVEL_START, CHECKPOINT, SECRET_FOUND
-  npc          | NPC_GREETING, SHOP_BUY, SHOP_SELL
-  crafting     | CRAFT_SUCCESS, FORGE_HAMMER, ENCHANT_SUCCESS
-  special      | MIRROR_ACTIVATE, MIRROR_REALM_CHANGE
+  player, combat/melee, combat/ranged, combat/throw, combat/impact,
+  effects, items, tools, blocks/break, blocks/place, footsteps,
+  inventory, chests, doors, mobs, ui, music, ambient, events, npc, crafting, special
 
 SOUND FILE LOCATIONS:
-  sounds/                  → Legacy WAV files (flat structure)
+  sounds/                  → Legacy WAV files
   sounds/compressed/       → MP3 files organized by category
-  ├── player/             → Player movement and state sounds
-  ├── combat/             → Combat sounds (melee, ranged, impact)
-  ├── effects/            → Status effect sounds
-  ├── items/              → Item usage sounds
-  ├── tools/              → Tool usage sounds
-  ├── blocks/             → Block break/place sounds
-  ├── footsteps/          → Footstep sounds by surface
-  ├── inventory/          → Inventory management sounds
-  ├── chests/             → Chest and vault sounds
-  ├── doors/              → Door interaction sounds
-  ├── mobs/               → Mob-specific sounds (by mob type)
-  ├── ui/                 → UI interaction sounds
-  ├── music/              → Background music tracks
-  ├── ambient/            → Ambient environment sounds
-  ├── water/              → Water interaction sounds
-  ├── events/             → Special event sounds
-  ├── npc/                → NPC interaction sounds
-  ├── crafting/           → Crafting system sounds
-  └── special/            → Special item sounds
-
-ADDING NEW SOUNDS:
-  1. Create MP3 file with appropriate name (e.g., jump.mp3)
-  2. Place in corresponding category folder (e.g., sounds/compressed/player/)
-  3. The game automatically picks up the file when playAction() is called
-  4. See sounds/compressed/README.md and SOUNDS.txt files for expected filenames
 
 --------------------------------------------------------------------------------
-18. UI SYSTEM (ui/)
+19. UI SYSTEM (ui/)
 --------------------------------------------------------------------------------
 
 Custom UI components rendered directly on the game canvas.
@@ -1609,29 +825,18 @@ Custom UI components rendered directly on the game canvas.
 UI BUTTON (UIButton.java):
   UIButton btn = new UIButton(x, y, width, height, "Label");
   btn.setOnClick(() -> { /* action */ });
-  btn.update(input);  // Check hover/click
+  btn.update(input);
   btn.draw(g);
 
 UI SLIDER (UISlider.java):
   UISlider slider = new UISlider(x, y, width, min, max, initial);
   slider.setOnChange((value) -> { /* handle value */ });
-  slider.update(input);  // Handle drag
-  slider.draw(g);
 
 PLAYER STATUS BAR (PlayerStatusBar.java):
-  Displays health, mana, and stamina bars:
-  - Health: Red bar (RGB: 220, 50, 50)
-  - Mana: Blue bar (RGB: 50, 100, 220)
-  - Stamina: Green bar (RGB: 50, 200, 50)
+  Displays health (red), mana (blue), and stamina (green) bars.
 
 SETTINGS OVERLAY (SettingsOverlay.java):
-  Comprehensive tabbed settings panel accessible via M key or Start button:
-  - Audio Tab: Music/SFX volume sliders, mute toggle
-  - Controls Tab: Key rebinding interface with swap detection
-  - Game Tab: Vibration toggle, day/night mode, debug toggle
-  - Actions Tab: Return to menu, customize character, toggle music, exit game
-  - Semi-transparent dark overlay, centered 700x550 panel
-  - See Section 16 for detailed documentation
+  Comprehensive tabbed settings panel (see Section 16).
 
 INVENTORY UI:
   - 8x4 grid (32 slots) with 5-slot hotbar
@@ -1641,7 +846,7 @@ INVENTORY UI:
   - Tooltip on hover (item stats)
 
 --------------------------------------------------------------------------------
-19. SPECIAL GAME FEATURES
+20. SPECIAL GAME FEATURES
 --------------------------------------------------------------------------------
 
 LOOT GAME SCENE:
@@ -1656,191 +861,66 @@ LOOT GAME SCENE:
   - Reverse Crafting Table for deconstructing items
 
 ALCHEMY/CRAFTING SYSTEM:
-  The game features a comprehensive crafting system with two interactable tables:
-
   ALCHEMY TABLE (Green Glow):
   - Combines 1-3 items to create new items
-  - Approach table and press 'E' to open UI (positioned right of inventory)
-  - Drag items from inventory to 3 input slots on the left
-  - Recipe matches automatically when correct ingredients are placed
-  - Output slot on the right shows the craftable result
-  - Click output slot to craft and receive the item
-  - Consumes ONE item from each input slot per craft (supports stacks)
-  - Removing any input clears the output preview
-  - Dragged items appear on top of all UI for clarity
+  - Approach table and press 'E' to open UI
+  - Drag items from inventory to 3 input slots
+  - Output slot shows the craftable result
 
   REVERSE CRAFTING TABLE (Purple Glow):
   - Breaks down items into component parts
-  - Only works with items marked as "reversible" in recipes
-  - 1 input slot on the left, 3 output slots on the right
-  - Place item to deconstruct in the input slot
-  - Shows up to 3 component materials in output slots
-  - Click any output slot to deconstruct and receive all materials
-  - Consumes ONE item from input per deconstruction (supports stacks)
-  - Dragged items appear on top of all UI for clarity
+  - 1 input slot, 3 output slots
 
   RECIPES (data/alchemy_recipes.json):
-  - 100+ predefined recipes in categories:
-    * Weapons: Bows, swords, staffs, daggers, axes
-    * Armor: Helmets, chestplates, leggings, boots
-    * Tools: Pickaxes, axes, shovels, fishing rods
-    * Potions: Health, mana, stamina, buff potions
-    * Materials: Ingots, planks, yarn, leather
-    * Ammo: Arrows, bolts, fire/ice variants
-    * Blocks: Stone, brick, glass blocks
-    * Collectibles: Keys, lanterns, banners
-
-  RECIPE FORMAT:
-  {
-    "id": "unique_id",
-    "name": "Display Name",
-    "ingredients": ["item1", "item2", "item3"],
-    "result": "output_item_id",
-    "resultCount": 1,
-    "category": "weapons",
-    "reversible": true
-  }
-
-  EXAMPLE RECIPES:
-  - Wooden Bow: string + planks + arrow
-  - Iron Sword: iron_ingot + iron_ingot + planks
-  - Health Potion: apple + mana_leaf
-  - Magic Wand: planks + magic_crystal
+  - 100+ recipes: Weapons, Armor, Tools, Potions, Materials, Ammo, Blocks
 
 DOOR AND TRIGGER SYSTEM:
-  DoorEntity:
-  - Interactive doors between areas
-  - Linked to spawn points (door A → door B)
-  - Lock/key system (requires KEY item)
-  - Opening/closing animations
-
-  TriggerEntity:
-  - Invisible activation zones
-  - Triggers on player collision
-  - Can load levels, show dialogue, spawn entities
-
-  ButtonEntity:
-  - Interactive switches/levers
-  - Links to doors or other triggers
+  DoorEntity: Interactive doors between areas, lock/key system
+  TriggerEntity: Invisible activation zones
+  ButtonEntity: Interactive switches/levers
 
 CHARACTER CUSTOMIZATION:
   Available in SpriteCharacterCustomization scene:
   - 8 skin tone presets
   - 13 hair color presets
   - Equipment slots: Hair, Helmet, Chest, Legs, Boots, Belt
-  - Companion selection (alternate player characters)
-  - All choices persist across sessions
+  - Companion selection
 
 PROJECT STRUCTURE
 src/                    - Game engine source code (organized by package)
   core/                 - Main application classes (Main, GameWindow, GamePanel)
   scene/                - Scene management (Scene, SceneManager, GameScene, menus)
   entity/               - Base entity classes (Entity, EntityManager, SpriteEntity)
-    - Item.java             - Item class with categories, rarities, and held item overlay support
-    - ItemRegistry.java     - Registry that instantiates items from individual class files
-    - ProjectileEntity.java - Projectile system for ranged attacks and thrown items
-    - RecipeManager.java    - Loads and manages crafting recipes from JSON
-    - AlchemyTableEntity.java - Interactable alchemy/reverse crafting tables
-    - MirrorToOtherRealms.java - Special item with realm-cycling projectiles
-    item/               - Item class hierarchy
-      items/            - 190 individual item classes organized by category
-        weapons/melee/  - Melee weapons (WoodenSword, IronSword, etc.)
-        weapons/ranged/ - Ranged weapons (WoodenBow, FireStaff, etc.)
-        weapons/throwing/ - Throwing weapons (ThrowingKnife, etc.)
-        ammo/           - Ammunition (Arrow, Bolt, etc.)
-        throwables/     - Consumable throwables (Bomb, ThrowingPotion)
-        tools/          - Tools (WoodenPickaxe, IronAxeTool, etc.)
-        armor/          - Armor pieces (IronHelmet, DragonScaleArmor, etc.)
-        food/           - Food items (Bread, GoldenApple, etc.)
-        potions/        - Potions (HealthPotion, StrengthPotion, etc.)
-        materials/      - Crafting materials (IronIngot, Diamond, etc.)
-        keys/           - Keys (BronzeKey, SkeletonKey, etc.)
-        clothing/       - Clothing items (GreenDress, ChameleonCloak, etc.)
-        collectibles/   - Collectible items (Orb, TreasureMap, etc.)
-        accessories/    - Accessories (RubySkull)
-        blocks/         - Placeable blocks (DirtBlock, StoneBlock, etc.)
-    player/             - Player-specific classes (PlayerBase, PlayerEntity, PlayerBoneEntity)
-      - SpritePlayerEntity.java - Sprite-based player with double/triple jump, sprint, projectiles
-      - AbilityScores.java      - DnD-style ability score system (CHA, STR, CON, INT, WIS, DEX)
-      - PlayableCharacter.java  - Character data class with abilities and sprite paths
-      - PlayableCharacterRegistry.java - Registry of all 8 playable characters
-    mob/                - Mob AI classes
-      - MobEntity.java       - Base mob class with AI state machine
-      - SpriteMobEntity.java - GIF-based mob with status effects, auto-configured HP/stats
-      - MobRegistry.java     - Registry that instantiates mobs from individual class files
-      - FrogSprite.java      - Specialized frog mob with hopping and tongue attack
-      mobs/               - 23 individual mob classes organized by category
-        humanoid/         - Humanoid mobs (ZombieMob, SkeletonMob, GoblinMob, etc.)
-        quadruped/        - Quadruped mobs (WolfMob, BearMob, DogMob, etc.)
-        special/          - Special mobs (SlimeMob, BatMob, DragonMob, etc.)
-      old/                - Deprecated bone-based mob classes (legacy)
-        - HumanoidMobEntity.java  - [DEPRECATED] Bone-based humanoid mobs
-        - HumanoidVariants.java   - [DEPRECATED] Humanoid variant configurations
-        - QuadrupedMobEntity.java - [DEPRECATED] Bone-based quadruped mobs
-  block/                - Block system (BlockEntity, BlockType, BlockRegistry, BlockAttributes)
+    - Item.java, ItemRegistry.java, ProjectileEntity.java
+    - RecipeManager.java, AlchemyTableEntity.java, MirrorToOtherRealms.java
+    item/items/         - 190 individual item classes organized by category
+    player/             - Player classes (SpritePlayerEntity, AbilityScores, PlayableCharacter)
+    mob/mobs/           - 23 individual mob classes (humanoid/, quadruped/, special/)
+    mob/old/            - Deprecated bone-based mob classes (legacy)
+  block/                - Block system (BlockEntity, BlockType, BlockRegistry)
   animation/            - Animation system (SpriteAnimation, EquipmentOverlay, AnimatedTexture)
-    - SpriteAnimation.java  - Extended with 16 action states (IDLE, WALK, RUN, SPRINT, JUMP, DOUBLE_JUMP, TRIPLE_JUMP, FALL, ATTACK, FIRE, USE_ITEM, EAT, HURT, DEAD, BLOCK, CAST)
-    bone/               - Legacy bone animation (Skeleton, Bone, BoneAnimation, QuadrupedSkeleton)
+    bone/               - Legacy bone animation (Skeleton, Bone, BoneAnimation)
   graphics/             - Rendering (Camera, LightingSystem, TextureManager, Parallax)
   level/                - Level loading (LevelData, LevelLoader)
-  audio/                - Sound management (AudioManager)
-  input/                - Input handling (InputManager, ControllerManager, KeyBindings, ControllerBindings, VibrationPattern)
-    - InputManager.java     - Keyboard and mouse input handling with controller integration
-    - ControllerManager.java - Xbox controller support via JInput library with vibration/rumble
-    - KeyBindings.java      - Customizable keyboard bindings with persistence (saves/keybindings.dat)
-    - ControllerBindings.java - Customizable controller bindings with persistence (saves/controller_bindings.dat)
-    - VibrationPattern.java - Enum defining haptic feedback patterns (minor, greater, intricate)
-  ui/                   - UI components (UIButton, UISlider, Inventory, ToolType)
-    - AlchemyTableUI.java   - Drag-and-drop alchemy table interface (3 inputs, 1 output)
-    - ReverseCraftingUI.java - Drag-and-drop deconstruction interface (1 input, 3 outputs)
+  audio/                - Sound management (AudioManager, SoundAction)
+  input/                - Input handling (InputManager, ControllerManager, KeyBindings, VibrationPattern)
+  ui/                   - UI components (UIButton, Inventory, AlchemyTableUI, SettingsOverlay)
 devtools/               - Development tools (texture generators, animation importers)
-  - TextureGenerator.java           - Generates player bone textures
-  - HumanoidTextureGenerator.java   - Generates humanoid mob textures
-  - QuadrupedTextureGenerator.java  - Generates quadruped animal textures
-  - BlockTextureGenerator.java      - Generates block textures
-  - ParallaxTextureGenerator.java   - Generates parallax backgrounds
-  - HumanoidSpriteGenerator.java    - Generates GIF sprites for humanoid mobs
-  - QuadrupedSpriteGenerator.java   - Generates GIF sprites for quadruped mobs
-  - ExtendedSpriteGenerator.java    - Generates all 15 animation GIFs (sprint, double_jump, fire, eat, etc.)
-  blockbench/             - Blockbench import tools (legacy bone animation support)
-    - BoneTextureGenerator.java       - Generates simple bone textures
-    - BlockbenchAnimationImporter.java - Imports Blockbench animation files
 tools/                  - Utility tools for asset generation
-  - StatusEffectSpriteGenerator.java - Generates burning.gif and frozen.gif for mobs
-  - ParticleGifGenerator.java        - Generates particle overlay GIFs for status effects
 assets/
-  characters/           - Playable character sprites
-    crystal/sprites/    - Crystal's animation GIFs (idle.gif, walk.gif, jump.gif)
-    filvendor_venrona/sprites/ - Filvendor Venrona's animations
-    breaya/sprites/     - Breaya's animations
-    asteria/sprites/    - Asteria's animations
-    olyrei/sprites/     - Olyrei's animations
-    trethas/sprites/    - Trethas's animations
-    gridius/sprites/    - Gridius's animations
-    merlin/sprites/     - Merlin's animations (Loot Game only)
-  textures/
-    humanoid/           - Humanoid character textures (player, orc, zombie, skeleton)
-    quadruped/          - Animal textures (wolf, dog, cat, horse, etc.)
-    blocks/             - Block textures (grass, dirt, stone, etc.)
+  characters/           - Playable character sprites (crystal, breaya, trethas, etc.)
+  textures/             - humanoid/, quadruped/, blocks/
   particles/            - Status effect particle overlays
-    - fire_particles.gif   - Burning effect overlay
-    - ice_particles.gif    - Frozen effect overlay
-    - poison_particles.gif - Poisoned effect overlay
   parallax/             - Parallax background layers
-  mobs/                 - GIF-based mob sprites (zombie, skeleton, bandit, etc.)
-    [mob_name]/         - Each mob has its own folder with animation GIFs
-      - idle.gif, walk.gif, attack.gif, hurt.gif, death.gif
-      - burning.gif, frozen.gif (status effect variants)
-sounds/                 - All sound files (music, effects, footsteps)
+  mobs/                 - GIF-based mob sprites
+sounds/                 - Sound files (organized in sounds/compressed/)
 levels/                 - Level JSON files
-data/                   - Game data files
-  - alchemy_recipes.json  - Crafting recipes (100+ recipes)
+data/                   - Game data files (alchemy_recipes.json)
 
 TODOs
-Work on section 1.01 (Inventory and items) 
+Work on section 1.01 (Inventory and items)
 
 KNOWN ISSUES
-
 (None - all known issues have been resolved)
 
 FUTURE FEATURES (ROADMAP)
@@ -1849,338 +929,96 @@ FUTURE FEATURES (ROADMAP)
 	-Robust 32 slot inventory system with hot bars
 		-Allows stacking of identical items
 		-Displays item details and stats when hovering over items
-		-Still scrolls with player as they move
-		-Has a custom texture for the UI that is located in the assets folder
+		-Has a custom texture for the UI
 		-Can filter items by rarity and alphabetical
-		-Items dragged out of inventory drop on ground in front of player
+		-Items dragged out of inventory drop on ground
 	-Robust item system
-		-Items have distinct properties and categories, not just names
-			-Categories include:
-				-Tools
-				-Weapons
-				-Armor and clothing
-				-Blocks
-				-Food/Potion
-				-Other
-			-Properties include:
-				-Rarity (white/green/blue/purple/orange/cyan)
-				-Range (Weapons and tools)
-				-Defense %
-				-Special effect
-				-Other
-		-Items should all be held by the player when equipped in hot bar. Hot bar scrolling should be bound to right click
-		-Projectiles should be included with some items (crossbow for example). This projectile system should have its own hitbox system with entities
-		-A crafting system should be present. It will function by allowing players to combine 2 to 3 items at certain locations to create new items.
-		-Blocks should have variants that are just texture masks of the base block. For example, a frozen block would use an ice mask that is semi-transparent to cover the block or a grass block would use a grass mask over dirt. These block variants must be broken down before being mined. Ice must shatter and grass must be uprooted before the player can mine the block.
-		-The player should be able to place blocks immediately in front of them
-		-Some items should work as 'keys' to activate certain entities such as other items or doors
-		-Some items will have an area of effect range
-		-List of item examples:
-			-wizards hat
-			-exploding potion
-			-crossbow
-			-sword
-			-bread
-			-string
-			-magic wand
-			-scroll
-			
+		-Categories: Tools, Weapons, Armor/clothing, Blocks, Food/Potion, Other
+		-Properties: Rarity, Range, Defense, Special effect
+		-Projectile system with hitbox detection
+		-Crafting system (combine 2-3 items)
+		-Block variants with texture masks
+		-Key/lock system
+		-Area of effect items
+
 1.02 Character Selection
-	-A selection of around 10 customizable characters
-		-Characters will be unlocked through gameplay
-		-Every level will require that you select one unlocked character before playing
-		-Each character has their own stats and abilities
-		-Wearable clothes, armor and other customization features
-		-Each level will be tailored to one or several character abilities
-		
+	-~10 customizable characters unlocked through gameplay
+	-Each character has unique stats and abilities
+	-Wearable clothes, armor and customization features
+
 1.03 NPCs and dialogue
-	-Pixel art dialogue overlays similar to Pokemon
-	-NPC characters with custom dialogue that appears in game as a blurb next to their body
-	-Place for generic sounds as the NPCs talk
+	-Pixel art dialogue overlays
+	-NPC characters with custom dialogue
 	-Shops with variable prices
-	-Companion system where some NPCs will follow the player
-	-NPCs should act like complex entities similar to the player but with automated functionality
-	
+	-Companion system
+
 1.04 Boss Fights
-	-Complex and unique AI for special 'end-of-area' boss fights
-	-Unique movement and attack mechanics for boss fights
-	-At least 10 variable boss AI variations, ranging in difficulty
-	
-1.05 Overworld for level loading and fast travel
-	-Each major section of the game will be divided into overworlds with levels similar to those in later Super Mario games
-	-Each overworld area will contain levels, shops, boss fights, and player owned houses
-		-Player owned houses will be places to customize and display rare loot collected throughout the game
-		
-1.06 Area 1 level design
-	-Level 1-9
-	-1 shop unlocked at level 3
-	-1 boss fight
+	-Complex AI for end-of-area boss fights
+	-At least 10 variable boss AI variations
 
-1.07 Finish game and level designs (Areas 2-6)
+1.05 Overworld
+	-Level hubs with levels, shops, boss fights, player houses
 
-1.08 Bug fixes and testing
+1.06-1.08 Area Level Design and Testing
+	-Areas 1-6 with 9 levels each, shops, boss fights
 
 RESOLVED ISSUES
 
-[FIXED] File order is confusing. Player textures are in 3 redundant locations
-  -> Consolidated to single canonical location: assets/textures/humanoid/player/
+The following issues have been fixed. Details grouped by category:
 
-[FIXED] Texture generators should not be part of the game engine, as only PNG and GIF files should be used for textures and imported externally into the assets folder
-  -> Moved all texture generators to devtools/ directory
+FILE ORGANIZATION:
+  - Consolidated player textures to assets/textures/humanoid/player/
+  - Moved texture generators to devtools/
+  - Moved sound files to sounds/ directory
+  - Moved blocks to assets/textures/blocks/
+  - Moved BlockbenchAnimationImporter to devtools/
+  - Reorganized 48 Java files into logical packages (core, scene, entity, etc.)
+  - Moved bone animation classes to animation/bone/
+  - Moved deprecated bone-based mobs to entity/mob/old/
 
-[FIXED] Some sound files are located in the base 'assets' folder and should be located in sounds
-  -> Moved collect.wav, drop.wav, jump.wav, music.wav to sounds/ directory
+MOB SYSTEM:
+  - Mobs now target nearest edge of player hitbox, not center
+  - Increased all mob hitbox sizes by ~40%
+  - Fixed mobs walking through solid blocks (proper collision detection)
+  - Created SpriteMobEntity for GIF-based mob animations
+  - Auto-configuration of HP/stats based on mob type
+  - Status effects (BURNING, FROZEN, POISONED) with particle overlays
 
-[FIXED] 'blocks' assets should be a sub folder within textures
-  -> Moved blocks to assets/textures/blocks/
+BLOCK SYSTEM:
+  - Red damage overlay only appears when block is actively targeted
+  - Added block overlay system (GRASS, SNOW, ICE, MOSS, VINES)
+  - Directional mining with arrow indicator
+  - Block placement via left click
 
-[FIXED] Blockbench support unclear in usage
-  -> BlockbenchAnimationImporter moved to devtools/, runtime import deprecated
+PLAYER SYSTEM:
+  - Fixed triple jump double-trigger bug
+  - Added skin tone selection (8 presets)
+  - Added belt and hair equipment slots
+  - Fixed charged shots: bows consume arrows, magic consumes mana
 
-[FIXED] When mobs attack (specifically quadrupeds) they target the center of the player
-  -> Mobs now target the nearest edge of player's hitbox using getDistanceToTargetFace()
-  -> Attack distance calculated to front/back of player, not center point
+UI/UX:
+  - Character customization UI reorganized for 1920x1080
+  - Color sliders no longer overlap with character screen
+  - Main menu opens sprite-based customization
+  - Removed unnecessary Lighting Demo scene
+  - UI elements now consume clicks to prevent game actions
+  - Companions are now player character alternates, not items
 
-[FIXED] Red behind blocks when breaking does not disappear
-  -> Red damage overlay now only appears when block is actively targeted by player
-  -> Added targeted state to BlockEntity, resets each frame
+INPUT/CONTROLS:
+  - Left click works for block mining alongside E key
+  - Scroll wheel sensitivity adjusted (threshold 1.5)
+  - Xbox controller: swapped stick functions, added visible cursor
+  - RT emulates mouse button for full UI navigation
+  - LB/RB cycle hotbar slots
 
-[FIXED] Mob hitboxes too small
-  -> Increased all mob hitbox sizes by ~40% for better hit detection
-  -> Humanoid hitboxes: 60x120 (was 40x100)
-  -> Quadruped hitboxes scaled proportionally per animal type
+GRAPHICS:
+  - Fixed moving entities masking non-transparent pixels
+  - Refined quadruped shapes and textures (10 distinct animal types)
+  - Added GIF support to all texture systems (AnimatedTexture class)
+  - Fixed vertical scrolling black bars (parallax now supports vertical)
+  - Fixed darkness overlay opacity (proper alpha blending)
 
-[FIXED] Hostile mobs ignore block collisions and walk through solid blocks
-  -> Rewrote MobEntity.applyPhysics() to check collisions BEFORE applying movement
-  -> Added horizontal collision detection with solid blocks
-  -> Added proper vertical collision detection (both falling and jumping)
-  -> Mobs now stop at walls and land on platforms correctly
-
-[FIXED] Java class structure should be organized by relationship to other classes
-  -> Reorganized all 48 Java files into logical packages under src/
-  -> core/ - Main application entry points
-  -> scene/ - Scene management and game states
-  -> entity/ - Entity hierarchy with player/ and mob/ subpackages
-  -> block/ - Block system classes
-  -> animation/ - Skeleton and bone animation system
-  -> graphics/ - Rendering, camera, lighting, parallax
-  -> level/ - Level data and loading
-  -> audio/ - Sound management
-  -> input/ - Input handling
-  -> ui/ - UI components and inventory
-
-[FIXED] End of levels does not immediately take you back to menu
-  -> TriggerEntity now supports menu return for empty/menu targets
-  -> Scene transitions sped up (transitionSpeed increased from 0.05 to 0.12)
-
-[FIXED] Vertical scrolling has black bars on top and bottom of screen
-  -> Black bars only drawn when parallax background is not enabled
-  -> Parallax layers now properly support vertical scrolling with anchorBottom property
-  -> verticalMargin can be set to 0 to eliminate letterboxing
-
-[FIXED] Parallax backgrounds not scrolling vertically when vertical scrolling is enabled
-  -> Depth level presets (applyDepthDefaults) now set scrollSpeedY in addition to scrollSpeedX
-  -> All depth levels (background, distant, mid, near, foreground) now have matching vertical scroll speeds
-  -> Levels using depthLevel presets will automatically have vertical parallax without manual scrollSpeedY configuration
-
-[FIXED] Effect for night and darkness is too opaque
-  -> Lighting buffer now properly cleared to transparent before drawing darkness overlay
-  -> Darkness overlay correctly blends with parallax background layers
-  -> Default nightDarkness reduced, ambientLevel increased for better visibility
-
-[FIXED] 'e' to break blocks should be bound to left mouse click
-  -> Added MouseListener implementation to InputManager
-  -> Left mouse click now works for block mining alongside 'E' key
-
-[FIXED] Moving entities mask more than non-transparent pixels when changing color
-  -> Replaced AlphaComposite overlay with per-pixel tinting in Bone.java
-  -> Tint now only affects pixels where alpha > 0, preserving transparency
-  -> Cached tinted textures for performance optimization
-
-[FIXED] Quadrupeds shape and textures need to be refined
-  -> Added species-specific head generation (canine snout, cat round face, pig disc nose, etc.)
-  -> Added species-specific body features (cow spots, sheep wool, cat stripes, fox white chest)
-  -> Improved walk/run animations with smoother, more natural movement
-  -> All 10 animal types now visually distinct and recognizable
-
-[FIXED] All texture files should support GIF file types
-  -> Created AnimatedTexture class for managing GIF frame cycling with proper timing
-  -> Updated AssetLoader to extract all frames from GIF files with per-frame delays
-  -> Added GIF support to Bone class for animated bone textures (e.g., glowing effects)
-  -> Added GIF support to ParallaxLayer for animated backgrounds (e.g., moving clouds)
-  -> Added GIF support to BlockRegistry for animated blocks (e.g., lava, water)
-  -> Added GIF support to SpriteEntity for animated sprites
-  -> GIF animations respect original frame delays and loop automatically
-  -> All components include update() methods for frame advancement
-
-[FIXED] Character customization UI color sliders overlapped with character screen
-  -> Moved slider startY from 120 to 150 to prevent overlap
-  -> Removed dead code that incorrectly accessed slider values for positioning
-
-[FIXED] Old bone-based character customization should be removed from main menu
-  -> Main menu now opens sprite-based customization (SpriteCharacterCustomization)
-  -> Bone-based CharacterCustomizationScene kept for legacy PlayerBoneEntity support
-
-[FIXED] Lighting demo level unnecessary (uses java class not JSON file)
-  -> Removed LightingDemoScene.java and its registration in GamePanel
-  -> Removed Lighting Demo button from main menu
-
-[FIXED] Old bone-based animation assets need to be moved to their own folder
-  -> Moved Bone.java, BoneAnimation.java, Skeleton.java, QuadrupedSkeleton.java, QuadrupedAnimation.java to animation/bone/ package
-  -> Updated all imports in 10+ files to use animation.bone.*
-  -> Moved BlockbenchAnimationImporter.java and BoneTextureGenerator.java to devtools/blockbench/
-
-[FIXED] Update README.md with current features
-  -> Updated CURRENT FEATURES to reflect sprite-based animation system
-  -> Updated PROJECT STRUCTURE with new package organization
-  -> Moved resolved issues from KNOWN ISSUES to RESOLVED ISSUES
-
-[FIXED] Blocks should work with an overlay system
-  -> Created BlockOverlay enum with GRASS, SNOW, ICE, MOSS, VINES overlay types
-  -> Added overlay support to BlockEntity with rendering and damage tracking
-  -> Overlays render on top of base block textures with semi-transparency
-  -> Overlays must be removed before mining the base block
-  -> Includes procedural texture generation for overlays when files not available
-  -> Added overlay texture caching to BlockRegistry for efficiency
-
-[FIXED] Mobs should be sprite based with hitbox collision detection
-  -> Created SpriteMobEntity class for GIF-based mob animations
-  -> Supports idle, walk, run, attack, hurt, death animation states
-  -> Proper hitbox collision detection with configurable hitbox size
-  -> Inherits AI state machine from MobEntity (IDLE, WANDER, CHASE, ATTACK, etc.)
-  -> Health bar rendering and invincibility flash effects
-  -> Debug mode for visualizing hitboxes and mob state
-  -> Placeholder sprite generation for testing without assets
-
-[FIXED] Sprite-based mobs need automatic HP and stat configuration
-  -> Added configureMobStats() to SpriteMobEntity that auto-detects mob type from sprite directory
-  -> Mobs automatically get appropriate health (40-60), damage, and speed based on type
-  -> Supports: zombie, skeleton, goblin, orc, bandit, knight, mage, wolf, bear, and more
-  -> Default fallback stats for unknown mob types
-
-[FIXED] Special arrows should apply status effects to mobs
-  -> Added StatusEffect enum to SpriteMobEntity (BURNING, FROZEN, POISONED)
-  -> Fire arrows burn enemies for 3 seconds with damage-over-time
-  -> Ice arrows freeze enemies for 4 seconds with 50% movement slow
-  -> Status effects include color tint overlay and particle effects
-  -> Configurable duration, damage per tick, and damage multiplier
-
-[FIXED] Status effect particles should be GIF-based overlays
-  -> Created assets/particles/ folder with fire_particles.gif, ice_particles.gif, poison_particles.gif
-  -> ParticleGifGenerator tool creates animated particle overlays
-  -> SpriteMobEntity loads and renders particle GIFs as overlays on affected mobs
-  -> Fallback to procedural particle rendering if GIFs not available
-
-[FIXED] Charged shots for bows should consume arrows, not mana
-  -> Updated SpritePlayerEntity.fireChargedProjectile() to differentiate weapon types
-  -> Bows now consume arrows from inventory, not mana
-  -> Arrow projectiles don't scale in size when charged (only magic scales)
-  -> Magic staffs continue to consume mana and scale projectiles
-
-[FIXED] Bone-based mob classes should be moved to deprecated package
-  -> Created entity/mob/old/ package for deprecated bone-based mobs
-  -> Moved HumanoidMobEntity.java, HumanoidVariants.java, QuadrupedMobEntity.java
-  -> Added [DEPRECATED] markers to class documentation
-  -> Updated GameScene.java imports to use entity.mob.old.*
-  -> SpriteMobEntity is now the preferred approach for mob entities
-
-[FIXED] Game window should be a borderless 1920x1080 window, not completely full screen
-  -> Changed GameWindow from exclusive fullscreen to borderless 1920x1080 window
-  -> Window is now centered on screen using setLocationRelativeTo(null)
-  -> Works consistently across different monitor sizes
-  -> Game title changed to "The Amber Moon"
-
-[FIXED] Game window draws focus and mouse pointer back to window, preventing other applications
-  -> Removed aggressive always-on-top timer that kept stealing focus
-  -> Removed windowLostFocus handler that forced window back to front
-  -> Window now allows users to switch to other applications normally
-  -> Focus is only requested on initial window display
-
-[FIXED] Sensitivity of scroll wheel needs to be turned down
-  -> Added scroll accumulation threshold (SCROLL_THRESHOLD = 3.0)
-  -> Uses precise wheel rotation for smoother control
-  -> Multiple scroll ticks required to trigger hotbar/inventory scroll
-  -> Prevents accidental item switching during fast scrolling
-
-[FIXED] UI elements should cancel out in-game clicking actions
-  -> Added click consumption system to InputManager
-  -> UI buttons now consume clicks when handling them
-  -> Player entity checks if click was consumed by UI before processing game actions
-  -> Clicking music toggle or other buttons no longer triggers mining/attacks
-
-[FIXED] Player triple jump not working as intended
-  -> Fixed double-trigger bug: space char and keyCode were tracked separately
-  -> Single space press was triggering two jumps (char on frame 1, keyCode on frame 2)
-  -> Now both are consumed in same frame, preventing accidental double-jump
-  -> Fixed edge case where falling off ledge caused misaligned jump count
-  -> Triple jump strength normalized to -9 for consistent feel
-
-[FIXED] Scroll wheel sensitivity adjusted
-  -> Reduced SCROLL_THRESHOLD from 3.0 to 1.5 for faster response
-  -> Maintains accumulation to prevent accidental switching while being responsive
-
-[FIXED] Base player customization (skin tone) should be available in customization menu
-  -> Added skin tone selection panel with 8 preset options
-  -> Skin tones range from Light to Deep, plus a "None" option
-  -> Selected skin tone tints the base player sprite
-  -> Skin tone selection persists across levels and game sessions
-
-[FIXED] Belts should be included in the player customization menu
-  -> Added BELT equipment slot to EquipmentOverlay (renders over legs, under chest)
-  -> Added "Belt" category tab to character customization menu
-  -> Belt items load from assets/clothing/belt/ directory
-  -> Adjusted category tab widths to fit all equipment types
-
-[FIXED] Hair customization should be available in the player customization menu
-  -> Added HAIR_FRONT and HAIR_BACK equipment slots to EquipmentOverlay
-  -> HAIR_BACK renders behind character (for ponytails, long hair)
-  -> HAIR_FRONT renders in front (for bangs, short styles)
-  -> Added "Hair" category tab as first equipment category
-  -> Added 13 preset hair colors with color selector UI
-  -> Hair items load from assets/clothing/hair/ directory with front/back layers
-
-[FIXED] Character customization UI elements bunched up and overlapping
-  -> Completely reorganized layout for 1920x1080 screen
-  -> Left panel (x=60): Character preview with 4x scale (was 3x)
-  -> Center panel (x=420): Category tabs and 6-column item grid
-  -> Right panel (x=1140): Skin tone, hair color, and tint controls
-  -> All UI elements now properly spaced with no overlapping
-  -> Larger item previews (90x90) for better visibility
-
-[FIXED] Companions are listed as items instead of player character alternates
-  -> Removed companion registration from ItemRegistry
-  -> Created CompanionRegistry class for managing companions as player character alternates
-  -> Added companion selection panel to SpriteCharacterCustomization
-  -> Companions can now be selected in character customization menu
-  -> Companion selection is saved and persisted between sessions
-
-[FIXED] Block breaking system needs revisiting with directional arrow indicator
-  -> Blocks now work like UI elements - click to select a block within 3 block radius
-  -> Selected block is highlighted with yellow border and fill
-  -> Arrow keys change mining direction (up/down/left/right) on selected block
-  -> Visual arrow indicator shows which side of the block will be mined
-  -> Click selected block again (or press E) to mine from the chosen direction
-  -> Clicking elsewhere or moving out of range deselects the block
-
-[FIXED] Blocks are not placeable
-  -> Added block placement system via left click
-  -> Blocks can be placed within 3 block radius of the player
-  -> Player must be holding a block item (ItemCategory.BLOCK)
-  -> Placement checks for existing blocks and player collision
-  -> Added block items to ItemRegistry (dirt, grass, stone, wood, brick, etc.)
-  -> Block type is determined from held item name
-
-[FIXED] Xbox controller joysticks need to be switched and cursor invisible
-  -> Swapped left and right stick functionality:
-     - Left stick now controls movement (WASD)
-     - Right stick now controls mouse cursor
-  -> Left stick click (L3) now triggers sprint (Shift key)
-  -> Right Trigger (RT) now fully emulates left mouse button:
-     - Triggers press, click, drag, and release events
-     - Works for navigating main menu and all UI screens
-     - Supports dragging items in inventory
-  -> Left/Right Bumpers (LB/RB) now cycle hotbar slots (previous/next)
-  -> Added Back button mapping to Escape key
-  -> Added visible crosshair cursor when using controller mode
-  -> Cursor is a golden-centered crosshair that appears at the virtual mouse position
-  -> Controller cursor allows menu and UI navigation without physical mouse
+WINDOW:
+  - Borderless 1920x1080 window (not fullscreen)
+  - Window no longer steals focus from other applications
+  - Scene transitions sped up (0.12 transition speed)
