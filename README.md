@@ -75,6 +75,114 @@ SCENE TRANSITIONS:
   // Transition speed configurable (default 0.12 for snappy transitions)
 
 --------------------------------------------------------------------------------
+2.5. CREATIVE MODE (scene/CreativeScene.java)
+--------------------------------------------------------------------------------
+
+A comprehensive level editor for designing and testing game levels.
+
+ACCESSING CREATIVE MODE:
+  From the main menu, select "Creative Mode" or load via:
+  SceneManager.getInstance().loadScene("creative");
+
+NEW LEVEL CREATION:
+  When creating a new level, a dialog allows configuration of:
+
+  Size Presets:
+    - Small (30x17 blocks)     → Quick test levels
+    - Medium (60x17 blocks)    → Standard horizontal levels
+    - Large (100x17 blocks)    → Expansive adventure levels
+    - Extra Large (150x25)     → Epic-scale environments
+    - Vertical (30x40 blocks)  → Tower/climbing levels
+    - Square (50x50 blocks)    → Exploration-focused maps
+    - Custom                   → Any dimensions (10-500 blocks)
+
+  Block Size: 64x64 pixels (standard)
+
+  Level Properties:
+    - Level Name              → Display name for the level
+    - Width/Height in blocks  → Spinner controls with pixel preview
+    - Ground Y position       → Auto-calculated from height
+    - Horizontal Scrolling    → Enable camera panning
+    - Vertical Scrolling      → Enable vertical camera movement
+
+PALETTE CATEGORIES (Tab to cycle):
+  Category      | Contents
+  --------------|--------------------------------------------------
+  BLOCKS        | All block types from BlockRegistry
+  MOVING_BLOCKS | Blocks with movement patterns (horizontal/vertical/circular)
+  ITEMS         | All items from ItemRegistry
+  MOBS          | All mobs from MobRegistry (auto-populated)
+  LIGHTS        | Torch, campfire, lantern, magic, crystal
+  INTERACTIVE   | Doors, buttons, pressure plates, vaults/chests
+  PARALLAX      | Background/foreground layers with depth labels
+
+PARALLAX LAYER SYSTEM:
+  Parallax layers add depth with scrolling backgrounds at different speeds.
+
+  Available Layers (sorted by depth):
+    Layer Name        | Position Label      | Z-Order | Speed
+    ------------------|---------------------|---------|-------
+    Sky Background    | Furthest (Sky)      | -5      | 0.05
+    Distant Buildings | Very Far            | -4      | 0.15
+    Mid Buildings     | Far                 | -3      | 0.35
+    Near Buildings    | Near                | -2      | 0.55
+    Main Background   | Behind Player       | -1      | 0.20
+    Foreground        | Closest (Front)     | +2      | 1.15
+
+  Layer Configuration Dialog:
+    Click on an active (checkmarked) parallax layer to open the config dialog:
+    - Offset X/Y (pixels)   → Position adjustment for the layer
+    - Scroll Speed (0-2.0)  → Parallax movement rate
+    - Scale                 → Layer size multiplier
+    - Opacity (0-1.0)       → Layer transparency
+    - Remove Layer button   → Delete from level
+
+  Lower Z-Order = further back (slower parallax)
+  Higher Z-Order = closer to camera (faster parallax)
+
+EDITOR CONTROLS:
+  Key/Action      | Function
+  ----------------|--------------------------------------------
+  Left Click      | Place selected entity (grid-snapped for blocks)
+  Right Click     | Remove entity at cursor
+  WASD/Arrows     | Pan camera around level
+  Tab             | Cycle palette categories
+  Mouse Wheel     | Scroll palette items
+  P               | Toggle Play/Edit mode (test the level)
+  Ctrl+S          | Save level dialog
+  W (near door)   | Configure door properties
+  E (near button) | Configure button linkage
+  Escape          | Exit to main menu / cancel dialog
+
+LEVEL JSON FORMAT:
+  Levels are saved as JSON files in the levels/ directory.
+  Key fields include:
+  {
+    "name": "Level Name",
+    "levelWidth": 3840,        // Pixels (blocks * 64)
+    "levelHeight": 1088,       // Pixels (blocks * 64)
+    "groundY": 920,
+    "scrollingEnabled": true,
+    "verticalScrollEnabled": true,
+    "parallaxEnabled": true,
+    "parallaxLayers": [
+      {
+        "name": "sky",
+        "imagePath": "assets/parallax/sky.png",
+        "scrollSpeedX": 0.05,
+        "zOrder": -5,
+        "scale": 10.0,
+        "opacity": 1.0,
+        "offsetX": 0,
+        "offsetY": 0
+      }
+    ],
+    "blocks": [...],
+    "items": [...],
+    "mobs": [...]
+  }
+
+--------------------------------------------------------------------------------
 3. ENTITY SYSTEM (entity/)
 --------------------------------------------------------------------------------
 

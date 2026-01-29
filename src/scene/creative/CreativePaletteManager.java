@@ -276,13 +276,15 @@ public class CreativePaletteManager {
 
     private void initializeParallaxPalette() {
         parallaxPalette = new ArrayList<>();
+        // Format: {id, displayName, imagePath, zOrder, scrollSpeed, positionLabel}
+        // Position labels indicate relative depth: Furthest (background) to Closest (foreground)
         String[][] parallaxOptions = {
-            {"sky", "Sky Background", "assets/parallax/sky.png", "-2", "0.1"},
-            {"buildings_far", "Distant Buildings", "assets/parallax/buildings_far.png", "-1", "0.3"},
-            {"buildings_mid", "Mid Buildings", "assets/parallax/buildings_mid.png", "0", "0.5"},
-            {"buildings_near", "Near Buildings", "assets/parallax/buildings_near.png", "1", "0.7"},
-            {"foreground", "Foreground", "assets/parallax/foreground.png", "2", "1.2"},
-            {"background", "Main Background", "assets/background.png", "-2", "0.2"}
+            {"sky", "Sky Background", "assets/parallax/sky.png", "-5", "0.05", "Furthest (Sky)"},
+            {"buildings_far", "Distant Buildings", "assets/parallax/buildings_far.png", "-4", "0.15", "Very Far"},
+            {"buildings_mid", "Mid Buildings", "assets/parallax/buildings_mid.png", "-3", "0.35", "Far"},
+            {"buildings_near", "Near Buildings", "assets/parallax/buildings_near.png", "-2", "0.55", "Near"},
+            {"background", "Main Background", "assets/background.png", "-1", "0.2", "Behind Player"},
+            {"foreground", "Foreground", "assets/parallax/foreground.png", "2", "1.15", "Closest (Front)"}
         };
 
         for (String[] option : parallaxOptions) {
@@ -292,7 +294,15 @@ public class CreativePaletteManager {
             data.put("path", option[2]);
             data.put("zOrder", option[3]);
             data.put("scrollSpeed", option[4]);
-            parallaxPalette.add(new PaletteItem(option[0], option[1], icon, data));
+            data.put("positionLabel", option[5]);
+            // Default placement values (can be edited via config dialog)
+            data.put("offsetX", "0");
+            data.put("offsetY", "0");
+            data.put("scale", "10.0");
+            data.put("opacity", "1.0");
+            // Build display name with position label
+            String displayName = option[1] + " [" + option[5] + "]";
+            parallaxPalette.add(new PaletteItem(option[0], displayName, icon, data));
         }
     }
 
