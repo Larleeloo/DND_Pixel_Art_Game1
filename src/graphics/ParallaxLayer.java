@@ -106,6 +106,11 @@ public class ParallaxLayer {
             this.imageWidth = asset.width;
             this.imageHeight = asset.height;
 
+            // Auto-start animation for animated GIFs in parallax backgrounds
+            if (animatedTexture != null && animatedTexture.isAnimated()) {
+                animatedTexture.playForward();
+            }
+
             String animInfo = (animatedTexture != null && animatedTexture.isAnimated())
                 ? ", animated (" + animatedTexture.getFrameCount() + " frames)" : "";
             System.out.println("ParallaxLayer '" + name + "' loaded: " + imageWidth + "x" + imageHeight + animInfo);

@@ -140,6 +140,31 @@ PARALLAX LAYER SYSTEM:
   Lower Z-Order = further back (slower parallax)
   Higher Z-Order = closer to camera (faster parallax)
 
+  ANIMATED GIF SUPPORT:
+    Parallax layers support animated GIF files for dynamic backgrounds.
+    - Place .gif files in assets/parallax/ alongside .png files
+    - GIF animations play automatically when the level loads
+    - Per-frame timing from GIF metadata is respected
+    - Supports transparency and proper frame disposal methods
+    - Works with tiling, scaling, and opacity settings
+
+    Example uses:
+    - Animated clouds drifting across the sky
+    - Flickering torches or fires in the background
+    - Flowing water or waterfalls
+    - Swaying trees or grass
+    - Animated city lights at night
+
+    JSON Example:
+    {
+      "name": "animated_clouds",
+      "imagePath": "assets/parallax/clouds.gif",
+      "scrollSpeedX": 0.05,
+      "zOrder": -5,
+      "scale": 10.0,
+      "opacity": 0.8
+    }
+
 EDITOR CONTROLS:
   Key/Action      | Function
   ----------------|--------------------------------------------
@@ -1006,8 +1031,9 @@ LIGHTING SYSTEM (LightingSystem.java):
   lighting.addLightSource(new LightSource(x, y, radius, color));
   lighting.draw(g, camera);
 
-PARALLAX BACKGROUND (ParallaxBackground.java):
-  Layers at different depths scroll at different speeds:
+PARALLAX BACKGROUND (ParallaxBackground.java, ParallaxLayer.java):
+  Layers at different depths scroll at different speeds.
+  Supports both static images (PNG, JPG) and animated GIFs.
 
   Depth Level      | Z-Index | Scroll Speed
   -----------------|---------|-------------
@@ -1017,16 +1043,28 @@ PARALLAX BACKGROUND (ParallaxBackground.java):
   Z_MIDDLEGROUND_1 | 1       | 0.7x
   Z_FOREGROUND     | 2       | 1.2x (fastest)
 
+  GIF Animation Support:
+  - Animated GIFs auto-play when loaded as parallax layers
+  - Frame timing from GIF metadata is preserved
+  - Supports GIF disposal methods (none, restoreToBackground, restoreToPrevious)
+  - Works seamlessly with tiling, scaling, and opacity
+
+  ParallaxBackground bg = new ParallaxBackground();
+  bg.addLayer("clouds", "assets/parallax/clouds.gif", 0.1, -2);  // Animated GIF layer
+  bg.update(deltaMs);  // Call each frame to advance animations
+  bg.drawAll(g, camera);
+
 ASSET LOADER (AssetLoader.java):
   Static methods for loading images and GIFs:
 
-  ImageAsset asset = AssetLoader.loadAsset("path/to/image.png");
-  BufferedImage img = asset.getImage();
+  ImageAsset asset = AssetLoader.load("path/to/image.png");
+  BufferedImage img = asset.staticImage;
 
   // For GIFs:
-  ImageAsset gifAsset = AssetLoader.loadAsset("path/to/anim.gif");
-  AnimatedTexture anim = gifAsset.getAnimatedTexture();
-  anim.update();  // Call each frame
+  ImageAsset gifAsset = AssetLoader.load("path/to/anim.gif");
+  AnimatedTexture anim = gifAsset.animatedTexture;
+  anim.playForward();  // Start animation (paused by default)
+  anim.update(deltaMs);  // Call each frame with delta time in milliseconds
   BufferedImage frame = anim.getCurrentFrame();
 
 RENDER PIPELINE ORDER:
