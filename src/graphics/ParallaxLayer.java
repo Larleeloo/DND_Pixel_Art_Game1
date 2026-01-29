@@ -254,8 +254,9 @@ public class ParallaxLayer {
             startTileY = (int) Math.floor(effectiveY / scaledHeight);
             endTileY = (int) Math.ceil((effectiveY + viewportHeight) / scaledHeight);
         } else {
+            // Only draw a single tile vertically when not tiling
             startTileY = 0;
-            endTileY = 1;
+            endTileY = 0;
         }
 
         // Draw all visible tiles
