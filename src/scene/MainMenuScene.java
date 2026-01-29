@@ -13,6 +13,7 @@ import ui.*;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Main menu scene - the game's title screen.
@@ -132,7 +133,7 @@ public class MainMenuScene implements Scene {
         );
         buttons.add(creativeButton);
 
-        // Loot Game button - opens the loot chest mini-game
+        // Loot Game button - opens the loot chest mini-game (with debug cutscene)
         UIButton lootGameButton = new UIButton(
                 centerX - buttonWidth / 2,
                 startY + spacing * 4,
@@ -140,8 +141,23 @@ public class MainMenuScene implements Scene {
                 buttonHeight,
                 "Loot Game",
                 () -> {
-                    System.out.println("MainMenuScene: Opening Loot Game");
-                    SceneManager.getInstance().setScene("lootGame", SceneManager.TRANSITION_FADE);
+                    System.out.println("MainMenuScene: Playing debug cutscene before Loot Game");
+
+                    // DEBUG: Test cutscene before entering Loot Game
+                    List<CutsceneOverlay.CutsceneFrame> frames = new ArrayList<>();
+                    frames.add(new CutsceneOverlay.CutsceneFrame(
+                        "assets/chests/daily_chest.gif",
+                        "Welcome to the Loot Game! Click to continue..."
+                    ));
+                    frames.add(new CutsceneOverlay.CutsceneFrame(
+                        "assets/chests/monthly_chest.gif",
+                        "Open chests to find treasure! Press E to interact."
+                    ));
+
+                    SceneManager.getInstance().startCutscene(frames, () -> {
+                        System.out.println("MainMenuScene: Cutscene complete, opening Loot Game");
+                        SceneManager.getInstance().setScene("lootGame", SceneManager.TRANSITION_FADE);
+                    });
                 }
         );
         lootGameButton.setColors(
