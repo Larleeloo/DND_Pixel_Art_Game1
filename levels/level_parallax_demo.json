@@ -40,7 +40,7 @@
       "scale": 12.0,
       "opacity": 1.0,
       "tileHorizontal": true,
-      "tileVertical": true,
+      "tileVertical": false,
       "offsetX": 0,
       "offsetY": 0,
       "anchorBottom": false

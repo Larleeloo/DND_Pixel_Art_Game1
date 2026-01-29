@@ -2058,6 +2058,7 @@ public class CreativeScene implements Scene {
             parallaxData.offsetX = layer.offsetX;
             parallaxData.offsetY = layer.offsetY;
             parallaxData.tileHorizontal = true;
+            parallaxData.tileVertical = false;  // Only tile horizontally, not vertically
             parallaxData.anchorBottom = true;  // Anchor to bottom for proper positioning
             levelData.parallaxLayers.add(parallaxData);
         }
@@ -2265,6 +2266,7 @@ public class CreativeScene implements Scene {
                         ", \"offsetX\": " + p.offsetX +
                         ", \"offsetY\": " + p.offsetY +
                         ", \"tileHorizontal\": " + p.tileHorizontal +
+                        ", \"tileVertical\": " + p.tileVertical +
                         ", \"anchorBottom\": " + p.anchorBottom + "}" + comma);
                 }
                 writer.println("  ],");
