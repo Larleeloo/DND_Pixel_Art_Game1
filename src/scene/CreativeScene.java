@@ -1841,10 +1841,12 @@ public class CreativeScene implements Scene {
                     int offsetY = Integer.parseInt(parallaxData.getOrDefault("offsetY", "0"));
                     String positionLabel = parallaxData.getOrDefault("positionLabel", "");
 
+                    double scrollSpeed = Double.parseDouble(parallaxData.get("scrollSpeed"));
                     ParallaxLayerEntry newLayer = new ParallaxLayerEntry(
                         layerName,
                         parallaxData.get("path"),
-                        Double.parseDouble(parallaxData.get("scrollSpeed")),
+                        scrollSpeed,
+                        scrollSpeed,  // scrollSpeedY defaults to match scrollSpeedX
                         Integer.parseInt(parallaxData.get("zOrder")),
                         scale, opacity, offsetX, offsetY, positionLabel,
                         selected.icon
