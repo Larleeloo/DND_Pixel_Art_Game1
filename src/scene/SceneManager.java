@@ -13,6 +13,7 @@ import ui.*;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +34,7 @@ public class SceneManager {
     private AudioManager audioManager;
     private InputManager inputManager;
     private SettingsOverlay settingsOverlay;
+    private CutsceneOverlay cutsceneOverlay;
 
     // Transition types
     public static final int TRANSITION_NONE = 0;
@@ -46,6 +48,7 @@ public class SceneManager {
         transitionAlpha = 0;
         transitionSpeed = 0.12f;  // Faster transitions (was 0.05f)
         transitionType = TRANSITION_FADE;
+        cutsceneOverlay = new CutsceneOverlay();
     }
 
     /**
@@ -109,6 +112,52 @@ public class SceneManager {
      */
     public boolean isSettingsOpen() {
         return settingsOverlay != null && settingsOverlay.isVisible();
+    }
+
+    /**
+     * Get the cutscene overlay.
+     */
+    public CutsceneOverlay getCutsceneOverlay() {
+        return cutsceneOverlay;
+    }
+
+    /**
+     * Check if a cutscene is currently playing.
+     */
+    public boolean isCutscenePlaying() {
+        return cutsceneOverlay != null && cutsceneOverlay.isPlaying();
+    }
+
+    /**
+     * Start a cutscene with the given frames.
+     * @param frames List of cutscene frames (GIF paths + optional text)
+     * @param onComplete Callback when cutscene finishes
+     */
+    public void startCutscene(List<CutsceneOverlay.CutsceneFrame> frames, Runnable onComplete) {
+        if (cutsceneOverlay != null) {
+            cutsceneOverlay.startCutscene(frames, onComplete);
+        }
+    }
+
+    /**
+     * Start a single-frame cutscene.
+     * @param gifPath Path to the GIF file
+     * @param text Optional text prompt
+     * @param onComplete Callback when cutscene finishes
+     */
+    public void startCutscene(String gifPath, String text, Runnable onComplete) {
+        if (cutsceneOverlay != null) {
+            cutsceneOverlay.startCutscene(gifPath, text, onComplete);
+        }
+    }
+
+    /**
+     * Skip the current cutscene.
+     */
+    public void skipCutscene() {
+        if (cutsceneOverlay != null) {
+            cutsceneOverlay.skip();
+        }
     }
 
     /**
@@ -210,6 +259,12 @@ public class SceneManager {
             input.resetClickConsumed();
         }
 
+        // Update cutscene overlay (handles animation updates)
+        if (cutsceneOverlay != null && cutsceneOverlay.isVisible()) {
+            cutsceneOverlay.update();
+            return; // Don't update anything else while cutscene is playing
+        }
+
         // Update settings overlay (for controller rebinding detection)
         if (settingsOverlay != null) {
             settingsOverlay.update();
@@ -234,11 +289,16 @@ public class SceneManager {
     }
 
     /**
-     * Handle key pressed events for settings overlay (for key rebinding).
+     * Handle key pressed events for overlays (cutscene, settings).
      * @param keyCode The key code from KeyEvent
      * @return true if the event was consumed
      */
     public boolean handleKeyPressed(int keyCode) {
+        // Handle cutscene overlay first
+        if (cutsceneOverlay != null && cutsceneOverlay.isVisible()) {
+            return cutsceneOverlay.handleKeyPressed(keyCode);
+        }
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.isVisible()) {
             return settingsOverlay.handleKeyPressed(keyCode);
         }
@@ -322,6 +382,11 @@ public class SceneManager {
         if (settingsOverlay != null) {
             settingsOverlay.draw(g);
         }
+
+        // Draw cutscene overlay on top of everything (including settings)
+        if (cutsceneOverlay != null) {
+            cutsceneOverlay.draw(g);
+        }
     }
 
     /**
@@ -347,7 +412,12 @@ public class SceneManager {
 
     // Mouse event forwarding
     public void onMousePressed(int x, int y) {
-        // Handle settings overlay first
+        // Handle cutscene overlay first
+        if (cutsceneOverlay != null && cutsceneOverlay.handleMousePressed(x, y)) {
+            return; // Event consumed by cutscene
+        }
+
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.handleMousePressed(x, y)) {
             return; // Event consumed by settings
         }
@@ -358,7 +428,12 @@ public class SceneManager {
     }
 
     public void onMouseReleased(int x, int y) {
-        // Handle settings overlay first
+        // Handle cutscene overlay first
+        if (cutsceneOverlay != null && cutsceneOverlay.handleMouseReleased(x, y)) {
+            return;
+        }
+
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.isVisible()) {
             settingsOverlay.handleMouseReleased(x, y);
             return;
@@ -370,7 +445,12 @@ public class SceneManager {
     }
 
     public void onMouseDragged(int x, int y) {
-        // Handle settings overlay first
+        // Handle cutscene overlay first (consume all events while visible)
+        if (cutsceneOverlay != null && cutsceneOverlay.isVisible()) {
+            return;
+        }
+
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.isVisible()) {
             settingsOverlay.handleMouseDragged(x, y);
             return;
@@ -382,7 +462,12 @@ public class SceneManager {
     }
 
     public void onMouseMoved(int x, int y) {
-        // Handle settings overlay first
+        // Handle cutscene overlay first (consume all events while visible)
+        if (cutsceneOverlay != null && cutsceneOverlay.isVisible()) {
+            return;
+        }
+
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.isVisible()) {
             settingsOverlay.handleMouseMoved(x, y);
             return;
@@ -394,7 +479,12 @@ public class SceneManager {
     }
 
     public void onMouseClicked(int x, int y) {
-        // Handle settings overlay first
+        // Handle cutscene overlay first
+        if (cutsceneOverlay != null && cutsceneOverlay.handleMouseClicked(x, y)) {
+            return; // Event consumed by cutscene
+        }
+
+        // Handle settings overlay
         if (settingsOverlay != null && settingsOverlay.handleMouseClicked(x, y)) {
             return; // Event consumed by settings
         }
