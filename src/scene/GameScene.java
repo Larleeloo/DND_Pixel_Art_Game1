@@ -775,6 +775,12 @@ public class GameScene implements Scene {
             camera.update();
         }
 
+        // Update parallax background animations (for animated GIF backgrounds)
+        if (parallaxBackground != null) {
+            long deltaMs = (long)(deltaTime * 1000);
+            parallaxBackground.update(deltaMs);
+        }
+
         // Check triggers
         if (player != null) {
             Rectangle playerBounds = player.getBounds();
