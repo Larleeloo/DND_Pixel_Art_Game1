@@ -102,6 +102,7 @@ public class CreativeScene implements Scene {
      */
     private enum ModalState {
         NONE,           // No modal open
+        STARTUP,        // Initial dialog: New Level or Load Level
         CONFIRM_EXIT,   // Confirm exit dialog (Yes/No/Cancel)
         SAVE_FILENAME,  // Enter filename dialog
         LOAD_LEVEL,     // Load level dialog
@@ -237,7 +238,10 @@ public class CreativeScene implements Scene {
         camera.setSmoothSpeed(1.0); // Instant response for editing
 
         initialized = true;
-        setStatus("Creative Mode - Press Tab to change category, P to play, S to save");
+
+        // Show startup dialog to choose New Level or Load Level
+        modalState = ModalState.STARTUP;
+        setStatus("Welcome to Creative Mode - Create a new level or load an existing one");
     }
 
     @Override
@@ -256,11 +260,11 @@ public class CreativeScene implements Scene {
             return;
         }
 
-        // Camera movement
+        // Camera movement (don't move down with S when Ctrl is held - that's for save)
         if (input.isKeyPressed(KeyEvent.VK_W) || input.isKeyPressed(KeyEvent.VK_UP)) {
             cameraY -= CAMERA_SPEED;
         }
-        if (input.isKeyPressed(KeyEvent.VK_S) || input.isKeyPressed(KeyEvent.VK_DOWN)) {
+        if ((input.isKeyPressed(KeyEvent.VK_S) && !input.isKeyPressed(KeyEvent.VK_CONTROL)) || input.isKeyPressed(KeyEvent.VK_DOWN)) {
             cameraY += CAMERA_SPEED;
         }
         if (input.isKeyPressed(KeyEvent.VK_A) || input.isKeyPressed(KeyEvent.VK_LEFT)) {
@@ -381,6 +385,21 @@ public class CreativeScene implements Scene {
      */
     private void handleModalInput(InputManager input) {
         switch (modalState) {
+            case STARTUP:
+                // N = New Level, L = Load Level, Escape = Use defaults and start
+                if (input.isKeyJustPressed(KeyEvent.VK_N)) {
+                    modalState = ModalState.NONE;
+                    showNewLevelDialog();
+                } else if (input.isKeyJustPressed(KeyEvent.VK_L)) {
+                    modalState = ModalState.NONE;
+                    openLoadDialog();
+                } else if (input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
+                    // Start with default level settings
+                    modalState = ModalState.NONE;
+                    setStatus("Using default level (60x17 blocks) - Press N for New Level or L to Load");
+                }
+                break;
+
             case CONFIRM_EXIT:
                 // Y = Yes (save and exit), N = No (exit without save), Escape = Cancel
                 if (input.isKeyJustPressed(KeyEvent.VK_Y)) {
@@ -773,12 +792,49 @@ public class CreativeScene implements Scene {
         g.setColor(Color.WHITE);
 
         switch (modalState) {
+            case STARTUP:
+                // Title
+                g.setFont(new Font("Arial", Font.BOLD, 28));
+                String title = "Creative Mode";
+                FontMetrics fm = g.getFontMetrics();
+                int titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                g.drawString(title, titleX, dialogY + 50);
+
+                // Subtitle
+                g.setFont(new Font("Arial", Font.PLAIN, 16));
+                String subtitle = "Design and build your own levels";
+                fm = g.getFontMetrics();
+                int subtitleX = dialogX + (dialogWidth - fm.stringWidth(subtitle)) / 2;
+                g.setColor(new Color(180, 180, 200));
+                g.drawString(subtitle, subtitleX, dialogY + 80);
+
+                // Options
+                g.setFont(new Font("Arial", Font.BOLD, 16));
+                g.setColor(new Color(100, 200, 100));
+                g.drawString("[N] New Level", dialogX + 80, dialogY + 120);
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(150, 150, 170));
+                g.drawString("Configure level size and settings", dialogX + 80, dialogY + 138);
+
+                g.setFont(new Font("Arial", Font.BOLD, 16));
+                g.setColor(new Color(100, 150, 255));
+                g.drawString("[L] Load Level", dialogX + 280, dialogY + 120);
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(150, 150, 170));
+                g.drawString("Open an existing level", dialogX + 280, dialogY + 138);
+
+                // Skip option
+                g.setFont(new Font("Arial", Font.PLAIN, 12));
+                g.setColor(new Color(120, 120, 140));
+                g.drawString("[Esc] Skip - use default settings (60x17 blocks)", dialogX + 100, dialogY + 175);
+                break;
+
             case CONFIRM_EXIT:
                 // Title
                 g.setFont(new Font("Arial", Font.BOLD, 24));
-                String title = "Exit Creative Mode?";
-                FontMetrics fm = g.getFontMetrics();
-                int titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
+                title = "Exit Creative Mode?";
+                fm = g.getFontMetrics();
+                titleX = dialogX + (dialogWidth - fm.stringWidth(title)) / 2;
                 g.drawString(title, titleX, dialogY + 50);
 
                 // Message
