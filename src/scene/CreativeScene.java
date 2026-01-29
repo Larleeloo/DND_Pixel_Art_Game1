@@ -1100,6 +1100,17 @@ public class CreativeScene implements Scene {
                     g.drawImage(entity.icon, screenX, screenY, GRID_SIZE, GRID_SIZE, null);
                 }
 
+                // Draw overlay texture if present
+                if (entity.hasOverlay()) {
+                    BlockOverlay overlay = BlockOverlay.fromName(entity.overlay);
+                    if (overlay != BlockOverlay.NONE) {
+                        BufferedImage overlayTexture = BlockRegistry.getInstance().getOverlayTexture(overlay);
+                        if (overlayTexture != null) {
+                            g.drawImage(overlayTexture, screenX, screenY, GRID_SIZE, GRID_SIZE, null);
+                        }
+                    }
+                }
+
                 // Highlight if hovered
                 if (entity == hoveredEntity) {
                     g.setColor(new Color(255, 255, 0, 100));
@@ -1118,6 +1129,17 @@ public class CreativeScene implements Scene {
 
                 if (entity.icon != null) {
                     g.drawImage(entity.icon, screenX, screenY, GRID_SIZE, GRID_SIZE, null);
+                }
+
+                // Draw overlay texture if present
+                if (entity.hasOverlay()) {
+                    BlockOverlay overlay = BlockOverlay.fromName(entity.overlay);
+                    if (overlay != BlockOverlay.NONE) {
+                        BufferedImage overlayTexture = BlockRegistry.getInstance().getOverlayTexture(overlay);
+                        if (overlayTexture != null) {
+                            g.drawImage(overlayTexture, screenX, screenY, GRID_SIZE, GRID_SIZE, null);
+                        }
+                    }
                 }
 
                 // Draw movement path preview
