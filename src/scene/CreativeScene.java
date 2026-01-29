@@ -82,6 +82,7 @@ public class CreativeScene implements Scene {
     // Mouse state
     private int mouseX, mouseY;
     private int worldMouseX, worldMouseY;
+    private int lastPaintGridX = -1, lastPaintGridY = -1; // For paint-style placement
     private boolean isDragging = false;
     private PlacedEntity draggedEntity = null;
     private PlacedEntity hoveredEntity = null;
@@ -380,9 +381,33 @@ public class CreativeScene implements Scene {
             removeEntityAt(worldMouseX, worldMouseY);
         }
 
-        // Left-click to place (already handled in onMouseClicked, but also handle here for immediate feedback)
-        if (input.isLeftMouseJustPressed() && mouseX >= CreativePaletteManager.PALETTE_WIDTH) {
-            placeEntity();
+        // Left-click to place - supports painting for blocks and overlays
+        if (mouseX >= CreativePaletteManager.PALETTE_WIDTH) {
+            PaletteCategory category = paletteManager.getCurrentCategory();
+            boolean isPaintableCategory = (category == PaletteCategory.BLOCKS ||
+                                           category == PaletteCategory.OVERLAYS);
+
+            if (input.isLeftMouseJustPressed()) {
+                // Initial click - place entity and reset paint tracking
+                placeEntity();
+                lastPaintGridX = worldMouseX / GRID_SIZE;
+                lastPaintGridY = worldMouseY / GRID_SIZE;
+            } else if (input.isLeftMousePressed() && isPaintableCategory) {
+                // Continuous painting - only place if moved to a new grid cell
+                int currentGridX = worldMouseX / GRID_SIZE;
+                int currentGridY = worldMouseY / GRID_SIZE;
+                if (currentGridX != lastPaintGridX || currentGridY != lastPaintGridY) {
+                    placeEntity();
+                    lastPaintGridX = currentGridX;
+                    lastPaintGridY = currentGridY;
+                }
+            }
+        }
+
+        // Reset paint tracking when mouse is released
+        if (!input.isLeftMousePressed()) {
+            lastPaintGridX = -1;
+            lastPaintGridY = -1;
         }
 
         // Update hovered entity
