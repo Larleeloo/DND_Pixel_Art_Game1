@@ -159,6 +159,7 @@ public class CreativeScene implements Scene {
         String name;
         String imagePath;
         double scrollSpeedX;
+        double scrollSpeedY;
         int zOrder;
         double scale;
         double opacity;
@@ -171,6 +172,7 @@ public class CreativeScene implements Scene {
             this.name = name;
             this.imagePath = imagePath;
             this.scrollSpeedX = scrollSpeedX;
+            this.scrollSpeedY = scrollSpeedX;  // Default vertical speed matches horizontal for depth consistency
             this.zOrder = zOrder;
             this.scale = 10.0;  // Scale up to cover screen (matches LevelData default)
             this.opacity = 1.0;
@@ -180,12 +182,13 @@ public class CreativeScene implements Scene {
             this.icon = icon;
         }
 
-        ParallaxLayerEntry(String name, String imagePath, double scrollSpeedX, int zOrder,
+        ParallaxLayerEntry(String name, String imagePath, double scrollSpeedX, double scrollSpeedY, int zOrder,
                           double scale, double opacity, int offsetX, int offsetY,
                           String positionLabel, BufferedImage icon) {
             this.name = name;
             this.imagePath = imagePath;
             this.scrollSpeedX = scrollSpeedX;
+            this.scrollSpeedY = scrollSpeedY;
             this.zOrder = zOrder;
             this.scale = scale;
             this.opacity = opacity;
@@ -2046,6 +2049,7 @@ public class CreativeScene implements Scene {
             parallaxData.name = layer.name;
             parallaxData.imagePath = layer.imagePath;
             parallaxData.scrollSpeedX = layer.scrollSpeedX;
+            parallaxData.scrollSpeedY = layer.scrollSpeedY;
             parallaxData.zOrder = layer.zOrder;
             parallaxData.scale = layer.scale;
             parallaxData.opacity = layer.opacity;
@@ -2252,6 +2256,7 @@ public class CreativeScene implements Scene {
                     writer.println("    {\"name\": \"" + escapeJson(p.name) +
                         "\", \"imagePath\": \"" + escapeJson(p.imagePath) +
                         "\", \"scrollSpeedX\": " + p.scrollSpeedX +
+                        ", \"scrollSpeedY\": " + p.scrollSpeedY +
                         ", \"zOrder\": " + p.zOrder +
                         ", \"scale\": " + p.scale +
                         ", \"opacity\": " + p.opacity +
@@ -2402,7 +2407,7 @@ public class CreativeScene implements Scene {
                 // Determine position label based on zOrder
                 String positionLabel = getPositionLabelForZOrder(p.zOrder);
                 ParallaxLayerEntry entry = new ParallaxLayerEntry(
-                    p.name, p.imagePath, p.scrollSpeedX, p.zOrder,
+                    p.name, p.imagePath, p.scrollSpeedX, p.scrollSpeedY, p.zOrder,
                     p.scale, p.opacity, p.offsetX, p.offsetY, positionLabel, icon
                 );
                 parallaxLayers.add(entry);
@@ -2748,22 +2753,29 @@ public class CreativeScene implements Scene {
         gbc.gridx = 1;
         dialog.add(offsetYField, gbc);
 
-        // Scroll Speed
+        // Scroll Speed X
         gbc.gridx = 0; gbc.gridy = 4;
-        dialog.add(new JLabel("Scroll Speed (0.0-2.0):"), gbc);
-        JTextField scrollSpeedField = new JTextField(String.format("%.2f", layer.scrollSpeedX), 10);
+        dialog.add(new JLabel("Scroll Speed X (0.0-2.0):"), gbc);
+        JTextField scrollSpeedXField = new JTextField(String.format("%.2f", layer.scrollSpeedX), 10);
         gbc.gridx = 1;
-        dialog.add(scrollSpeedField, gbc);
+        dialog.add(scrollSpeedXField, gbc);
+
+        // Scroll Speed Y
+        gbc.gridx = 0; gbc.gridy = 5;
+        dialog.add(new JLabel("Scroll Speed Y (0.0-2.0):"), gbc);
+        JTextField scrollSpeedYField = new JTextField(String.format("%.2f", layer.scrollSpeedY), 10);
+        gbc.gridx = 1;
+        dialog.add(scrollSpeedYField, gbc);
 
         // Scale
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0; gbc.gridy = 6;
         dialog.add(new JLabel("Scale:"), gbc);
         JTextField scaleField = new JTextField(String.format("%.1f", layer.scale), 10);
         gbc.gridx = 1;
         dialog.add(scaleField, gbc);
 
         // Opacity
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0; gbc.gridy = 7;
         dialog.add(new JLabel("Opacity (0.0-1.0):"), gbc);
         JTextField opacityField = new JTextField(String.format("%.2f", layer.opacity), 10);
         gbc.gridx = 1;
@@ -2779,7 +2791,7 @@ public class CreativeScene implements Scene {
         buttonPanel.add(removeBtn);
         buttonPanel.add(cancelBtn);
 
-        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridx = 0; gbc.gridy = 8;
         gbc.gridwidth = 2;
         dialog.add(buttonPanel, gbc);
 
@@ -2787,7 +2799,8 @@ public class CreativeScene implements Scene {
             try {
                 layer.offsetX = Integer.parseInt(offsetXField.getText().trim());
                 layer.offsetY = Integer.parseInt(offsetYField.getText().trim());
-                layer.scrollSpeedX = Double.parseDouble(scrollSpeedField.getText().trim());
+                layer.scrollSpeedX = Double.parseDouble(scrollSpeedXField.getText().trim());
+                layer.scrollSpeedY = Double.parseDouble(scrollSpeedYField.getText().trim());
                 layer.scale = Double.parseDouble(scaleField.getText().trim());
                 layer.opacity = Math.max(0.0, Math.min(1.0, Double.parseDouble(opacityField.getText().trim())));
                 dialog.dispose();
