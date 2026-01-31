@@ -2071,13 +2071,13 @@ public class CreativeScene implements Scene {
 
         mouseX = x;
         mouseY = y;
-        worldMouseX = x + (int) cameraX;
-        worldMouseY = y + (int) cameraY;
+        // Account for zoom when converting screen to world coordinates
+        worldMouseX = (int) (cameraX + x / zoomLevel);
+        worldMouseY = (int) (cameraY + y / zoomLevel);
 
-        // Continuous placement while dragging (for blocks)
-        if (isDragging && x >= CreativePaletteManager.PALETTE_WIDTH && paletteManager.getCurrentCategory() == PaletteCategory.BLOCKS) {
-            placeEntity();
-        }
+        // Note: Continuous placement during drag is handled in update() via
+        // paint-style placement logic, which has proper grid tracking to
+        // prevent duplicate placements. Don't call placeEntity() here.
     }
 
     @Override
