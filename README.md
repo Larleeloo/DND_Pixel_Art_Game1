@@ -149,12 +149,18 @@ ZOOM CONTROLS:
   - Ctrl + Scroll Down: Zoom out (decrease zoom level)
   - Zoom Range:         6% (1/16th) to 100% (base size)
   - Zoom Step:          6.25% per scroll increment
-  - Zoom Indicator:     Displayed in top-right corner
 
   Zooming maintains the screen center position, allowing you to zoom into
   specific areas of the level. The palette and UI elements remain at fixed
-  size for consistent interaction. When zoomed out, level boundaries are
-  displayed as orange lines to help with orientation.
+  size for consistent interaction. Yellow boundary lines mark the level
+  edges on all four sides (left, right, top, bottom).
+
+POSITION DISPLAY:
+  The top-right corner displays real-time position information:
+
+  - Zoom:  Current zoom percentage (6% - 100%)
+  - Pos:   Mouse position in world coordinates (pixels)
+  - Block: Current block position (grid coordinates)
 
 LEVEL JSON FORMAT:
   Levels are saved as JSON files in the levels/ directory.

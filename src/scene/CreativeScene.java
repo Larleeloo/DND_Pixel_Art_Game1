@@ -318,9 +318,11 @@ public class CreativeScene implements Scene {
         }
 
         // Clamp camera to level bounds (accounting for zoom - when zoomed out, visible area is larger)
+        // Allow camera to go negative so left edge of map (x=0) is visible past the palette
         double visibleWidth = GamePanel.SCREEN_WIDTH / zoomLevel;
         double visibleHeight = GamePanel.SCREEN_HEIGHT / zoomLevel;
-        cameraX = (float) Math.max(0, Math.min(cameraX, levelData.levelWidth - visibleWidth));
+        double minCameraX = -CreativePaletteManager.PALETTE_WIDTH / zoomLevel;
+        cameraX = (float) Math.max(minCameraX, Math.min(cameraX, levelData.levelWidth - visibleWidth));
         cameraY = (float) Math.max(0, Math.min(cameraY, levelData.levelHeight - visibleHeight));
 
         camera.setPosition((int) cameraX, (int) cameraY);
@@ -1176,27 +1178,33 @@ public class CreativeScene implements Scene {
         double visibleHeight = GamePanel.SCREEN_HEIGHT / zoomLevel;
 
         // Calculate the starting world coordinates for grid lines
-        int startWorldX = ((int) cameraX / GRID_SIZE) * GRID_SIZE;
-        int startWorldY = ((int) cameraY / GRID_SIZE) * GRID_SIZE;
+        // Use floor division to handle negative camera positions correctly
+        int startWorldX = (int) (Math.floor(cameraX / GRID_SIZE) * GRID_SIZE);
+        int startWorldY = (int) (Math.floor(cameraY / GRID_SIZE) * GRID_SIZE);
         int endWorldX = (int) (cameraX + visibleWidth) + GRID_SIZE;
         int endWorldY = (int) (cameraY + visibleHeight) + GRID_SIZE;
 
         // Calculate palette boundary in world coordinates (accounting for zoom)
         double paletteWorldX = cameraX + CreativePaletteManager.PALETTE_WIDTH / zoomLevel;
 
-        // Vertical lines
+        // Vertical lines - only draw within level bounds (0 to levelWidth)
         for (int worldX = startWorldX; worldX <= endWorldX; worldX += GRID_SIZE) {
-            if (worldX >= paletteWorldX) {  // Only draw lines past the palette
+            if (worldX >= 0 && worldX <= levelData.levelWidth && worldX >= paletteWorldX) {
                 int drawX = worldX - (int) cameraX;
-                g.drawLine(drawX, 0 - (int) cameraY, drawX, (int) (cameraY + visibleHeight + 100) - (int) cameraY);
+                int drawStartY = Math.max(0, -(int) cameraY);
+                int drawEndY = Math.min(levelData.levelHeight - (int) cameraY, (int) visibleHeight);
+                g.drawLine(drawX, drawStartY, drawX, drawEndY);
             }
         }
 
-        // Horizontal lines
+        // Horizontal lines - only draw within level bounds (0 to levelHeight)
         for (int worldY = startWorldY; worldY <= endWorldY; worldY += GRID_SIZE) {
-            int drawY = worldY - (int) cameraY;
-            int drawStartX = (int) Math.max(paletteWorldX - cameraX, 0);
-            g.drawLine(drawStartX, drawY, (int) visibleWidth, drawY);
+            if (worldY >= 0 && worldY <= levelData.levelHeight) {
+                int drawY = worldY - (int) cameraY;
+                int drawStartX = (int) Math.max(paletteWorldX - cameraX, Math.max(0, -(int) cameraX));
+                int drawEndX = Math.min(levelData.levelWidth - (int) cameraX, (int) visibleWidth);
+                g.drawLine(drawStartX, drawY, drawEndX, drawY);
+            }
         }
 
         // Draw ground line
@@ -1204,25 +1212,46 @@ public class CreativeScene implements Scene {
         if (levelData.groundY >= cameraY && levelData.groundY <= cameraY + visibleHeight) {
             g.setColor(new Color(255, 100, 100, 100));
             g.setStroke(new BasicStroke(2));
-            int groundStartX = (int) Math.max(paletteWorldX - cameraX, 0);
-            g.drawLine(groundStartX, groundDrawY, (int) visibleWidth, groundDrawY);
+            int groundStartX = (int) Math.max(paletteWorldX - cameraX, Math.max(0, -(int) cameraX));
+            int groundEndX = Math.min(levelData.levelWidth - (int) cameraX, (int) visibleWidth);
+            g.drawLine(groundStartX, groundDrawY, groundEndX, groundDrawY);
             g.setStroke(new BasicStroke(1));
         }
 
-        // Draw level boundaries
-        g.setColor(new Color(255, 200, 100, 150));
+        // Draw level boundaries - yellow lines on all four sides
+        g.setColor(new Color(255, 255, 0, 200));  // Yellow
         g.setStroke(new BasicStroke(3));
 
-        // Right boundary
-        int rightBoundaryX = levelData.levelWidth - (int) cameraX;
-        if (rightBoundaryX > 0 && rightBoundaryX < visibleWidth) {
-            g.drawLine(rightBoundaryX, 0, rightBoundaryX, (int) visibleHeight);
+        // Left boundary (at world x = 0)
+        int leftBoundaryX = 0 - (int) cameraX;
+        if (leftBoundaryX >= 0 && leftBoundaryX < visibleWidth) {
+            int topY = Math.max(0, -(int) cameraY);
+            int bottomY = Math.min(levelData.levelHeight - (int) cameraY, (int) visibleHeight);
+            g.drawLine(leftBoundaryX, topY, leftBoundaryX, bottomY);
         }
 
-        // Bottom boundary
+        // Right boundary (at world x = levelWidth)
+        int rightBoundaryX = levelData.levelWidth - (int) cameraX;
+        if (rightBoundaryX >= 0 && rightBoundaryX < visibleWidth) {
+            int topY = Math.max(0, -(int) cameraY);
+            int bottomY = Math.min(levelData.levelHeight - (int) cameraY, (int) visibleHeight);
+            g.drawLine(rightBoundaryX, topY, rightBoundaryX, bottomY);
+        }
+
+        // Top boundary (at world y = 0)
+        int topBoundaryY = 0 - (int) cameraY;
+        if (topBoundaryY >= 0 && topBoundaryY < visibleHeight) {
+            int leftX = Math.max(0, -(int) cameraX);
+            int rightX = Math.min(levelData.levelWidth - (int) cameraX, (int) visibleWidth);
+            g.drawLine(leftX, topBoundaryY, rightX, topBoundaryY);
+        }
+
+        // Bottom boundary (at world y = levelHeight)
         int bottomBoundaryY = levelData.levelHeight - (int) cameraY;
-        if (bottomBoundaryY > 0 && bottomBoundaryY < visibleHeight) {
-            g.drawLine(0, bottomBoundaryY, (int) visibleWidth, bottomBoundaryY);
+        if (bottomBoundaryY >= 0 && bottomBoundaryY < visibleHeight) {
+            int leftX = Math.max(0, -(int) cameraX);
+            int rightX = Math.min(levelData.levelWidth - (int) cameraX, (int) visibleWidth);
+            g.drawLine(leftX, bottomBoundaryY, rightX, bottomBoundaryY);
         }
 
         g.setStroke(new BasicStroke(1));
@@ -1502,28 +1531,44 @@ public class CreativeScene implements Scene {
     }
 
     /**
-     * Draw zoom level indicator in the corner
+     * Draw zoom level indicator and mouse position info in the corner
      */
     private void drawZoomIndicator(Graphics2D g) {
         int zoomPercent = (int) Math.round(zoomLevel * 100);
 
+        // Calculate block position
+        int blockX = worldMouseX / GRID_SIZE;
+        int blockY = worldMouseY / GRID_SIZE;
+
         // Position in top-right area, below toolbar
-        int indicatorX = GamePanel.SCREEN_WIDTH - 100;
+        int indicatorX = GamePanel.SCREEN_WIDTH - 180;
         int indicatorY = 80;
 
-        // Background
+        // Background - larger to fit more info
         g.setColor(new Color(30, 34, 42, 200));
-        g.fillRoundRect(indicatorX - 5, indicatorY - 15, 95, 25, 5, 5);
+        g.fillRoundRect(indicatorX - 5, indicatorY - 15, 175, 70, 5, 5);
 
         // Border
         g.setColor(new Color(70, 130, 180));
-        g.drawRoundRect(indicatorX - 5, indicatorY - 15, 95, 25, 5, 5);
+        g.drawRoundRect(indicatorX - 5, indicatorY - 15, 175, 70, 5, 5);
 
         // Text
+        g.setFont(new Font("Arial", Font.BOLD, 12));
+
+        // Zoom level
         g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 14));
         String zoomText = "Zoom: " + zoomPercent + "%";
         g.drawString(zoomText, indicatorX, indicatorY);
+
+        // Mouse position (world coordinates)
+        g.setColor(new Color(180, 220, 255));
+        String posText = "Pos: " + worldMouseX + ", " + worldMouseY;
+        g.drawString(posText, indicatorX, indicatorY + 18);
+
+        // Block position
+        g.setColor(new Color(255, 220, 150));
+        String blockText = "Block: " + blockX + ", " + blockY;
+        g.drawString(blockText, indicatorX, indicatorY + 36);
     }
 
     /**
