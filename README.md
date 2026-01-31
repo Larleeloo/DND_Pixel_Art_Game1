@@ -134,11 +134,27 @@ EDITOR CONTROLS:
   WASD/Arrows     | Pan camera around level
   Tab             | Cycle palette categories
   Mouse Wheel     | Scroll palette items
+  Ctrl+Scroll     | Zoom in/out (6% to 100%, centered on screen)
   P               | Toggle Play/Edit mode (test the level)
+  G               | Toggle grid visibility
   Ctrl+S          | Save level dialog
   W (near door)   | Configure door properties
   E (near button) | Configure button linkage
   Escape          | Exit to main menu / cancel dialog
+
+ZOOM CONTROLS:
+  The creative mode editor supports dynamic zoom for better level overview:
+
+  - Ctrl + Scroll Up:   Zoom in (increase zoom level)
+  - Ctrl + Scroll Down: Zoom out (decrease zoom level)
+  - Zoom Range:         6% (1/16th) to 100% (base size)
+  - Zoom Step:          6.25% per scroll increment
+  - Zoom Indicator:     Displayed in top-right corner
+
+  Zooming maintains the screen center position, allowing you to zoom into
+  specific areas of the level. The palette and UI elements remain at fixed
+  size for consistent interaction. When zoomed out, level boundaries are
+  displayed as orange lines to help with orientation.
 
 LEVEL JSON FORMAT:
   Levels are saved as JSON files in the levels/ directory.

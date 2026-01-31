@@ -46,6 +46,12 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     private double scrollAccumulator = 0;
     private static final double SCROLL_THRESHOLD = 1.5;  // Units of scroll needed to trigger
 
+    // Zoom scroll state (for Ctrl+scroll zoom functionality)
+    private int zoomScrollDirection = 0;
+    private double zoomScrollAccumulator = 0;
+    private static final double ZOOM_SCROLL_THRESHOLD = 0.5;  // More sensitive for zoom
+    private boolean ctrlHeldDuringScroll = false;
+
     // Mouse button state tracking
     // Button 1 = left click, Button 2 = middle click, Button 3 = right click
     private HashSet<Integer> mouseButtonsPressed = new HashSet<>();
@@ -201,6 +207,18 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
         return dir;
     }
 
+    /**
+     * Gets the zoom scroll direction (Ctrl+scroll) since last check.
+     * Returns -1 for zoom in (scroll up), 1 for zoom out (scroll down), 0 for no zoom scroll.
+     * Clears the zoom scroll state after reading.
+     */
+    public int getZoomScrollDirection() {
+        int dir = zoomScrollDirection;
+        zoomScrollDirection = 0;
+        ctrlHeldDuringScroll = false;
+        return dir;
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         // Forward to SceneManager for settings overlay key rebinding
@@ -240,15 +258,32 @@ public class InputManager implements KeyListener, MouseWheelListener, MouseListe
     public void mouseWheelMoved(MouseWheelEvent e) {
         // Accumulate scroll rotation (use precise wheel rotation for smoother control)
         double rotation = e.getPreciseWheelRotation();
-        scrollAccumulator += rotation;
 
-        // Only trigger scroll action when threshold is reached
-        if (scrollAccumulator >= SCROLL_THRESHOLD) {
-            scrollDirection = 1;  // Scroll down
-            scrollAccumulator = 0;  // Reset accumulator
-        } else if (scrollAccumulator <= -SCROLL_THRESHOLD) {
-            scrollDirection = -1;  // Scroll up
-            scrollAccumulator = 0;  // Reset accumulator
+        // Check if Ctrl is held for zoom functionality
+        if (e.isControlDown()) {
+            ctrlHeldDuringScroll = true;
+            zoomScrollAccumulator += rotation;
+
+            // More sensitive threshold for zoom
+            if (zoomScrollAccumulator >= ZOOM_SCROLL_THRESHOLD) {
+                zoomScrollDirection = 1;  // Scroll down = zoom out
+                zoomScrollAccumulator = 0;
+            } else if (zoomScrollAccumulator <= -ZOOM_SCROLL_THRESHOLD) {
+                zoomScrollDirection = -1;  // Scroll up = zoom in
+                zoomScrollAccumulator = 0;
+            }
+        } else {
+            // Normal scroll for palette etc.
+            scrollAccumulator += rotation;
+
+            // Only trigger scroll action when threshold is reached
+            if (scrollAccumulator >= SCROLL_THRESHOLD) {
+                scrollDirection = 1;  // Scroll down
+                scrollAccumulator = 0;  // Reset accumulator
+            } else if (scrollAccumulator <= -SCROLL_THRESHOLD) {
+                scrollDirection = -1;  // Scroll up
+                scrollAccumulator = 0;  // Reset accumulator
+            }
         }
     }
 

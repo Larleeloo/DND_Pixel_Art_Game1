@@ -79,6 +79,12 @@ public class CreativeScene implements Scene {
     private static final int GRID_SIZE = BlockRegistry.BLOCK_SIZE; // 64 pixels
     private boolean showGrid = true;
 
+    // Zoom state
+    private double zoomLevel = 1.0; // 1.0 = base size (most zoomed in), 0.0625 = 1/16 (most zoomed out)
+    private static final double ZOOM_MIN = 0.0625; // 1/16th of original size (most zoomed out)
+    private static final double ZOOM_MAX = 1.0; // Base size (most zoomed in)
+    private static final double ZOOM_STEP = 0.0625; // Zoom increment (1/16)
+
     // Mouse state
     private int mouseX, mouseY;
     private int worldMouseX, worldMouseY;
@@ -284,9 +290,38 @@ public class CreativeScene implements Scene {
             cameraX += CAMERA_SPEED;
         }
 
-        // Clamp camera to level bounds
-        cameraX = Math.max(0, Math.min(cameraX, levelData.levelWidth - GamePanel.SCREEN_WIDTH));
-        cameraY = Math.max(0, Math.min(cameraY, levelData.levelHeight - GamePanel.SCREEN_HEIGHT));
+        // Handle zoom with Ctrl+scroll (check before normal scroll handling)
+        int zoomScroll = input.getZoomScrollDirection();
+        if (zoomScroll != 0) {
+            // Calculate the world position at screen center before zoom change
+            double centerScreenX = GamePanel.SCREEN_WIDTH / 2.0;
+            double centerScreenY = GamePanel.SCREEN_HEIGHT / 2.0;
+            double worldCenterX = cameraX + centerScreenX / zoomLevel;
+            double worldCenterY = cameraY + centerScreenY / zoomLevel;
+
+            // Adjust zoom level
+            if (zoomScroll < 0) {
+                // Scroll up = zoom in
+                zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
+            } else {
+                // Scroll down = zoom out
+                zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP);
+            }
+
+            // Adjust camera to keep the same world point at screen center after zoom
+            cameraX = (float) (worldCenterX - centerScreenX / zoomLevel);
+            cameraY = (float) (worldCenterY - centerScreenY / zoomLevel);
+
+            // Display zoom percentage
+            int zoomPercent = (int) Math.round(zoomLevel * 100);
+            setStatus("Zoom: " + zoomPercent + "%");
+        }
+
+        // Clamp camera to level bounds (accounting for zoom - when zoomed out, visible area is larger)
+        double visibleWidth = GamePanel.SCREEN_WIDTH / zoomLevel;
+        double visibleHeight = GamePanel.SCREEN_HEIGHT / zoomLevel;
+        cameraX = (float) Math.max(0, Math.min(cameraX, levelData.levelWidth - visibleWidth));
+        cameraY = (float) Math.max(0, Math.min(cameraY, levelData.levelHeight - visibleHeight));
 
         camera.setPosition((int) cameraX, (int) cameraY);
 
@@ -372,9 +407,9 @@ public class CreativeScene implements Scene {
             return; // Don't process other input while modal is open
         }
 
-        // Update world mouse position
-        worldMouseX = mouseX + (int) cameraX;
-        worldMouseY = mouseY + (int) cameraY;
+        // Update world mouse position (accounting for zoom)
+        worldMouseX = (int) (cameraX + mouseX / zoomLevel);
+        worldMouseY = (int) (cameraY + mouseY / zoomLevel);
 
         // Right-click to delete entity at cursor
         if (input.isRightMouseJustPressed() && mouseX >= CreativePaletteManager.PALETTE_WIDTH) {
@@ -770,28 +805,48 @@ public class CreativeScene implements Scene {
         g2.setColor(new Color(40, 44, 52));
         g2.fillRect(0, 0, GamePanel.SCREEN_WIDTH, GamePanel.SCREEN_HEIGHT);
 
-        // Draw grid
+        // Save original transform and clip for later restoration
+        java.awt.geom.AffineTransform originalTransform = g2.getTransform();
+        Shape originalClip = g2.getClip();
+
+        // Set clip region for world content (exclude palette area on left)
+        g2.setClip(CreativePaletteManager.PALETTE_WIDTH, 0,
+                   GamePanel.SCREEN_WIDTH - CreativePaletteManager.PALETTE_WIDTH,
+                   GamePanel.SCREEN_HEIGHT);
+
+        // Apply zoom transformation for world content
+        // Scale around the origin, then content is drawn with camera offset
+        g2.scale(zoomLevel, zoomLevel);
+
+        // Draw grid (with zoom applied)
         if (showGrid) {
-            drawGrid(g2);
+            drawGridZoomed(g2);
         }
 
-        // Draw placed entities
-        drawPlacedEntities(g2);
+        // Draw placed entities (with zoom applied)
+        drawPlacedEntitiesZoomed(g2);
 
-        // Draw cursor preview
-        drawCursorPreview(g2);
+        // Draw cursor preview (with zoom applied)
+        drawCursorPreviewZoomed(g2);
 
-        // Draw palette
+        // Restore original transform and clip for UI elements
+        g2.setTransform(originalTransform);
+        g2.setClip(originalClip);
+
+        // Draw palette (unzoomed, fixed position)
         drawPalette(g2);
 
-        // Draw toolbar
+        // Draw toolbar (unzoomed)
         drawToolbar(g2);
 
-        // Draw status message
+        // Draw status message (unzoomed)
         drawStatusMessage(g2);
 
-        // Draw level info
+        // Draw level info (unzoomed)
         drawLevelInfo(g2);
+
+        // Draw zoom indicator
+        drawZoomIndicator(g2);
 
         // Draw modal dialogs on top of everything
         if (modalState != ModalState.NONE) {
@@ -1107,6 +1162,368 @@ public class CreativeScene implements Scene {
             g.drawLine(CreativePaletteManager.PALETTE_WIDTH, groundScreenY, GamePanel.SCREEN_WIDTH, groundScreenY);
             g.setStroke(new BasicStroke(1));
         }
+    }
+
+    /**
+     * Draw the grid overlay with zoom applied.
+     * Graphics is already scaled by zoomLevel, so we draw in world coordinates offset by camera.
+     */
+    private void drawGridZoomed(Graphics2D g) {
+        g.setColor(new Color(100, 100, 100, 50));
+
+        // Calculate visible area in world coordinates
+        double visibleWidth = GamePanel.SCREEN_WIDTH / zoomLevel;
+        double visibleHeight = GamePanel.SCREEN_HEIGHT / zoomLevel;
+
+        // Calculate the starting world coordinates for grid lines
+        int startWorldX = ((int) cameraX / GRID_SIZE) * GRID_SIZE;
+        int startWorldY = ((int) cameraY / GRID_SIZE) * GRID_SIZE;
+        int endWorldX = (int) (cameraX + visibleWidth) + GRID_SIZE;
+        int endWorldY = (int) (cameraY + visibleHeight) + GRID_SIZE;
+
+        // Calculate palette boundary in world coordinates (accounting for zoom)
+        double paletteWorldX = cameraX + CreativePaletteManager.PALETTE_WIDTH / zoomLevel;
+
+        // Vertical lines
+        for (int worldX = startWorldX; worldX <= endWorldX; worldX += GRID_SIZE) {
+            if (worldX >= paletteWorldX) {  // Only draw lines past the palette
+                int drawX = worldX - (int) cameraX;
+                g.drawLine(drawX, 0 - (int) cameraY, drawX, (int) (cameraY + visibleHeight + 100) - (int) cameraY);
+            }
+        }
+
+        // Horizontal lines
+        for (int worldY = startWorldY; worldY <= endWorldY; worldY += GRID_SIZE) {
+            int drawY = worldY - (int) cameraY;
+            int drawStartX = (int) Math.max(paletteWorldX - cameraX, 0);
+            g.drawLine(drawStartX, drawY, (int) visibleWidth, drawY);
+        }
+
+        // Draw ground line
+        int groundDrawY = levelData.groundY - (int) cameraY;
+        if (levelData.groundY >= cameraY && levelData.groundY <= cameraY + visibleHeight) {
+            g.setColor(new Color(255, 100, 100, 100));
+            g.setStroke(new BasicStroke(2));
+            int groundStartX = (int) Math.max(paletteWorldX - cameraX, 0);
+            g.drawLine(groundStartX, groundDrawY, (int) visibleWidth, groundDrawY);
+            g.setStroke(new BasicStroke(1));
+        }
+
+        // Draw level boundaries
+        g.setColor(new Color(255, 200, 100, 150));
+        g.setStroke(new BasicStroke(3));
+
+        // Right boundary
+        int rightBoundaryX = levelData.levelWidth - (int) cameraX;
+        if (rightBoundaryX > 0 && rightBoundaryX < visibleWidth) {
+            g.drawLine(rightBoundaryX, 0, rightBoundaryX, (int) visibleHeight);
+        }
+
+        // Bottom boundary
+        int bottomBoundaryY = levelData.levelHeight - (int) cameraY;
+        if (bottomBoundaryY > 0 && bottomBoundaryY < visibleHeight) {
+            g.drawLine(0, bottomBoundaryY, (int) visibleWidth, bottomBoundaryY);
+        }
+
+        g.setStroke(new BasicStroke(1));
+    }
+
+    /**
+     * Draw all placed entities with zoom applied.
+     * Graphics is already scaled by zoomLevel.
+     */
+    private void drawPlacedEntitiesZoomed(Graphics2D g) {
+        // Calculate visible area in world coordinates
+        double visibleWidth = GamePanel.SCREEN_WIDTH / zoomLevel;
+        double visibleHeight = GamePanel.SCREEN_HEIGHT / zoomLevel;
+
+        // Draw blocks
+        for (PlacedEntity entity : placedBlocks) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            // Check if visible (approximate bounds check in world space)
+            if (entity.x + GRID_SIZE > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + GRID_SIZE > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, GRID_SIZE, GRID_SIZE, null);
+                }
+
+                // Draw overlay texture if present
+                if (entity.hasOverlay()) {
+                    BlockOverlay overlay = BlockOverlay.fromName(entity.overlay);
+                    if (overlay != BlockOverlay.NONE) {
+                        BufferedImage overlayTexture = BlockRegistry.getInstance().getOverlayTexture(overlay);
+                        if (overlayTexture != null) {
+                            g.drawImage(overlayTexture, drawX, drawY, GRID_SIZE, GRID_SIZE, null);
+                        }
+                    }
+                }
+
+                // Highlight if hovered
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+
+        // Draw moving blocks with movement pattern indicator
+        for (PlacedEntity entity : placedMovingBlocks) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + GRID_SIZE > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + GRID_SIZE > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, GRID_SIZE, GRID_SIZE, null);
+                }
+
+                // Draw overlay texture if present
+                if (entity.hasOverlay()) {
+                    BlockOverlay overlay = BlockOverlay.fromName(entity.overlay);
+                    if (overlay != BlockOverlay.NONE) {
+                        BufferedImage overlayTexture = BlockRegistry.getInstance().getOverlayTexture(overlay);
+                        if (overlayTexture != null) {
+                            g.drawImage(overlayTexture, drawX, drawY, GRID_SIZE, GRID_SIZE, null);
+                        }
+                    }
+                }
+
+                // Draw movement path preview
+                @SuppressWarnings("unchecked")
+                Map<String, Object> movingData = (Map<String, Object>) entity.data;
+                String pattern = (String) movingData.get("movementPattern");
+                int endX = ((Number) movingData.getOrDefault("endX", entity.gridX)).intValue();
+                int endY = ((Number) movingData.getOrDefault("endY", entity.gridY)).intValue();
+
+                g.setColor(new Color(255, 255, 0, 100));
+                g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{5, 5}, 0));
+
+                int endDrawX = endX * GRID_SIZE - (int) cameraX;
+                int endDrawY = endY * GRID_SIZE - (int) cameraY;
+
+                if ("HORIZONTAL".equals(pattern) || "VERTICAL".equals(pattern)) {
+                    g.drawLine(drawX + GRID_SIZE / 2, drawY + GRID_SIZE / 2,
+                              endDrawX + GRID_SIZE / 2, endDrawY + GRID_SIZE / 2);
+                    g.fillOval(endDrawX + GRID_SIZE / 2 - 5, endDrawY + GRID_SIZE / 2 - 5, 10, 10);
+                } else if ("CIRCULAR".equals(pattern)) {
+                    double radius = ((Number) movingData.getOrDefault("radius", 100.0)).doubleValue();
+                    g.drawOval(drawX + GRID_SIZE / 2 - (int) radius, drawY + GRID_SIZE / 2 - (int) radius,
+                              (int) (radius * 2), (int) (radius * 2));
+                }
+
+                g.setStroke(new BasicStroke(1));
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(0, 255, 255, 100));
+                    g.fillRect(drawX, drawY, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+
+        // Draw items
+        for (PlacedEntity entity : placedItems) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 32 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 32 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 32, 32, null);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 32, 32);
+                }
+            }
+        }
+
+        // Draw mobs
+        for (PlacedEntity entity : placedMobs) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 48 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 48 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 48, 48, null);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 48, 48);
+                }
+            }
+        }
+
+        // Draw lights
+        for (PlacedEntity entity : placedLights) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 32 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 32 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 32, 32, null);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 32, 32);
+                }
+            }
+        }
+
+        // Draw doors
+        for (PlacedEntity entity : placedDoors) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 64 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 128 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 64, 128, null);
+                }
+
+                // Show configured level if any
+                @SuppressWarnings("unchecked")
+                Map<String, Object> doorData = (Map<String, Object>) entity.data;
+                String targetLevel = (String) doorData.get("targetLevel");
+                if (targetLevel != null && !targetLevel.isEmpty()) {
+                    g.setColor(new Color(100, 255, 100));
+                    g.setFont(new Font("Arial", Font.PLAIN, 10));
+                    g.drawString("→" + targetLevel, drawX, drawY - 5);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 64, 128);
+                }
+            }
+        }
+
+        // Draw buttons
+        for (PlacedEntity entity : placedButtons) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 32 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 32 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 32, 32, null);
+                }
+
+                // Show configured action if any
+                @SuppressWarnings("unchecked")
+                Map<String, Object> buttonData = (Map<String, Object>) entity.data;
+                String action = (String) buttonData.get("action");
+                if (action != null && !action.isEmpty()) {
+                    g.setColor(new Color(255, 200, 100));
+                    g.setFont(new Font("Arial", Font.PLAIN, 10));
+                    g.drawString(action, drawX, drawY - 5);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 32, 32);
+                }
+            }
+        }
+
+        // Draw vaults
+        for (PlacedEntity entity : placedVaults) {
+            int drawX = entity.x - (int) cameraX;
+            int drawY = entity.y - (int) cameraY;
+
+            if (entity.x + 48 > cameraX && entity.x < cameraX + visibleWidth &&
+                entity.y + 48 > cameraY && entity.y < cameraY + visibleHeight) {
+
+                if (entity.icon != null) {
+                    g.drawImage(entity.icon, drawX, drawY, 48, 48, null);
+                }
+
+                if (entity == hoveredEntity) {
+                    g.setColor(new Color(255, 255, 0, 100));
+                    g.fillRect(drawX, drawY, 48, 48);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draw preview of selected item at cursor with zoom applied.
+     * Graphics is already scaled by zoomLevel.
+     */
+    private void drawCursorPreviewZoomed(Graphics2D g) {
+        // Calculate palette boundary in world coordinates
+        double paletteWorldX = cameraX + CreativePaletteManager.PALETTE_WIDTH / zoomLevel;
+
+        // Don't draw preview if mouse is over palette area
+        if (worldMouseX < paletteWorldX) return;
+
+        PaletteItem selected = paletteManager.getSelectedPaletteItem();
+        if (selected == null) return;
+
+        int drawX, drawY;
+        int size;
+
+        if (paletteManager.getCurrentCategory() == PaletteCategory.BLOCKS ||
+            paletteManager.getCurrentCategory() == PaletteCategory.MOVING_BLOCKS ||
+            paletteManager.getCurrentCategory() == PaletteCategory.OVERLAYS) {
+            // Snap to grid
+            int gridX = (worldMouseX / GRID_SIZE) * GRID_SIZE;
+            int gridY = (worldMouseY / GRID_SIZE) * GRID_SIZE;
+            drawX = gridX - (int) cameraX;
+            drawY = gridY - (int) cameraY;
+            size = GRID_SIZE;
+        } else {
+            // Free placement - center on cursor
+            drawX = worldMouseX - (int) cameraX - 16;
+            drawY = worldMouseY - (int) cameraY - 16;
+            size = paletteManager.getCurrentCategory() == PaletteCategory.MOBS ? 48 : 32;
+        }
+
+        // Draw semi-transparent preview
+        if (selected.icon != null) {
+            Composite oldComposite = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            g.drawImage(selected.icon, drawX, drawY, size, size, null);
+            g.setComposite(oldComposite);
+        }
+    }
+
+    /**
+     * Draw zoom level indicator in the corner
+     */
+    private void drawZoomIndicator(Graphics2D g) {
+        int zoomPercent = (int) Math.round(zoomLevel * 100);
+
+        // Position in top-right area, below toolbar
+        int indicatorX = GamePanel.SCREEN_WIDTH - 100;
+        int indicatorY = 80;
+
+        // Background
+        g.setColor(new Color(30, 34, 42, 200));
+        g.fillRoundRect(indicatorX - 5, indicatorY - 15, 95, 25, 5, 5);
+
+        // Border
+        g.setColor(new Color(70, 130, 180));
+        g.drawRoundRect(indicatorX - 5, indicatorY - 15, 95, 25, 5, 5);
+
+        // Text
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        String zoomText = "Zoom: " + zoomPercent + "%";
+        g.drawString(zoomText, indicatorX, indicatorY);
     }
 
     /**
@@ -1672,8 +2089,9 @@ public class CreativeScene implements Scene {
 
         mouseX = x;
         mouseY = y;
-        worldMouseX = x + (int) cameraX;
-        worldMouseY = y + (int) cameraY;
+        // Account for zoom when converting screen to world coordinates
+        worldMouseX = (int) (cameraX + x / zoomLevel);
+        worldMouseY = (int) (cameraY + y / zoomLevel);
     }
 
     @Override
