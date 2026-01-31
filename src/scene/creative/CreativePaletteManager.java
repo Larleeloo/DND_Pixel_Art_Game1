@@ -331,6 +331,51 @@ public class CreativePaletteManager {
             vaultData.put("vaultType", vault[3]);
             interactivePalette.add(new PaletteItem(vault[0], vault[1], icon, vaultData));
         }
+
+        // Spawn Point
+        BufferedImage spawnIcon = createSpawnPointIcon();
+        Map<String, Object> spawnData = new HashMap<>();
+        spawnData.put("type", "spawn_point");
+        interactivePalette.add(new PaletteItem("spawn_point", "Player Spawn", spawnIcon, spawnData));
+    }
+
+    /**
+     * Create an icon for the spawn point
+     */
+    private BufferedImage createSpawnPointIcon() {
+        BufferedImage icon = new BufferedImage(48, 48, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = icon.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw a player-like silhouette with spawn indicator
+        // Background glow
+        g.setColor(new Color(0, 255, 100, 80));
+        g.fillOval(4, 4, 40, 40);
+
+        // Player silhouette
+        g.setColor(new Color(50, 50, 50));
+        // Head
+        g.fillOval(18, 8, 12, 12);
+        // Body
+        g.fillRoundRect(16, 20, 16, 18, 4, 4);
+        // Legs
+        g.fillRect(16, 36, 6, 10);
+        g.fillRect(26, 36, 6, 10);
+
+        // Spawn arrow pointing down
+        g.setColor(new Color(0, 255, 100));
+        g.setStroke(new BasicStroke(3));
+        g.drawLine(24, 2, 24, 10);
+        g.drawLine(20, 6, 24, 10);
+        g.drawLine(28, 6, 24, 10);
+
+        // Border
+        g.setColor(new Color(0, 200, 80));
+        g.setStroke(new BasicStroke(2));
+        g.drawOval(4, 4, 40, 40);
+
+        g.dispose();
+        return icon;
     }
 
     private void initializeParallaxPalette() {

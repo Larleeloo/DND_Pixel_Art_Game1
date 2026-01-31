@@ -1486,6 +1486,46 @@ public class CreativeScene implements Scene {
                 }
             }
         }
+
+        // Draw spawn point marker
+        int spawnDrawX = levelData.playerSpawnX - (int) cameraX;
+        int spawnDrawY = levelData.playerSpawnY - (int) cameraY;
+
+        // Check if visible
+        if (levelData.playerSpawnX + 48 > cameraX && levelData.playerSpawnX < cameraX + visibleWidth &&
+            levelData.playerSpawnY + 64 > cameraY && levelData.playerSpawnY < cameraY + visibleHeight) {
+
+            // Draw spawn point indicator
+            // Background glow
+            g.setColor(new Color(0, 255, 100, 60));
+            g.fillOval(spawnDrawX - 8, spawnDrawY, 64, 64);
+
+            // Player silhouette
+            g.setColor(new Color(50, 50, 50, 180));
+            // Head
+            g.fillOval(spawnDrawX + 12, spawnDrawY + 8, 24, 24);
+            // Body
+            g.fillRoundRect(spawnDrawX + 8, spawnDrawY + 30, 32, 28, 6, 6);
+
+            // Spawn arrow pointing down
+            g.setColor(new Color(0, 255, 100));
+            g.setStroke(new BasicStroke(4));
+            g.drawLine(spawnDrawX + 24, spawnDrawY - 10, spawnDrawX + 24, spawnDrawY + 6);
+            g.drawLine(spawnDrawX + 16, spawnDrawY - 2, spawnDrawX + 24, spawnDrawY + 6);
+            g.drawLine(spawnDrawX + 32, spawnDrawY - 2, spawnDrawX + 24, spawnDrawY + 6);
+
+            // Border
+            g.setColor(new Color(0, 200, 80));
+            g.setStroke(new BasicStroke(2));
+            g.drawOval(spawnDrawX - 8, spawnDrawY, 64, 64);
+
+            // Label
+            g.setFont(new Font("Arial", Font.BOLD, 10));
+            g.setColor(new Color(0, 255, 100));
+            g.drawString("SPAWN", spawnDrawX + 4, spawnDrawY + 74);
+
+            g.setStroke(new BasicStroke(1));
+        }
     }
 
     /**
@@ -1540,9 +1580,9 @@ public class CreativeScene implements Scene {
         int blockX = worldMouseX / GRID_SIZE;
         int blockY = worldMouseY / GRID_SIZE;
 
-        // Position in top-right area, below toolbar
+        // Position below the level info panel (which ends at y=170)
         int indicatorX = GamePanel.SCREEN_WIDTH - 180;
-        int indicatorY = 80;
+        int indicatorY = 195;
 
         // Background - larger to fit more info
         g.setColor(new Color(30, 34, 42, 200));
@@ -2363,6 +2403,11 @@ public class CreativeScene implements Scene {
                     PlacedEntity vault = new PlacedEntity(placeX, placeY, "vault", vaultData, selected.icon);
                     placedVaults.add(vault);
                     setStatus("Placed vault - Player can open with E key");
+                } else if ("spawn_point".equals(interactiveType)) {
+                    // Update the player spawn point
+                    levelData.playerSpawnX = worldMouseX - 24;
+                    levelData.playerSpawnY = worldMouseY - 48;
+                    setStatus("Spawn point set at (" + levelData.playerSpawnX + ", " + levelData.playerSpawnY + ")");
                 }
                 break;
 
