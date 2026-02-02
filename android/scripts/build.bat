@@ -62,7 +62,7 @@ set CLASSPATH=%PLATFORM%\android.jar
 for %%f in ("%LIBS_DIR%\*.jar") do set CLASSPATH=!CLASSPATH!;%%f
 
 dir /s /b "%SRC_DIR%\*.java" > "%BUILD_DIR%\sources.txt"
-javac -source 1.8 -target 1.8 ^
+javac --release 11 ^
     -classpath "%CLASSPATH%" ^
     -d "%BUILD_DIR%\classes" ^
     @"%BUILD_DIR%\sources.txt" ^

@@ -33,6 +33,23 @@ public class AndroidAssetLoader {
     private static LruCache<String, ImageAsset> cache;
 
     /**
+     * Custom LruCache that calculates size based on bitmap byte count.
+     */
+    private static class ImageAssetCache extends LruCache<String, ImageAsset> {
+        public ImageAssetCache(int maxSize) {
+            super(maxSize);
+        }
+
+        @Override
+        protected int sizeOf(String key, ImageAsset asset) {
+            if (asset.bitmap != null) {
+                return asset.bitmap.getByteCount() / 1024;
+            }
+            return 1;
+        }
+    }
+
+    /**
      * Initialize the asset loader with application context.
      */
     public static void initialize(Context context) {
@@ -43,15 +60,7 @@ public class AndroidAssetLoader {
         int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         int cacheSize = maxMemory / 8;
 
-        cache = new LruCache<String, ImageAsset>(cacheSize) {
-            @Override
-            protected int sizeOf(String key, ImageAsset asset) {
-                if (asset.bitmap != null) {
-                    return asset.bitmap.getByteCount() / 1024;
-                }
-                return 1;
-            }
-        };
+        cache = new ImageAssetCache(cacheSize);
 
         Log.d(TAG, "AssetLoader initialized with " + cacheSize + "KB cache");
     }
