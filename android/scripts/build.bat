@@ -74,7 +74,12 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
-dir /s /b "%BUILD_DIR%\classes\*.class" > "%BUILD_DIR%\classes.txt"
+REM Create quoted file list for paths with spaces
+dir /s /b "%BUILD_DIR%\classes\*.class" > "%BUILD_DIR%\classes_raw.txt"
+type nul > "%BUILD_DIR%\classes.txt"
+for /f "usebackq delims=" %%f in ("%BUILD_DIR%\classes_raw.txt") do (
+    echo "%%f">> "%BUILD_DIR%\classes.txt"
+)
 "%BUILD_TOOLS%\d8.bat" ^
     --output "%BUILD_DIR%\dex" ^
     --lib "%PLATFORM%\android.jar" ^
