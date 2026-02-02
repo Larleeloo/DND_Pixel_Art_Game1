@@ -167,7 +167,13 @@ REM Create debug keystore if needed
 if not exist "%KEYSTORE%" (
     echo Creating debug keystore...
     if not exist "%ANDROID_DIR%\keystore" mkdir "%ANDROID_DIR%\keystore"
-    keytool -genkey -v -keystore "%KEYSTORE%" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, S=Debug, C=US"
+    REM Get keytool from same directory as jar
+    for %%i in ("%JAR_CMD%") do set "JAVA_BIN_DIR=%%~dpi"
+    "%JAVA_BIN_DIR%keytool.exe" -genkey -v -keystore "%KEYSTORE%" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, S=Debug, C=US"
+    if errorlevel 1 (
+        echo ERROR: Keystore creation failed
+        goto :error
+    )
 )
 
 REM Sign APK
