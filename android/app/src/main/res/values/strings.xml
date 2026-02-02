@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">The Amber Moon</string>
+    <string name="game_description">A 2D platformer adventure game</string>
+
+    <!-- Menu strings -->
+    <string name="menu_play">Play</string>
+    <string name="menu_creative">Creative Mode</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_character">Customize Character</string>
+    <string name="menu_exit">Exit</string>
+
+    <!-- Settings strings -->
+    <string name="settings_audio">Audio</string>
+    <string name="settings_controls">Controls</string>
+    <string name="settings_game">Game</string>
+    <string name="settings_cloud">Cloud Sync</string>
+    <string name="settings_music_volume">Music Volume</string>
+    <string name="settings_sfx_volume">Sound Effects Volume</string>
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_cloud_sync">Cloud Save Sync</string>
+    <string name="settings_github_token">GitHub Token</string>
+
+    <!-- Touch control labels -->
+    <string name="control_jump">Jump</string>
+    <string name="control_attack">Attack</string>
+    <string name="control_interact">Interact</string>
+    <string name="control_sprint">Sprint</string>
+    <string name="control_inventory">Inventory</string>
+    <string name="control_menu">Menu</string>
+
+    <!-- Cloud sync strings -->
+    <string name="sync_uploading">Uploading save...</string>
+    <string name="sync_downloading">Downloading save...</string>
+    <string name="sync_success">Sync complete!</string>
+    <string name="sync_failed">Sync failed</string>
+    <string name="sync_conflict">Save conflict detected</string>
+    <string name="sync_use_local">Use Local</string>
+    <string name="sync_use_cloud">Use Cloud</string>
+</resources>
