@@ -74,11 +74,11 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
-REM First create a JAR from classes (avoids path issues with spaces)
+REM Create a JAR from classes using PowerShell (avoids path issues and doesn't require jar in PATH)
 echo Creating intermediate JAR...
-pushd "%BUILD_DIR%\classes"
-jar -cf "..\classes.jar" .
-popd
+powershell -Command "Compress-Archive -Path '%BUILD_DIR%\classes\*' -DestinationPath '%BUILD_DIR%\classes.zip' -Force"
+if errorlevel 1 goto :error
+move /Y "%BUILD_DIR%\classes.zip" "%BUILD_DIR%\classes.jar" >nul
 if errorlevel 1 goto :error
 
 REM Now run D8 on the JAR file
@@ -88,21 +88,16 @@ REM Now run D8 on the JAR file
     "%BUILD_DIR%\classes.jar"
 if errorlevel 1 goto :error
 
-REM Add DEX to APK
+REM Add DEX to APK using PowerShell
 echo Adding DEX to APK...
 copy "%BUILD_DIR%\app.unsigned.apk" "%BUILD_DIR%\app.temp.apk" >nul
-cd "%BUILD_DIR%\dex"
-"%SDK_ROOT%\build-tools\34.0.0\..\..\platform-tools\adb.exe" >nul 2>&1
-jar -uf "..\app.temp.apk" classes.dex
-cd "%~dp0"
+powershell -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::Open('%BUILD_DIR%\app.temp.apk', 'Update'); $entry = $zip.CreateEntry('classes.dex'); $stream = $entry.Open(); $bytes = [System.IO.File]::ReadAllBytes('%BUILD_DIR%\dex\classes.dex'); $stream.Write($bytes, 0, $bytes.Length); $stream.Close(); $zip.Dispose()"
 if errorlevel 1 goto :error
 
 REM Add assets if they exist
 if exist "%ASSETS_DIR%" (
     echo Adding assets...
-    cd "%APP_DIR%\src\main"
-    jar -uf "%BUILD_DIR%\app.temp.apk" assets
-    cd "%~dp0"
+    powershell -Command "$assetsDir = '%ASSETS_DIR%'; $apkPath = '%BUILD_DIR%\app.temp.apk'; if (Test-Path $assetsDir) { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::Open($apkPath, 'Update'); Get-ChildItem -Path $assetsDir -Recurse -File | ForEach-Object { $relativePath = 'assets/' + $_.FullName.Substring($assetsDir.Length + 1).Replace('\', '/'); $entry = $zip.CreateEntry($relativePath); $stream = $entry.Open(); $bytes = [System.IO.File]::ReadAllBytes($_.FullName); $stream.Write($bytes, 0, $bytes.Length); $stream.Close() }; $zip.Dispose() }"
 )
 
 REM Align APK
@@ -115,6 +110,7 @@ if errorlevel 1 goto :error
 REM Create debug keystore if needed
 if not exist "%KEYSTORE%" (
     echo Creating debug keystore...
+    mkdir "%~dp0..\keystore" 2>nul
     keytool -genkey -v ^
         -keystore "%KEYSTORE%" ^
         -storepass android ^
