@@ -63,9 +63,13 @@ public class TouchInputManager {
     private boolean menuJustPressed = false;
 
     // Screen touch state (for aiming/clicking)
-    private boolean screenTouched = false;
-    private boolean screenJustTouched = false;
-    private boolean screenJustReleased = false;
+    private volatile boolean screenTouched = false;
+    private volatile boolean screenJustTouched = false;
+    private volatile boolean screenJustReleased = false;
+
+    // Pending touch events (set from UI thread, consumed by game thread)
+    private volatile boolean pendingTouchDown = false;
+    private volatile boolean pendingTouchUp = false;
 
     // Previous frame states for "just pressed" detection
     private boolean prevJump = false;
@@ -116,6 +120,7 @@ public class TouchInputManager {
 
     /**
      * Reset frame state for new update cycle.
+     * Consumes pending touch events that arrived from the UI thread.
      */
     public void resetFrame() {
         // Store previous states
@@ -126,14 +131,28 @@ public class TouchInputManager {
         prevMenu = menu;
         prevScreenTouched = screenTouched;
 
-        // Reset "just pressed" flags
+        // Consume pending touch events from UI thread
+        if (pendingTouchDown) {
+            screenJustTouched = true;
+            screenTouched = true;
+            pendingTouchDown = false;
+        } else {
+            screenJustTouched = false;
+        }
+
+        if (pendingTouchUp) {
+            screenJustReleased = true;
+            pendingTouchUp = false;
+        } else {
+            screenJustReleased = false;
+        }
+
+        // Reset "just pressed" flags (these are set directly by overlay buttons)
         jumpJustPressed = false;
         interactJustPressed = false;
         attackJustPressed = false;
         inventoryJustPressed = false;
         menuJustPressed = false;
-        screenJustTouched = false;
-        screenJustReleased = false;
 
         // Reset scroll directions
         scrollDirection = 0;
@@ -205,10 +224,8 @@ public class TouchInputManager {
         }
 
         // Otherwise treat as screen touch (for aiming/interaction)
-        if (!screenTouched) {
-            screenJustTouched = true;
-        }
-        screenTouched = true;
+        // Set pending flag for game thread to consume
+        pendingTouchDown = true;
     }
 
     private void handleTouchUp(float x, float y, int pointerId) {
@@ -227,7 +244,10 @@ public class TouchInputManager {
         }
 
         if (!anyDown) {
-            screenJustReleased = screenTouched;
+            // Set pending flag for game thread to consume
+            if (screenTouched) {
+                pendingTouchUp = true;
+            }
             screenTouched = false;
         }
     }
