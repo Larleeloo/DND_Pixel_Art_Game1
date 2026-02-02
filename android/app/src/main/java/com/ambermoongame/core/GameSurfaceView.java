@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -349,6 +350,14 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             frameCount = 0;
             lastFpsUpdate = currentTime;
         }
+    }
+
+    // ==================== Touch Input ====================
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // Forward touch events to input manager
+        return touchInputManager.handleTouchEvent(event);
     }
 
     // ==================== Lifecycle ====================
