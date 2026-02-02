@@ -74,17 +74,45 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
-REM Find jar.exe from the same location as javac
-for %%i in (javac.exe) do set JAVAC_PATH=%%~$PATH:i
-if "%JAVAC_PATH%"=="" (
-    echo ERROR: javac not found in PATH
+
+REM Find jar.exe - try multiple methods
+set JAR_CMD=
+REM Method 1: Check JAVA_HOME
+if defined JAVA_HOME (
+    if exist "%JAVA_HOME%\bin\jar.exe" set JAR_CMD=%JAVA_HOME%\bin\jar.exe
+)
+REM Method 2: Search in Program Files for JDK
+if "%JAR_CMD%"=="" (
+    for /d %%d in ("C:\Program Files\Java\jdk*") do (
+        if exist "%%d\bin\jar.exe" set JAR_CMD=%%d\bin\jar.exe
+    )
+)
+if "%JAR_CMD%"=="" (
+    for /d %%d in ("C:\Program Files\Eclipse Adoptium\jdk*") do (
+        if exist "%%d\bin\jar.exe" set JAR_CMD=%%d\bin\jar.exe
+    )
+)
+if "%JAR_CMD%"=="" (
+    for /d %%d in ("C:\Program Files\Microsoft\jdk*") do (
+        if exist "%%d\bin\jar.exe" set JAR_CMD=%%d\bin\jar.exe
+    )
+)
+if "%JAR_CMD%"=="" (
+    for /d %%d in ("C:\Program Files\Amazon Corretto\jdk*") do (
+        if exist "%%d\bin\jar.exe" set JAR_CMD=%%d\bin\jar.exe
+    )
+)
+
+if "%JAR_CMD%"=="" (
+    echo ERROR: Could not find jar.exe. Please set JAVA_HOME or install a JDK.
+    echo Looked in: JAVA_HOME, Program Files\Java, Eclipse Adoptium, Microsoft, Amazon Corretto
     goto :error
 )
-for %%i in ("%JAVAC_PATH%") do set JAVA_BIN=%%~dpi
 
+echo Found jar at: %JAR_CMD%
 echo Creating intermediate JAR...
 pushd "%BUILD_DIR%\classes"
-"%JAVA_BIN%jar.exe" -cf "..\classes.jar" .
+"%JAR_CMD%" -cf "..\classes.jar" .
 popd
 if errorlevel 1 goto :error
 
