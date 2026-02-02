@@ -55,8 +55,9 @@ public class GameActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Set up fullscreen immersive mode
-        setupFullscreen();
+        // Set fullscreen flags first (before setContentView)
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Initialize vibration
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -87,6 +88,9 @@ public class GameActivity extends Activity {
         touchInputManager.setTouchControlOverlay(touchControlOverlay);
 
         setContentView(rootLayout);
+
+        // Now set up immersive mode (after setContentView so DecorView exists)
+        setupFullscreen();
 
         // Register all scenes
         registerScenes();

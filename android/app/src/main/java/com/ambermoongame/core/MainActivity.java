@@ -44,24 +44,16 @@ public class MainActivity extends Activity {
         // Keep screen on during gameplay
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        // Set fullscreen flags on window (works without DecorView)
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11+ (API 30+)
             getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
+            // Note: InsetsController setup is done in GameActivity after setContentView
         } else {
-            // Legacy fullscreen mode
-            getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            // Legacy fullscreen mode - use window flags instead of DecorView
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
     }
 
@@ -93,6 +85,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        setupFullscreen();
+        // Fullscreen is handled via window flags, no need to call setupFullscreen again
     }
 }
