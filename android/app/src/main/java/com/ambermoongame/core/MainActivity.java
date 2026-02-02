@@ -61,14 +61,14 @@ public class MainActivity extends Activity {
      * Initialize global singleton managers.
      */
     private void initializeManagers() {
+        // Initialize preferences first - other managers depend on it
+        GamePreferences.initialize(getApplicationContext());
+
         // Initialize cloud save manager with app context
         CloudSaveManager.initialize(getApplicationContext());
 
-        // Initialize audio manager
+        // Initialize audio manager (needs GamePreferences to be initialized)
         AndroidAudioManager.initialize(getApplicationContext());
-
-        // Load saved preferences
-        GamePreferences.initialize(getApplicationContext());
     }
 
     /**
