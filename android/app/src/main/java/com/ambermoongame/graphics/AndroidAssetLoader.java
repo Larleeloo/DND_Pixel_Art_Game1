@@ -6,12 +6,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Movie;
 import android.util.Log;
-import android.util.LruCache;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles loading of image assets for Android.
@@ -20,7 +21,7 @@ import java.util.List;
  * Supports:
  * - Static images (PNG, JPG)
  * - Animated GIFs (using Movie class or frame extraction)
- * - Asset caching with LRU cache
+ * - Asset caching with simple HashMap
  */
 public class AndroidAssetLoader {
 
@@ -29,25 +30,10 @@ public class AndroidAssetLoader {
     private static Context appContext;
     private static AssetManager assetManager;
 
-    // Bitmap cache (using 1/8th of available memory)
-    private static LruCache<String, ImageAsset> cache;
-
-    /**
-     * Custom LruCache that calculates size based on bitmap byte count.
-     */
-    private static class ImageAssetCache extends LruCache<String, ImageAsset> {
-        public ImageAssetCache(int maxSize) {
-            super(maxSize);
-        }
-
-        @Override
-        protected int sizeOf(String key, ImageAsset asset) {
-            if (asset.bitmap != null) {
-                return asset.bitmap.getByteCount() / 1024;
-            }
-            return 1;
-        }
-    }
+    // Simple cache using HashMap (avoids D8 generic class issues)
+    private static Map<String, ImageAsset> cache;
+    private static int cacheHits = 0;
+    private static int cacheMisses = 0;
 
     /**
      * Initialize the asset loader with application context.
@@ -55,14 +41,10 @@ public class AndroidAssetLoader {
     public static void initialize(Context context) {
         appContext = context.getApplicationContext();
         assetManager = appContext.getAssets();
-
-        // Initialize cache
-        int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-        int cacheSize = maxMemory / 8;
-
-        cache = new ImageAssetCache(cacheSize);
-
-        Log.d(TAG, "AssetLoader initialized with " + cacheSize + "KB cache");
+        cache = new HashMap<String, ImageAsset>();
+        cacheHits = 0;
+        cacheMisses = 0;
+        Log.d(TAG, "AssetLoader initialized");
     }
 
     /**
@@ -129,12 +111,18 @@ public class AndroidAssetLoader {
      * @param path Path relative to assets folder (e.g., "characters/player/idle.gif")
      */
     public static ImageAsset load(String path) {
+        if (cache == null) {
+            return null;
+        }
+
         // Check cache first
         ImageAsset cached = cache.get(path);
         if (cached != null) {
+            cacheHits++;
             return cached;
         }
 
+        cacheMisses++;
         ImageAsset asset = null;
 
         try {
@@ -237,14 +225,16 @@ public class AndroidAssetLoader {
         } finally {
             try {
                 if (is != null) is.close();
-            } catch (IOException e) {}
+            } catch (IOException e) {
+                // Ignore close exception
+            }
         }
     }
 
     private static int calculateInSampleSize(BitmapFactory.Options options,
                                              int reqWidth, int reqHeight) {
-        final int height = options.outHeight;
-        final int width = options.outWidth;
+        int height = options.outHeight;
+        int width = options.outWidth;
         int inSampleSize = 1;
 
         if (reqWidth == 0 && reqHeight == 0) {
@@ -252,8 +242,8 @@ public class AndroidAssetLoader {
         }
 
         if (height > reqHeight || width > reqWidth) {
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
+            int halfHeight = height / 2;
+            int halfWidth = width / 2;
 
             while ((halfHeight / inSampleSize) >= reqHeight
                     && (halfWidth / inSampleSize) >= reqWidth) {
@@ -293,7 +283,7 @@ public class AndroidAssetLoader {
      */
     public static void clearCache() {
         if (cache != null) {
-            cache.evictAll();
+            cache.clear();
         }
     }
 
@@ -303,7 +293,7 @@ public class AndroidAssetLoader {
     public static String getCacheStats() {
         if (cache == null) return "Cache not initialized";
         return "Cache: " + cache.size() + " items, " +
-               cache.hitCount() + " hits, " +
-               cache.missCount() + " misses";
+               cacheHits + " hits, " +
+               cacheMisses + " misses";
     }
 }
