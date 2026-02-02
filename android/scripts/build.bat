@@ -74,16 +74,18 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
-REM Create quoted file list for paths with spaces
-dir /s /b "%BUILD_DIR%\classes\*.class" > "%BUILD_DIR%\classes_raw.txt"
-type nul > "%BUILD_DIR%\classes.txt"
-for /f "usebackq delims=" %%f in ("%BUILD_DIR%\classes_raw.txt") do (
-    echo "%%f">> "%BUILD_DIR%\classes.txt"
-)
+REM First create a JAR from classes (avoids path issues with spaces)
+echo Creating intermediate JAR...
+pushd "%BUILD_DIR%\classes"
+jar -cf "..\classes.jar" .
+popd
+if errorlevel 1 goto :error
+
+REM Now run D8 on the JAR file
 "%BUILD_TOOLS%\d8.bat" ^
     --output "%BUILD_DIR%\dex" ^
     --lib "%PLATFORM%\android.jar" ^
-    @"%BUILD_DIR%\classes.txt"
+    "%BUILD_DIR%\classes.jar"
 if errorlevel 1 goto :error
 
 REM Add DEX to APK
@@ -140,6 +142,7 @@ del "%BUILD_DIR%\app.aligned.apk" 2>nul
 del "%BUILD_DIR%\res.zip" 2>nul
 del "%BUILD_DIR%\sources.txt" 2>nul
 del "%BUILD_DIR%\compile_errors.txt" 2>nul
+del "%BUILD_DIR%\classes.jar" 2>nul
 
 echo ============================================================
 echo BUILD SUCCESSFUL!
