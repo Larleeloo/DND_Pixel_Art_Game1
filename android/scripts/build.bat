@@ -74,11 +74,18 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
-REM Create a JAR from classes using PowerShell (avoids path issues and doesn't require jar in PATH)
+REM Find jar.exe from the same location as javac
+for %%i in (javac.exe) do set JAVAC_PATH=%%~$PATH:i
+if "%JAVAC_PATH%"=="" (
+    echo ERROR: javac not found in PATH
+    goto :error
+)
+for %%i in ("%JAVAC_PATH%") do set JAVA_BIN=%%~dpi
+
 echo Creating intermediate JAR...
-powershell -Command "Compress-Archive -Path '%BUILD_DIR%\classes\*' -DestinationPath '%BUILD_DIR%\classes.zip' -Force"
-if errorlevel 1 goto :error
-move /Y "%BUILD_DIR%\classes.zip" "%BUILD_DIR%\classes.jar" >nul
+pushd "%BUILD_DIR%\classes"
+"%JAVA_BIN%jar.exe" -cf "..\classes.jar" .
+popd
 if errorlevel 1 goto :error
 
 REM Now run D8 on the JAR file
