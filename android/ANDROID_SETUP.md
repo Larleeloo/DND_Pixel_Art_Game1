@@ -273,15 +273,94 @@ The APK will be created at: `android/app/build/amber-moon.apk`
    android\sdk\platform-tools\adb.exe install android\app\build\amber-moon.apk
    ```
 
-### Using Emulator
+### Using Pixel 7a Emulator (Recommended)
 
-1. Create AVD (Android Virtual Device) in IntelliJ:
-   - **Tools → AVD Manager**
-   - Create Virtual Device → Tablet → Pixel C
-   - System Image: API 34
-   - Enable hardware keyboard
+#### Option 1: Using Provided Scripts (Easiest)
 
-2. Start emulator and install APK
+1. **First-time setup** - Run the emulator setup script:
+   ```batch
+   cd android\scripts
+   setup-emulator.bat
+   ```
+   This will:
+   - Install the Android emulator component
+   - Download the x86_64 system image
+   - Create a Pixel 7a virtual device
+
+2. **Run the emulator:**
+   ```batch
+   run-emulator.bat
+   ```
+   This will:
+   - Start the Pixel 7a emulator
+   - Wait for it to boot
+   - Automatically install and optionally launch your APK
+
+#### Option 2: Manual Setup via Command Line
+
+1. **Install required components:**
+   ```batch
+   cd android\sdk\cmdline-tools\latest\bin
+
+   sdkmanager.bat "emulator"
+   sdkmanager.bat "system-images;android-34;google_apis;x86_64"
+   ```
+
+2. **Create the Pixel 7a AVD:**
+   ```batch
+   avdmanager.bat create avd --name "pixel_7a" --package "system-images;android-34;google_apis;x86_64" --device "pixel_7a"
+   ```
+
+3. **Start the emulator:**
+   ```batch
+   android\sdk\emulator\emulator.exe -avd pixel_7a -gpu auto
+   ```
+
+4. **Wait for boot and install APK:**
+   ```batch
+   android\sdk\platform-tools\adb.exe wait-for-device
+   android\sdk\platform-tools\adb.exe install -r android\app\build\amber-moon.apk
+   ```
+
+5. **Launch the app:**
+   ```batch
+   android\sdk\platform-tools\adb.exe shell am start -n com.ambermoongame/.core.MainActivity
+   ```
+
+#### Option 3: Using IntelliJ AVD Manager
+
+1. Go to **Tools → AVD Manager** (or **View → Tool Windows → Device Manager**)
+2. Click **Create Device**
+3. Select **Phone → Pixel 7a**
+4. Click **Next**
+5. Download and select **API 34 (x86_64)** system image
+6. Click **Next → Finish**
+7. Click the **Play** button to start the emulator
+
+### Useful ADB Commands
+
+| Command | Description |
+|---------|-------------|
+| `adb devices` | List connected devices/emulators |
+| `adb install -r app.apk` | Install APK (replace existing) |
+| `adb uninstall com.ambermoongame` | Uninstall the app |
+| `adb shell am start -n com.ambermoongame/.core.MainActivity` | Launch the app |
+| `adb shell am force-stop com.ambermoongame` | Force stop the app |
+| `adb logcat -s AmberMoon` | View app logs |
+| `adb logcat *:E` | View all error logs |
+| `adb shell screencap -p /sdcard/screen.png` | Take screenshot |
+| `adb pull /sdcard/screen.png .` | Download screenshot |
+
+### Emulator Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+Shift+Up/Down | Volume up/down |
+| Ctrl+Shift+R | Rotate screen |
+| Ctrl+Shift+H | Home button |
+| Ctrl+Shift+B | Back button |
+| Ctrl+Shift+O | Overview/Recent apps |
+| F2 | Toggle power |
 
 ---
 

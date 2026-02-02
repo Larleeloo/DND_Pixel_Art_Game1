@@ -74,10 +74,11 @@ if errorlevel 1 (
 
 REM Convert to DEX
 echo Converting to DEX format...
+dir /s /b "%BUILD_DIR%\classes\*.class" > "%BUILD_DIR%\classes.txt"
 "%BUILD_TOOLS%\d8.bat" ^
     --output "%BUILD_DIR%\dex" ^
     --lib "%PLATFORM%\android.jar" ^
-    "%BUILD_DIR%\classes"
+    @"%BUILD_DIR%\classes.txt"
 if errorlevel 1 goto :error
 
 REM Add DEX to APK
@@ -138,6 +139,13 @@ del "%BUILD_DIR%\compile_errors.txt" 2>nul
 echo ============================================================
 echo BUILD SUCCESSFUL!
 echo APK: %BUILD_DIR%\amber-moon.apk
+echo ============================================================
+echo.
+echo To install on emulator or device:
+echo   %SDK_ROOT%\platform-tools\adb.exe install -r "%BUILD_DIR%\amber-moon.apk"
+echo.
+echo To launch the app:
+echo   %SDK_ROOT%\platform-tools\adb.exe shell am start -n com.ambermoongame/.core.MainActivity
 echo ============================================================
 goto :end
 
