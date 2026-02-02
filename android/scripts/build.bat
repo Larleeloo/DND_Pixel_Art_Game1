@@ -97,7 +97,10 @@ if "%JAR_CMD%"=="" (
     goto :error
 )
 
-echo Found jar at: %JAR_CMD%
+REM Extract Java bin directory for keytool later
+for %%i in ("%JAR_CMD%") do set "JAVA_BIN_DIR=%%~dpi"
+
+echo Found JDK at: %JAVA_BIN_DIR%
 echo Creating intermediate JAR...
 cd /d "%BUILD_DIR%\classes"
 "%JAR_CMD%" -cf "%BUILD_DIR%\classes.jar" .
@@ -167,8 +170,6 @@ REM Create debug keystore if needed
 if not exist "%KEYSTORE%" (
     echo Creating debug keystore...
     if not exist "%ANDROID_DIR%\keystore" mkdir "%ANDROID_DIR%\keystore"
-    REM Get keytool from same directory as jar
-    for %%i in ("%JAR_CMD%") do set "JAVA_BIN_DIR=%%~dpi"
     "%JAVA_BIN_DIR%keytool.exe" -genkey -v -keystore "%KEYSTORE%" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, S=Debug, C=US"
     if errorlevel 1 (
         echo ERROR: Keystore creation failed
