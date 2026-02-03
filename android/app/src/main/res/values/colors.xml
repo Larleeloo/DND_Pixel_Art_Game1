@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary colors -->
+    <color name="colorPrimary">#1A1A2E</color>
+    <color name="colorPrimaryDark">#0F0F1A</color>
+    <color name="colorAccent">#FFD700</color>
+
+    <!-- Game UI colors -->
+    <color name="ui_background">#2A2A4A</color>
+    <color name="ui_border">#4A4A6A</color>
+    <color name="ui_text">#FFFFFF</color>
+    <color name="ui_text_secondary">#AAAACC</color>
+
+    <!-- Item rarity colors -->
+    <color name="rarity_common">#FFFFFF</color>
+    <color name="rarity_uncommon">#1EFF00</color>
+    <color name="rarity_rare">#0070DD</color>
+    <color name="rarity_epic">#A335EE</color>
+    <color name="rarity_legendary">#FF8000</color>
+    <color name="rarity_mythic">#00FFFF</color>
+
+    <!-- Health/Resource bars -->
+    <color name="health_bar">#FF3333</color>
+    <color name="mana_bar">#3333FF</color>
+    <color name="stamina_bar">#33FF33</color>
+
+    <!-- Touch control overlay -->
+    <color name="touch_button_normal">#66FFFFFF</color>
+    <color name="touch_button_pressed">#99FFD700</color>
+    <color name="touch_dpad_background">#44000000</color>
+
+    <!-- Transparency variants -->
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent_black">#80000000</color>
+    <color name="semi_transparent_white">#80FFFFFF</color>
+</resources>
