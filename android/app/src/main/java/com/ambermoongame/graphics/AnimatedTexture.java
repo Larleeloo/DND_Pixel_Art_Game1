@@ -1,0 +1,509 @@
+package com.ambermoongame.graphics;
+
+import android.graphics.Bitmap;
+import android.graphics.Color;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Manages animated textures loaded from GIF files.
+ * Handles frame cycling based on elapsed time and supports tinting.
+ *
+ * This class provides support for:
+ * - Multi-frame GIF animations
+ * - Per-frame timing (respects GIF frame delays)
+ * - Forward and reverse playback
+ * - Tinted texture caching
+ * - Static texture fallback for single-frame images
+ *
+ * Usage:
+ *   AnimatedTexture texture = new AnimatedTexture(frames, delays);
+ *   texture.update(deltaTimeMs);  // Call each frame
+ *   Bitmap currentFrame = texture.getCurrentFrame();
+ */
+public class AnimatedTexture {
+
+    // Animation frames
+    private final List<Bitmap> frames;
+    private final List<Integer> frameDelays;  // Delay per frame in milliseconds
+
+    // Current animation state
+    private int currentFrameIndex;
+    private long elapsedTime;  // Time since current frame started (ms)
+    private boolean paused;
+    private boolean looping;
+    private int playDirection;  // +1 for forward, -1 for reverse
+
+    // Dimensions (all frames should have same dimensions)
+    private final int width;
+    private final int height;
+
+    // Tinted frame cache: key = "frameIndex_R_G_B"
+    private final Map<String, Bitmap> tintedFrameCache;
+    private int currentTintColor;
+    private boolean hasTint;
+
+    // Default frame delay if not specified (in ms)
+    public static final int DEFAULT_FRAME_DELAY = 100;
+
+    /**
+     * Creates an animated texture from a list of frames.
+     *
+     * @param frames List of Bitmap frames
+     * @param frameDelays List of delays per frame in milliseconds (can be null for default timing)
+     */
+    public AnimatedTexture(List<Bitmap> frames, List<Integer> frameDelays) {
+        if (frames == null || frames.isEmpty()) {
+            throw new IllegalArgumentException("AnimatedTexture requires at least one frame");
+        }
+
+        this.frames = new ArrayList<>(frames);
+        this.frameDelays = new ArrayList<>();
+
+        // Set up frame delays
+        if (frameDelays != null && !frameDelays.isEmpty()) {
+            for (int i = 0; i < frames.size(); i++) {
+                if (i < frameDelays.size() && frameDelays.get(i) != null && frameDelays.get(i) > 0) {
+                    this.frameDelays.add(frameDelays.get(i));
+                } else {
+                    this.frameDelays.add(DEFAULT_FRAME_DELAY);
+                }
+            }
+        } else {
+            // Use default delay for all frames
+            for (int i = 0; i < frames.size(); i++) {
+                this.frameDelays.add(DEFAULT_FRAME_DELAY);
+            }
+        }
+
+        this.currentFrameIndex = 0;
+        this.elapsedTime = 0;
+        this.paused = true;  // Start paused by default
+        this.looping = true;
+        this.playDirection = 1;  // Forward by default
+
+        // Get dimensions from first frame
+        Bitmap firstFrame = frames.get(0);
+        this.width = firstFrame.getWidth();
+        this.height = firstFrame.getHeight();
+
+        this.tintedFrameCache = new HashMap<>();
+        this.currentTintColor = 0;
+        this.hasTint = false;
+    }
+
+    /**
+     * Creates an animated texture from a single static image.
+     * Useful for consistency when mixing static and animated textures.
+     *
+     * @param staticImage A single Bitmap
+     */
+    public AnimatedTexture(Bitmap staticImage) {
+        this(listOf(staticImage), null);
+    }
+
+    /** Helper to create a single-element list (avoids List.of() API level issues). */
+    private static List<Bitmap> listOf(Bitmap bitmap) {
+        List<Bitmap> list = new ArrayList<>(1);
+        list.add(bitmap);
+        return list;
+    }
+
+    /**
+     * Creates an AnimatedTexture from an AndroidAssetLoader.ImageAsset.
+     * Convenience factory method for integration with the asset loading system.
+     *
+     * @param asset The loaded image asset
+     * @return AnimatedTexture wrapping the asset's frames
+     */
+    public static AnimatedTexture fromImageAsset(AndroidAssetLoader.ImageAsset asset) {
+        if (asset == null) {
+            return null;
+        }
+        if (asset.isAnimated && asset.frames != null && !asset.frames.isEmpty()) {
+            return new AnimatedTexture(asset.frames, asset.delays);
+        } else if (asset.bitmap != null) {
+            return new AnimatedTexture(asset.bitmap);
+        }
+        return null;
+    }
+
+    /**
+     * Updates the animation state based on elapsed time.
+     * Call this every frame with the time delta.
+     * Supports both forward and reverse playback.
+     *
+     * @param deltaMs Time elapsed since last update in milliseconds
+     */
+    public void update(long deltaMs) {
+        if (paused || frames.size() <= 1) {
+            return;
+        }
+
+        elapsedTime += deltaMs;
+        int currentDelay = frameDelays.get(currentFrameIndex);
+
+        // Advance frames if enough time has passed
+        while (elapsedTime >= currentDelay) {
+            elapsedTime -= currentDelay;
+            currentFrameIndex += playDirection;
+
+            // Handle boundary conditions
+            if (playDirection > 0 && currentFrameIndex >= frames.size()) {
+                // Forward playback reached end
+                if (looping) {
+                    currentFrameIndex = 0;
+                } else {
+                    currentFrameIndex = frames.size() - 1;
+                    paused = true;
+                    break;
+                }
+            } else if (playDirection < 0 && currentFrameIndex < 0) {
+                // Reverse playback reached start
+                if (looping) {
+                    currentFrameIndex = frames.size() - 1;
+                } else {
+                    currentFrameIndex = 0;
+                    paused = true;
+                    break;
+                }
+            }
+
+            currentDelay = frameDelays.get(currentFrameIndex);
+        }
+    }
+
+    /**
+     * Gets the current animation frame.
+     *
+     * @return The current Bitmap frame
+     */
+    public Bitmap getCurrentFrame() {
+        return frames.get(currentFrameIndex);
+    }
+
+    /**
+     * Gets the current frame with a tint applied.
+     * Tinted frames are cached for performance.
+     *
+     * @param tintColor The color to tint with (Android color int)
+     * @return The tinted frame
+     */
+    public Bitmap getCurrentFrame(int tintColor) {
+        // Check if tint color changed - clear cache if so
+        if (!hasTint || tintColor != currentTintColor) {
+            tintedFrameCache.clear();
+            currentTintColor = tintColor;
+            hasTint = true;
+        }
+
+        String cacheKey = currentFrameIndex + "_" + Color.red(tintColor) + "_" +
+                          Color.green(tintColor) + "_" + Color.blue(tintColor);
+
+        Bitmap cached = tintedFrameCache.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        // Create tinted frame
+        Bitmap tinted = createTintedFrame(frames.get(currentFrameIndex), tintColor);
+        tintedFrameCache.put(cacheKey, tinted);
+        return tinted;
+    }
+
+    /**
+     * Creates a tinted copy of a frame, only affecting non-transparent pixels.
+     *
+     * @param frame The source frame
+     * @param tintColor The tint color (Android color int)
+     * @return Tinted frame bitmap
+     */
+    private Bitmap createTintedFrame(Bitmap frame, int tintColor) {
+        int w = frame.getWidth();
+        int h = frame.getHeight();
+        Bitmap tinted = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+
+        float tintR = Color.red(tintColor) / 255.0f;
+        float tintG = Color.green(tintColor) / 255.0f;
+        float tintB = Color.blue(tintColor) / 255.0f;
+        float blendFactor = 0.4f;  // How much tint to apply
+
+        // Read all pixels at once for performance
+        int[] pixels = new int[w * h];
+        frame.getPixels(pixels, 0, w, 0, 0, w, h);
+
+        for (int i = 0; i < pixels.length; i++) {
+            int pixel = pixels[i];
+            int alpha = (pixel >> 24) & 0xFF;
+
+            if (alpha > 0) {
+                int r = (pixel >> 16) & 0xFF;
+                int g = (pixel >> 8) & 0xFF;
+                int b = pixel & 0xFF;
+
+                int newR = Math.min(255, (int)(r * (1 - blendFactor) + tintR * 255 * blendFactor));
+                int newG = Math.min(255, (int)(g * (1 - blendFactor) + tintG * 255 * blendFactor));
+                int newB = Math.min(255, (int)(b * (1 - blendFactor) + tintB * 255 * blendFactor));
+
+                pixels[i] = (alpha << 24) | (newR << 16) | (newG << 8) | newB;
+            } else {
+                pixels[i] = 0;
+            }
+        }
+
+        tinted.setPixels(pixels, 0, w, 0, 0, w, h);
+        return tinted;
+    }
+
+    /**
+     * Gets a specific frame by index.
+     *
+     * @param index Frame index
+     * @return The frame at that index
+     */
+    public Bitmap getFrame(int index) {
+        if (index < 0 || index >= frames.size()) {
+            return frames.get(0);
+        }
+        return frames.get(index);
+    }
+
+    /**
+     * Resets the animation to the first frame.
+     */
+    public void reset() {
+        currentFrameIndex = 0;
+        elapsedTime = 0;
+        paused = false;
+        playDirection = 1;
+    }
+
+    /**
+     * Starts playing the animation forward from the current frame.
+     * Unpauses the animation and sets direction to forward.
+     */
+    public void playForward() {
+        playDirection = 1;
+        paused = false;
+        elapsedTime = 0;
+    }
+
+    /**
+     * Starts playing the animation in reverse from the current frame.
+     * Unpauses the animation and sets direction to reverse.
+     */
+    public void playReverse() {
+        playDirection = -1;
+        paused = false;
+        elapsedTime = 0;
+    }
+
+    /**
+     * Jumps to the first frame and pauses.
+     * Useful for showing the "closed" state of a chest animation.
+     */
+    public void goToStart() {
+        currentFrameIndex = 0;
+        elapsedTime = 0;
+        paused = true;
+    }
+
+    /**
+     * Jumps to the last frame and pauses.
+     * Useful for showing the "open" state of a chest animation.
+     */
+    public void goToEnd() {
+        currentFrameIndex = frames.size() - 1;
+        elapsedTime = 0;
+        paused = true;
+    }
+
+    /**
+     * Checks if the animation is at the first frame.
+     * @return true if at first frame
+     */
+    public boolean isAtStart() {
+        return currentFrameIndex == 0;
+    }
+
+    /**
+     * Checks if the animation is at the last frame.
+     * @return true if at last frame
+     */
+    public boolean isAtEnd() {
+        return currentFrameIndex == frames.size() - 1;
+    }
+
+    /**
+     * Gets the current playback direction.
+     * @return 1 for forward, -1 for reverse
+     */
+    public int getPlayDirection() {
+        return playDirection;
+    }
+
+    /**
+     * Pauses the animation.
+     */
+    public void pause() {
+        paused = true;
+    }
+
+    /**
+     * Resumes the animation.
+     */
+    public void resume() {
+        paused = false;
+    }
+
+    /**
+     * Checks if the animation is paused.
+     * @return true if paused
+     */
+    public boolean isPaused() {
+        return paused;
+    }
+
+    /**
+     * Sets whether the animation should loop.
+     * @param looping true to loop, false to stop at last frame
+     */
+    public void setLooping(boolean looping) {
+        this.looping = looping;
+    }
+
+    /**
+     * Checks whether the animation is set to loop.
+     * @return true if looping, false if stops at last frame
+     */
+    public boolean isLooping() {
+        return looping;
+    }
+
+    /**
+     * Checks if this is an animated texture (more than one frame).
+     * @return true if animated
+     */
+    public boolean isAnimated() {
+        return frames.size() > 1;
+    }
+
+    /**
+     * Gets the number of frames in the animation.
+     * @return Frame count
+     */
+    public int getFrameCount() {
+        return frames.size();
+    }
+
+    /**
+     * Gets the current frame index.
+     * @return Current frame index
+     */
+    public int getCurrentFrameIndex() {
+        return currentFrameIndex;
+    }
+
+    /**
+     * Sets the current frame index directly.
+     * @param index Frame index to set
+     */
+    public void setCurrentFrameIndex(int index) {
+        if (index >= 0 && index < frames.size()) {
+            currentFrameIndex = index;
+            elapsedTime = 0;
+        }
+    }
+
+    /**
+     * Gets the width of the texture (first frame width).
+     * @return Width in pixels
+     */
+    public int getWidth() {
+        return width;
+    }
+
+    /**
+     * Gets the height of the texture (first frame height).
+     * @return Height in pixels
+     */
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * Gets the total animation duration in milliseconds.
+     * @return Total duration
+     */
+    public int getTotalDuration() {
+        int total = 0;
+        for (int delay : frameDelays) {
+            total += delay;
+        }
+        return total;
+    }
+
+    /**
+     * Clears the tinted frame cache to free memory.
+     * Also recycles tinted bitmaps.
+     */
+    public void clearTintCache() {
+        for (Bitmap tinted : tintedFrameCache.values()) {
+            if (tinted != null && !tinted.isRecycled()) {
+                tinted.recycle();
+            }
+        }
+        tintedFrameCache.clear();
+        currentTintColor = 0;
+        hasTint = false;
+    }
+
+    /**
+     * Gets the first frame as a static Bitmap.
+     * Useful for systems that need a static fallback.
+     * @return First frame
+     */
+    public Bitmap getStaticImage() {
+        return frames.get(0);
+    }
+
+    /**
+     * Calculates the scale factor needed to render this texture at a target display size.
+     * This allows higher-resolution textures (32x32, 48x48, etc.) to appear at the
+     * same in-game size as lower-resolution textures (16x16).
+     *
+     * @param targetSize The desired display size (e.g., 16 for standard item size)
+     * @return Scale factor (1.0 for matching size, 0.5 for 2x texture, etc.)
+     */
+    public double getScaleFactorForSize(int targetSize) {
+        if (width <= 0) return 1.0;
+        return (double) targetSize / width;
+    }
+
+    /**
+     * Gets the scale factor relative to the standard 16x16 base size.
+     * Convenience method for common item rendering.
+     *
+     * @return Scale factor relative to 16x16 base (1.0 for 16x16, 0.5 for 32x32, etc.)
+     */
+    public double getBaseScaleFactor() {
+        return getScaleFactorForSize(16);
+    }
+
+    /**
+     * Recycles all bitmap frames and tinted cache.
+     * Call when this texture is no longer needed to free memory.
+     */
+    public void recycle() {
+        clearTintCache();
+        for (Bitmap frame : frames) {
+            if (frame != null && !frame.isRecycled()) {
+                frame.recycle();
+            }
+        }
+        frames.clear();
+    }
+}
