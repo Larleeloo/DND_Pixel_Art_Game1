@@ -502,4 +502,34 @@ public class TouchInputManager {
     public boolean isScreenJustReleased() {
         return screenJustReleased;
     }
+
+    // ==================== Convenience Methods for SpritePlayerEntity ====================
+
+    /**
+     * Returns true if left movement is active (matches SpritePlayerEntity API).
+     */
+    public boolean isMoveLeftActive() {
+        return moveLeft;
+    }
+
+    /**
+     * Returns true if right movement is active (matches SpritePlayerEntity API).
+     */
+    public boolean isMoveRightActive() {
+        return moveRight;
+    }
+
+    /**
+     * Returns true if sprint is active (matches SpritePlayerEntity API).
+     */
+    public boolean isSprintActive() {
+        return sprint;
+    }
+
+    /**
+     * Returns true if jump was just pressed this frame (matches SpritePlayerEntity API).
+     */
+    public boolean isJumpJustPressed() {
+        return jumpJustPressed;
+    }
 }
