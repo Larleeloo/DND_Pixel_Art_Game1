@@ -1,0 +1,23 @@
+package com.ambermoongame.entity.item.items.collectibles;
+
+import com.ambermoongame.entity.item.Item;
+
+/**
+ * Orb - A mysterious glowing sphere.
+ * Uncommon collectible item.
+ */
+public class Orb extends Item {
+
+    public Orb() {
+        super("Orb", ItemCategory.OTHER);
+        setRarity(ItemRarity.UNCOMMON);
+        setDescription("A mysterious glowing sphere");
+        setStackable(true);
+        setMaxStackSize(16);
+    }
+
+    @Override
+    public Item copy() {
+        return new Orb();
+    }
+}
