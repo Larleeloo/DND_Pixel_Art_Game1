@@ -6,7 +6,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 /**
- * Enum defining overlay types that can be applied on top of base blocks.
+ * Class defining overlay types that can be applied on top of base blocks.
+ * Uses int constants instead of enum to avoid D8 compiler issues.
  *
  * Overlays are semi-transparent textures rendered on top of base block textures.
  * They can be used for:
@@ -18,62 +19,99 @@ import android.graphics.Paint;
  *
  * Overlays must be removed/broken before the base block can be mined.
  * Equivalent to block/BlockOverlay.java from the desktop version.
- *
- * Conversion notes:
- * - java.awt.image.BufferedImage -> android.graphics.Bitmap
- * - java.awt.Graphics2D          -> android.graphics.Canvas
- * - java.awt.Color               -> android.graphics.Color (int)
- * - java.awt.RenderingHints      -> Paint.setAntiAlias()
- * - java.awt.BasicStroke          -> Paint.setStrokeWidth()
- * - g2d.fillRect()               -> canvas.drawRect()
- * - g2d.fillOval()               -> canvas.drawCircle()
- * - g2d.drawLine()               -> canvas.drawLine()
  */
-public enum BlockOverlay {
-    NONE(null, "None", 0, false),
-    GRASS("assets/textures/blocks/overlays/grass_overlay.png", "Grass", 1, true),
-    SNOW("assets/textures/blocks/overlays/snow_overlay.png", "Snow", 2, true),
-    ICE("assets/textures/blocks/overlays/ice_overlay.png", "Ice", 3, true),
-    MOSS("assets/textures/blocks/overlays/moss_overlay.png", "Moss", 1, true),
-    VINES("assets/textures/blocks/overlays/vines_overlay.png", "Vines", 1, true);
+public final class BlockOverlay {
+    public static final int NONE = 0;
+    public static final int GRASS = 1;
+    public static final int SNOW = 2;
+    public static final int ICE = 3;
+    public static final int MOSS = 4;
+    public static final int VINES = 5;
+    public static final int COUNT = 6;
 
-    private final String texturePath;
-    private final String displayName;
-    private final int breakSteps;  // Number of hits required to remove overlay
-    private final boolean blocksBaseMining;  // Must overlay be removed before mining base?
+    private static final String[] TEXTURE_PATHS = {
+        null,
+        "assets/textures/blocks/overlays/grass_overlay.png",
+        "assets/textures/blocks/overlays/snow_overlay.png",
+        "assets/textures/blocks/overlays/ice_overlay.png",
+        "assets/textures/blocks/overlays/moss_overlay.png",
+        "assets/textures/blocks/overlays/vines_overlay.png"
+    };
 
-    BlockOverlay(String texturePath, String displayName, int breakSteps, boolean blocksBaseMining) {
-        this.texturePath = texturePath;
-        this.displayName = displayName;
-        this.breakSteps = breakSteps;
-        this.blocksBaseMining = blocksBaseMining;
+    private static final String[] DISPLAY_NAMES = {
+        "None", "Grass", "Snow", "Ice", "Moss", "Vines"
+    };
+
+    private static final int[] BREAK_STEPS = {
+        0, 1, 2, 3, 1, 1
+    };
+
+    private static final boolean[] BLOCKS_BASE_MINING = {
+        false, true, true, true, true, true
+    };
+
+    private BlockOverlay() {}
+
+    public static String getTexturePath(int overlay) {
+        if (overlay >= 0 && overlay < COUNT) {
+            return TEXTURE_PATHS[overlay];
+        }
+        return null;
     }
 
-    public String getTexturePath() { return texturePath; }
-    public String getDisplayName() { return displayName; }
-    public int getBreakSteps() { return breakSteps; }
-    public boolean blocksBaseMining() { return blocksBaseMining; }
+    public static String getDisplayName(int overlay) {
+        if (overlay >= 0 && overlay < COUNT) {
+            return DISPLAY_NAMES[overlay];
+        }
+        return "Unknown";
+    }
+
+    public static int getBreakSteps(int overlay) {
+        if (overlay >= 0 && overlay < COUNT) {
+            return BREAK_STEPS[overlay];
+        }
+        return 0;
+    }
+
+    public static boolean blocksBaseMining(int overlay) {
+        if (overlay >= 0 && overlay < COUNT) {
+            return BLOCKS_BASE_MINING[overlay];
+        }
+        return false;
+    }
+
+    public static String getName(int overlay) {
+        switch (overlay) {
+            case NONE: return "NONE";
+            case GRASS: return "GRASS";
+            case SNOW: return "SNOW";
+            case ICE: return "ICE";
+            case MOSS: return "MOSS";
+            case VINES: return "VINES";
+            default: return "UNKNOWN";
+        }
+    }
 
     /**
      * Find an overlay type by its name (case-insensitive).
      * @param name The name to search for
-     * @return The matching BlockOverlay, or NONE as default
+     * @return The matching overlay constant, or NONE as default
      */
-    public static BlockOverlay fromName(String name) {
+    public static int fromName(String name) {
         if (name == null || name.isEmpty()) {
             return NONE;
         }
 
         String upperName = name.toUpperCase().replace(" ", "_");
-        for (BlockOverlay overlay : values()) {
-            if (overlay.name().equals(upperName)) {
-                return overlay;
+        for (int i = 0; i < COUNT; i++) {
+            if (getName(i).equals(upperName)) {
+                return i;
             }
         }
 
-        for (BlockOverlay overlay : values()) {
-            if (overlay.displayName.equalsIgnoreCase(name)) {
-                return overlay;
+        for (int i = 0; i < COUNT; i++) {
+            if (DISPLAY_NAMES[i].equalsIgnoreCase(name)) {
+                return i;
             }
         }
 
@@ -84,16 +122,17 @@ public enum BlockOverlay {
      * Generates a procedural overlay texture if the file doesn't exist.
      * Creates a semi-transparent texture programmatically.
      *
+     * @param overlay The overlay type constant
      * @param size The size of the texture to generate (width and height)
      * @return Generated Bitmap
      */
-    public Bitmap generateTexture(int size) {
+    public static Bitmap generateTexture(int overlay, int size) {
         Bitmap texture = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(texture);
         Paint paint = new Paint();
         paint.setAntiAlias(true);
 
-        switch (this) {
+        switch (overlay) {
             case GRASS:
                 drawGrassOverlay(canvas, paint, size);
                 break;
@@ -122,7 +161,7 @@ public enum BlockOverlay {
         return texture;
     }
 
-    private void drawGrassOverlay(Canvas canvas, Paint paint, int size) {
+    private static void drawGrassOverlay(Canvas canvas, Paint paint, int size) {
         // Green grass tufts on top portion
         paint.setColor(Color.argb(200, 60, 180, 60));
         paint.setStyle(Paint.Style.FILL);
@@ -142,7 +181,7 @@ public enum BlockOverlay {
         }
     }
 
-    private void drawSnowOverlay(Canvas canvas, Paint paint, int size) {
+    private static void drawSnowOverlay(Canvas canvas, Paint paint, int size) {
         // Snow layer on top
         paint.setColor(Color.argb(220, 255, 255, 255));
         paint.setStyle(Paint.Style.FILL);
@@ -164,7 +203,7 @@ public enum BlockOverlay {
         }
     }
 
-    private void drawIceOverlay(Canvas canvas, Paint paint, int size) {
+    private static void drawIceOverlay(Canvas canvas, Paint paint, int size) {
         // Semi-transparent ice coating entire block
         paint.setColor(Color.argb(100, 180, 220, 255));
         paint.setStyle(Paint.Style.FILL);
@@ -188,7 +227,7 @@ public enum BlockOverlay {
         canvas.drawRect(size / 4f, size / 4f, size / 2f, size / 4f + 2, paint);
     }
 
-    private void drawMossOverlay(Canvas canvas, Paint paint, int size) {
+    private static void drawMossOverlay(Canvas canvas, Paint paint, int size) {
         // Green moss patches
         paint.setColor(Color.argb(180, 80, 120, 60));
         paint.setStyle(Paint.Style.FILL);
@@ -200,7 +239,7 @@ public enum BlockOverlay {
         }
     }
 
-    private void drawVinesOverlay(Canvas canvas, Paint paint, int size) {
+    private static void drawVinesOverlay(Canvas canvas, Paint paint, int size) {
         // Hanging vines
         paint.setColor(Color.argb(200, 40, 100, 40));
         paint.setStyle(Paint.Style.FILL);

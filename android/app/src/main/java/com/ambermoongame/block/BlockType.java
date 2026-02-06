@@ -1,102 +1,179 @@
 package com.ambermoongame.block;
 
 /**
- * Enum defining all available block types in the game.
+ * Class defining all available block types in the game.
+ * Uses int constants instead of enum to avoid D8 compiler issues.
  * Each block type has associated properties like texture path,
  * solidity, and display name.
  * Equivalent to block/BlockType.java from the desktop version.
- *
- * Conversion notes:
- * - No AWT dependencies - direct port with package change only.
  */
-public enum BlockType {
+public final class BlockType {
     // Terrain blocks
-    GRASS("assets/textures/blocks/grass.png", true, "Grass"),
-    DIRT("assets/textures/blocks/dirt.png", true, "Dirt"),
-    STONE("assets/textures/blocks/stone.png", true, "Stone"),
-    COBBLESTONE("assets/textures/blocks/cobblestone.png", true, "Cobblestone"),
+    public static final int GRASS = 0;
+    public static final int DIRT = 1;
+    public static final int STONE = 2;
+    public static final int COBBLESTONE = 3;
 
     // Nature blocks
-    WOOD("assets/textures/blocks/wood.png", true, "Wood"),
-    LEAVES("assets/textures/blocks/leaves.png", false, "Leaves"),
+    public static final int WOOD = 4;
+    public static final int LEAVES = 5;
 
     // Special blocks
-    BRICK("assets/textures/blocks/brick.png", true, "Brick"),
-    SAND("assets/textures/blocks/sand.png", true, "Sand"),
-    WATER("assets/textures/blocks/water.png", false, "Water"),
+    public static final int BRICK = 6;
+    public static final int SAND = 7;
+    public static final int WATER = 8;
 
     // Decorative blocks
-    GLASS("assets/textures/blocks/glass.png", false, "Glass"),
+    public static final int GLASS = 9;
 
     // Ore blocks
-    COAL_ORE("assets/textures/blocks/coal_ore.png", true, "Coal Ore"),
-    IRON_ORE("assets/textures/blocks/iron_ore.png", true, "Iron Ore"),
-    GOLD_ORE("assets/textures/blocks/gold_ore.png", true, "Gold Ore"),
+    public static final int COAL_ORE = 10;
+    public static final int IRON_ORE = 11;
+    public static final int GOLD_ORE = 12;
 
     // Weather/Environment blocks
-    SNOW("assets/textures/blocks/snow.png", true, "Snow"),
-    ICE("assets/textures/blocks/ice.png", false, "Ice"),
-    MOSS("assets/textures/blocks/moss.png", true, "Moss"),
-    VINES("assets/textures/blocks/vines.png", false, "Vines"),
+    public static final int SNOW = 13;
+    public static final int ICE = 14;
+    public static final int MOSS = 15;
+    public static final int VINES = 16;
 
-    // Platform block (for backwards compatibility with obstacle.png)
-    PLATFORM("assets/obstacle.png", true, "Platform");
+    // Platform block
+    public static final int PLATFORM = 17;
 
-    private final String texturePath;
-    private final boolean solid;
-    private final String displayName;
+    public static final int COUNT = 18;
 
-    BlockType(String texturePath, boolean solid, String displayName) {
-        this.texturePath = texturePath;
-        this.solid = solid;
-        this.displayName = displayName;
-    }
+    private static final String[] TEXTURE_PATHS = {
+        "assets/textures/blocks/grass.png",
+        "assets/textures/blocks/dirt.png",
+        "assets/textures/blocks/stone.png",
+        "assets/textures/blocks/cobblestone.png",
+        "assets/textures/blocks/wood.png",
+        "assets/textures/blocks/leaves.png",
+        "assets/textures/blocks/brick.png",
+        "assets/textures/blocks/sand.png",
+        "assets/textures/blocks/water.png",
+        "assets/textures/blocks/glass.png",
+        "assets/textures/blocks/coal_ore.png",
+        "assets/textures/blocks/iron_ore.png",
+        "assets/textures/blocks/gold_ore.png",
+        "assets/textures/blocks/snow.png",
+        "assets/textures/blocks/ice.png",
+        "assets/textures/blocks/moss.png",
+        "assets/textures/blocks/vines.png",
+        "assets/obstacle.png"
+    };
+
+    private static final boolean[] SOLID = {
+        true,   // GRASS
+        true,   // DIRT
+        true,   // STONE
+        true,   // COBBLESTONE
+        true,   // WOOD
+        false,  // LEAVES
+        true,   // BRICK
+        true,   // SAND
+        false,  // WATER
+        false,  // GLASS
+        true,   // COAL_ORE
+        true,   // IRON_ORE
+        true,   // GOLD_ORE
+        true,   // SNOW
+        false,  // ICE
+        true,   // MOSS
+        false,  // VINES
+        true    // PLATFORM
+    };
+
+    private static final String[] DISPLAY_NAMES = {
+        "Grass", "Dirt", "Stone", "Cobblestone",
+        "Wood", "Leaves", "Brick", "Sand", "Water", "Glass",
+        "Coal Ore", "Iron Ore", "Gold Ore",
+        "Snow", "Ice", "Moss", "Vines", "Platform"
+    };
+
+    private BlockType() {}
 
     /**
      * Gets the path to this block's texture file.
      * @return Texture file path relative to project root
      */
-    public String getTexturePath() {
-        return texturePath;
+    public static String getTexturePath(int type) {
+        if (type >= 0 && type < COUNT) {
+            return TEXTURE_PATHS[type];
+        }
+        return TEXTURE_PATHS[DIRT]; // default
     }
 
     /**
      * Whether this block type is solid (blocks player movement).
      * @return true if solid, false if passable
      */
-    public boolean isSolid() {
-        return solid;
+    public static boolean isSolid(int type) {
+        if (type >= 0 && type < COUNT) {
+            return SOLID[type];
+        }
+        return true;
     }
 
     /**
      * Gets the human-readable display name for this block.
      * @return Display name
      */
-    public String getDisplayName() {
-        return displayName;
+    public static String getDisplayName(int type) {
+        if (type >= 0 && type < COUNT) {
+            return DISPLAY_NAMES[type];
+        }
+        return "Unknown";
+    }
+
+    /**
+     * Gets the internal name for this block type.
+     */
+    public static String getName(int type) {
+        switch (type) {
+            case GRASS: return "GRASS";
+            case DIRT: return "DIRT";
+            case STONE: return "STONE";
+            case COBBLESTONE: return "COBBLESTONE";
+            case WOOD: return "WOOD";
+            case LEAVES: return "LEAVES";
+            case BRICK: return "BRICK";
+            case SAND: return "SAND";
+            case WATER: return "WATER";
+            case GLASS: return "GLASS";
+            case COAL_ORE: return "COAL_ORE";
+            case IRON_ORE: return "IRON_ORE";
+            case GOLD_ORE: return "GOLD_ORE";
+            case SNOW: return "SNOW";
+            case ICE: return "ICE";
+            case MOSS: return "MOSS";
+            case VINES: return "VINES";
+            case PLATFORM: return "PLATFORM";
+            default: return "UNKNOWN";
+        }
     }
 
     /**
      * Find a BlockType by its name (case-insensitive).
      * @param name The name to search for
-     * @return The matching BlockType, or DIRT as default
+     * @return The matching BlockType constant, or DIRT as default
      */
-    public static BlockType fromName(String name) {
+    public static int fromName(String name) {
         if (name == null || name.isEmpty()) {
             return DIRT;
         }
 
         String upperName = name.toUpperCase().replace(" ", "_");
-        for (BlockType type : values()) {
-            if (type.name().equals(upperName)) {
-                return type;
+        for (int i = 0; i < COUNT; i++) {
+            if (getName(i).equals(upperName)) {
+                return i;
             }
         }
 
         // Also try matching display name
-        for (BlockType type : values()) {
-            if (type.displayName.equalsIgnoreCase(name)) {
-                return type;
+        for (int i = 0; i < COUNT; i++) {
+            if (DISPLAY_NAMES[i].equalsIgnoreCase(name)) {
+                return i;
             }
         }
 

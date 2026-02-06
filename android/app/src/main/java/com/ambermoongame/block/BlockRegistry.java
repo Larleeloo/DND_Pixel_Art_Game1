@@ -45,17 +45,17 @@ public class BlockRegistry {
     // Final rendered block size
     public static final int BLOCK_SIZE = BASE_BLOCK_SIZE * BLOCK_SCALE; // 64 pixels
 
-    // Cache for loaded and scaled textures (static)
-    private final Map<BlockType, Bitmap> textureCache;
+    // Cache for loaded and scaled textures (static) - uses int for BlockType
+    private final android.util.SparseArray<Bitmap> textureCache;
 
     // Cache for animated textures (GIF blocks) - stores full ImageAsset for frame cycling
-    private final Map<BlockType, AndroidAssetLoader.ImageAsset> animatedTextureCache;
+    private final android.util.SparseArray<AndroidAssetLoader.ImageAsset> animatedTextureCache;
 
     // Cache for tinted texture variants (key: BlockType + color hash)
     private final Map<String, Bitmap> tintedTextureCache;
 
-    // Cache for overlay textures
-    private final Map<BlockOverlay, Bitmap> overlayTextureCache;
+    // Cache for overlay textures - uses int for BlockOverlay
+    private final android.util.SparseArray<Bitmap> overlayTextureCache;
 
     // Fallback texture for missing assets
     private Bitmap fallbackTexture;
@@ -64,10 +64,10 @@ public class BlockRegistry {
     private long animationStartTime = System.currentTimeMillis();
 
     private BlockRegistry() {
-        textureCache = new HashMap<>();
-        animatedTextureCache = new HashMap<>();
+        textureCache = new android.util.SparseArray<>();
+        animatedTextureCache = new android.util.SparseArray<>();
         tintedTextureCache = new HashMap<>();
-        overlayTextureCache = new HashMap<>();
+        overlayTextureCache = new android.util.SparseArray<>();
         createFallbackTexture();
     }
 
@@ -110,14 +110,14 @@ public class BlockRegistry {
      * @param type The block type
      * @return Scaled Bitmap for the block
      */
-    public Bitmap getTexture(BlockType type) {
+    public Bitmap getTexture(int type) {
         // Check if this is an animated block
-        if (animatedTextureCache.containsKey(type)) {
+        if (animatedTextureCache.get(type) != null) {
             long elapsed = System.currentTimeMillis() - animationStartTime;
             return animatedTextureCache.get(type).getFrame(elapsed);
         }
 
-        if (textureCache.containsKey(type)) {
+        if (textureCache.get(type) != null) {
             return textureCache.get(type);
         }
 
@@ -129,8 +129,8 @@ public class BlockRegistry {
      * Gets the image asset for animated blocks.
      * Returns null for static textures.
      */
-    public AndroidAssetLoader.ImageAsset getAnimatedAsset(BlockType type) {
-        if (!animatedTextureCache.containsKey(type) && !textureCache.containsKey(type)) {
+    public AndroidAssetLoader.ImageAsset getAnimatedAsset(int type) {
+        if (animatedTextureCache.get(type) == null && textureCache.get(type) == null) {
             loadAndCacheTexture(type);
         }
         return animatedTextureCache.get(type);
@@ -139,7 +139,7 @@ public class BlockRegistry {
     /**
      * Checks if a block type has an animated texture.
      */
-    public boolean isAnimated(BlockType type) {
+    public boolean isAnimated(int type) {
         AndroidAssetLoader.ImageAsset asset = getAnimatedAsset(type);
         return asset != null && asset.isAnimated;
     }
@@ -148,11 +148,11 @@ public class BlockRegistry {
      * Loads and caches a texture for a block type.
      * Handles both static and animated textures.
      */
-    private Bitmap loadAndCacheTexture(BlockType type) {
-        AndroidAssetLoader.ImageAsset asset = AndroidAssetLoader.load(type.getTexturePath());
+    private Bitmap loadAndCacheTexture(int type) {
+        AndroidAssetLoader.ImageAsset asset = AndroidAssetLoader.load(BlockType.getTexturePath(type));
 
         if (asset == null || asset.bitmap == null) {
-            Log.w(TAG, "Failed to load texture: " + type.getTexturePath() + ", using fallback");
+            Log.w(TAG, "Failed to load texture: " + BlockType.getTexturePath(type) + ", using fallback");
             Bitmap scaled = scaleTexture(fallbackTexture);
             textureCache.put(type, scaled);
             return scaled;
@@ -163,7 +163,7 @@ public class BlockRegistry {
             // Scale all frames and create a new ImageAsset
             AndroidAssetLoader.ImageAsset scaledAsset = scaleAnimatedAsset(asset);
             animatedTextureCache.put(type, scaledAsset);
-            Log.d(TAG, "Loaded animated block texture: " + type.name()
+            Log.d(TAG, "Loaded animated block texture: " + BlockType.getName(type)
                     + " (" + scaledAsset.frames.size() + " frames)");
             return scaledAsset.bitmap;
         } else {
@@ -178,8 +178,8 @@ public class BlockRegistry {
      * Gets a tinted version of a block texture.
      * Tinted textures are cached for reuse.
      */
-    public Bitmap getTintedTexture(BlockType type, int red, int green, int blue) {
-        String cacheKey = type.name() + "_" + red + "_" + green + "_" + blue;
+    public Bitmap getTintedTexture(int type, int red, int green, int blue) {
+        String cacheKey = BlockType.getName(type) + "_" + red + "_" + green + "_" + blue;
 
         if (tintedTextureCache.containsKey(cacheKey)) {
             return tintedTextureCache.get(cacheKey);
@@ -194,30 +194,31 @@ public class BlockRegistry {
     /**
      * Gets an overlay texture, loading from file or generating if not available.
      */
-    public Bitmap getOverlayTexture(BlockOverlay overlay) {
-        if (overlay == null || overlay == BlockOverlay.NONE) {
+    public Bitmap getOverlayTexture(int overlay) {
+        if (overlay == BlockOverlay.NONE) {
             return null;
         }
 
-        if (overlayTextureCache.containsKey(overlay)) {
+        if (overlayTextureCache.get(overlay) != null) {
             return overlayTextureCache.get(overlay);
         }
 
         // Try to load from file first
-        if (overlay.getTexturePath() != null) {
-            AndroidAssetLoader.ImageAsset asset = AndroidAssetLoader.load(overlay.getTexturePath());
+        String texturePath = BlockOverlay.getTexturePath(overlay);
+        if (texturePath != null) {
+            AndroidAssetLoader.ImageAsset asset = AndroidAssetLoader.load(texturePath);
             if (asset != null && asset.bitmap != null) {
                 Bitmap scaled = scaleTexture(asset.bitmap);
                 overlayTextureCache.put(overlay, scaled);
-                Log.d(TAG, "Loaded overlay texture: " + overlay.name());
+                Log.d(TAG, "Loaded overlay texture: " + BlockOverlay.getName(overlay));
                 return scaled;
             }
         }
 
         // Generate texture if file not found
-        Bitmap generated = overlay.generateTexture(BLOCK_SIZE);
+        Bitmap generated = BlockOverlay.generateTexture(overlay, BLOCK_SIZE);
         overlayTextureCache.put(overlay, generated);
-        Log.d(TAG, "Generated overlay texture: " + overlay.name());
+        Log.d(TAG, "Generated overlay texture: " + BlockOverlay.getName(overlay));
         return generated;
     }
 

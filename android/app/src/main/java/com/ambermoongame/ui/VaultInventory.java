@@ -83,14 +83,13 @@ public class VaultInventory {
     // Hover state
     private int hoveredSlotIndex = -1;
 
-    // Sorting state
-    public enum SortMode {
-        NONE,
-        RARITY_DESC,
-        RARITY_ASC,
-        ALPHABETICAL
-    }
-    private SortMode currentSortMode = SortMode.NONE;
+    // Sort mode constants (replaces enum to avoid D8 crash)
+    public static final int SORT_MODE_NONE = 0;
+    public static final int SORT_MODE_RARITY_DESC = 1;
+    public static final int SORT_MODE_RARITY_ASC = 2;
+    public static final int SORT_MODE_ALPHABETICAL = 3;
+
+    private int currentSortMode = SORT_MODE_NONE;
 
     // Sort button bounds (calculated in draw)
     private int sortRarityBtnX, sortRarityBtnY, sortRarityBtnW, sortRarityBtnH;
@@ -529,8 +528,8 @@ public class VaultInventory {
     public void sortByRarity() {
         if (slots.isEmpty()) return;
 
-        if (currentSortMode == SortMode.RARITY_DESC) {
-            currentSortMode = SortMode.RARITY_ASC;
+        if (currentSortMode == SORT_MODE_RARITY_DESC) {
+            currentSortMode = SORT_MODE_RARITY_ASC;
             slots.sort((a, b) -> {
                 if (a.isEmpty() && b.isEmpty()) return 0;
                 if (a.isEmpty()) return 1;
@@ -540,7 +539,7 @@ public class VaultInventory {
                 return Integer.compare(rarityA, rarityB);
             });
         } else {
-            currentSortMode = SortMode.RARITY_DESC;
+            currentSortMode = SORT_MODE_RARITY_DESC;
             slots.sort((a, b) -> {
                 if (a.isEmpty() && b.isEmpty()) return 0;
                 if (a.isEmpty()) return 1;
@@ -557,7 +556,7 @@ public class VaultInventory {
     public void sortAlphabetically() {
         if (slots.isEmpty()) return;
 
-        currentSortMode = SortMode.ALPHABETICAL;
+        currentSortMode = SORT_MODE_ALPHABETICAL;
         slots.sort((a, b) -> {
             if (a.isEmpty() && b.isEmpty()) return 0;
             if (a.isEmpty()) return 1;
@@ -570,7 +569,7 @@ public class VaultInventory {
         scrollOffset = 0;
     }
 
-    public SortMode getCurrentSortMode() { return currentSortMode; }
+    public int getCurrentSortMode() { return currentSortMode; }
 
     public boolean handleSortButtonClick(int mouseX, int mouseY) {
         if (!isOpen) return false;
@@ -655,8 +654,8 @@ public class VaultInventory {
         int btnY = y + 6;
 
         // Sort by rarity button
-        String rarityLabel = currentSortMode == SortMode.RARITY_ASC ? "Rarity ^" :
-                             currentSortMode == SortMode.RARITY_DESC ? "Rarity v" : "Rarity";
+        String rarityLabel = currentSortMode == SORT_MODE_RARITY_ASC ? "Rarity ^" :
+                             currentSortMode == SORT_MODE_RARITY_DESC ? "Rarity v" : "Rarity";
         textPaint.setTextSize(10);
         int rarityWidth = (int) textPaint.measureText(rarityLabel) + 8;
         sortRarityBtnW = rarityWidth;
@@ -664,7 +663,7 @@ public class VaultInventory {
         sortRarityBtnX = x + width - rarityWidth - btnPadding - SCROLLBAR_WIDTH;
         sortRarityBtnY = btnY;
 
-        boolean rarityActive = currentSortMode == SortMode.RARITY_ASC || currentSortMode == SortMode.RARITY_DESC;
+        boolean rarityActive = currentSortMode == SORT_MODE_RARITY_ASC || currentSortMode == SORT_MODE_RARITY_DESC;
         fillPaint.setColor(rarityActive ? Color.rgb(100, 80, 40) : Color.rgb(70, 60, 50));
         rectF.set(sortRarityBtnX, sortRarityBtnY, sortRarityBtnX + sortRarityBtnW, sortRarityBtnY + sortRarityBtnH);
         canvas.drawRoundRect(rectF, 4, 4, fillPaint);
@@ -675,14 +674,14 @@ public class VaultInventory {
         canvas.drawText(rarityLabel, sortRarityBtnX + 4, sortRarityBtnY + 13, textPaint);
 
         // Sort alphabetically button
-        String alphaLabel = currentSortMode == SortMode.ALPHABETICAL ? "A-Z *" : "A-Z";
+        String alphaLabel = currentSortMode == SORT_MODE_ALPHABETICAL ? "A-Z *" : "A-Z";
         int alphaWidth = (int) textPaint.measureText(alphaLabel) + 8;
         sortAlphaBtnBtnW = alphaWidth;
         sortAlphaBtnH = btnHeight;
         sortAlphaBtnX = sortRarityBtnX - alphaWidth - btnPadding;
         sortAlphaBtnY = btnY;
 
-        boolean alphaActive = currentSortMode == SortMode.ALPHABETICAL;
+        boolean alphaActive = currentSortMode == SORT_MODE_ALPHABETICAL;
         fillPaint.setColor(alphaActive ? Color.rgb(40, 80, 100) : Color.rgb(50, 60, 70));
         rectF.set(sortAlphaBtnX, sortAlphaBtnY, sortAlphaBtnX + sortAlphaBtnBtnW, sortAlphaBtnY + sortAlphaBtnH);
         canvas.drawRoundRect(rectF, 4, 4, fillPaint);

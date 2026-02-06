@@ -42,54 +42,123 @@ public class Item {
 
     private static final String TAG = "Item";
 
-    // ==================== Item Categories ====================
+    // ==================== Item Category Constants ====================
+    // (Replaced enum with int constants to avoid D8 crash)
 
-    /**
-     * Categories for items determining their primary use.
-     */
-    public enum ItemCategory {
-        WEAPON,         // Swords, axes, maces
-        RANGED_WEAPON,  // Bows, crossbows, wands
-        TOOL,           // Pickaxes, shovels, axes
-        ARMOR,          // Helmets, chestplates, etc.
-        CLOTHING,       // Cosmetic clothing
-        BLOCK,          // Placeable blocks
-        FOOD,           // Consumable food items
-        POTION,         // Consumable potions
-        MATERIAL,       // Crafting materials
-        KEY,            // Keys for doors/chests
-        ACCESSORY,      // Rings, amulets
-        THROWABLE,      // Throwing items
-        OTHER           // Miscellaneous
+    public static final int CATEGORY_WEAPON = 0;
+    public static final int CATEGORY_RANGED_WEAPON = 1;
+    public static final int CATEGORY_TOOL = 2;
+    public static final int CATEGORY_ARMOR = 3;
+    public static final int CATEGORY_CLOTHING = 4;
+    public static final int CATEGORY_BLOCK = 5;
+    public static final int CATEGORY_FOOD = 6;
+    public static final int CATEGORY_POTION = 7;
+    public static final int CATEGORY_MATERIAL = 8;
+    public static final int CATEGORY_KEY = 9;
+    public static final int CATEGORY_ACCESSORY = 10;
+    public static final int CATEGORY_THROWABLE = 11;
+    public static final int CATEGORY_OTHER = 12;
+    public static final int CATEGORY_COUNT = 13;
+
+    private static final String[] CATEGORY_NAMES = {
+        "WEAPON", "RANGED_WEAPON", "TOOL", "ARMOR", "CLOTHING",
+        "BLOCK", "FOOD", "POTION", "MATERIAL", "KEY",
+        "ACCESSORY", "THROWABLE", "OTHER"
+    };
+
+    public static String getCategoryName(int category) {
+        if (category >= 0 && category < CATEGORY_COUNT) return CATEGORY_NAMES[category];
+        return "UNKNOWN";
+    }
+
+    public static int categoryFromName(String name) {
+        if (name == null) return CATEGORY_OTHER;
+        for (int i = 0; i < CATEGORY_COUNT; i++) {
+            if (CATEGORY_NAMES[i].equalsIgnoreCase(name)) return i;
+        }
+        return CATEGORY_OTHER;
     }
 
     /**
-     * Rarity tiers with associated colors.
-     * Colors stored as Android int (0xAARRGGBB) instead of java.awt.Color.
+     * Helper class for backwards compatibility with enum-like API.
      */
-    public enum ItemRarity {
-        COMMON(Color.WHITE, "Common"),
-        UNCOMMON(Color.rgb(30, 255, 30), "Uncommon"),
-        RARE(Color.rgb(30, 100, 255), "Rare"),
-        EPIC(Color.rgb(180, 30, 255), "Epic"),
-        LEGENDARY(Color.rgb(255, 165, 0), "Legendary"),
-        MYTHIC(Color.rgb(0, 255, 255), "Mythic");
+    public static final class ItemCategory {
+        private final int value;
 
-        private final int color;
-        private final String displayName;
+        private ItemCategory(int value) { this.value = value; }
 
-        ItemRarity(int color, String displayName) {
-            this.color = color;
-            this.displayName = displayName;
-        }
+        public static ItemCategory fromInt(int value) { return new ItemCategory(value); }
+        public int intValue() { return value; }
+        public String name() { return getCategoryName(value); }
 
-        public int getColor() {
-            return color;
-        }
+        public static final ItemCategory WEAPON = new ItemCategory(CATEGORY_WEAPON);
+        public static final ItemCategory RANGED_WEAPON = new ItemCategory(CATEGORY_RANGED_WEAPON);
+        public static final ItemCategory TOOL = new ItemCategory(CATEGORY_TOOL);
+        public static final ItemCategory ARMOR = new ItemCategory(CATEGORY_ARMOR);
+        public static final ItemCategory CLOTHING = new ItemCategory(CATEGORY_CLOTHING);
+        public static final ItemCategory BLOCK = new ItemCategory(CATEGORY_BLOCK);
+        public static final ItemCategory FOOD = new ItemCategory(CATEGORY_FOOD);
+        public static final ItemCategory POTION = new ItemCategory(CATEGORY_POTION);
+        public static final ItemCategory MATERIAL = new ItemCategory(CATEGORY_MATERIAL);
+        public static final ItemCategory KEY = new ItemCategory(CATEGORY_KEY);
+        public static final ItemCategory ACCESSORY = new ItemCategory(CATEGORY_ACCESSORY);
+        public static final ItemCategory THROWABLE = new ItemCategory(CATEGORY_THROWABLE);
+        public static final ItemCategory OTHER = new ItemCategory(CATEGORY_OTHER);
+    }
 
-        public String getDisplayName() {
-            return displayName;
-        }
+    // ==================== Item Rarity Constants ====================
+
+    public static final int RARITY_COMMON = 0;
+    public static final int RARITY_UNCOMMON = 1;
+    public static final int RARITY_RARE = 2;
+    public static final int RARITY_EPIC = 3;
+    public static final int RARITY_LEGENDARY = 4;
+    public static final int RARITY_MYTHIC = 5;
+    public static final int RARITY_COUNT = 6;
+
+    private static final int[] RARITY_COLORS = {
+        Color.WHITE,
+        Color.rgb(30, 255, 30),
+        Color.rgb(30, 100, 255),
+        Color.rgb(180, 30, 255),
+        Color.rgb(255, 165, 0),
+        Color.rgb(0, 255, 255)
+    };
+
+    private static final String[] RARITY_DISPLAY_NAMES = {
+        "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"
+    };
+
+    public static int getRarityColor(int rarity) {
+        if (rarity >= 0 && rarity < RARITY_COUNT) return RARITY_COLORS[rarity];
+        return Color.WHITE;
+    }
+
+    public static String getRarityDisplayName(int rarity) {
+        if (rarity >= 0 && rarity < RARITY_COUNT) return RARITY_DISPLAY_NAMES[rarity];
+        return "Common";
+    }
+
+    /**
+     * Helper class for backwards compatibility with enum-like API.
+     */
+    public static final class ItemRarity {
+        private final int value;
+
+        private ItemRarity(int value) { this.value = value; }
+
+        public static ItemRarity fromInt(int value) { return new ItemRarity(value); }
+        public int intValue() { return value; }
+        public int ordinal() { return value; }
+        public int getColor() { return getRarityColor(value); }
+        public String getDisplayName() { return getRarityDisplayName(value); }
+
+        public static final ItemRarity COMMON = new ItemRarity(RARITY_COMMON);
+        public static final ItemRarity UNCOMMON = new ItemRarity(RARITY_UNCOMMON);
+        public static final ItemRarity RARE = new ItemRarity(RARITY_RARE);
+        public static final ItemRarity EPIC = new ItemRarity(RARITY_EPIC);
+        public static final ItemRarity LEGENDARY = new ItemRarity(RARITY_LEGENDARY);
+        public static final ItemRarity MYTHIC = new ItemRarity(RARITY_MYTHIC);
     }
 
     // ==================== Core Properties ====================
@@ -555,13 +624,13 @@ public class Item {
     }
 
     /**
-     * Configures this item as a ranged weapon using ProjectileType enum.
-     * Converts enum to string for storage.
+     * Configures this item as a ranged weapon using projectile type constant.
+     * Converts constant to string for storage.
      */
-    public void setRangedWeapon(boolean rangedWeapon, ProjectileEntity.ProjectileType projectileType,
+    public void setRangedWeapon(boolean rangedWeapon, int projectileType,
                                  int projectileDamage, float projectileSpeed) {
         this.isRangedWeapon = rangedWeapon;
-        this.projectileTypeName = projectileType.name();
+        this.projectileTypeName = ProjectileEntity.getProjectileTypeName(projectileType);
         this.projectileDamage = projectileDamage;
         this.projectileSpeed = projectileSpeed;
     }
@@ -777,12 +846,12 @@ public class Item {
     }
 
     /**
-     * Sets the status effect using StatusEffectType enum.
-     * Converts enum to string for storage.
+     * Sets the status effect using status effect constant.
+     * Converts constant to string for storage.
      */
-    public void setStatusEffect(ProjectileEntity.StatusEffectType effectType, double duration,
+    public void setStatusEffect(int effectType, double duration,
                                   int damagePerTick, float damageMultiplier) {
-        this.statusEffectTypeName = effectType.name();
+        this.statusEffectTypeName = ProjectileEntity.getStatusEffectName(effectType);
         this.statusEffectDuration = duration;
         this.statusEffectDamagePerTick = damagePerTick;
         this.statusEffectDamageMultiplier = damageMultiplier;

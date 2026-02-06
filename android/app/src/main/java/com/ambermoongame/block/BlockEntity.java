@@ -43,7 +43,7 @@ public class BlockEntity extends Entity {
 
     private static final String TAG = "BlockEntity";
 
-    private final BlockType blockType;
+    private final int blockType;
     private final int size;
     private Bitmap texture;
 
@@ -62,7 +62,7 @@ public class BlockEntity extends Entity {
     private boolean targeted = false;
 
     // Overlay system
-    private BlockOverlay overlay = BlockOverlay.NONE;
+    private int overlay = BlockOverlay.NONE;
     private Bitmap overlayTexture = null;
     private int overlayDamage = 0;
 
@@ -91,7 +91,7 @@ public class BlockEntity extends Entity {
     /**
      * Creates a new block entity at the specified pixel position.
      */
-    public BlockEntity(int x, int y, BlockType blockType) {
+    public BlockEntity(int x, int y, int blockType) {
         super(x, y);
         this.blockType = blockType;
         this.size = BlockRegistry.BLOCK_SIZE;
@@ -106,7 +106,7 @@ public class BlockEntity extends Entity {
     /**
      * Creates a new block entity at a grid position.
      */
-    public BlockEntity(int gridX, int gridY, BlockType blockType, boolean useGridCoords) {
+    public BlockEntity(int gridX, int gridY, int blockType, boolean useGridCoords) {
         super(
             useGridCoords ? gridX * BlockRegistry.BLOCK_SIZE : gridX,
             useGridCoords ? gridY * BlockRegistry.BLOCK_SIZE : gridY
@@ -283,7 +283,7 @@ public class BlockEntity extends Entity {
      */
     public void breakBlock() {
         broken = true;
-        Log.d(TAG, "Block " + blockType.name() + " broken at (" + gridX + "," + gridY + ")");
+        Log.d(TAG, "Block " + BlockType.getName(blockType) + " broken at (" + gridX + "," + gridY + ")");
     }
 
     // ==================== Getters / Setters ====================
@@ -309,8 +309,8 @@ public class BlockEntity extends Entity {
     public int getRemainingWidth() { return size - (damageLeft + damageRight) * LAYER_SIZE; }
     public int getRemainingHeight() { return size - (damageTop + damageBottom) * LAYER_SIZE; }
 
-    public boolean isSolid() { return !broken && blockType.isSolid(); }
-    public BlockType getBlockType() { return blockType; }
+    public boolean isSolid() { return !broken && BlockType.isSolid(blockType); }
+    public int getBlockType() { return blockType; }
     public int getSize() { return size; }
     public int getGridX() { return gridX; }
     public int getGridY() { return gridY; }
@@ -344,21 +344,21 @@ public class BlockEntity extends Entity {
 
     // ==================== Overlay ====================
 
-    public void setOverlay(BlockOverlay overlay) {
-        this.overlay = overlay != null ? overlay : BlockOverlay.NONE;
+    public void setOverlay(int overlay) {
+        this.overlay = overlay;
         this.overlayDamage = 0;
 
         if (this.overlay != BlockOverlay.NONE) {
             this.overlayTexture = BlockRegistry.getInstance().getOverlayTexture(this.overlay);
             if (this.overlayTexture == null) {
-                this.overlayTexture = this.overlay.generateTexture(size);
+                this.overlayTexture = BlockOverlay.generateTexture(this.overlay, size);
             }
         } else {
             this.overlayTexture = null;
         }
     }
 
-    public BlockOverlay getOverlay() { return overlay; }
+    public int getOverlay() { return overlay; }
     public boolean hasOverlay() { return overlay != BlockOverlay.NONE; }
 
     public void removeOverlay() {
@@ -368,7 +368,7 @@ public class BlockEntity extends Entity {
     }
 
     public int getOverlayDamage() { return overlayDamage; }
-    public boolean isOverlayBlockingMining() { return overlay != BlockOverlay.NONE && overlay.blocksBaseMining(); }
+    public boolean isOverlayBlockingMining() { return overlay != BlockOverlay.NONE && BlockOverlay.blocksBaseMining(overlay); }
 
     // ==================== Grid Utilities ====================
 
@@ -385,7 +385,7 @@ public class BlockEntity extends Entity {
 
     @Override
     public String toString() {
-        return "BlockEntity{type=" + blockType.name()
+        return "BlockEntity{type=" + BlockType.getName(blockType)
                 + ", grid=(" + gridX + "," + gridY + ")"
                 + ", pixel=(" + x + "," + y + ")"
                 + ", solid=" + isSolid()
