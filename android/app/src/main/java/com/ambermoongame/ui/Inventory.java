@@ -796,7 +796,7 @@ public class Inventory {
         return null;
     }
 
-    public ToolType getHeldToolType() {
+    public int getHeldToolType() {
         ItemEntity held = getHeldItem();
         if (held != null) {
             return ToolType.fromItemType(held.getItemType());

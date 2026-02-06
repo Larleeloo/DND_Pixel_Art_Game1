@@ -230,7 +230,7 @@ public class LootGameScene extends BaseScene {
         int doorY = GROUND_Y - 128;
         secretRoomDoor = new DoorEntity(doorX, doorY, 64, 128,
             "assets/doors/iron_door.gif", "secret_room_door");
-        secretRoomDoor.setActionType(DoorEntity.ActionType.LEVEL_TRANSITION);
+        secretRoomDoor.setActionType(DoorEntity.DOOR_ACTION_LEVEL_TRANSITION);
         secretRoomDoor.setActionTarget("levels/loot_game_room.json");
         entityManager.addEntity(secretRoomDoor);
 
@@ -416,7 +416,7 @@ public class LootGameScene extends BaseScene {
         else if (secretRoomDoor != null && secretRoomDoor.isPlayerNearby()) {
             secretRoomDoor.open();
             // Execute door action (level transition)
-            if (secretRoomDoor.getActionType() == DoorEntity.ActionType.LEVEL_TRANSITION) {
+            if (secretRoomDoor.getActionType() == DoorEntity.DOOR_ACTION_LEVEL_TRANSITION) {
                 String targetLevel = secretRoomDoor.getActionTarget();
                 if (targetLevel != null && !targetLevel.isEmpty()) {
                     AndroidSceneManager.getInstance().loadLevel(targetLevel, AndroidSceneManager.TRANSITION_FADE);
