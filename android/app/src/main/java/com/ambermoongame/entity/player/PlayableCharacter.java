@@ -2,6 +2,7 @@ package com.ambermoongame.entity.player;
 
 import android.graphics.Color;
 
+import com.ambermoongame.entity.item.Item;
 import com.ambermoongame.entity.item.Item.ItemRarity;
 
 /**
@@ -100,13 +101,13 @@ public class PlayableCharacter {
      * Returns an Android int color instead of java.awt.Color.
      */
     public int getRarityColor() {
-        switch (rarity) {
-            case COMMON: return Color.WHITE;
-            case UNCOMMON: return Color.rgb(50, 205, 50);    // Green
-            case RARE: return Color.rgb(30, 144, 255);       // Blue
-            case EPIC: return Color.rgb(148, 0, 211);        // Purple
-            case LEGENDARY: return Color.rgb(255, 165, 0);   // Orange
-            case MYTHIC: return Color.rgb(0, 255, 255);      // Cyan
+        switch (rarity.intValue()) {
+            case Item.RARITY_COMMON: return Color.WHITE;
+            case Item.RARITY_UNCOMMON: return Color.rgb(50, 205, 50);    // Green
+            case Item.RARITY_RARE: return Color.rgb(30, 144, 255);       // Blue
+            case Item.RARITY_EPIC: return Color.rgb(148, 0, 211);        // Purple
+            case Item.RARITY_LEGENDARY: return Color.rgb(255, 165, 0);   // Orange
+            case Item.RARITY_MYTHIC: return Color.rgb(0, 255, 255);      // Cyan
             default: return Color.WHITE;
         }
     }
