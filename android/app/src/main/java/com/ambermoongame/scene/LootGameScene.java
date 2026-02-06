@@ -297,7 +297,7 @@ public class LootGameScene extends BaseScene {
             // --- Uncomment when ReverseCraftingUI is ported ---
             // reverseCraftingUI.open(screenWidth / 2, screenHeight / 2);
         } else {
-            alchemyUI.open(screenWidth / 2, screenHeight / 2);
+            alchemyUI.open(screenWidth, screenHeight);
         }
     }
 

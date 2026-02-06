@@ -557,6 +557,10 @@ public class Item {
         return projectileTypeName;
     }
 
+    public void setProjectileTypeName(String projectileTypeName) {
+        this.projectileTypeName = projectileTypeName;
+    }
+
     public int getProjectileDamage() {
         return projectileDamage;
     }

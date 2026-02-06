@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
 
 /**
  * Arrow - Standard ammunition for bows.
