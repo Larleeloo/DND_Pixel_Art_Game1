@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Chest body -->
+    <path android:fillColor="#8B4513"
+        android:pathData="M8,20 L40,20 L40,40 L8,40 Z" />
+    <!-- Chest lid -->
+    <path android:fillColor="#A0522D"
+        android:pathData="M6,14 L42,14 L40,20 L8,20 Z" />
+    <!-- Gold trim -->
+    <path android:fillColor="#FFD700"
+        android:pathData="M8,20 L40,20 L40,22 L8,22 Z" />
+    <!-- Lock -->
+    <path android:fillColor="#FFD700"
+        android:pathData="M22,24 L26,24 L26,32 L22,32 Z" />
+</vector>
