@@ -217,6 +217,15 @@ public class AlchemyTableUI {
 
     public boolean isOpen() { return isOpen; }
 
+    /**
+     * Sets the screen dimensions for positioning calculations.
+     * This is called before open() to provide screen size context.
+     * (Android version - open() already takes dimensions, so this is a no-op)
+     */
+    public void setScreenSize(int screenWidth, int screenHeight) {
+        // No-op - open() already handles positioning with screen dimensions
+    }
+
     public void update(int mouseX, int mouseY) {
         if (!isOpen) return;
 

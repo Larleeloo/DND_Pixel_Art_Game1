@@ -1045,6 +1045,15 @@ public class ItemEntity extends Entity {
         this.collected = true;
     }
 
+    public void setCollected(boolean collected) {
+        this.collected = collected;
+    }
+
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public String getItemName() {
         return itemName;
     }

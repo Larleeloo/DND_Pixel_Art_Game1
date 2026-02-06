@@ -1,8 +1,8 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import entity.ProjectileEntity.ProjectileType;
-import entity.ProjectileEntity.StatusEffectType;
+import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity.StatusEffectType;
 
 /**
  * Fire Arrow - Arrows that burn on impact.

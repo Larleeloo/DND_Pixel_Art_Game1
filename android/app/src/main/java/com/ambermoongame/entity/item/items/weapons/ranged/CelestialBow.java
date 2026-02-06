@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
 
 /**
  * Celestial Bow - Fires arrows of pure starlight.
