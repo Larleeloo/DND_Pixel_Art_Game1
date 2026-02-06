@@ -1,0 +1,1266 @@
+{
+  "version": "1.0",
+  "description": "Alchemy and crafting recipes for The Amber Moon",
+  "recipes": [
+    {
+      "id": "wooden_bow",
+      "name": "Wooden Bow",
+      "ingredients": ["string", "planks", "arrow"],
+      "result": "wooden_bow",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "longbow",
+      "name": "Longbow",
+      "ingredients": ["wooden_bow", "string", "iron_ingot"],
+      "result": "longbow",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "crossbow",
+      "name": "Crossbow",
+      "ingredients": ["planks", "iron_ingot", "string"],
+      "result": "crossbow",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "heavy_crossbow",
+      "name": "Heavy Crossbow",
+      "ingredients": ["crossbow", "iron_ingot", "iron_ingot"],
+      "result": "heavy_crossbow",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "iron_sword",
+      "name": "Iron Sword",
+      "ingredients": ["iron_ingot", "iron_ingot", "planks"],
+      "result": "iron_sword",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "steel_sword",
+      "name": "Steel Sword",
+      "ingredients": ["iron_sword", "iron_ingot", "magic_crystal"],
+      "result": "steel_sword",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "fire_sword",
+      "name": "Flame Blade",
+      "ingredients": ["steel_sword", "fire_arrow", "magic_crystal"],
+      "result": "fire_sword",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "ice_sword",
+      "name": "Frost Edge",
+      "ingredients": ["steel_sword", "ice_arrow", "magic_crystal"],
+      "result": "ice_sword",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "dagger",
+      "name": "Iron Dagger",
+      "ingredients": ["iron_ingot", "planks"],
+      "result": "dagger",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "battle_axe",
+      "name": "Battle Axe",
+      "ingredients": ["iron_axe", "iron_ingot", "leather"],
+      "result": "battle_axe",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "mace",
+      "name": "Iron Mace",
+      "ingredients": ["iron_ingot", "iron_ingot", "rocks"],
+      "result": "mace",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "magic_wand",
+      "name": "Magic Wand",
+      "ingredients": ["planks", "magic_crystal"],
+      "result": "magic_wand",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "fire_staff",
+      "name": "Staff of Fire",
+      "ingredients": ["magic_wand", "fire_arrow", "magic_crystal"],
+      "result": "fire_staff",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "ice_staff",
+      "name": "Staff of Ice",
+      "ingredients": ["magic_wand", "ice_arrow", "magic_crystal"],
+      "result": "ice_staff",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "arcane_staff",
+      "name": "Arcane Staff",
+      "ingredients": ["fire_staff", "ice_staff", "diamond"],
+      "result": "arcane_staff",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "throwing_knife",
+      "name": "Throwing Knife",
+      "ingredients": ["iron_ingot"],
+      "result": "throwing_knife",
+      "resultCount": 3,
+      "category": "weapons",
+      "reversible": false
+    },
+    {
+      "id": "throwing_axe",
+      "name": "Throwing Axe",
+      "ingredients": ["iron_ingot", "planks"],
+      "result": "throwing_axe",
+      "resultCount": 2,
+      "category": "weapons",
+      "reversible": false
+    },
+    {
+      "id": "arrow_basic",
+      "name": "Arrow",
+      "ingredients": ["planks", "rocks"],
+      "result": "arrow",
+      "resultCount": 8,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "arrow_from_string",
+      "name": "Arrow",
+      "ingredients": ["planks", "string"],
+      "result": "arrow",
+      "resultCount": 4,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "fire_arrow",
+      "name": "Fire Arrow",
+      "ingredients": ["arrow", "fire_arrow"],
+      "result": "fire_arrow",
+      "resultCount": 2,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "fire_arrow_craft",
+      "name": "Fire Arrow",
+      "ingredients": ["arrow", "magic_crystal"],
+      "result": "fire_arrow",
+      "resultCount": 4,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "ice_arrow_craft",
+      "name": "Ice Arrow",
+      "ingredients": ["arrow", "mana_potion"],
+      "result": "ice_arrow",
+      "resultCount": 4,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "bolt_craft",
+      "name": "Bolt",
+      "ingredients": ["iron_ingot", "planks"],
+      "result": "bolt",
+      "resultCount": 8,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "heavy_bolt_craft",
+      "name": "Heavy Bolt",
+      "ingredients": ["bolt", "iron_ingot"],
+      "result": "heavy_bolt",
+      "resultCount": 4,
+      "category": "ammo",
+      "reversible": false
+    },
+    {
+      "id": "bomb",
+      "name": "Bomb",
+      "ingredients": ["iron_ingot", "rocks", "string"],
+      "result": "bomb",
+      "resultCount": 2,
+      "category": "throwables",
+      "reversible": false
+    },
+    {
+      "id": "wooden_pickaxe",
+      "name": "Wooden Pickaxe",
+      "ingredients": ["planks", "planks", "string"],
+      "result": "wooden_pickaxe",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "iron_pickaxe",
+      "name": "Iron Pickaxe",
+      "ingredients": ["iron_ingot", "iron_ingot", "planks"],
+      "result": "iron_pickaxe",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "golden_pickaxe",
+      "name": "Golden Pickaxe",
+      "ingredients": ["gold_ingot", "gold_ingot", "planks"],
+      "result": "golden_pickaxe",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "wooden_axe",
+      "name": "Wooden Axe",
+      "ingredients": ["planks", "planks", "string"],
+      "result": "wooden_axe",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "iron_axe",
+      "name": "Iron Axe",
+      "ingredients": ["iron_ingot", "iron_ingot", "planks"],
+      "result": "iron_axe",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "wooden_shovel",
+      "name": "Wooden Shovel",
+      "ingredients": ["planks", "string"],
+      "result": "wooden_shovel",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "iron_shovel",
+      "name": "Iron Shovel",
+      "ingredients": ["iron_ingot", "planks"],
+      "result": "iron_shovel",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "shears",
+      "name": "Shears",
+      "ingredients": ["iron_ingot", "iron_ingot"],
+      "result": "shears",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "fishing_rod",
+      "name": "Fishing Rod",
+      "ingredients": ["planks", "string", "string"],
+      "result": "fishing_rod",
+      "resultCount": 1,
+      "category": "tools",
+      "reversible": true
+    },
+    {
+      "id": "iron_helmet",
+      "name": "Iron Helmet",
+      "ingredients": ["iron_ingot", "iron_ingot", "leather"],
+      "result": "iron_helmet",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "iron_chestplate",
+      "name": "Iron Chestplate",
+      "ingredients": ["iron_ingot", "iron_ingot", "iron_ingot"],
+      "result": "iron_chestplate",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "iron_leggings",
+      "name": "Iron Leggings",
+      "ingredients": ["iron_ingot", "iron_ingot", "leather"],
+      "result": "iron_leggings",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "iron_boots",
+      "name": "Iron Boots",
+      "ingredients": ["iron_ingot", "leather"],
+      "result": "iron_boots",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "steel_helmet",
+      "name": "Steel Helmet",
+      "ingredients": ["iron_helmet", "iron_ingot", "magic_crystal"],
+      "result": "steel_helmet",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "steel_chestplate",
+      "name": "Steel Chestplate",
+      "ingredients": ["iron_chestplate", "iron_ingot", "magic_crystal"],
+      "result": "steel_chestplate",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "steel_shield",
+      "name": "Steel Shield",
+      "ingredients": ["iron_ingot", "iron_ingot", "leather"],
+      "result": "steel_shield",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "chainmail_armor",
+      "name": "Chainmail Armor",
+      "ingredients": ["iron_ingot", "iron_ingot", "string"],
+      "result": "chainmail_armor",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "wizard_hat",
+      "name": "Wizard Hat",
+      "ingredients": ["yarn", "magic_crystal"],
+      "result": "wizard_hat",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "witchs_hat",
+      "name": "Witch's Hat",
+      "ingredients": ["yarn", "ink", "magic_crystal"],
+      "result": "witchs_hat",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "fancy_boots",
+      "name": "Fancy Boots",
+      "ingredients": ["leather", "leather", "gold_ingot"],
+      "result": "fancy_boots",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "backpack",
+      "name": "Backpack",
+      "ingredients": ["leather", "leather", "string"],
+      "result": "backpack",
+      "resultCount": 1,
+      "category": "accessories",
+      "reversible": true
+    },
+    {
+      "id": "health_potion",
+      "name": "Health Potion",
+      "ingredients": ["apple", "mana_leaf"],
+      "result": "health_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "health_potion_alt",
+      "name": "Health Potion",
+      "ingredients": ["bread", "water_bottle"],
+      "result": "health_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "mana_potion",
+      "name": "Mana Potion",
+      "ingredients": ["mana_leaf", "water_bottle"],
+      "result": "mana_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "mana_potion_alt",
+      "name": "Mana Potion",
+      "ingredients": ["magic_crystal", "water_bottle"],
+      "result": "mana_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "stamina_potion",
+      "name": "Stamina Potion",
+      "ingredients": ["cooked_meat", "water_bottle"],
+      "result": "stamina_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "greater_health_potion",
+      "name": "Greater Health Potion",
+      "ingredients": ["health_potion", "health_potion", "magic_crystal"],
+      "result": "greater_health_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "strength_potion",
+      "name": "Strength Potion",
+      "ingredients": ["health_potion", "iron_ingot"],
+      "result": "strength_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "speed_potion",
+      "name": "Speed Potion",
+      "ingredients": ["stamina_potion", "mana_leaf"],
+      "result": "speed_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "lucky_potion",
+      "name": "Lucky Potion",
+      "ingredients": ["gold_ingot", "mana_potion", "lucky_coin"],
+      "result": "lucky_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "exploding_potion",
+      "name": "Exploding Potion",
+      "ingredients": ["mana_potion", "bomb"],
+      "result": "exploding_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "throwing_potion",
+      "name": "Throwing Potion",
+      "ingredients": ["health_potion", "rocks"],
+      "result": "throwing_potion",
+      "resultCount": 2,
+      "category": "throwables",
+      "reversible": false
+    },
+    {
+      "id": "honey_potion",
+      "name": "Honey Potion",
+      "ingredients": ["apple", "melon", "water_bottle"],
+      "result": "honey_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "brewed_potion",
+      "name": "Brewed Potion",
+      "ingredients": ["mana_leaf", "flour", "water_bottle"],
+      "result": "brewed_potion",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "bread",
+      "name": "Bread",
+      "ingredients": ["flour", "flour"],
+      "result": "bread",
+      "resultCount": 2,
+      "category": "food",
+      "reversible": false
+    },
+    {
+      "id": "cake",
+      "name": "Cake",
+      "ingredients": ["flour", "chicken_egg", "apple"],
+      "result": "cake",
+      "resultCount": 1,
+      "category": "food",
+      "reversible": false
+    },
+    {
+      "id": "cookies",
+      "name": "Cookies",
+      "ingredients": ["flour", "chicken_egg"],
+      "result": "cookies",
+      "resultCount": 4,
+      "category": "food",
+      "reversible": false
+    },
+    {
+      "id": "golden_apple",
+      "name": "Golden Apple",
+      "ingredients": ["apple", "gold_ingot", "magic_crystal"],
+      "result": "golden_apple",
+      "resultCount": 1,
+      "category": "food",
+      "reversible": false
+    },
+    {
+      "id": "rope",
+      "name": "Rope",
+      "ingredients": ["string", "string", "string"],
+      "result": "rope",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "yarn",
+      "name": "Yarn",
+      "ingredients": ["string", "string"],
+      "result": "yarn",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "leather",
+      "name": "Leather",
+      "ingredients": ["cooked_meat"],
+      "result": "leather",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "planks",
+      "name": "Planks",
+      "ingredients": ["wood_block"],
+      "result": "planks",
+      "resultCount": 4,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "planks_from_sapling",
+      "name": "Planks",
+      "ingredients": ["sapling", "sapling"],
+      "result": "planks",
+      "resultCount": 2,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "iron_ingot_from_ore",
+      "name": "Iron Ingot",
+      "ingredients": ["iron_ore", "iron_ore"],
+      "result": "iron_ingot",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "iron_bars",
+      "name": "Iron Bars",
+      "ingredients": ["iron_ingot"],
+      "result": "iron_bars",
+      "resultCount": 4,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "gold_bars",
+      "name": "Gold Bars",
+      "ingredients": ["gold_ingot"],
+      "result": "gold_bars",
+      "resultCount": 4,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "copper_ingots",
+      "name": "Copper Ingots",
+      "ingredients": ["rocks", "rocks", "rocks"],
+      "result": "copper_ingots",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "magic_crystal",
+      "name": "Magic Crystal",
+      "ingredients": ["mana_crystal", "diamond"],
+      "result": "magic_crystal",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "magic_crystal_alt",
+      "name": "Magic Crystal",
+      "ingredients": ["mysterious_gemstone", "mana_leaf"],
+      "result": "magic_crystal",
+      "resultCount": 1,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "ink",
+      "name": "Ink",
+      "ingredients": ["water_bottle", "skull"],
+      "result": "ink",
+      "resultCount": 4,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "ink_alt",
+      "name": "Ink",
+      "ingredients": ["water_bottle", "bonemite"],
+      "result": "ink",
+      "resultCount": 2,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "scroll",
+      "name": "Scroll",
+      "ingredients": ["planks", "ink"],
+      "result": "scroll",
+      "resultCount": 2,
+      "category": "materials",
+      "reversible": false
+    },
+    {
+      "id": "bronze_key",
+      "name": "Bronze Key",
+      "ingredients": ["copper_ingots", "iron_ingot"],
+      "result": "bronze_key",
+      "resultCount": 1,
+      "category": "keys",
+      "reversible": true
+    },
+    {
+      "id": "silver_key",
+      "name": "Silver Key",
+      "ingredients": ["iron_ingot", "iron_ingot", "magic_crystal"],
+      "result": "silver_key",
+      "resultCount": 1,
+      "category": "keys",
+      "reversible": true
+    },
+    {
+      "id": "golden_key",
+      "name": "Golden Key",
+      "ingredients": ["gold_ingot", "gold_ingot", "magic_crystal"],
+      "result": "golden_key",
+      "resultCount": 1,
+      "category": "keys",
+      "reversible": true
+    },
+    {
+      "id": "skeleton_key",
+      "name": "Skeleton Key",
+      "ingredients": ["golden_key", "silver_key", "bronze_key"],
+      "result": "skeleton_key",
+      "resultCount": 1,
+      "category": "keys",
+      "reversible": true
+    },
+    {
+      "id": "candle",
+      "name": "Candle",
+      "ingredients": ["string", "flour"],
+      "result": "candle",
+      "resultCount": 4,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "mysterious_candle",
+      "name": "Mysterious Candle",
+      "ingredients": ["candle", "magic_crystal"],
+      "result": "mysterious_candle",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "magic_lantern",
+      "name": "Magic Lantern",
+      "ingredients": ["mysterious_candle", "iron_ingot", "glass_block"],
+      "result": "magic_lantern",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "jack_o_lantern",
+      "name": "Jack-O-Lantern",
+      "ingredients": ["pumpkin", "candle"],
+      "result": "jack_o_lantern",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "saddle",
+      "name": "Saddle",
+      "ingredients": ["leather", "leather", "iron_ingot"],
+      "result": "saddle",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "nametag",
+      "name": "Nametag",
+      "ingredients": ["string", "scroll"],
+      "result": "nametag",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "journal",
+      "name": "Journal",
+      "ingredients": ["scroll", "scroll", "leather"],
+      "result": "journal",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "rocket",
+      "name": "Rocket",
+      "ingredients": ["iron_ingot", "bomb", "string"],
+      "result": "rocket",
+      "resultCount": 2,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "trip_wire_trap",
+      "name": "Trip-Wire Trap",
+      "ingredients": ["string", "string", "iron_ingot"],
+      "result": "trip_wire_trap",
+      "resultCount": 2,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "crucible",
+      "name": "Crucible",
+      "ingredients": ["iron_ingot", "iron_ingot", "iron_ingot"],
+      "result": "crucible",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "music_player",
+      "name": "Music Player",
+      "ingredients": ["music_disc", "iron_ingot", "magic_crystal"],
+      "result": "music_player",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "orb",
+      "name": "Orb",
+      "ingredients": ["glass_block", "magic_crystal"],
+      "result": "orb",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "wind_charge",
+      "name": "Wind Charge",
+      "ingredients": ["orb", "mana_leaf"],
+      "result": "wind_charge",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "personalized_banner",
+      "name": "Personalized Banner",
+      "ingredients": ["yarn", "yarn", "planks"],
+      "result": "personalized_banner",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "necromancers_blade",
+      "name": "Necromancer's Blade",
+      "ingredients": ["steel_sword", "undead_scroll", "skull"],
+      "result": "necromancers_blade",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "soulbound_dagger",
+      "name": "Soulbound Dagger",
+      "ingredients": ["dagger", "magic_crystal", "undead_scroll"],
+      "result": "soulbound_dagger",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "epic_bow",
+      "name": "Epic Bow",
+      "ingredients": ["longbow", "magic_crystal", "diamond"],
+      "result": "epic_bow",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "summoning_rod",
+      "name": "Summoning Rod",
+      "ingredients": ["magic_wand", "undead_scroll", "magic_crystal"],
+      "result": "summoning_rod",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "lightning_rod",
+      "name": "Lightning Rod",
+      "ingredients": ["magic_wand", "gold_ingot", "magic_crystal"],
+      "result": "lightning_rod",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "blazing_rod",
+      "name": "Blazing Rod",
+      "ingredients": ["magic_wand", "fire_arrow", "fire_arrow"],
+      "result": "blazing_rod",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "magic_fishing_rod",
+      "name": "Magic Fishing Rod",
+      "ingredients": ["fishing_rod", "magic_crystal"],
+      "result": "magic_fishing_rod",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "vampiric_blade",
+      "name": "Vampiric Blade",
+      "ingredients": ["steel_sword", "health_potion", "skull"],
+      "result": "vampiric_blade",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "crystal_sword",
+      "name": "Crystal Sword",
+      "ingredients": ["iron_sword", "diamond", "magic_crystal"],
+      "result": "crystal_sword",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "poison_dagger",
+      "name": "Poison Dagger",
+      "ingredients": ["dagger", "exploding_potion"],
+      "result": "poison_dagger",
+      "resultCount": 1,
+      "category": "weapons",
+      "reversible": true
+    },
+    {
+      "id": "gold_armor_helmet",
+      "name": "Gold Armor Helmet",
+      "ingredients": ["gold_ingot", "gold_ingot", "leather"],
+      "result": "gold_armor_helmet",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "gold_armor_chest",
+      "name": "Gold Armor Chestplate",
+      "ingredients": ["gold_ingot", "gold_ingot", "gold_ingot"],
+      "result": "gold_armor_chest",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "gold_armor_legs",
+      "name": "Gold Armor Leggings",
+      "ingredients": ["gold_ingot", "gold_ingot", "leather"],
+      "result": "gold_armor_legs",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "gold_armor_boots",
+      "name": "Gold Armor Boots",
+      "ingredients": ["gold_ingot", "leather"],
+      "result": "gold_armor_boots",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "sentinel_gauntlets",
+      "name": "Sentinel Gauntlets",
+      "ingredients": ["iron_ingot", "iron_ingot", "magic_crystal"],
+      "result": "sentinel_gauntlets",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "chameleon_cloak",
+      "name": "Chameleon Cloak",
+      "ingredients": ["yellow_cloak", "magic_crystal", "mana_leaf"],
+      "result": "chameleon_cloak",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "yellow_cloak",
+      "name": "Yellow Cloak",
+      "ingredients": ["yarn", "yarn", "gold_ingot"],
+      "result": "yellow_cloak",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "three_piece_suit",
+      "name": "3-Piece Suit",
+      "ingredients": ["yarn", "yarn", "leather"],
+      "result": "three_piece_suit",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "gown_forgotten_verses",
+      "name": "Gown of Forgotten Verses",
+      "ingredients": ["yarn", "scroll", "magic_crystal"],
+      "result": "gown_forgotten_verses",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "shirt",
+      "name": "Shirt",
+      "ingredients": ["yarn"],
+      "result": "shirt",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "pants",
+      "name": "Pants",
+      "ingredients": ["yarn", "yarn"],
+      "result": "pants",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "hat",
+      "name": "Hat",
+      "ingredients": ["yarn", "leather"],
+      "result": "hat",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "green_dress",
+      "name": "Green Dress",
+      "ingredients": ["yarn", "yarn", "mana_leaf"],
+      "result": "green_dress",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "orange_dress",
+      "name": "Orange Dress",
+      "ingredients": ["yarn", "yarn", "pumpkin"],
+      "result": "orange_dress",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "black_dress",
+      "name": "Black Dress",
+      "ingredients": ["yarn", "yarn", "ink"],
+      "result": "black_dress",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "swimwear",
+      "name": "Swimwear",
+      "ingredients": ["yarn", "water_bottle"],
+      "result": "swimwear",
+      "resultCount": 1,
+      "category": "clothing",
+      "reversible": true
+    },
+    {
+      "id": "undead_scroll",
+      "name": "Undead Scroll",
+      "ingredients": ["scroll", "skull", "ink"],
+      "result": "undead_scroll",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "lucky_coin",
+      "name": "Lucky Coin",
+      "ingredients": ["gold_coins", "magic_crystal"],
+      "result": "lucky_coin",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "treasure_map",
+      "name": "Ancient Treasure Map",
+      "ingredients": ["scroll", "ink", "magic_crystal"],
+      "result": "treasure_map",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "machine_parts",
+      "name": "Machine Parts",
+      "ingredients": ["iron_ingot", "copper_ingots", "gold_ingot"],
+      "result": "machine_parts",
+      "resultCount": 4,
+      "category": "materials",
+      "reversible": true
+    },
+    {
+      "id": "rowboat",
+      "name": "Rowboat",
+      "ingredients": ["planks", "planks", "rope"],
+      "result": "rowboat",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "dirt_block",
+      "name": "Dirt Block",
+      "ingredients": ["rocks"],
+      "result": "dirt_block",
+      "resultCount": 4,
+      "category": "blocks",
+      "reversible": false
+    },
+    {
+      "id": "stone_block",
+      "name": "Stone Block",
+      "ingredients": ["rocks", "rocks"],
+      "result": "stone_block",
+      "resultCount": 2,
+      "category": "blocks",
+      "reversible": false
+    },
+    {
+      "id": "cobblestone_block",
+      "name": "Cobblestone Block",
+      "ingredients": ["stone_block"],
+      "result": "cobblestone_block",
+      "resultCount": 1,
+      "category": "blocks",
+      "reversible": false
+    },
+    {
+      "id": "brick_block",
+      "name": "Brick Block",
+      "ingredients": ["stone_block", "stone_block"],
+      "result": "brick_block",
+      "resultCount": 1,
+      "category": "blocks",
+      "reversible": false
+    },
+    {
+      "id": "glass_block",
+      "name": "Glass Block",
+      "ingredients": ["sand_block", "sand_block"],
+      "result": "glass_block",
+      "resultCount": 1,
+      "category": "blocks",
+      "reversible": false
+    },
+    {
+      "id": "wood_block",
+      "name": "Wood Block",
+      "ingredients": ["planks", "planks"],
+      "result": "wood_block",
+      "resultCount": 1,
+      "category": "blocks",
+      "reversible": true
+    },
+    {
+      "id": "phoenix_crown",
+      "name": "Phoenix Crown",
+      "ingredients": ["gold_armor_helmet", "fire_arrow", "diamond"],
+      "result": "phoenix_crown",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "titan_gauntlets",
+      "name": "Titan Gauntlets",
+      "ingredients": ["sentinel_gauntlets", "iron_ingot", "diamond"],
+      "result": "titan_gauntlets",
+      "resultCount": 1,
+      "category": "armor",
+      "reversible": true
+    },
+    {
+      "id": "ankh_of_rebirth",
+      "name": "Ankh of Rebirth",
+      "ingredients": ["gold_ingot", "magic_crystal", "health_potion"],
+      "result": "ankh_of_rebirth",
+      "resultCount": 1,
+      "category": "accessories",
+      "reversible": true
+    },
+    {
+      "id": "ancient_crown",
+      "name": "Ancient Crown",
+      "ingredients": ["gold_ingot", "gold_ingot", "mysterious_gemstone"],
+      "result": "ancient_crown",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": true
+    },
+    {
+      "id": "demon_horn",
+      "name": "Demon Horn",
+      "ingredients": ["skull", "fire_arrow", "magic_crystal"],
+      "result": "demon_horn",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "angel_feather",
+      "name": "Angel Feather",
+      "ingredients": ["mana_leaf", "mana_leaf", "magic_crystal"],
+      "result": "angel_feather",
+      "resultCount": 1,
+      "category": "collectibles",
+      "reversible": false
+    },
+    {
+      "id": "essence_of_dragon",
+      "name": "Essence of Dragon",
+      "ingredients": ["dragon_egg", "fire_arrow", "magic_crystal"],
+      "result": "essence_of_dragon",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    },
+    {
+      "id": "potion_of_ascension",
+      "name": "Potion of Ascension",
+      "ingredients": ["greater_health_potion", "mana_potion", "diamond"],
+      "result": "potion_of_ascension",
+      "resultCount": 1,
+      "category": "potions",
+      "reversible": false
+    }
+  ]
+}

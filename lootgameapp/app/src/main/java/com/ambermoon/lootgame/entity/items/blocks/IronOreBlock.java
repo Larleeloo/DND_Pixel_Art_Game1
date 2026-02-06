@@ -1,0 +1,23 @@
+package com.ambermoon.lootgame.entity.items.blocks;
+
+import com.ambermoon.lootgame.entity.Item;
+
+/**
+ * Iron Ore Block - A block containing iron ore.
+ * Common placeable block item.
+ */
+public class IronOreBlock extends Item {
+
+    public IronOreBlock() {
+        super("Iron Ore Block", ItemCategory.BLOCK);
+        setRarity(ItemRarity.COMMON);
+        setDescription("A block of iron ore");
+        setStackable(true);
+        setMaxStackSize(64);
+    }
+
+    @Override
+    public Item copy() {
+        return new IronOreBlock();
+    }
+}
