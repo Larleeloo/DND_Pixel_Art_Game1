@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Phoenix Bow - Rises from the ashes.
@@ -11,7 +11,7 @@ public class PhoenixBow extends Item {
 
     public PhoenixBow() {
         super("Phoenix Bow", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.ARROW, 35, 22.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_ARROW, 35, 22.0f);
         setRarity(ItemRarity.LEGENDARY);
         setDescription("Rises from the ashes");
         setSpecialEffect("Fire arrows that resurrect");

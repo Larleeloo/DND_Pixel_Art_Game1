@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Heavy Bolt - Heavier bolts for more damage.
@@ -16,7 +16,7 @@ public class HeavyBolt extends Item {
         setDescription("Heavier bolts for more damage");
         setStackable(true);
         setMaxStackSize(16);
-        setRangedWeapon(false, ProjectileType.BOLT, 12, 0);
+        setRangedWeapon(false, ProjectileEntity.PROJECTILE_BOLT, 12, 0);
     }
 
     @Override

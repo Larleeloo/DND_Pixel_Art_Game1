@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Staff of Ice - Freezes enemies.
@@ -11,7 +11,7 @@ public class IceStaff extends Item {
 
     public IceStaff() {
         super("Staff of Ice", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.ICEBALL, 18, 14.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_ICEBALL, 18, 14.0f);
         setRarity(ItemRarity.RARE);
         setDescription("Freezes enemies");
         setSpecialEffect("Slow effect");

@@ -342,20 +342,20 @@ public class ButtonEntity extends Entity {
         if (state == BUTTON_STATE_DISABLED) return false;
 
         switch (buttonType) {
-            case TOGGLE:
+            case BUTTON_TYPE_TOGGLE:
                 if (activated) {
                     return release();
                 } else {
                     return activateButton();
                 }
 
-            case MOMENTARY:
+            case BUTTON_TYPE_MOMENTARY:
                 if (!activated) {
                     return activateButton();
                 }
                 return false;
 
-            case ONE_SHOT:
+            case BUTTON_TYPE_ONE_SHOT:
                 if (!activated && state != BUTTON_STATE_DISABLED) {
                     boolean result = activateButton();
                     if (result) {
@@ -365,7 +365,7 @@ public class ButtonEntity extends Entity {
                 }
                 return false;
 
-            case TIMED:
+            case BUTTON_TYPE_TIMED:
                 if (!activated) {
                     return activateButton();
                 }

@@ -1,7 +1,6 @@
 package com.ambermoongame.block;
 
-import java.util.HashMap;
-import java.util.Map;
+import android.util.SparseArray;
 
 /**
  * Defines attributes for block types including sounds and item drops.
@@ -10,10 +9,11 @@ import java.util.Map;
  *
  * Conversion notes:
  * - No AWT dependencies - direct port with package change only.
+ * - Uses SparseArray with int keys instead of Map with BlockType enum keys.
  */
 public class BlockAttributes {
 
-    private static final Map<BlockType, BlockAttributes> registry = new HashMap<>();
+    private static final SparseArray<BlockAttributes> registry = new SparseArray<>();
 
     // Sound paths (null means use default or no sound)
     private String breakSound;
@@ -43,8 +43,9 @@ public class BlockAttributes {
     /**
      * Gets the attributes for a block type.
      */
-    public static BlockAttributes get(BlockType type) {
-        return registry.getOrDefault(type, createDefault());
+    public static BlockAttributes get(int type) {
+        BlockAttributes attrs = registry.get(type);
+        return attrs != null ? attrs : createDefault();
     }
 
     private static BlockAttributes createDefault() {
@@ -176,7 +177,7 @@ public class BlockAttributes {
             .build());
     }
 
-    private static void register(BlockType type, BlockAttributes attrs) {
+    private static void register(int type, BlockAttributes attrs) {
         registry.put(type, attrs);
     }
 

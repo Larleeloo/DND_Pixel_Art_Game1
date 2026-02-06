@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Bolt - Standard crossbow ammunition.
@@ -16,7 +16,7 @@ public class Bolt extends Item {
         setDescription("Standard crossbow ammunition");
         setStackable(true);
         setMaxStackSize(16);
-        setRangedWeapon(false, ProjectileType.BOLT, 8, 0);
+        setRangedWeapon(false, ProjectileEntity.PROJECTILE_BOLT, 8, 0);
     }
 
     @Override

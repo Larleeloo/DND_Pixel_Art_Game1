@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Lightning Rod - Channels the power of storms.
@@ -11,7 +11,7 @@ public class LightningRod extends Item {
 
     public LightningRod() {
         super("Lightning Rod", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.MAGIC_BOLT, 30, 25.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 30, 25.0f);
         setRarity(ItemRarity.RARE);
         setDescription("Channels the power of storms");
         setSpecialEffect("Chain lightning effect");

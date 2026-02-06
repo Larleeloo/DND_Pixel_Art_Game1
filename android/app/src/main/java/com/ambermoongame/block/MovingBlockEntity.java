@@ -75,7 +75,7 @@ public class MovingBlockEntity extends BlockEntity {
     /**
      * Creates a moving block with linear movement between two positions.
      */
-    public MovingBlockEntity(int gridX, int gridY, BlockType blockType, boolean useGridCoords,
+    public MovingBlockEntity(int gridX, int gridY, int blockType, boolean useGridCoords,
                              int endGridX, int endGridY, double speed) {
         super(gridX, gridY, blockType, useGridCoords);
 
@@ -112,7 +112,7 @@ public class MovingBlockEntity extends BlockEntity {
     /**
      * Creates a moving block with specified movement pattern.
      */
-    public MovingBlockEntity(int gridX, int gridY, BlockType blockType, boolean useGridCoords,
+    public MovingBlockEntity(int gridX, int gridY, int blockType, boolean useGridCoords,
                              int pattern, double speed) {
         super(gridX, gridY, blockType, useGridCoords);
 

@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.throwing;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Throwing Axe - Heavy but powerful.
@@ -11,7 +11,7 @@ public class ThrowingAxe extends Item {
 
     public ThrowingAxe() {
         super("Throwing Axe", ItemCategory.THROWABLE);
-        setRangedWeapon(true, ProjectileType.THROWING_AXE, 18, 14.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_THROWING_AXE, 18, 14.0f);
         setRarity(ItemRarity.UNCOMMON);
         setDescription("Heavy but powerful");
         setStackable(true);

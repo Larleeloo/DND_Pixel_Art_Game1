@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.throwing;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Throwing Knife - Quick and accurate.
@@ -11,7 +11,7 @@ public class ThrowingKnife extends Item {
 
     public ThrowingKnife() {
         super("Throwing Knife", ItemCategory.THROWABLE);
-        setRangedWeapon(true, ProjectileType.THROWING_KNIFE, 10, 18.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_THROWING_KNIFE, 10, 18.0f);
         setRarity(ItemRarity.COMMON);
         setDescription("Quick and accurate");
         setStackable(true);

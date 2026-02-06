@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Wooden Bow - A simple hunting bow.
@@ -11,7 +11,7 @@ public class WoodenBow extends Item {
 
     public WoodenBow() {
         super("Wooden Bow", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.ARROW, 8, 12.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_ARROW, 8, 12.0f);
         setRarity(ItemRarity.COMMON);
         setDescription("A simple hunting bow");
         setAmmoItemName("arrow");

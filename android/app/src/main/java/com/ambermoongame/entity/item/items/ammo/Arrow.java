@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Arrow - Standard ammunition for bows.
@@ -16,7 +16,7 @@ public class Arrow extends Item {
         setDescription("Standard ammunition for bows");
         setStackable(true);
         setMaxStackSize(16);
-        setRangedWeapon(false, ProjectileType.ARROW, 5, 0);
+        setRangedWeapon(false, ProjectileEntity.PROJECTILE_ARROW, 5, 0);
     }
 
     @Override
