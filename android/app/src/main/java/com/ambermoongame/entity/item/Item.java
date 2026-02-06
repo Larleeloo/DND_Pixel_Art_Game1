@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.Log;
 
+import com.ambermoongame.entity.ProjectileEntity;
 import com.ambermoongame.graphics.AndroidAssetLoader;
 
 import java.util.HashMap;
@@ -553,6 +554,18 @@ public class Item {
         this.projectileSpeed = projectileSpeed;
     }
 
+    /**
+     * Configures this item as a ranged weapon using ProjectileType enum.
+     * Converts enum to string for storage.
+     */
+    public void setRangedWeapon(boolean rangedWeapon, ProjectileEntity.ProjectileType projectileType,
+                                 int projectileDamage, float projectileSpeed) {
+        this.isRangedWeapon = rangedWeapon;
+        this.projectileTypeName = projectileType.name();
+        this.projectileDamage = projectileDamage;
+        this.projectileSpeed = projectileSpeed;
+    }
+
     public String getProjectileTypeName() {
         return projectileTypeName;
     }
@@ -758,6 +771,18 @@ public class Item {
     public void setStatusEffect(String effectTypeName, double duration,
                                   int damagePerTick, float damageMultiplier) {
         this.statusEffectTypeName = effectTypeName;
+        this.statusEffectDuration = duration;
+        this.statusEffectDamagePerTick = damagePerTick;
+        this.statusEffectDamageMultiplier = damageMultiplier;
+    }
+
+    /**
+     * Sets the status effect using StatusEffectType enum.
+     * Converts enum to string for storage.
+     */
+    public void setStatusEffect(ProjectileEntity.StatusEffectType effectType, double duration,
+                                  int damagePerTick, float damageMultiplier) {
+        this.statusEffectTypeName = effectType.name();
         this.statusEffectDuration = duration;
         this.statusEffectDamagePerTick = damagePerTick;
         this.statusEffectDamageMultiplier = damageMultiplier;
