@@ -139,34 +139,37 @@ public class LoginActivity extends Activity {
         GamePreferences.setGitHubUserId(username);
         GamePreferences.setGitHubToken(token);
 
-        GitHubSyncManager.getInstance().validateToken(new GitHubSyncManager.SyncCallback() {
-            @Override
-            public void onSuccess(String message) {
-                statusText.setText("Syncing save data...");
-                syncAndProceed();
-            }
-            @Override
-            public void onError(String error) {
-                loginButton.setEnabled(true);
-                statusText.setTextColor(Color.parseColor("#FF4444"));
-                statusText.setText("Login failed: " + error);
-            }
-        });
+        GitHubSyncManager.getInstance().validateToken(new ValidateTokenCallback());
     }
 
-    private void syncAndProceed() {
-        GitHubSyncManager.getInstance().syncFromCloud(new GitHubSyncManager.SyncCallback() {
-            @Override
-            public void onSuccess(String msg) {
-                startActivity(new Intent(LoginActivity.this, TabActivity.class));
-                finish();
-            }
-            @Override
-            public void onError(String error) {
-                // Still proceed even if sync fails
-                startActivity(new Intent(LoginActivity.this, TabActivity.class));
-                finish();
-            }
-        });
+    private void proceedToGame() {
+        startActivity(new Intent(LoginActivity.this, TabActivity.class));
+        finish();
+    }
+
+    private class ValidateTokenCallback implements GitHubSyncManager.SyncCallback {
+        @Override
+        public void onSuccess(String message) {
+            statusText.setText("Syncing save data...");
+            GitHubSyncManager.getInstance().syncFromCloud(new SyncFromCloudCallback());
+        }
+        @Override
+        public void onError(String error) {
+            loginButton.setEnabled(true);
+            statusText.setTextColor(Color.parseColor("#FF4444"));
+            statusText.setText("Login failed: " + error);
+        }
+    }
+
+    private class SyncFromCloudCallback implements GitHubSyncManager.SyncCallback {
+        @Override
+        public void onSuccess(String msg) {
+            proceedToGame();
+        }
+        @Override
+        public void onError(String error) {
+            // Still proceed even if sync fails
+            proceedToGame();
+        }
     }
 }

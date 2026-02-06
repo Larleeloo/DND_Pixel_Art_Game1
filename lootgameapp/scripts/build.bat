@@ -98,7 +98,7 @@ if errorlevel 1 goto :error
 cd /d "%~dp0"
 
 echo Running D8 dex compiler...
-call "%BUILD_TOOLS%\d8.bat" --output "%BUILD_DIR%\dex" --lib "%PLATFORM%\android.jar" "%BUILD_DIR%\classes.jar"
+call "%BUILD_TOOLS%\d8.bat" --min-api 24 --output "%BUILD_DIR%\dex" --lib "%PLATFORM%\android.jar" "%BUILD_DIR%\classes.jar"
 if errorlevel 1 goto :error
 
 REM Add DEX to APK
