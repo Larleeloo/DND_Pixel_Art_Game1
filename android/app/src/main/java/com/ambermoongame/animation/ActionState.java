@@ -1,47 +1,56 @@
 package com.ambermoongame.animation;
 
 /**
- * Enumeration of animation action states for SpriteAnimation.
- *
- * States:
- * - IDLE: Standing/breathing animation (5-10 frames)
- * - WALK: Walking animation (5-8 frames)
- * - RUN: Running animation (6-10 frames)
- * - SPRINT: Fast sprint animation (6-10 frames)
- * - JUMP: Single jump (5-8 frames)
- * - DOUBLE_JUMP: Double jump with flip/spin (8-12 frames)
- * - TRIPLE_JUMP: Triple jump with more dramatic spin (10-15 frames)
- * - FALL: Falling animation (5-8 frames)
- * - ATTACK: Melee attack swing (8-12 frames)
- * - FIRE: Projectile firing (8-12 frames)
- * - USE_ITEM: General item usage (6-10 frames)
- * - EAT: Eating food/potions (10-15 frames)
- * - HURT: Taking damage reaction (5-8 frames)
- * - DEAD: Death animation (10-15 frames)
- * - BLOCK: Blocking with shield (5-8 frames)
- * - CAST: Casting spell (10-15 frames)
- * - BURNING: On fire status effect (8-12 frames, looping)
- * - FROZEN: Frozen/slowed status effect (5-8 frames)
- * - POISONED: Poisoned status effect (6-10 frames)
+ * Animation action states for SpriteAnimation.
+ * Using int constants instead of enum to avoid D8 compiler bugs.
  */
-public enum ActionState {
-    IDLE,
-    WALK,
-    RUN,
-    SPRINT,
-    JUMP,
-    DOUBLE_JUMP,
-    TRIPLE_JUMP,
-    FALL,
-    ATTACK,
-    FIRE,
-    USE_ITEM,
-    EAT,
-    HURT,
-    DEAD,
-    BLOCK,
-    CAST,
-    BURNING,
-    FROZEN,
-    POISONED
+public final class ActionState {
+    public static final int IDLE = 0;
+    public static final int WALK = 1;
+    public static final int RUN = 2;
+    public static final int SPRINT = 3;
+    public static final int JUMP = 4;
+    public static final int DOUBLE_JUMP = 5;
+    public static final int TRIPLE_JUMP = 6;
+    public static final int FALL = 7;
+    public static final int ATTACK = 8;
+    public static final int FIRE = 9;
+    public static final int USE_ITEM = 10;
+    public static final int EAT = 11;
+    public static final int HURT = 12;
+    public static final int DEAD = 13;
+    public static final int BLOCK = 14;
+    public static final int CAST = 15;
+    public static final int BURNING = 16;
+    public static final int FROZEN = 17;
+    public static final int POISONED = 18;
+
+    public static final int COUNT = 19;
+
+    private ActionState() {}
+
+    public static String getName(int state) {
+        switch (state) {
+            case IDLE: return "IDLE";
+            case WALK: return "WALK";
+            case RUN: return "RUN";
+            case SPRINT: return "SPRINT";
+            case JUMP: return "JUMP";
+            case DOUBLE_JUMP: return "DOUBLE_JUMP";
+            case TRIPLE_JUMP: return "TRIPLE_JUMP";
+            case FALL: return "FALL";
+            case ATTACK: return "ATTACK";
+            case FIRE: return "FIRE";
+            case USE_ITEM: return "USE_ITEM";
+            case EAT: return "EAT";
+            case HURT: return "HURT";
+            case DEAD: return "DEAD";
+            case BLOCK: return "BLOCK";
+            case CAST: return "CAST";
+            case BURNING: return "BURNING";
+            case FROZEN: return "FROZEN";
+            case POISONED: return "POISONED";
+            default: return "UNKNOWN";
+        }
+    }
 }
