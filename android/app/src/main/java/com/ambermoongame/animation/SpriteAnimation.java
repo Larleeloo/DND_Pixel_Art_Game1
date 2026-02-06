@@ -7,12 +7,10 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.util.SparseArray;
 
 import com.ambermoongame.graphics.AndroidAssetLoader;
 import com.ambermoongame.graphics.AnimatedTexture;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * SpriteAnimation manages GIF-based animations for different action states.
@@ -32,18 +30,18 @@ import java.util.Map;
  *   anim.setState(ActionState.WALK);
  *   anim.update(deltaMs);
  *   anim.draw(canvas, x, y, width, height, facingRight);
+ *
+ * Note: ActionState is now a class with int constants (not an enum) to avoid
+ * D8 compiler bugs with enums on some Android build configurations.
  */
 public class SpriteAnimation {
 
-    // ActionState enum moved to separate file to avoid D8 nested enum issues
-    // See: com.ambermoongame.animation.ActionState
-
-    // Animation textures for each action state
-    private final Map<ActionState, AnimatedTexture> animations;
+    // Animation textures for each action state (using SparseArray for int keys)
+    private final SparseArray<AnimatedTexture> animations;
 
     // Current animation state
-    private ActionState currentState;
-    private ActionState previousState;
+    private int currentState;
+    private int previousState;
 
     // Timing and synchronization
     private long stateStartTime;
@@ -67,7 +65,7 @@ public class SpriteAnimation {
      * Creates a new SpriteAnimation system.
      */
     public SpriteAnimation() {
-        this.animations = new HashMap<>();
+        this.animations = new SparseArray<>();
         this.currentState = ActionState.IDLE;
         this.previousState = ActionState.IDLE;
         this.stateStartTime = System.currentTimeMillis();
@@ -93,7 +91,7 @@ public class SpriteAnimation {
      * @param gifPath Path to the GIF file (relative to assets)
      * @return true if loaded successfully
      */
-    public boolean loadAction(ActionState state, String gifPath) {
+    public boolean loadAction(int state, String gifPath) {
         try {
             if (!AndroidAssetLoader.exists(gifPath)) {
                 // Create placeholder animation for missing file
@@ -129,9 +127,9 @@ public class SpriteAnimation {
      * Creates a colored placeholder animation for a missing action state.
      * The color is based on the action type for visual distinction.
      */
-    private void createPlaceholderAnimation(ActionState state) {
+    private void createPlaceholderAnimation(int state) {
         // Skip if already has animation
-        if (animations.containsKey(state)) return;
+        if (animations.get(state) != null) return;
 
         // Use existing animation dimensions or defaults
         int w = baseWidth > 0 ? baseWidth : 32;
@@ -159,7 +157,8 @@ public class SpriteAnimation {
         paint.setColor(Color.WHITE);
         paint.setTextSize(Math.max(8, h / 8f));
         paint.setTypeface(Typeface.DEFAULT_BOLD);
-        String label = state.name().substring(0, Math.min(4, state.name().length()));
+        String label = ActionState.getName(state);
+        if (label.length() > 4) label = label.substring(0, 4);
         canvas.drawText(label, 2, h - 4, paint);
 
         AnimatedTexture placeholder = new AnimatedTexture(frame);
@@ -169,28 +168,28 @@ public class SpriteAnimation {
     /**
      * Gets a distinct color for each action state placeholder.
      */
-    private int getPlaceholderColor(ActionState state) {
+    private int getPlaceholderColor(int state) {
         switch (state) {
-            case IDLE:        return Color.rgb(100, 100, 200);       // Blue
-            case WALK:        return Color.rgb(100, 200, 100);       // Green
-            case RUN:         return Color.rgb(200, 200, 100);       // Yellow
-            case SPRINT:      return Color.rgb(255, 200, 50);        // Orange
-            case JUMP:        return Color.rgb(100, 200, 200);       // Cyan
-            case DOUBLE_JUMP: return Color.rgb(50, 220, 220);        // Light cyan
-            case TRIPLE_JUMP: return Color.rgb(0, 255, 255);         // Bright cyan
-            case FALL:        return Color.rgb(150, 150, 200);       // Light blue
-            case ATTACK:      return Color.rgb(200, 50, 50);         // Red
-            case FIRE:        return Color.rgb(255, 100, 50);        // Orange-red
-            case USE_ITEM:    return Color.rgb(200, 150, 100);       // Tan
-            case EAT:         return Color.rgb(200, 150, 50);        // Gold
-            case HURT:        return Color.rgb(255, 50, 50);         // Bright red
-            case DEAD:        return Color.rgb(80, 80, 80);          // Dark gray
-            case BLOCK:       return Color.rgb(150, 150, 150);       // Gray
-            case CAST:        return Color.rgb(150, 50, 200);        // Purple
-            case BURNING:     return Color.rgb(255, 100, 0);         // Orange-red (fire)
-            case FROZEN:      return Color.rgb(100, 200, 255);       // Light blue (ice)
-            case POISONED:    return Color.rgb(100, 200, 50);        // Green (poison)
-            default:          return Color.rgb(180, 180, 180);       // Light gray
+            case ActionState.IDLE:        return Color.rgb(100, 100, 200);
+            case ActionState.WALK:        return Color.rgb(100, 200, 100);
+            case ActionState.RUN:         return Color.rgb(200, 200, 100);
+            case ActionState.SPRINT:      return Color.rgb(255, 200, 50);
+            case ActionState.JUMP:        return Color.rgb(100, 200, 200);
+            case ActionState.DOUBLE_JUMP: return Color.rgb(50, 220, 220);
+            case ActionState.TRIPLE_JUMP: return Color.rgb(0, 255, 255);
+            case ActionState.FALL:        return Color.rgb(150, 150, 200);
+            case ActionState.ATTACK:      return Color.rgb(200, 50, 50);
+            case ActionState.FIRE:        return Color.rgb(255, 100, 50);
+            case ActionState.USE_ITEM:    return Color.rgb(200, 150, 100);
+            case ActionState.EAT:         return Color.rgb(200, 150, 50);
+            case ActionState.HURT:        return Color.rgb(255, 50, 50);
+            case ActionState.DEAD:        return Color.rgb(80, 80, 80);
+            case ActionState.BLOCK:       return Color.rgb(150, 150, 150);
+            case ActionState.CAST:        return Color.rgb(150, 50, 200);
+            case ActionState.BURNING:     return Color.rgb(255, 100, 0);
+            case ActionState.FROZEN:      return Color.rgb(100, 200, 255);
+            case ActionState.POISONED:    return Color.rgb(100, 200, 50);
+            default:                      return Color.rgb(180, 180, 180);
         }
     }
 
@@ -198,13 +197,13 @@ public class SpriteAnimation {
      * Ensures all basic animations exist, creating placeholders for missing ones.
      */
     public void ensureBasicAnimations() {
-        ActionState[] basicStates = {
+        int[] basicStates = {
             ActionState.IDLE, ActionState.WALK, ActionState.RUN,
             ActionState.JUMP, ActionState.ATTACK, ActionState.HURT
         };
 
-        for (ActionState state : basicStates) {
-            if (!animations.containsKey(state)) {
+        for (int state : basicStates) {
+            if (animations.get(state) == null) {
                 createPlaceholderAnimation(state);
             }
         }
@@ -216,7 +215,7 @@ public class SpriteAnimation {
      * @param state The action state
      * @param texture The animated texture to use
      */
-    public void setAction(ActionState state, AnimatedTexture texture) {
+    public void setAction(int state, AnimatedTexture texture) {
         if (texture != null) {
             animations.put(state, texture);
 
@@ -233,8 +232,8 @@ public class SpriteAnimation {
      *
      * @param state The new action state
      */
-    public void setState(ActionState state) {
-        if (currentState != state && animations.containsKey(state)) {
+    public void setState(int state) {
+        if (currentState != state && animations.get(state) != null) {
             previousState = currentState;
             currentState = state;
             stateStartTime = System.currentTimeMillis();
@@ -252,7 +251,7 @@ public class SpriteAnimation {
      *
      * @return Current action state
      */
-    public ActionState getState() {
+    public int getState() {
         return currentState;
     }
 
@@ -408,8 +407,8 @@ public class SpriteAnimation {
      * @param state Action state to check
      * @return true if animation exists
      */
-    public boolean hasAnimation(ActionState state) {
-        return animations.containsKey(state);
+    public boolean hasAnimation(int state) {
+        return animations.get(state) != null;
     }
 
     /**
@@ -418,7 +417,7 @@ public class SpriteAnimation {
      * @param state Action state
      * @return Duration in milliseconds, or 0 if not loaded
      */
-    public int getAnimationDuration(ActionState state) {
+    public int getAnimationDuration(int state) {
         AnimatedTexture anim = animations.get(state);
         if (anim != null) {
             return anim.getTotalDuration();
@@ -443,7 +442,8 @@ public class SpriteAnimation {
      * Clears all loaded animations and recycles their bitmaps.
      */
     public void clear() {
-        for (AnimatedTexture anim : animations.values()) {
+        for (int i = 0; i < animations.size(); i++) {
+            AnimatedTexture anim = animations.valueAt(i);
             if (anim != null) {
                 anim.recycle();
             }
