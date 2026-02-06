@@ -138,14 +138,16 @@ public class TabActivity extends Activity {
     private void doSync() {
         if (!GamePreferences.isLoggedIn()) return;
         SaveManager.getInstance().save();
-        GitHubSyncManager.getInstance().syncToCloud(new GitHubSyncManager.SyncCallback() {
-            @Override public void onSuccess(String msg) {
-                runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced!", Toast.LENGTH_SHORT).show());
-            }
-            @Override public void onError(String error) {
-                runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
-            }
-        });
+        GitHubSyncManager.getInstance().syncToCloud(new CloudSyncCallback());
+    }
+
+    private class CloudSyncCallback implements GitHubSyncManager.SyncCallback {
+        @Override public void onSuccess(String msg) {
+            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced!", Toast.LENGTH_SHORT).show());
+        }
+        @Override public void onError(String error) {
+            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
+        }
     }
 
     @Override

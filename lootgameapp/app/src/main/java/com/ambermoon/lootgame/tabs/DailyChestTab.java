@@ -107,13 +107,15 @@ public class DailyChestTab extends ScrollView {
     }
 
     private void startTimer() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                updateTimer();
-                handler.postDelayed(this, 1000);
-            }
-        }, 1000);
+        handler.postDelayed(new TimerRunnable(), 1000);
+    }
+
+    private class TimerRunnable implements Runnable {
+        @Override
+        public void run() {
+            updateTimer();
+            handler.postDelayed(this, 1000);
+        }
     }
 
     private void updateTimer() {
@@ -208,34 +210,7 @@ public class DailyChestTab extends ScrollView {
         card.setPadding(12, 12, 12, 12);
 
         // Item icon placeholder (colored square with rarity border)
-        View iconView = new View(getContext()) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                Paint p = new Paint();
-                // Background
-                p.setColor(Color.parseColor("#1A1525"));
-                canvas.drawRect(0, 0, getWidth(), getHeight(), p);
-                // Rarity border
-                p.setColor(Item.getRarityColor(item.getRarity().ordinal()));
-                p.setStyle(Paint.Style.STROKE);
-                p.setStrokeWidth(4);
-                canvas.drawRect(2, 2, getWidth() - 2, getHeight() - 2, p);
-                // Item icon bitmap if available
-                Bitmap icon = item.getIcon();
-                if (icon != null) {
-                    canvas.drawBitmap(icon, null, new RectF(6, 6, getWidth() - 6, getHeight() - 6), null);
-                } else {
-                    // Placeholder text
-                    p.setStyle(Paint.Style.FILL);
-                    p.setColor(Item.getRarityColor(item.getRarity().ordinal()));
-                    p.setTextSize(28);
-                    p.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText(item.getName().substring(0, Math.min(2, item.getName().length())),
-                            getWidth() / 2f, getHeight() / 2f + 10, p);
-                }
-            }
-        };
+        View iconView = new ItemIconView(getContext(), item);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(120, 120);
         iconView.setLayoutParams(iconParams);
         card.addView(iconView);
@@ -296,5 +271,41 @@ public class DailyChestTab extends ScrollView {
         line.addView(valueText);
 
         content.addView(line);
+    }
+
+    private static class ItemIconView extends View {
+        private final Item item;
+
+        ItemIconView(Context context, Item item) {
+            super(context);
+            this.item = item;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            Paint p = new Paint();
+            // Background
+            p.setColor(Color.parseColor("#1A1525"));
+            canvas.drawRect(0, 0, getWidth(), getHeight(), p);
+            // Rarity border
+            p.setColor(Item.getRarityColor(item.getRarity().ordinal()));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(4);
+            canvas.drawRect(2, 2, getWidth() - 2, getHeight() - 2, p);
+            // Item icon bitmap if available
+            Bitmap icon = item.getIcon();
+            if (icon != null) {
+                canvas.drawBitmap(icon, null, new RectF(6, 6, getWidth() - 6, getHeight() - 6), null);
+            } else {
+                // Placeholder text
+                p.setStyle(Paint.Style.FILL);
+                p.setColor(Item.getRarityColor(item.getRarity().ordinal()));
+                p.setTextSize(28);
+                p.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(item.getName().substring(0, Math.min(2, item.getName().length())),
+                        getWidth() / 2f, getHeight() / 2f + 10, p);
+            }
+        }
     }
 }

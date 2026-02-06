@@ -92,6 +92,7 @@ cd "$SCRIPT_DIR"
 # Convert to DEX
 echo "Converting to DEX format..."
 "$BUILD_TOOLS/d8" \
+    --min-api 24 \
     --output "$BUILD_DIR/dex" \
     --lib "$PLATFORM/android.jar" \
     "$BUILD_DIR/classes.jar"

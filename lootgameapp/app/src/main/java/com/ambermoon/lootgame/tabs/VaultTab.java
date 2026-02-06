@@ -63,11 +63,7 @@ public class VaultTab extends ScrollView {
         searchBox.setBackgroundColor(Color.parseColor("#28233A"));
         searchBox.setPadding(24, 16, 24, 16);
         searchBox.setSingleLine(true);
-        searchBox.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-            @Override public void onTextChanged(CharSequence s, int st, int b, int c) { refreshGrid(); }
-            @Override public void afterTextChanged(Editable s) {}
-        });
+        searchBox.addTextChangedListener(new SearchTextWatcher());
         content.addView(searchBox);
 
         // Sort buttons
@@ -188,6 +184,12 @@ public class VaultTab extends ScrollView {
             empty.setPadding(0, 32, 0, 0);
             itemGrid.addView(empty);
         }
+    }
+
+    private class SearchTextWatcher implements TextWatcher {
+        @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+        @Override public void onTextChanged(CharSequence s, int st, int b, int c) { refreshGrid(); }
+        @Override public void afterTextChanged(Editable s) {}
     }
 
     private void showDetail(String itemId) {

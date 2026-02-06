@@ -96,12 +96,14 @@ public class MonthlyChestTab extends ScrollView {
     }
 
     private void startTimer() {
-        handler.postDelayed(new Runnable() {
-            @Override public void run() {
-                updateTimer();
-                handler.postDelayed(this, 1000);
-            }
-        }, 1000);
+        handler.postDelayed(new TimerRunnable(), 1000);
+    }
+
+    private class TimerRunnable implements Runnable {
+        @Override public void run() {
+            updateTimer();
+            handler.postDelayed(this, 1000);
+        }
     }
 
     private void updateTimer() {
