@@ -15,8 +15,9 @@ import com.ambermoon.lootgame.save.GitHubSyncManager;
 public class LoginActivity extends Activity {
     private EditText usernameInput;
     private EditText tokenInput;
-    private TextView statusText;
-    private Button loginButton;
+    // Package-private to avoid synthetic accessors that crash D8 dex compiler
+    TextView statusText;
+    Button loginButton;
     private Button offlineButton;
 
     @Override
@@ -142,7 +143,8 @@ public class LoginActivity extends Activity {
         GitHubSyncManager.getInstance().validateToken(new ValidateTokenCallback());
     }
 
-    private void proceedToGame() {
+    // Package-private to avoid synthetic accessors that crash D8 dex compiler
+    void proceedToGame() {
         startActivity(new Intent(LoginActivity.this, TabActivity.class));
         finish();
     }
