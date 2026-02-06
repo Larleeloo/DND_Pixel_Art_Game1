@@ -1247,39 +1247,8 @@ public class Inventory {
             vaultInventory = new VaultInventory();
             vaultInventory.setScreenSize(screenWidth, screenHeight);
 
-            vaultInventory.setItemTakenCallback((itemId, count) -> {
-                ItemEntity item = new ItemEntity(0, 0, itemId);
-                item.setLinkedItem(ItemRegistry.create(itemId));
-                item.setStackCount(count);
-                if (!addItemAtCursorSlot(item)) {
-                    vaultInventory.addItem(itemId, count);
-                    Log.d(TAG, "Inventory full, item returned to vault");
-                }
-            });
-
-            vaultInventory.setInventoryDropCallback(new VaultInventory.InventoryDropCallback() {
-                @Override
-                public boolean onDropToInventory(String itemId, int count, int dropX, int dropY) {
-                    ItemEntity item = new ItemEntity(0, 0, itemId);
-                    item.setLinkedItem(ItemRegistry.create(itemId));
-                    item.setStackCount(count);
-
-                    int targetSlot = getSlotAtPosition(dropX, dropY);
-                    if (targetSlot < 0) {
-                        targetSlot = getNearestSlotToPosition(dropX, dropY);
-                    }
-
-                    if (targetSlot >= 0) {
-                        return addItemToSlot(item, targetSlot);
-                    }
-                    return addItem(item);
-                }
-
-                @Override
-                public boolean isPointInInventory(int px, int py) {
-                    return containsPoint(px, py);
-                }
-            });
+            vaultInventory.setItemTakenCallback(new InventoryItemTakenCallback());
+            vaultInventory.setInventoryDropCallback(new InventoryDropCallbackImpl());
         }
         return vaultInventory;
     }
@@ -1423,6 +1392,44 @@ public class Inventory {
     public void clear() {
         for (int i = 0; i < MAX_SLOTS; i++) {
             slots[i] = null;
+        }
+    }
+
+    // Named inner classes to avoid D8 compiler crash on anonymous classes
+    private class InventoryItemTakenCallback implements VaultInventory.ItemTakenCallback {
+        @Override
+        public void onItemTaken(String itemId, int count) {
+            ItemEntity item = new ItemEntity(0, 0, itemId);
+            item.setLinkedItem(ItemRegistry.create(itemId));
+            item.setStackCount(count);
+            if (!addItemAtCursorSlot(item)) {
+                vaultInventory.addItem(itemId, count);
+                Log.d(TAG, "Inventory full, item returned to vault");
+            }
+        }
+    }
+
+    private class InventoryDropCallbackImpl implements VaultInventory.InventoryDropCallback {
+        @Override
+        public boolean onDropToInventory(String itemId, int count, int dropX, int dropY) {
+            ItemEntity item = new ItemEntity(0, 0, itemId);
+            item.setLinkedItem(ItemRegistry.create(itemId));
+            item.setStackCount(count);
+
+            int targetSlot = getSlotAtPosition(dropX, dropY);
+            if (targetSlot < 0) {
+                targetSlot = getNearestSlotToPosition(dropX, dropY);
+            }
+
+            if (targetSlot >= 0) {
+                return addItemToSlot(item, targetSlot);
+            }
+            return addItem(item);
+        }
+
+        @Override
+        public boolean isPointInInventory(int px, int py) {
+            return containsPoint(px, py);
         }
     }
 }
