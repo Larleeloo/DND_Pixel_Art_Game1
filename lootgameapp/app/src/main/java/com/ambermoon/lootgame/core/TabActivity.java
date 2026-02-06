@@ -8,6 +8,7 @@ import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.save.GitHubSyncManager;
+import com.ambermoon.lootgame.save.SyncCallback;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -141,7 +142,7 @@ public class TabActivity extends Activity {
         GitHubSyncManager.getInstance().syncToCloud(new CloudSyncCallback());
     }
 
-    private class CloudSyncCallback implements GitHubSyncManager.SyncCallback {
+    private class CloudSyncCallback implements SyncCallback {
         @Override public void onSuccess(String msg) {
             runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced!", Toast.LENGTH_SHORT).show());
         }

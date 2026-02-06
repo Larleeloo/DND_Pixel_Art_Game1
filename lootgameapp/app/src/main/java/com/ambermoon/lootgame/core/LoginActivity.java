@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.GitHubSyncManager;
+import com.ambermoon.lootgame.save.SyncCallback;
 
 public class LoginActivity extends Activity {
     private EditText usernameInput;
@@ -147,7 +148,7 @@ public class LoginActivity extends Activity {
         finish();
     }
 
-    private class ValidateTokenCallback implements GitHubSyncManager.SyncCallback {
+    private class ValidateTokenCallback implements SyncCallback {
         @Override
         public void onSuccess(String message) {
             statusText.setText("Syncing save data...");
@@ -161,7 +162,7 @@ public class LoginActivity extends Activity {
         }
     }
 
-    private class SyncFromCloudCallback implements GitHubSyncManager.SyncCallback {
+    private class SyncFromCloudCallback implements SyncCallback {
         @Override
         public void onSuccess(String msg) {
             proceedToGame();

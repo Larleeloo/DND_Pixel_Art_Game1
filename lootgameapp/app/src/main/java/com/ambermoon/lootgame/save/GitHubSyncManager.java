@@ -24,11 +24,6 @@ public class GitHubSyncManager {
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private String currentSha; // SHA of the existing file (needed for updates)
 
-    public interface SyncCallback {
-        void onSuccess(String message);
-        void onError(String error);
-    }
-
     public static GitHubSyncManager getInstance() {
         if (instance == null) instance = new GitHubSyncManager();
         return instance;
