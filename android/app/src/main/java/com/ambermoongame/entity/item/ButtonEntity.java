@@ -42,30 +42,56 @@ public class ButtonEntity extends Entity {
     private static final String TAG = "ButtonEntity";
     private static final boolean DEBUG = false;
 
-    // Button types
-    public enum ButtonType {
-        TOGGLE,
-        MOMENTARY,
-        ONE_SHOT,
-        TIMED
+    // Button type constants (replaces enum to avoid D8 crash)
+    public static final int BUTTON_TYPE_TOGGLE = 0;
+    public static final int BUTTON_TYPE_MOMENTARY = 1;
+    public static final int BUTTON_TYPE_ONE_SHOT = 2;
+    public static final int BUTTON_TYPE_TIMED = 3;
+
+    // Button state constants
+    public static final int BUTTON_STATE_IDLE = 0;
+    public static final int BUTTON_STATE_PRESSING = 1;
+    public static final int BUTTON_STATE_PRESSED = 2;
+    public static final int BUTTON_STATE_RELEASING = 3;
+    public static final int BUTTON_STATE_DISABLED = 4;
+
+    // Action type constants
+    public static final int ACTION_TYPE_NONE = 0;
+    public static final int ACTION_TYPE_LEVEL_TRANSITION = 1;
+    public static final int ACTION_TYPE_EVENT = 2;
+    public static final int ACTION_TYPE_SPAWN_ENTITY = 3;
+    public static final int ACTION_TYPE_PLAY_SOUND = 4;
+
+    private static String getButtonTypeName(int type) {
+        switch (type) {
+            case BUTTON_TYPE_TOGGLE: return "TOGGLE";
+            case BUTTON_TYPE_MOMENTARY: return "MOMENTARY";
+            case BUTTON_TYPE_ONE_SHOT: return "ONE_SHOT";
+            case BUTTON_TYPE_TIMED: return "TIMED";
+            default: return "UNKNOWN";
+        }
     }
 
-    // Button states
-    public enum ButtonState {
-        IDLE,
-        PRESSING,
-        PRESSED,
-        RELEASING,
-        DISABLED
+    private static String getStateName(int state) {
+        switch (state) {
+            case BUTTON_STATE_IDLE: return "IDLE";
+            case BUTTON_STATE_PRESSING: return "PRESSING";
+            case BUTTON_STATE_PRESSED: return "PRESSED";
+            case BUTTON_STATE_RELEASING: return "RELEASING";
+            case BUTTON_STATE_DISABLED: return "DISABLED";
+            default: return "UNKNOWN";
+        }
     }
 
-    // Action types
-    public enum ActionType {
-        NONE,
-        LEVEL_TRANSITION,
-        EVENT,
-        SPAWN_ENTITY,
-        PLAY_SOUND
+    private static String getActionTypeName(int type) {
+        switch (type) {
+            case ACTION_TYPE_NONE: return "NONE";
+            case ACTION_TYPE_LEVEL_TRANSITION: return "LEVEL_TRANSITION";
+            case ACTION_TYPE_EVENT: return "EVENT";
+            case ACTION_TYPE_SPAWN_ENTITY: return "SPAWN_ENTITY";
+            case ACTION_TYPE_PLAY_SOUND: return "PLAY_SOUND";
+            default: return "UNKNOWN";
+        }
     }
 
     // Dimensions
@@ -73,8 +99,8 @@ public class ButtonEntity extends Entity {
     private int height;
 
     // State
-    private ButtonState state;
-    private ButtonType buttonType;
+    private int state;
+    private int buttonType;
     private boolean activated;
     private long activationTime;
     private int timedDuration;
@@ -99,7 +125,7 @@ public class ButtonEntity extends Entity {
     private boolean requiresInteraction;
 
     // Actions
-    private ActionType actionType;
+    private int actionType;
     private String actionTarget;
 
     // Visual effects
@@ -131,8 +157,8 @@ public class ButtonEntity extends Entity {
         super(x, y);
         this.width = width;
         this.height = height;
-        this.state = ButtonState.IDLE;
-        this.buttonType = ButtonType.TOGGLE;
+        this.state = BUTTON_STATE_IDLE;
+        this.buttonType = BUTTON_TYPE_TOGGLE;
         this.activated = false;
         this.activationTime = 0;
         this.timedDuration = 3000;
@@ -146,7 +172,7 @@ public class ButtonEntity extends Entity {
         this.activatedByPlayer = true;
         this.activatedByMobs = true;
         this.requiresInteraction = true;
-        this.actionType = ActionType.NONE;
+        this.actionType = ACTION_TYPE_NONE;
         this.actionTarget = "";
         this.glowColor = Color.rgb(100, 200, 255);
         this.glowIntensity = 0;
@@ -237,14 +263,14 @@ public class ButtonEntity extends Entity {
         }
 
         // Handle timed button auto-release
-        if (buttonType == ButtonType.TIMED && activated) {
+        if (buttonType == BUTTON_TYPE_TIMED && activated) {
             if (currentTime - activationTime >= timedDuration) {
                 release();
             }
         }
 
         // Handle momentary button (pressure plate) behavior
-        if (buttonType == ButtonType.MOMENTARY && !requiresInteraction) {
+        if (buttonType == BUTTON_TYPE_MOMENTARY && !requiresInteraction) {
             if (!entityOnButton && activated) {
                 release();
             }
@@ -266,21 +292,21 @@ public class ButtonEntity extends Entity {
 
         int frameCount = frames.size();
 
-        if (state == ButtonState.PRESSING) {
+        if (state == BUTTON_STATE_PRESSING) {
             animationProgress += animationSpeed;
             if (animationProgress >= 1.0f) {
                 animationProgress = 1.0f;
-                state = ButtonState.PRESSED;
+                state = BUTTON_STATE_PRESSED;
                 playingAnimation = false;
                 currentFrameIndex = frameCount - 1;
             } else {
                 currentFrameIndex = Math.min((int)(animationProgress * frameCount), frameCount - 1);
             }
-        } else if (state == ButtonState.RELEASING) {
+        } else if (state == BUTTON_STATE_RELEASING) {
             animationProgress -= animationSpeed;
             if (animationProgress <= 0) {
                 animationProgress = 0;
-                state = ButtonState.IDLE;
+                state = BUTTON_STATE_IDLE;
                 playingAnimation = false;
                 currentFrameIndex = 0;
             } else {
@@ -303,7 +329,7 @@ public class ButtonEntity extends Entity {
      * @return True if successfully activated
      */
     public boolean activate(boolean isPlayer) {
-        if (state == ButtonState.DISABLED) return false;
+        if (state == BUTTON_STATE_DISABLED) return false;
         if (isPlayer && !activatedByPlayer) return false;
         if (!isPlayer && !activatedByMobs) return false;
         return press();
@@ -313,7 +339,7 @@ public class ButtonEntity extends Entity {
      * Presses the button (called by player interaction or entity collision).
      */
     public boolean press() {
-        if (state == ButtonState.DISABLED) return false;
+        if (state == BUTTON_STATE_DISABLED) return false;
 
         switch (buttonType) {
             case TOGGLE:
@@ -330,10 +356,10 @@ public class ButtonEntity extends Entity {
                 return false;
 
             case ONE_SHOT:
-                if (!activated && state != ButtonState.DISABLED) {
+                if (!activated && state != BUTTON_STATE_DISABLED) {
                     boolean result = activateButton();
                     if (result) {
-                        state = ButtonState.DISABLED;
+                        state = BUTTON_STATE_DISABLED;
                     }
                     return result;
                 }
@@ -351,11 +377,11 @@ public class ButtonEntity extends Entity {
     }
 
     private boolean activateButton() {
-        if (activated && buttonType != ButtonType.MOMENTARY) return false;
+        if (activated && buttonType != BUTTON_TYPE_MOMENTARY) return false;
 
         activated = true;
         activationTime = System.currentTimeMillis();
-        state = ButtonState.PRESSING;
+        state = BUTTON_STATE_PRESSING;
         playingAnimation = true;
         playPressSound = true;
         Log.d(TAG, "Button " + linkId + " pressed");
@@ -367,7 +393,7 @@ public class ButtonEntity extends Entity {
         if (!activated) return false;
 
         activated = false;
-        state = ButtonState.RELEASING;
+        state = BUTTON_STATE_RELEASING;
         playingAnimation = true;
         playReleaseSound = true;
         Log.d(TAG, "Button " + linkId + " released");
@@ -436,13 +462,13 @@ public class ButtonEntity extends Entity {
         }
 
         // Draw state indicator for disabled buttons
-        if (state == ButtonState.DISABLED) {
+        if (state == BUTTON_STATE_DISABLED) {
             drawPaint.setColor(Color.argb(100, 0, 0, 0));
             canvas.drawRect(x, y, x + width, y + height, drawPaint);
         }
 
         // Draw interaction prompt if player is nearby
-        if (playerNearby && requiresInteraction && state != ButtonState.DISABLED) {
+        if (playerNearby && requiresInteraction && state != BUTTON_STATE_DISABLED) {
             drawInteractionPrompt(canvas);
         }
 
@@ -510,20 +536,20 @@ public class ButtonEntity extends Entity {
         // State text
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(10);
-        canvas.drawText("State: " + state, x, y - 25, textPaint);
+        canvas.drawText("State: " + getStateName(state), x, y - 25, textPaint);
         canvas.drawText("Link: " + linkId, x, y - 15, textPaint);
-        canvas.drawText("Type: " + buttonType, x, y - 5, textPaint);
+        canvas.drawText("Type: " + getButtonTypeName(buttonType), x, y - 5, textPaint);
     }
 
     // Getters and Setters
 
-    public ButtonState getState() { return state; }
+    public int getState() { return state; }
     public boolean isActivated() { return activated; }
-    public ButtonType getButtonType() { return buttonType; }
+    public int getButtonType() { return buttonType; }
 
-    public void setButtonType(ButtonType type) {
+    public void setButtonType(int type) {
         this.buttonType = type;
-        if (type == ButtonType.MOMENTARY) {
+        if (type == BUTTON_TYPE_MOMENTARY) {
             this.requiresInteraction = false;
         }
     }
@@ -556,8 +582,8 @@ public class ButtonEntity extends Entity {
     public void setActivatedByMobs(boolean v) { this.activatedByMobs = v; }
     public boolean requiresInteraction() { return requiresInteraction; }
     public void setRequiresInteraction(boolean v) { this.requiresInteraction = v; }
-    public ActionType getActionType() { return actionType; }
-    public void setActionType(ActionType v) { this.actionType = v; }
+    public int getActionType() { return actionType; }
+    public void setActionType(int v) { this.actionType = v; }
     public String getActionTarget() { return actionTarget; }
     public void setActionTarget(String v) { this.actionTarget = v; }
     public void setTimedDuration(int durationMs) { this.timedDuration = durationMs; }
@@ -573,8 +599,8 @@ public class ButtonEntity extends Entity {
 
     /** Resets a one-shot button to be usable again. */
     public void reset() {
-        if (state == ButtonState.DISABLED) {
-            state = ButtonState.IDLE;
+        if (state == BUTTON_STATE_DISABLED) {
+            state = BUTTON_STATE_IDLE;
             activated = false;
             animationProgress = 0;
             currentFrameIndex = 0;

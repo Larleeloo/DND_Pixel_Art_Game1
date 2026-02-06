@@ -42,21 +42,38 @@ public class DoorEntity extends Entity {
     private static final String TAG = "DoorEntity";
     private static final boolean DEBUG = false; // Set true for debug drawing
 
-    // Door states
-    public enum DoorState {
-        CLOSED,
-        OPENING,
-        OPEN,
-        CLOSING
+    // Door state constants (replaces enum to avoid D8 crash)
+    public static final int DOOR_STATE_CLOSED = 0;
+    public static final int DOOR_STATE_OPENING = 1;
+    public static final int DOOR_STATE_OPEN = 2;
+    public static final int DOOR_STATE_CLOSING = 3;
+
+    // Action type constants
+    public static final int DOOR_ACTION_NONE = 0;
+    public static final int DOOR_ACTION_LEVEL_TRANSITION = 1;
+    public static final int DOOR_ACTION_EVENT = 2;
+    public static final int DOOR_ACTION_TELEPORT = 3;
+    public static final int DOOR_ACTION_SPAWN_ENTITY = 4;
+
+    private static String getStateName(int state) {
+        switch (state) {
+            case DOOR_STATE_CLOSED: return "CLOSED";
+            case DOOR_STATE_OPENING: return "OPENING";
+            case DOOR_STATE_OPEN: return "OPEN";
+            case DOOR_STATE_CLOSING: return "CLOSING";
+            default: return "UNKNOWN";
+        }
     }
 
-    // Action types that can be triggered when door is used
-    public enum ActionType {
-        NONE,
-        LEVEL_TRANSITION,
-        EVENT,
-        TELEPORT,
-        SPAWN_ENTITY
+    private static String getActionTypeName(int type) {
+        switch (type) {
+            case DOOR_ACTION_NONE: return "NONE";
+            case DOOR_ACTION_LEVEL_TRANSITION: return "LEVEL_TRANSITION";
+            case DOOR_ACTION_EVENT: return "EVENT";
+            case DOOR_ACTION_TELEPORT: return "TELEPORT";
+            case DOOR_ACTION_SPAWN_ENTITY: return "SPAWN_ENTITY";
+            default: return "UNKNOWN";
+        }
     }
 
     // Dimensions
@@ -64,7 +81,7 @@ public class DoorEntity extends Entity {
     private int height;
 
     // State
-    private DoorState state;
+    private int state;
     private boolean locked;
     private String requiredKeyId;
 
@@ -82,7 +99,7 @@ public class DoorEntity extends Entity {
     private List<String> linkedButtonIds;
 
     // Actions
-    private ActionType actionType;
+    private int actionType;
     private String actionTarget;
 
     // Visual effects
@@ -113,7 +130,7 @@ public class DoorEntity extends Entity {
         super(x, y);
         this.width = width;
         this.height = height;
-        this.state = DoorState.CLOSED;
+        this.state = DOOR_STATE_CLOSED;
         this.locked = false;
         this.requiredKeyId = null;
         this.animationProgress = 0;
@@ -122,7 +139,7 @@ public class DoorEntity extends Entity {
         this.lastUpdateTime = System.currentTimeMillis();
         this.linkId = "";
         this.linkedButtonIds = new ArrayList<>();
-        this.actionType = ActionType.NONE;
+        this.actionType = DOOR_ACTION_NONE;
         this.actionTarget = "";
         this.showHighlight = false;
         this.highlightAlpha = 0;
@@ -208,7 +225,7 @@ public class DoorEntity extends Entity {
 
     /** Gets the collision bounds - only solid when door is closed. */
     public Rect getCollisionBounds() {
-        if (state == DoorState.CLOSED || state == DoorState.CLOSING) {
+        if (state == DOOR_STATE_CLOSED || state == DOOR_STATE_CLOSING) {
             return new Rect(x, y, x + width, y + height);
         }
         return new Rect(x, y, x + 4, y + height);
@@ -216,7 +233,7 @@ public class DoorEntity extends Entity {
 
     /** Checks if this door blocks movement. */
     public boolean isSolid() {
-        return state == DoorState.CLOSED || state == DoorState.CLOSING;
+        return state == DOOR_STATE_CLOSED || state == DOOR_STATE_CLOSING;
     }
 
     /** Checks if a rect intersects with this door's solid area. */
@@ -252,21 +269,21 @@ public class DoorEntity extends Entity {
 
         int frameCount = frames.size();
 
-        if (state == DoorState.OPENING) {
+        if (state == DOOR_STATE_OPENING) {
             animationProgress += animationSpeed;
             if (animationProgress >= 1.0f) {
                 animationProgress = 1.0f;
-                state = DoorState.OPEN;
+                state = DOOR_STATE_OPEN;
                 playingAnimation = false;
                 currentFrameIndex = frameCount - 1;
             } else {
                 currentFrameIndex = Math.min((int)(animationProgress * frameCount), frameCount - 1);
             }
-        } else if (state == DoorState.CLOSING) {
+        } else if (state == DOOR_STATE_CLOSING) {
             animationProgress -= animationSpeed;
             if (animationProgress <= 0) {
                 animationProgress = 0;
-                state = DoorState.CLOSED;
+                state = DOOR_STATE_CLOSED;
                 playingAnimation = false;
                 currentFrameIndex = 0;
             } else {
@@ -288,13 +305,13 @@ public class DoorEntity extends Entity {
      * @return true if door started opening, false if already open or locked
      */
     public boolean open() {
-        if (state == DoorState.OPEN || state == DoorState.OPENING) return false;
+        if (state == DOOR_STATE_OPEN || state == DOOR_STATE_OPENING) return false;
         if (locked) {
             Log.d(TAG, "Door is locked!");
             return false;
         }
 
-        state = DoorState.OPENING;
+        state = DOOR_STATE_OPENING;
         playingAnimation = true;
         playOpenSound = true;
         Log.d(TAG, "Opening door " + linkId);
@@ -306,9 +323,9 @@ public class DoorEntity extends Entity {
      * @return true if door started closing, false if already closed
      */
     public boolean close() {
-        if (state == DoorState.CLOSED || state == DoorState.CLOSING) return false;
+        if (state == DOOR_STATE_CLOSED || state == DOOR_STATE_CLOSING) return false;
 
-        state = DoorState.CLOSING;
+        state = DOOR_STATE_CLOSING;
         playingAnimation = true;
         playCloseSound = true;
         Log.d(TAG, "Closing door " + linkId);
@@ -317,7 +334,7 @@ public class DoorEntity extends Entity {
 
     /** Toggles the door open/closed state. */
     public boolean toggle() {
-        if (state == DoorState.CLOSED || state == DoorState.CLOSING) {
+        if (state == DOOR_STATE_CLOSED || state == DOOR_STATE_CLOSING) {
             return open();
         } else {
             return close();
@@ -343,7 +360,7 @@ public class DoorEntity extends Entity {
 
     /** Instantly sets the door to open state (no animation). */
     public void setOpen() {
-        state = DoorState.OPEN;
+        state = DOOR_STATE_OPEN;
         animationProgress = 1.0f;
         playingAnimation = false;
         if (frames != null && frames.size() > 1) {
@@ -353,7 +370,7 @@ public class DoorEntity extends Entity {
 
     /** Instantly sets the door to closed state (no animation). */
     public void setClosed() {
-        state = DoorState.CLOSED;
+        state = DOOR_STATE_CLOSED;
         animationProgress = 0;
         playingAnimation = false;
         currentFrameIndex = 0;
@@ -399,7 +416,7 @@ public class DoorEntity extends Entity {
     }
 
     private void drawFallback(Canvas canvas) {
-        int doorAlpha = (state == DoorState.OPEN || state == DoorState.OPENING) ? 150 : 255;
+        int doorAlpha = (state == DOOR_STATE_OPEN || state == DOOR_STATE_OPENING) ? 150 : 255;
 
         drawPaint.setColor(Color.argb(doorAlpha, 139, 90, 43));
         canvas.drawRect(x, y, x + width, y + height, drawPaint);
@@ -411,7 +428,7 @@ public class DoorEntity extends Entity {
         drawPaint.setStyle(Paint.Style.FILL);
 
         drawPaint.setColor(Color.YELLOW);
-        int handleX = (state == DoorState.OPEN) ? x + 8 : x + width - 18;
+        int handleX = (state == DOOR_STATE_OPEN) ? x + 8 : x + width - 18;
         RectF handleOval = new RectF(handleX, y + height / 2f - 5, handleX + 10, y + height / 2f + 5);
         canvas.drawOval(handleOval, drawPaint);
     }
@@ -440,7 +457,7 @@ public class DoorEntity extends Entity {
     }
 
     private void drawInteractionPrompt(Canvas canvas) {
-        String prompt = (state == DoorState.CLOSED) ? "Tap to Open" : "Tap to Close";
+        String prompt = (state == DOOR_STATE_CLOSED) ? "Tap to Open" : "Tap to Close";
         textPaint.setTextSize(12);
         textPaint.setFakeBoldText(true);
         float textWidth = textPaint.measureText(prompt);
@@ -471,15 +488,15 @@ public class DoorEntity extends Entity {
         // State text
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(10);
-        canvas.drawText("State: " + state, x, y - 25, textPaint);
+        canvas.drawText("State: " + getStateName(state), x, y - 25, textPaint);
         canvas.drawText("Link: " + linkId, x, y - 15, textPaint);
     }
 
     // Getters and Setters
 
-    public DoorState getState() { return state; }
-    public boolean isOpen() { return state == DoorState.OPEN; }
-    public boolean isClosed() { return state == DoorState.CLOSED; }
+    public int getState() { return state; }
+    public boolean isOpen() { return state == DOOR_STATE_OPEN; }
+    public boolean isClosed() { return state == DOOR_STATE_CLOSED; }
     public boolean isLocked() { return locked; }
     public void setLocked(boolean locked) { this.locked = locked; }
 
@@ -498,8 +515,8 @@ public class DoorEntity extends Entity {
         }
     }
 
-    public ActionType getActionType() { return actionType; }
-    public void setActionType(ActionType actionType) { this.actionType = actionType; }
+    public int getActionType() { return actionType; }
+    public void setActionType(int actionType) { this.actionType = actionType; }
     public String getActionTarget() { return actionTarget; }
     public void setActionTarget(String actionTarget) { this.actionTarget = actionTarget; }
     public boolean isPlayerNearby() { return playerNearby; }

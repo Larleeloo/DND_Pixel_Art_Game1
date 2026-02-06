@@ -46,30 +46,73 @@ public class VaultEntity extends Entity {
 
     private static final String TAG = "VaultEntity";
 
-    // Vault types
-    public enum VaultType {
-        PLAYER_VAULT("Player Vault", "assets/vault/player_vault", true, 10000),
-        STORAGE_CHEST("Storage Chest", "assets/vault/storage_chest", false, 48),
-        LARGE_CHEST("Large Chest", "assets/vault/large_chest", false, 32),
-        MEDIUM_CHEST("Medium Chest", "assets/vault/medium_chest", false, 16),
-        ANCIENT_POTTERY("Ancient Pottery", "assets/items/ancient_pottery", false, 5);
+    // Vault type constants (replaces enum to avoid D8 crash)
+    public static final int VAULT_PLAYER = 0;
+    public static final int VAULT_STORAGE_CHEST = 1;
+    public static final int VAULT_LARGE_CHEST = 2;
+    public static final int VAULT_MEDIUM_CHEST = 3;
+    public static final int VAULT_ANCIENT_POTTERY = 4;
+    public static final int VAULT_TYPE_COUNT = 5;
 
-        private final String displayName;
-        private final String textureBasePath;
-        private final boolean persistent;
-        private final int maxSlots;
+    private static final String[] VAULT_DISPLAY_NAMES = {
+        "Player Vault", "Storage Chest", "Large Chest", "Medium Chest", "Ancient Pottery"
+    };
+    private static final String[] VAULT_TEXTURE_PATHS = {
+        "assets/vault/player_vault", "assets/vault/storage_chest",
+        "assets/vault/large_chest", "assets/vault/medium_chest",
+        "assets/items/ancient_pottery"
+    };
+    private static final boolean[] VAULT_PERSISTENT = {
+        true, false, false, false, false
+    };
+    private static final int[] VAULT_MAX_SLOTS = {
+        10000, 48, 32, 16, 5
+    };
 
-        VaultType(String displayName, String textureBasePath, boolean persistent, int maxSlots) {
-            this.displayName = displayName;
-            this.textureBasePath = textureBasePath;
-            this.persistent = persistent;
-            this.maxSlots = maxSlots;
+    // Helper class to provide enum-like API for backwards compatibility
+    public static final class VaultType {
+        private final int type;
+
+        private VaultType(int type) {
+            this.type = type;
         }
 
-        public String getDisplayName() { return displayName; }
-        public String getTextureBasePath() { return textureBasePath; }
-        public boolean isPersistent() { return persistent; }
-        public int getMaxSlots() { return maxSlots; }
+        public static VaultType fromInt(int type) {
+            return new VaultType(type);
+        }
+
+        public int intValue() { return type; }
+        public String getDisplayName() { return getVaultDisplayName(type); }
+        public String getTextureBasePath() { return getVaultTexturePath(type); }
+        public boolean isPersistent() { return isVaultPersistent(type); }
+        public int getMaxSlots() { return getVaultMaxSlots(type); }
+
+        // Convenience static instances
+        public static final VaultType PLAYER_VAULT = new VaultType(VAULT_PLAYER);
+        public static final VaultType STORAGE_CHEST = new VaultType(VAULT_STORAGE_CHEST);
+        public static final VaultType LARGE_CHEST = new VaultType(VAULT_LARGE_CHEST);
+        public static final VaultType MEDIUM_CHEST = new VaultType(VAULT_MEDIUM_CHEST);
+        public static final VaultType ANCIENT_POTTERY = new VaultType(VAULT_ANCIENT_POTTERY);
+    }
+
+    public static String getVaultDisplayName(int type) {
+        if (type >= 0 && type < VAULT_TYPE_COUNT) return VAULT_DISPLAY_NAMES[type];
+        return "Unknown";
+    }
+
+    public static String getVaultTexturePath(int type) {
+        if (type >= 0 && type < VAULT_TYPE_COUNT) return VAULT_TEXTURE_PATHS[type];
+        return VAULT_TEXTURE_PATHS[0];
+    }
+
+    public static boolean isVaultPersistent(int type) {
+        if (type >= 0 && type < VAULT_TYPE_COUNT) return VAULT_PERSISTENT[type];
+        return false;
+    }
+
+    public static int getVaultMaxSlots(int type) {
+        if (type >= 0 && type < VAULT_TYPE_COUNT) return VAULT_MAX_SLOTS[type];
+        return 48;
     }
 
     /**

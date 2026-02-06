@@ -38,16 +38,14 @@ import java.util.List;
  */
 public class MovingBlockEntity extends BlockEntity {
 
-    // Movement pattern types
-    public enum MovementPattern {
-        HORIZONTAL,
-        VERTICAL,
-        CIRCULAR,
-        PATH
-    }
+    // Movement pattern constants (replaced enum to avoid D8 crash)
+    public static final int PATTERN_HORIZONTAL = 0;
+    public static final int PATTERN_VERTICAL = 1;
+    public static final int PATTERN_CIRCULAR = 2;
+    public static final int PATTERN_PATH = 3;
 
     // Movement state
-    private MovementPattern pattern;
+    private int pattern;
     private double startX, startY;
     private double endX, endY;
     private double speed;
@@ -103,9 +101,9 @@ public class MovingBlockEntity extends BlockEntity {
         this.movingForward = true;
 
         if (Math.abs(endX - startX) > Math.abs(endY - startY)) {
-            this.pattern = MovementPattern.HORIZONTAL;
+            this.pattern = PATTERN_HORIZONTAL;
         } else {
-            this.pattern = MovementPattern.VERTICAL;
+            this.pattern = PATTERN_VERTICAL;
         }
 
         this.waypoints = new ArrayList<>();
@@ -115,7 +113,7 @@ public class MovingBlockEntity extends BlockEntity {
      * Creates a moving block with specified movement pattern.
      */
     public MovingBlockEntity(int gridX, int gridY, BlockType blockType, boolean useGridCoords,
-                             MovementPattern pattern, double speed) {
+                             int pattern, double speed) {
         super(gridX, gridY, blockType, useGridCoords);
 
         if (useGridCoords) {
@@ -151,7 +149,7 @@ public class MovingBlockEntity extends BlockEntity {
     }
 
     public void setCircularMovement(int centerGridX, int centerGridY, boolean useGridCoords, double radius) {
-        this.pattern = MovementPattern.CIRCULAR;
+        this.pattern = PATTERN_CIRCULAR;
         if (useGridCoords) {
             this.centerX = centerGridX * BlockRegistry.BLOCK_SIZE;
             this.centerY = centerGridY * BlockRegistry.BLOCK_SIZE;
@@ -178,8 +176,8 @@ public class MovingBlockEntity extends BlockEntity {
         }
         waypoints.add(new Point(px, py));
 
-        if (pattern != MovementPattern.PATH) {
-            pattern = MovementPattern.PATH;
+        if (pattern != PATTERN_PATH) {
+            pattern = PATTERN_PATH;
             currentWaypointIndex = 0;
         }
     }
@@ -189,7 +187,7 @@ public class MovingBlockEntity extends BlockEntity {
 
     public double getVelocityX() { return posX - prevX; }
     public double getVelocityY() { return posY - prevY; }
-    public MovementPattern getPattern() { return pattern; }
+    public int getPattern() { return pattern; }
     public double getSpeed() { return speed; }
     public double getStartX() { return startX; }
     public double getStartY() { return startY; }
@@ -214,14 +212,14 @@ public class MovingBlockEntity extends BlockEntity {
         }
 
         switch (pattern) {
-            case HORIZONTAL:
-            case VERTICAL:
+            case PATTERN_HORIZONTAL:
+            case PATTERN_VERTICAL:
                 updateLinearMovement();
                 break;
-            case CIRCULAR:
+            case PATTERN_CIRCULAR:
                 updateCircularMovement();
                 break;
-            case PATH:
+            case PATTERN_PATH:
                 updatePathMovement();
                 break;
         }
@@ -308,8 +306,8 @@ public class MovingBlockEntity extends BlockEntity {
         int halfSize = getSize() / 2;
 
         switch (pattern) {
-            case HORIZONTAL:
-            case VERTICAL:
+            case PATTERN_HORIZONTAL:
+            case PATTERN_VERTICAL:
                 int ex = (int) endX - cameraX;
                 int ey = (int) endY - cameraY;
                 canvas.drawLine(sx + halfSize, sy + halfSize, ex + halfSize, ey + halfSize, pathPaint);
@@ -317,14 +315,14 @@ public class MovingBlockEntity extends BlockEntity {
                 canvas.drawCircle(ex + halfSize, ey + halfSize, 5, dotPaint);
                 break;
 
-            case CIRCULAR:
+            case PATTERN_CIRCULAR:
                 int cx = (int) centerX - cameraX;
                 int cy = (int) centerY - cameraY;
                 canvas.drawCircle(cx, cy, (float) radius, pathPaint);
                 canvas.drawCircle(cx, cy, 5, dotPaint);
                 break;
 
-            case PATH:
+            case PATTERN_PATH:
                 if (!waypoints.isEmpty()) {
                     Point prev = new Point((int) startX, (int) startY);
                     for (Point wp : waypoints) {
@@ -356,7 +354,7 @@ public class MovingBlockEntity extends BlockEntity {
         int blockTop = blockBounds.top;
 
         int tolerance = (int) Math.max(8, speed * 2 + 4);
-        if (pattern == MovementPattern.CIRCULAR) {
+        if (pattern == PATTERN_CIRCULAR) {
             tolerance = (int) Math.max(12, speed * 3 + 6);
         }
 
@@ -414,10 +412,20 @@ public class MovingBlockEntity extends BlockEntity {
 
     public Entity getRidingEntity() { return ridingEntity; }
 
+    private static String getPatternName(int pattern) {
+        switch (pattern) {
+            case PATTERN_HORIZONTAL: return "HORIZONTAL";
+            case PATTERN_VERTICAL: return "VERTICAL";
+            case PATTERN_CIRCULAR: return "CIRCULAR";
+            case PATTERN_PATH: return "PATH";
+            default: return "UNKNOWN";
+        }
+    }
+
     @Override
     public String toString() {
-        return "MovingBlockEntity{type=" + getBlockType().name()
-                + ", pattern=" + pattern
+        return "MovingBlockEntity{type=" + BlockType.getName(getBlockType())
+                + ", pattern=" + getPatternName(pattern)
                 + ", pos=(" + (int) posX + "," + (int) posY + ")"
                 + ", start=(" + (int) startX + "," + (int) startY + ")"
                 + ", end=(" + (int) endX + "," + (int) endY + ")"

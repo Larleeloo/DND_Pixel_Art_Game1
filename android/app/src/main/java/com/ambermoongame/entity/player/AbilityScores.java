@@ -220,18 +220,65 @@ public class AbilityScores {
         return 0.0;
     }
 
+    // Ability type constants (replaces enum to avoid D8 crash)
+    public static final int ABILITY_CHARISMA = 0;
+    public static final int ABILITY_STRENGTH = 1;
+    public static final int ABILITY_CONSTITUTION = 2;
+    public static final int ABILITY_INTELLIGENCE = 3;
+    public static final int ABILITY_WISDOM = 4;
+    public static final int ABILITY_DEXTERITY = 5;
+    public static final int ABILITY_COUNT = 6;
+
+    private static final String[] ABILITY_DISPLAY_NAMES = {
+        "Charisma", "Strength", "Constitution", "Intelligence", "Wisdom", "Dexterity"
+    };
+    private static final String[] ABILITY_SHORT_NAMES = {
+        "CHA", "STR", "CON", "INT", "WIS", "DEX"
+    };
+
+    public static String getAbilityDisplayName(int type) {
+        if (type >= 0 && type < ABILITY_COUNT) return ABILITY_DISPLAY_NAMES[type];
+        return "Unknown";
+    }
+
+    public static String getAbilityShortName(int type) {
+        if (type >= 0 && type < ABILITY_COUNT) return ABILITY_SHORT_NAMES[type];
+        return "???";
+    }
+
+    /**
+     * Helper class for backwards compatibility with enum-like API.
+     */
+    public static final class AbilityType {
+        private final int value;
+
+        private AbilityType(int value) { this.value = value; }
+
+        public static AbilityType fromInt(int value) { return new AbilityType(value); }
+        public int intValue() { return value; }
+        public String getDisplayName() { return getAbilityDisplayName(value); }
+        public String getShortName() { return getAbilityShortName(value); }
+
+        public static final AbilityType CHARISMA = new AbilityType(ABILITY_CHARISMA);
+        public static final AbilityType STRENGTH = new AbilityType(ABILITY_STRENGTH);
+        public static final AbilityType CONSTITUTION = new AbilityType(ABILITY_CONSTITUTION);
+        public static final AbilityType INTELLIGENCE = new AbilityType(ABILITY_INTELLIGENCE);
+        public static final AbilityType WISDOM = new AbilityType(ABILITY_WISDOM);
+        public static final AbilityType DEXTERITY = new AbilityType(ABILITY_DEXTERITY);
+    }
+
     /**
      * Increases an ability score by a specified amount.
      * Used for character progression.
      */
     public void increaseAbility(AbilityType type, int amount) {
-        switch (type) {
-            case CHARISMA: charisma += amount; break;
-            case STRENGTH: strength += amount; break;
-            case CONSTITUTION: constitution += amount; break;
-            case INTELLIGENCE: intelligence += amount; break;
-            case WISDOM: wisdom += amount; break;
-            case DEXTERITY: dexterity += amount; break;
+        switch (type.intValue()) {
+            case ABILITY_CHARISMA: charisma += amount; break;
+            case ABILITY_STRENGTH: strength += amount; break;
+            case ABILITY_CONSTITUTION: constitution += amount; break;
+            case ABILITY_INTELLIGENCE: intelligence += amount; break;
+            case ABILITY_WISDOM: wisdom += amount; break;
+            case ABILITY_DEXTERITY: dexterity += amount; break;
         }
     }
 
@@ -246,29 +293,6 @@ public class AbilityScores {
     public String toString() {
         return String.format("AbilityScores[CHA:%d, STR:%d, CON:%d, INT:%d, WIS:%d, DEX:%d]",
             charisma, strength, constitution, intelligence, wisdom, dexterity);
-    }
-
-    /**
-     * Enum for ability types, used for progression.
-     */
-    public enum AbilityType {
-        CHARISMA("Charisma", "CHA"),
-        STRENGTH("Strength", "STR"),
-        CONSTITUTION("Constitution", "CON"),
-        INTELLIGENCE("Intelligence", "INT"),
-        WISDOM("Wisdom", "WIS"),
-        DEXTERITY("Dexterity", "DEX");
-
-        private final String displayName;
-        private final String shortName;
-
-        AbilityType(String displayName, String shortName) {
-            this.displayName = displayName;
-            this.shortName = shortName;
-        }
-
-        public String getDisplayName() { return displayName; }
-        public String getShortName() { return shortName; }
     }
 
     /**

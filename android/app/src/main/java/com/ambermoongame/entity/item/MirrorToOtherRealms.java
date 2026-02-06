@@ -29,13 +29,19 @@ public class MirrorToOtherRealms extends Item {
 
     private static final String TAG = "MirrorToOtherRealms";
 
-    /**
-     * The three realms displayed by the mirror.
-     */
-    public enum Realm {
-        VOLCANO,
-        FOREST,
-        OCEAN
+    // Realm constants (replaces enum to avoid D8 crash)
+    public static final int REALM_VOLCANO = 0;
+    public static final int REALM_FOREST = 1;
+    public static final int REALM_OCEAN = 2;
+    public static final int REALM_COUNT = 3;
+
+    public static String getRealmName(int realm) {
+        switch (realm) {
+            case REALM_VOLCANO: return "VOLCANO";
+            case REALM_FOREST: return "FOREST";
+            case REALM_OCEAN: return "OCEAN";
+            default: return "UNKNOWN";
+        }
     }
 
     // Timing constants
@@ -82,7 +88,7 @@ public class MirrorToOtherRealms extends Item {
     /**
      * Gets the current realm based on the internal timer.
      */
-    public Realm getCurrentRealm() {
+    public int getCurrentRealm() {
         if (!trackingTime) {
             cycleStartTime = System.currentTimeMillis();
             trackingTime = true;
@@ -91,11 +97,11 @@ public class MirrorToOtherRealms extends Item {
         long elapsedMs = (System.currentTimeMillis() - cycleStartTime) % TOTAL_CYCLE_MS;
 
         if (elapsedMs < REALM_DURATION_MS) {
-            return Realm.VOLCANO;
+            return REALM_VOLCANO;
         } else if (elapsedMs < REALM_DURATION_MS * 2) {
-            return Realm.FOREST;
+            return REALM_FOREST;
         } else {
-            return Realm.OCEAN;
+            return REALM_OCEAN;
         }
     }
 
@@ -105,11 +111,11 @@ public class MirrorToOtherRealms extends Item {
      */
     public String getCurrentProjectileTypeName() {
         switch (getCurrentRealm()) {
-            case VOLCANO:
+            case REALM_VOLCANO:
                 return "FIREBALL";
-            case FOREST:
+            case REALM_FOREST:
                 return "ARROW";
-            case OCEAN:
+            case REALM_OCEAN:
                 return "FISH";
             default:
                 return "MAGIC_BOLT";
@@ -121,11 +127,11 @@ public class MirrorToOtherRealms extends Item {
      */
     public float getCurrentProjectileSpeed() {
         switch (getCurrentRealm()) {
-            case VOLCANO:
+            case REALM_VOLCANO:
                 return 16.0f;
-            case FOREST:
+            case REALM_FOREST:
                 return 22.0f;
-            case OCEAN:
+            case REALM_OCEAN:
                 return 14.0f;
             default:
                 return PROJECTILE_SPEED;
@@ -137,11 +143,11 @@ public class MirrorToOtherRealms extends Item {
      */
     public int getCurrentProjectileDamage() {
         switch (getCurrentRealm()) {
-            case VOLCANO:
+            case REALM_VOLCANO:
                 return 18;
-            case FOREST:
+            case REALM_FOREST:
                 return 12;
-            case OCEAN:
+            case REALM_OCEAN:
                 return 10;
             default:
                 return PROJECTILE_DAMAGE;
@@ -256,7 +262,7 @@ public class MirrorToOtherRealms extends Item {
 
     /** Gets the current realm index (0, 1, or 2). */
     public int getRealmIndex() {
-        return getCurrentRealm().ordinal();
+        return getCurrentRealm();
     }
 
     /** Gets the time remaining in the current realm display (milliseconds). */
@@ -279,7 +285,7 @@ public class MirrorToOtherRealms extends Item {
     @Override
     public String toString() {
         return "MirrorToOtherRealms{" +
-                "currentRealm=" + getCurrentRealm() +
+                "currentRealm=" + getRealmName(getCurrentRealm()) +
                 ", projectileType=" + getCurrentProjectileTypeName() +
                 ", manaCost=" + MANA_COST +
                 ", projectileCount=" + PROJECTILE_COUNT +

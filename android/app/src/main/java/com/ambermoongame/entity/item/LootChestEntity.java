@@ -47,19 +47,55 @@ public class LootChestEntity extends Entity {
 
     private static final String TAG = "LootChestEntity";
 
-    public enum ChestType {
-        DAILY(3, 1.0f, "assets/chests/daily_chest"),
-        MONTHLY(10, 2.5f, "assets/chests/monthly_chest");
+    // Chest type constants (replaces enum to avoid D8 crash)
+    public static final int CHEST_TYPE_DAILY = 0;
+    public static final int CHEST_TYPE_MONTHLY = 1;
+    public static final int CHEST_TYPE_COUNT = 2;
 
-        public final int itemCount;
-        public final float rarityBoost;
-        public final String textureBasePath;
+    private static final int[] CHEST_ITEM_COUNTS = {3, 10};
+    private static final float[] CHEST_RARITY_BOOSTS = {1.0f, 2.5f};
+    private static final String[] CHEST_TEXTURE_PATHS = {
+        "assets/chests/daily_chest",
+        "assets/chests/monthly_chest"
+    };
 
-        ChestType(int itemCount, float rarityBoost, String textureBasePath) {
-            this.itemCount = itemCount;
-            this.rarityBoost = rarityBoost;
-            this.textureBasePath = textureBasePath;
+    public static int getChestItemCount(int type) {
+        if (type >= 0 && type < CHEST_TYPE_COUNT) return CHEST_ITEM_COUNTS[type];
+        return 3;
+    }
+
+    public static float getChestRarityBoost(int type) {
+        if (type >= 0 && type < CHEST_TYPE_COUNT) return CHEST_RARITY_BOOSTS[type];
+        return 1.0f;
+    }
+
+    public static String getChestTexturePath(int type) {
+        if (type >= 0 && type < CHEST_TYPE_COUNT) return CHEST_TEXTURE_PATHS[type];
+        return CHEST_TEXTURE_PATHS[0];
+    }
+
+    public static String getChestTypeName(int type) {
+        switch (type) {
+            case CHEST_TYPE_DAILY: return "DAILY";
+            case CHEST_TYPE_MONTHLY: return "MONTHLY";
+            default: return "UNKNOWN";
         }
+    }
+
+    // Helper class for backwards compatibility
+    public static final class ChestType {
+        private final int type;
+
+        private ChestType(int type) { this.type = type; }
+
+        public static ChestType fromInt(int type) { return new ChestType(type); }
+        public int intValue() { return type; }
+        public int getItemCount() { return getChestItemCount(type); }
+        public float getRarityBoost() { return getChestRarityBoost(type); }
+        public String getTextureBasePath() { return getChestTexturePath(type); }
+
+        public static final ChestType DAILY = new ChestType(CHEST_TYPE_DAILY);
+        public static final ChestType MONTHLY = new ChestType(CHEST_TYPE_MONTHLY);
     }
 
     private ChestType chestType;
