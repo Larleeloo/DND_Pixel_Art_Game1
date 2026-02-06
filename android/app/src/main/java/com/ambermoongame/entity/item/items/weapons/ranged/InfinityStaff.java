@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Staff of Infinity - Contains the power of infinity.
@@ -11,7 +11,7 @@ public class InfinityStaff extends Item {
 
     public InfinityStaff() {
         super("Staff of Infinity", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.MAGIC_BOLT, 55, 20.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 55, 20.0f);
         setRarity(ItemRarity.MYTHIC);
         setDescription("Contains the power of infinity");
         setSpecialEffect("Reality-bending damage");

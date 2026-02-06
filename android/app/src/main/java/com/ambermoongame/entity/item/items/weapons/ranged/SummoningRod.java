@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Summoning Rod - Calls forth magical entities.
@@ -11,7 +11,7 @@ public class SummoningRod extends Item {
 
     public SummoningRod() {
         super("Summoning Rod", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.MAGIC_BOLT, 18, 10.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 18, 10.0f);
         setRarity(ItemRarity.RARE);
         setDescription("Calls forth magical entities");
         setSpecialEffect("Summons spectral allies");

@@ -225,10 +225,10 @@ public class BlockEntity extends Entity {
         if (broken) return false;
 
         // If overlay blocks base mining, damage overlay first
-        if (overlay != BlockOverlay.NONE && overlay.blocksBaseMining()) {
+        if (overlay != BlockOverlay.NONE && BlockOverlay.blocksBaseMining(overlay)) {
             overlayDamage++;
-            if (overlayDamage >= overlay.getBreakSteps()) {
-                Log.d(TAG, "Overlay " + overlay.getDisplayName() + " removed from block at ("
+            if (overlayDamage >= BlockOverlay.getBreakSteps(overlay)) {
+                Log.d(TAG, "Overlay " + BlockOverlay.getDisplayName(overlay) + " removed from block at ("
                         + gridX + "," + gridY + ")");
                 overlay = BlockOverlay.NONE;
                 overlayTexture = null;

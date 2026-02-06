@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Celestial Bow - Fires arrows of pure starlight.
@@ -11,7 +11,7 @@ public class CelestialBow extends Item {
 
     public CelestialBow() {
         super("Celestial Bow", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.ARROW, 45, 30.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_ARROW, 45, 30.0f);
         setRarity(ItemRarity.MYTHIC);
         setDescription("Fires arrows of pure starlight");
         setAmmoItemName("arrow");

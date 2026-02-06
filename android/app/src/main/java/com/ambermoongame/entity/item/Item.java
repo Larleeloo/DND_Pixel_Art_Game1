@@ -260,34 +260,34 @@ public class Item {
         this.description = "";
 
         // Set defaults based on category
-        switch (category) {
-            case WEAPON:
-            case TOOL:
-            case ARMOR:
+        switch (category.intValue()) {
+            case CATEGORY_WEAPON:
+            case CATEGORY_TOOL:
+            case CATEGORY_ARMOR:
                 this.stackable = false;
                 this.maxStackSize = 1;
                 break;
-            case RANGED_WEAPON:
+            case CATEGORY_RANGED_WEAPON:
                 this.stackable = false;
                 this.maxStackSize = 1;
                 this.isRangedWeapon = true;
                 break;
-            case FOOD:
-            case POTION:
+            case CATEGORY_FOOD:
+            case CATEGORY_POTION:
                 this.stackable = true;
                 this.maxStackSize = 16;
                 this.isConsumable = true;
                 break;
-            case MATERIAL:
-            case KEY:
-            case ACCESSORY:
-            case THROWABLE:
-            case CLOTHING:
-            case OTHER:
+            case CATEGORY_MATERIAL:
+            case CATEGORY_KEY:
+            case CATEGORY_ACCESSORY:
+            case CATEGORY_THROWABLE:
+            case CATEGORY_CLOTHING:
+            case CATEGORY_OTHER:
                 this.stackable = true;
                 this.maxStackSize = 16;
                 break;
-            case BLOCK:
+            case CATEGORY_BLOCK:
                 this.stackable = true;
                 this.maxStackSize = 64;
                 break;

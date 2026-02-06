@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Arcane Staff - Channels pure arcane energy.
@@ -11,7 +11,7 @@ public class ArcaneStaff extends Item {
 
     public ArcaneStaff() {
         super("Arcane Staff", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.MAGIC_BOLT, 35, 16.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 35, 16.0f);
         setRarity(ItemRarity.EPIC);
         setDescription("Channels pure arcane energy");
         setCritChance(0.20f);

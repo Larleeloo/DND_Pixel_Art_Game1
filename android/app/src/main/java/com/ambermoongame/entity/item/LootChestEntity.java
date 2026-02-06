@@ -175,7 +175,7 @@ public class LootChestEntity extends Entity {
      * Extracts frames from ImageAsset for manual playback control.
      */
     private void loadTextures() {
-        String texturePath = chestType.textureBasePath + ".gif";
+        String texturePath = chestType.getTextureBasePath() + ".gif";
 
         try {
             AndroidAssetLoader.ImageAsset asset = AndroidAssetLoader.load(texturePath);
@@ -422,8 +422,8 @@ public class LootChestEntity extends Entity {
             return template != null && template.getCategory() == Item.ItemCategory.BLOCK;
         });
 
-        for (int i = 0; i < chestType.itemCount; i++) {
-            String itemId = selectRandomItem(itemList, chestType.rarityBoost);
+        for (int i = 0; i < chestType.getItemCount(); i++) {
+            String itemId = selectRandomItem(itemList, chestType.getRarityBoost());
             if (itemId == null) continue;
 
             ItemEntity item = new ItemEntity(x + width / 2, y, itemId);
@@ -463,23 +463,23 @@ public class LootChestEntity extends Entity {
             if (template == null) continue;
 
             int weight;
-            switch (template.getRarity()) {
-                case COMMON:
+            switch (template.getRarity().intValue()) {
+                case Item.RARITY_COMMON:
                     weight = (int)(100 / rarityBoost);
                     break;
-                case UNCOMMON:
+                case Item.RARITY_UNCOMMON:
                     weight = (int)(50 * (rarityBoost > 1 ? rarityBoost * 0.8 : 1));
                     break;
-                case RARE:
+                case Item.RARITY_RARE:
                     weight = (int)(25 * rarityBoost);
                     break;
-                case EPIC:
+                case Item.RARITY_EPIC:
                     weight = (int)(10 * rarityBoost * 1.5);
                     break;
-                case LEGENDARY:
+                case Item.RARITY_LEGENDARY:
                     weight = (int)(3 * rarityBoost * 2);
                     break;
-                case MYTHIC:
+                case Item.RARITY_MYTHIC:
                     weight = (int)(1 * rarityBoost * 3);
                     break;
                 default:

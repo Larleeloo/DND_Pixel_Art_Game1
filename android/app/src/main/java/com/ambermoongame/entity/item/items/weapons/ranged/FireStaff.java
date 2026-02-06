@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Staff of Fire - Launches explosive fireballs.
@@ -11,7 +11,7 @@ public class FireStaff extends Item {
 
     public FireStaff() {
         super("Staff of Fire", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.FIREBALL, 25, 12.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_FIREBALL, 25, 12.0f);
         setRarity(ItemRarity.RARE);
         setDescription("Launches explosive fireballs");
         setSpecialEffect("Explosion on impact");

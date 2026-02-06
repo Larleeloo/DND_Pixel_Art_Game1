@@ -299,7 +299,7 @@ public class BlockRegistry {
      */
     public void preloadAllTextures() {
         Log.d(TAG, "Preloading all block textures...");
-        for (BlockType type : BlockType.values()) {
+        for (int type = 0; type < BlockType.COUNT; type++) {
             getTexture(type);
         }
         Log.d(TAG, "Preloaded " + textureCache.size() + " textures");
@@ -311,13 +311,15 @@ public class BlockRegistry {
      */
     public void clearCache() {
         // Recycle bitmaps to free native memory
-        for (Bitmap bmp : textureCache.values()) {
+        for (int i = 0; i < textureCache.size(); i++) {
+            Bitmap bmp = textureCache.valueAt(i);
             if (bmp != null && !bmp.isRecycled()) bmp.recycle();
         }
         for (Bitmap bmp : tintedTextureCache.values()) {
             if (bmp != null && !bmp.isRecycled()) bmp.recycle();
         }
-        for (Bitmap bmp : overlayTextureCache.values()) {
+        for (int i = 0; i < overlayTextureCache.size(); i++) {
+            Bitmap bmp = overlayTextureCache.valueAt(i);
             if (bmp != null && !bmp.isRecycled()) bmp.recycle();
         }
 

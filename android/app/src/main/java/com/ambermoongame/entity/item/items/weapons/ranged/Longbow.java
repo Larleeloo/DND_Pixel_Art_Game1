@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.weapons.ranged;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Longbow - Greater range and power.
@@ -11,7 +11,7 @@ public class Longbow extends Item {
 
     public Longbow() {
         super("Longbow", ItemCategory.RANGED_WEAPON);
-        setRangedWeapon(true, ProjectileType.ARROW, 15, 18.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_ARROW, 15, 18.0f);
         setRarity(ItemRarity.UNCOMMON);
         setDescription("Greater range and power");
         setAmmoItemName("arrow");

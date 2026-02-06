@@ -1,8 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
-import com.ambermoongame.entity.ProjectileEntity.StatusEffectType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Ice Arrow - Arrows that slow enemies.
@@ -17,8 +16,8 @@ public class IceArrow extends Item {
         setDescription("Arrows that slow enemies");
         setStackable(true);
         setMaxStackSize(16);
-        setRangedWeapon(false, ProjectileType.ARROW, 7, 0);
-        setStatusEffect(StatusEffectType.FROZEN, 4.0, 3, 1.1f);
+        setRangedWeapon(false, ProjectileEntity.PROJECTILE_ARROW, 7, 0);
+        setStatusEffect(ProjectileEntity.EFFECT_FROZEN, 4.0, 3, 1.1f);
         setSpecialEffect("Slows for 4 seconds");
     }
 

@@ -1,8 +1,7 @@
 package com.ambermoongame.entity.item.items.ammo;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
-import com.ambermoongame.entity.ProjectileEntity.StatusEffectType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Fire Arrow - Arrows that burn on impact.
@@ -17,8 +16,8 @@ public class FireArrow extends Item {
         setDescription("Arrows that burn on impact");
         setStackable(true);
         setMaxStackSize(16);
-        setRangedWeapon(false, ProjectileType.ARROW, 8, 0);
-        setStatusEffect(StatusEffectType.BURNING, 3.0, 5, 1.2f);
+        setRangedWeapon(false, ProjectileEntity.PROJECTILE_ARROW, 8, 0);
+        setStatusEffect(ProjectileEntity.EFFECT_BURNING, 3.0, 5, 1.2f);
         setSpecialEffect("Burns for 3 seconds");
     }
 

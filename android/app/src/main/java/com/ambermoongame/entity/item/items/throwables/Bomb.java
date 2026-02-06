@@ -1,7 +1,7 @@
 package com.ambermoongame.entity.item.items.throwables;
 
 import com.ambermoongame.entity.item.Item;
-import com.ambermoongame.entity.ProjectileEntity.ProjectileType;
+import com.ambermoongame.entity.ProjectileEntity;
 
 /**
  * Bomb - Explodes on impact.
@@ -11,7 +11,7 @@ public class Bomb extends Item {
 
     public Bomb() {
         super("Bomb", ItemCategory.THROWABLE);
-        setRangedWeapon(true, ProjectileType.BOMB, 40, 14.0f);
+        setRangedWeapon(true, ProjectileEntity.PROJECTILE_BOMB, 40, 14.0f);
         setRarity(ItemRarity.UNCOMMON);
         setDescription("Explodes on impact");
         setStackable(true);
