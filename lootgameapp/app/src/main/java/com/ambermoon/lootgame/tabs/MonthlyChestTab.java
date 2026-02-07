@@ -21,6 +21,7 @@ public class MonthlyChestTab extends ScrollView {
     private TextView timerText;
     private LinearLayout lootDisplay;
     private Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable timerTick;
 
     public MonthlyChestTab(Context context) {
         super(context);
@@ -96,14 +97,11 @@ public class MonthlyChestTab extends ScrollView {
     }
 
     private void startTimer() {
-        handler.postDelayed(new TimerRunnable(), 1000);
-    }
-
-    private class TimerRunnable implements Runnable {
-        @Override public void run() {
+        timerTick = () -> {
             updateTimer();
-            handler.postDelayed(this, 1000);
-        }
+            handler.postDelayed(timerTick, 1000);
+        };
+        handler.postDelayed(timerTick, 1000);
     }
 
     private void updateTimer() {
