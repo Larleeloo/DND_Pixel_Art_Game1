@@ -139,28 +139,29 @@ public class TabActivity extends Activity {
         SaveManager.getInstance().save();
         if (GamePreferences.isLoggedIn()) {
             // If logged in with access token, upload to Google Drive
-            GoogleDriveSyncManager.getInstance().syncToCloud(new CloudSyncCallback());
+            GoogleDriveSyncManager.getInstance().syncToCloud(new CloudUploadCallback());
         } else {
             // Even without login, can still download from public file
-            GoogleDriveSyncManager.getInstance().syncFromCloud(new GoogleDriveSyncManager.SyncCallback() {
-                @Override
-                public void onSuccess(String msg) {
-                    runOnUiThread(() -> {
-                        switchTab(currentTabIndex); // Refresh current tab
-                        Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
-                    });
-                }
-                @Override
-                public void onError(String error) {
-                    runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
-                }
-            });
+            GoogleDriveSyncManager.getInstance().syncFromCloud(new CloudDownloadCallback());
         }
     }
 
-    private class CloudSyncCallback implements GoogleDriveSyncManager.SyncCallback {
+    // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
+    class CloudUploadCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override public void onSuccess(String msg) {
             runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced to Google Drive!", Toast.LENGTH_SHORT).show());
+        }
+        @Override public void onError(String error) {
+            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
+        }
+    }
+
+    class CloudDownloadCallback implements GoogleDriveSyncManager.SyncCallback {
+        @Override public void onSuccess(String msg) {
+            runOnUiThread(() -> {
+                switchTab(currentTabIndex); // Refresh current tab
+                Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
+            });
         }
         @Override public void onError(String error) {
             runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
