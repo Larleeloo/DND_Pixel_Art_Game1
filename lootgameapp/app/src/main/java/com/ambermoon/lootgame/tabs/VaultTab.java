@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class VaultTab extends ScrollView {
+public class VaultTab extends ScrollView implements TextWatcher {
     private LinearLayout itemGrid;
     private TextView detailPanel;
     private EditText searchBox;
@@ -63,7 +63,7 @@ public class VaultTab extends ScrollView {
         searchBox.setBackgroundColor(Color.parseColor("#28233A"));
         searchBox.setPadding(24, 16, 24, 16);
         searchBox.setSingleLine(true);
-        searchBox.addTextChangedListener(new SearchTextWatcher());
+        searchBox.addTextChangedListener(this);
         content.addView(searchBox);
 
         // Sort buttons
@@ -186,11 +186,10 @@ public class VaultTab extends ScrollView {
         }
     }
 
-    private class SearchTextWatcher implements TextWatcher {
-        @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-        @Override public void onTextChanged(CharSequence s, int st, int b, int c) { refreshGrid(); }
-        @Override public void afterTextChanged(Editable s) {}
-    }
+    // TextWatcher implementation (on VaultTab directly, not an inner class)
+    @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+    @Override public void onTextChanged(CharSequence s, int st, int b, int c) { refreshGrid(); }
+    @Override public void afterTextChanged(Editable s) {}
 
     private void showDetail(String itemId) {
         Item template = ItemRegistry.getTemplate(itemId);
