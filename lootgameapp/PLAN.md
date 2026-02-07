@@ -31,8 +31,7 @@ lootgameapp/
 │   ├── src/main/
 │   │   ├── java/com/ambermoon/lootgame/
 │   │   │   ├── core/               # App entry, activities, game loop
-│   │   │   │   ├── MainActivity.java        # Launcher → LoginActivity or TabActivity
-│   │   │   │   ├── LoginActivity.java       # Google Drive login + sync screen
+│   │   │   │   ├── MainActivity.java        # Launcher → TabActivity
 │   │   │   │   ├── TabActivity.java         # Main tabbed interface host
 │   │   │   │   └── GamePreferences.java     # SharedPreferences wrapper
 │   │   │   │
@@ -134,7 +133,7 @@ lootgameapp/
 | GIF Decoding      | Custom GifDecoder         | Full frame extraction, no external lib |
 | Build System      | Command-line (aapt2/d8)   | Consistent with existing Android port  |
 | Persistence       | JSON files                | Compatible with desktop save format    |
-| Cloud Sync        | Google Drive API v3       | Public file download, token-based upload |
+| Cloud Sync        | Google Drive (public URL) | Public file download, no auth needed     |
 | Audio             | SoundPool                 | Lightweight, low-latency effects       |
 | Target SDK        | API 34 (Android 14)       | Same as existing port                  |
 | Min SDK           | API 24 (Android 7.0)      | Same as existing port                  |
@@ -168,14 +167,7 @@ lootgameapp/
 App Launch
     │
     ▼
-[MainActivity] ─── Check saved login ──► [TabActivity] (if token exists)
-    │                                         │
-    ▼                                         │
-[LoginActivity]                               │
-    │ Google Drive access token entered       │
-    │ Initial sync from cloud                 │
-    ▼                                         │
-[TabActivity] ◄───────────────────────────────┘
+[MainActivity] ──► [TabActivity]
     │
     ├── Tab 1: Daily Chest
     ├── Tab 2: Monthly Chest
@@ -185,55 +177,10 @@ App Launch
     └── Tab 6: Vault (item browser/storage)
 ```
 
-### 2.2 Login Screen (LoginActivity)
+No login screen. The app goes straight to the game. Sync downloads from a
+public Google Drive file — no authentication required.
 
-**Purpose**: Google Drive authentication for cross-device vault synchronization.
-
-**Layout (Portrait)**:
-```
-┌──────────────────────────┐
-│                          │
-│    [Amber Moon Logo]     │
-│    ── Loot Game ──       │
-│                          │
-│  ┌────────────────────┐  │
-│  │ Google Drive Access │  │
-│  │ Token (paste)       │  │
-│  └────────────────────┘  │
-│                          │
-│  [  Connect & Sync  ]   │
-│                          │
-│  [  Play Offline   ]    │
-│                          │
-│  ┌────────────────────┐  │
-│  │ Sync Status:       │  │
-│  │ "Not connected"    │  │
-│  └────────────────────┘  │
-│                          │
-│  "Sync your vault items │
-│   across devices via    │
-│   Google Drive."        │
-│                          │
-└──────────────────────────┘
-```
-
-**Features**:
-- Google OAuth access token input (Drive file access required)
-- "Connect & Sync" validates token, pulls cloud save, merges vault
-- "Play Offline" skips login, uses local save only
-- Sync status indicator (connected/syncing/error/offline)
-- Token stored in SharedPreferences
-- Auto-login on subsequent launches if token is saved
-- Manual logout button in settings (accessible from any tab)
-
-**Google Drive Sync Details**:
-- File: Public Google Drive file (ID: 1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx)
-- Download URL: `https://drive.google.com/uc?export=download&id={fileId}` (no auth required)
-- Upload URL: `https://www.googleapis.com/upload/drive/v3/files/{fileId}?uploadType=media`
-- Sync triggers: On login, on app pause, on chest open, on craft, manual button
-- Download works without login (public file); upload requires access token
-
-### 2.3 Tab Activity (TabActivity)
+### 2.2 Tab Activity (TabActivity)
 
 **Purpose**: Main app host with bottom tab navigation and persistent header.
 
@@ -805,23 +752,14 @@ public class AnimatedSprite {
 **Google Drive File ID**: `1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx`
 **Public URL**: `https://drive.google.com/file/d/1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx/view?usp=drive_link`
 
-**Sync Operations**:
+**Sync Operation** (Download only, no auth):
 
-1. **Push (Local → Cloud)**:
-   - Serialize SaveData to JSON
-   - PATCH to Google Drive API v3: `upload/drive/v3/files/{fileId}?uploadType=media`
-   - Auth: `Authorization: Bearer {Google OAuth access token}`
-   - Content-Type: application/json
-
-2. **Pull (Cloud → Local)**:
+1. **Pull (Cloud → Local)**:
    - GET from public download URL: `drive.google.com/uc?export=download&id={fileId}`
    - No authentication required (file is publicly shared)
    - Validate response is JSON (not HTML confirmation page)
-   - Deserialize to SaveData
-
-3. **Token Validation**:
-   - GET file metadata from Drive API v3: `drive/v3/files/{fileId}?fields=id,name,modifiedTime`
-   - Verifies the access token has permission to read/write the file
+   - Deserialize to SaveData and save locally
+   - Triggered by sync button (↻) in the header bar
 
 ### 6.3 Cross-App Vault Sharing
 
@@ -964,9 +902,6 @@ The build system follows the same command-line approach as the main Android port
             </intent-filter>
         </activity>
 
-        <activity android:name=".core.LoginActivity"
-            android:screenOrientation="portrait" />
-
         <activity android:name=".core.TabActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
@@ -978,7 +913,7 @@ The build system follows the same command-line approach as the main Android port
 Key differences from main game:
 - **Portrait orientation** (not landscape)
 - **Different package name**: `com.ambermoon.lootgame`
-- **3 activities** instead of 2 (added LoginActivity)
+- **2 activities**: MainActivity (launcher) and TabActivity (game)
 - **No gamepad requirement** (touch-only interface)
 
 --------------------------------------------------------------------------------
@@ -1019,13 +954,10 @@ Key differences from main game:
 - [ ] Implement pull history display
 - [ ] Add slot machine sound effects and haptics
 
-### Phase 5: Login & Sync
-- [x] Implement LoginActivity (Google Drive access token input)
-- [x] Implement GoogleDriveSyncManager (push via Drive API, pull via public URL)
-- [ ] Implement ConflictResolver (merge strategies)
+### Phase 5: Sync
+- [x] Implement GoogleDriveSyncManager (download from public URL, no auth)
 - [x] Add sync button to header bar
 - [ ] Add auto-sync on key events (chest open, craft, app pause)
-- [x] Token validation and error handling
 
 ### Phase 6: Polish
 - [ ] Add sound effects for all interactions
@@ -1080,9 +1012,8 @@ For initial development, missing assets will use:
 
 ### 12.1 Manual Test Checklist
 
-- [ ] Login with valid Google access token → sync succeeds
-- [ ] Login with invalid token → clear error message
-- [ ] Play offline → all features work without network
+- [ ] Sync button downloads save from Google Drive
+- [ ] All features work without network (offline play)
 - [ ] Open daily chest → 3 items + coins added to vault
 - [ ] Daily chest cooldown → timer shows, chest grayed out
 - [ ] Open monthly chest → 10 items + coins, rainbow effects
@@ -1098,8 +1029,7 @@ For initial development, missing assets will use:
 - [ ] Vault: scroll through items, filter, sort, search
 - [ ] Vault: tap item → tooltip with full stats
 - [ ] Coins: display updates on earn/spend
-- [ ] Sync: manual sync button → data syncs to Google Drive
-- [ ] Sync: conflict detection → resolution dialog
+- [ ] Sync: manual sync button → downloads save from Google Drive
 - [ ] App pause/resume → save preserved
 - [ ] App kill and restart → save loaded correctly
 - [ ] Developer mode: cooldowns reset on toggle

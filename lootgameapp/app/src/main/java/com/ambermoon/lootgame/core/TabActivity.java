@@ -136,26 +136,16 @@ public class TabActivity extends Activity {
 
     private void doSync() {
         SaveManager.getInstance().save();
-        if (GamePreferences.isLoggedIn()) {
-            // Logged in: upload to Google Drive
-            GoogleDriveSyncManager.getInstance().syncToCloud((success, msg) ->
-                runOnUiThread(() -> Toast.makeText(TabActivity.this,
-                    success ? "Synced to Google Drive!" : "Sync failed: " + msg,
-                    Toast.LENGTH_SHORT).show())
-            );
-        } else {
-            // Not logged in: download from public file
-            GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
-                runOnUiThread(() -> {
-                    if (success) {
-                        switchTab(currentTabIndex);
-                        Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(TabActivity.this, "Sync failed: " + msg, Toast.LENGTH_SHORT).show();
-                    }
-                })
-            );
-        }
+        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
+            runOnUiThread(() -> {
+                if (success) {
+                    switchTab(currentTabIndex);
+                    Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(TabActivity.this, "Sync failed: " + msg, Toast.LENGTH_SHORT).show();
+                }
+            })
+        );
     }
 
     @Override
