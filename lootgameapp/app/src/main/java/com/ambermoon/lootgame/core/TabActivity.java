@@ -8,6 +8,7 @@ import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
+import com.ambermoon.lootgame.save.SyncCallback;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -147,7 +148,7 @@ public class TabActivity extends Activity {
     }
 
     // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
-    class CloudUploadCallback implements GoogleDriveSyncManager.SyncCallback {
+    class CloudUploadCallback implements SyncCallback {
         @Override public void onSuccess(String msg) {
             runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced to Google Drive!", Toast.LENGTH_SHORT).show());
         }
@@ -156,7 +157,7 @@ public class TabActivity extends Activity {
         }
     }
 
-    class CloudDownloadCallback implements GoogleDriveSyncManager.SyncCallback {
+    class CloudDownloadCallback implements SyncCallback {
         @Override public void onSuccess(String msg) {
             runOnUiThread(() -> {
                 switchTab(currentTabIndex); // Refresh current tab
