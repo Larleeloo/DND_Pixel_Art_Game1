@@ -5,15 +5,13 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.*;
 
-import com.ambermoon.lootgame.save.GitHubSyncManager;
+import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
 
 public class LoginActivity extends Activity {
-    private EditText usernameInput;
     private EditText tokenInput;
     // Package-private to avoid synthetic accessors that crash D8 dex compiler
     TextView statusText;
@@ -52,31 +50,15 @@ public class LoginActivity extends Activity {
         subtitle.setPadding(0, 8, 0, 60);
         layout.addView(subtitle);
 
-        // Username
-        TextView userLabel = new TextView(this);
-        userLabel.setText("GitHub Username");
-        userLabel.setTextColor(Color.parseColor("#AAAACC"));
-        userLabel.setPadding(0, 0, 0, 8);
-        layout.addView(userLabel);
-
-        usernameInput = new EditText(this);
-        usernameInput.setHint("username");
-        usernameInput.setTextColor(Color.WHITE);
-        usernameInput.setHintTextColor(Color.parseColor("#666688"));
-        usernameInput.setBackgroundColor(Color.parseColor("#3C3555"));
-        usernameInput.setPadding(24, 20, 24, 20);
-        usernameInput.setSingleLine(true);
-        layout.addView(usernameInput);
-
-        // Token
-        TextView tokenLabel = new TextView(this);
-        tokenLabel.setText("Personal Access Token");
-        tokenLabel.setTextColor(Color.parseColor("#AAAACC"));
-        tokenLabel.setPadding(0, 24, 0, 8);
-        layout.addView(tokenLabel);
+        // Google Drive info
+        TextView driveLabel = new TextView(this);
+        driveLabel.setText("Google Drive Access Token");
+        driveLabel.setTextColor(Color.parseColor("#AAAACC"));
+        driveLabel.setPadding(0, 0, 0, 8);
+        layout.addView(driveLabel);
 
         tokenInput = new EditText(this);
-        tokenInput.setHint("ghp_...");
+        tokenInput.setHint("ya29...");
         tokenInput.setTextColor(Color.WHITE);
         tokenInput.setHintTextColor(Color.parseColor("#666688"));
         tokenInput.setBackgroundColor(Color.parseColor("#3C3555"));
@@ -84,9 +66,17 @@ public class LoginActivity extends Activity {
         tokenInput.setSingleLine(true);
         layout.addView(tokenInput);
 
+        // Help text
+        TextView helpText = new TextView(this);
+        helpText.setText("Enter a Google OAuth access token\nwith Drive file access permissions.\nThis allows syncing your vault to Google Drive.");
+        helpText.setTextColor(Color.parseColor("#888899"));
+        helpText.setTextSize(12);
+        helpText.setPadding(0, 8, 0, 0);
+        layout.addView(helpText);
+
         // Login button
         loginButton = new Button(this);
-        loginButton.setText("Login & Sync");
+        loginButton.setText("Connect & Sync");
         loginButton.setTextColor(Color.WHITE);
         loginButton.setBackgroundColor(Color.parseColor("#4DA6FF"));
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
@@ -113,7 +103,7 @@ public class LoginActivity extends Activity {
 
         // Status text
         statusText = new TextView(this);
-        statusText.setText("Sync your vault items across devices via GitHub");
+        statusText.setText("Sync your vault items across devices via Google Drive");
         statusText.setTextColor(Color.parseColor("#888888"));
         statusText.setGravity(Gravity.CENTER);
         statusText.setPadding(0, 32, 0, 0);
@@ -124,12 +114,11 @@ public class LoginActivity extends Activity {
     }
 
     private void doLogin() {
-        String username = usernameInput.getText().toString().trim();
         String token = tokenInput.getText().toString().trim();
 
-        if (username.isEmpty() || token.isEmpty()) {
+        if (token.isEmpty()) {
             statusText.setTextColor(Color.parseColor("#FF4444"));
-            statusText.setText("Please enter both username and token");
+            statusText.setText("Please enter a Google access token");
             return;
         }
 
@@ -137,10 +126,9 @@ public class LoginActivity extends Activity {
         statusText.setTextColor(Color.parseColor("#4DA6FF"));
         statusText.setText("Validating token...");
 
-        GamePreferences.setGitHubUserId(username);
-        GamePreferences.setGitHubToken(token);
+        GamePreferences.setGoogleAccessToken(token);
 
-        GitHubSyncManager.getInstance().validateToken(new ValidateTokenCallback());
+        GoogleDriveSyncManager.getInstance().validateToken(new ValidateTokenCallback());
     }
 
     // Package-private to avoid synthetic accessors that crash D8 dex compiler
@@ -149,21 +137,21 @@ public class LoginActivity extends Activity {
         finish();
     }
 
-    private class ValidateTokenCallback implements GitHubSyncManager.SyncCallback {
+    private class ValidateTokenCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override
         public void onSuccess(String message) {
-            statusText.setText("Syncing save data...");
-            GitHubSyncManager.getInstance().syncFromCloud(new SyncFromCloudCallback());
+            statusText.setText("Syncing save data from Google Drive...");
+            GoogleDriveSyncManager.getInstance().syncFromCloud(new SyncFromCloudCallback());
         }
         @Override
         public void onError(String error) {
             loginButton.setEnabled(true);
             statusText.setTextColor(Color.parseColor("#FF4444"));
-            statusText.setText("Login failed: " + error);
+            statusText.setText("Connection failed: " + error);
         }
     }
 
-    private class SyncFromCloudCallback implements GitHubSyncManager.SyncCallback {
+    private class SyncFromCloudCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override
         public void onSuccess(String msg) {
             proceedToGame();

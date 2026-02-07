@@ -11,13 +11,12 @@ public class GamePreferences {
         prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    public static String getGitHubToken() { return prefs.getString("github_token", ""); }
-    public static void setGitHubToken(String token) { prefs.edit().putString("github_token", token).apply(); }
+    public static String getGoogleAccessToken() { return prefs.getString("google_access_token", ""); }
+    public static void setGoogleAccessToken(String token) { prefs.edit().putString("google_access_token", token).apply(); }
 
-    public static String getGitHubUserId() { return prefs.getString("github_user_id", ""); }
-    public static void setGitHubUserId(String id) { prefs.edit().putString("github_user_id", id).apply(); }
+    public static boolean isLoggedIn() { return !getGoogleAccessToken().isEmpty(); }
 
-    public static boolean isLoggedIn() { return !getGitHubToken().isEmpty(); }
+    public static void logout() { prefs.edit().remove("google_access_token").apply(); }
 
     public static float getSfxVolume() { return prefs.getFloat("sfx_volume", 0.8f); }
     public static void setSfxVolume(float v) { prefs.edit().putFloat("sfx_volume", Math.max(0, Math.min(1, v))).apply(); }

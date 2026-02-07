@@ -32,7 +32,7 @@ lootgameapp/
 │   │   ├── java/com/ambermoon/lootgame/
 │   │   │   ├── core/               # App entry, activities, game loop
 │   │   │   │   ├── MainActivity.java        # Launcher → LoginActivity or TabActivity
-│   │   │   │   ├── LoginActivity.java       # GitHub login + sync screen
+│   │   │   │   ├── LoginActivity.java       # Google Drive login + sync screen
 │   │   │   │   ├── TabActivity.java         # Main tabbed interface host
 │   │   │   │   └── GamePreferences.java     # SharedPreferences wrapper
 │   │   │   │
@@ -91,7 +91,7 @@ lootgameapp/
 │   │   │   │
 │   │   │   ├── save/               # Persistence and cloud sync
 │   │   │   │   ├── SaveManager.java         # Local JSON persistence
-│   │   │   │   ├── GitHubSyncManager.java   # GitHub API cloud sync
+│   │   │   │   ├── GoogleDriveSyncManager.java # Google Drive cloud sync
 │   │   │   │   ├── SaveData.java            # Save data model class
 │   │   │   │   └── ConflictResolver.java    # Cloud sync conflict resolution
 │   │   │   │
@@ -134,7 +134,7 @@ lootgameapp/
 | GIF Decoding      | Custom GifDecoder         | Full frame extraction, no external lib |
 | Build System      | Command-line (aapt2/d8)   | Consistent with existing Android port  |
 | Persistence       | JSON files                | Compatible with desktop save format    |
-| Cloud Sync        | GitHub REST API           | Already proven in existing port        |
+| Cloud Sync        | Google Drive API v3       | Public file download, token-based upload |
 | Audio             | SoundPool                 | Lightweight, low-latency effects       |
 | Target SDK        | API 34 (Android 14)       | Same as existing port                  |
 | Min SDK           | API 24 (Android 7.0)      | Same as existing port                  |
@@ -172,7 +172,7 @@ App Launch
     │                                         │
     ▼                                         │
 [LoginActivity]                               │
-    │ GitHub token entered                    │
+    │ Google Drive access token entered       │
     │ Initial sync from cloud                 │
     ▼                                         │
 [TabActivity] ◄───────────────────────────────┘
@@ -187,7 +187,7 @@ App Launch
 
 ### 2.2 Login Screen (LoginActivity)
 
-**Purpose**: GitHub authentication for cross-device vault synchronization.
+**Purpose**: Google Drive authentication for cross-device vault synchronization.
 
 **Layout (Portrait)**:
 ```
@@ -197,14 +197,11 @@ App Launch
 │    ── Loot Game ──       │
 │                          │
 │  ┌────────────────────┐  │
-│  │ GitHub Username     │  │
-│  └────────────────────┘  │
-│  ┌────────────────────┐  │
-│  │ Personal Access     │  │
+│  │ Google Drive Access │  │
 │  │ Token (paste)       │  │
 │  └────────────────────┘  │
 │                          │
-│  [  Login & Sync   ]    │
+│  [  Connect & Sync  ]   │
 │                          │
 │  [  Play Offline   ]    │
 │                          │
@@ -213,30 +210,28 @@ App Launch
 │  │ "Not connected"    │  │
 │  └────────────────────┘  │
 │                          │
-│  "Your vault items sync │
+│  "Sync your vault items │
 │   across devices via    │
-│   GitHub. Create a PAT  │
-│   at github.com/        │
-│   settings/tokens"      │
+│   Google Drive."        │
 │                          │
 └──────────────────────────┘
 ```
 
 **Features**:
-- GitHub Personal Access Token (PAT) input (repo scope required)
-- Username input for save path identification
-- "Login & Sync" validates token, pulls cloud save, merges vault
+- Google OAuth access token input (Drive file access required)
+- "Connect & Sync" validates token, pulls cloud save, merges vault
 - "Play Offline" skips login, uses local save only
 - Sync status indicator (connected/syncing/error/offline)
-- Token stored securely in SharedPreferences (encrypted)
+- Token stored in SharedPreferences
 - Auto-login on subsequent launches if token is saved
 - Manual logout button in settings (accessible from any tab)
 
-**GitHub Sync Details**:
-- Repository: User's own fork or `Larleeloo/DND_Pixel_Art_Game1`
-- Save path: `cloud-saves/{username}/loot_game_save.json`
+**Google Drive Sync Details**:
+- File: Public Google Drive file (ID: 1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx)
+- Download URL: `https://drive.google.com/uc?export=download&id={fileId}` (no auth required)
+- Upload URL: `https://www.googleapis.com/upload/drive/v3/files/{fileId}?uploadType=media`
 - Sync triggers: On login, on app pause, on chest open, on craft, manual button
-- Conflict resolution: Timestamp-based with manual override option
+- Download works without login (public file); upload requires access token
 
 ### 2.3 Tab Activity (TabActivity)
 
@@ -642,7 +637,7 @@ Crown:   2 weight  (mythic)
 
 ### 4.4 Coin Persistence
 
-Coins are stored in SaveData alongside vault items and synced via GitHub.
+Coins are stored in SaveData alongside vault items and synced via Google Drive.
 
 ```json
 {
@@ -803,32 +798,30 @@ public class AnimatedSprite {
 - On app pause (onPause lifecycle)
 - On manual sync button press
 
-### 6.2 GitHub Cloud Sync (GitHubSyncManager)
+### 6.2 Google Drive Cloud Sync (GoogleDriveSyncManager)
 
-**Sync Model**: Last-write-wins with conflict detection.
+**Sync Model**: Last-write-wins via public Google Drive file.
 
-**Cloud Save Path**: `cloud-saves/{username}/loot_game_save.json`
+**Google Drive File ID**: `1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx`
+**Public URL**: `https://drive.google.com/file/d/1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx/view?usp=drive_link`
 
 **Sync Operations**:
 
 1. **Push (Local → Cloud)**:
    - Serialize SaveData to JSON
-   - Base64 encode
-   - PUT to GitHub API: `repos/{owner}/{repo}/contents/{path}`
-   - Include SHA of existing file for update (or omit for create)
-   - Auth: `Authorization: Bearer {PAT}`
+   - PATCH to Google Drive API v3: `upload/drive/v3/files/{fileId}?uploadType=media`
+   - Auth: `Authorization: Bearer {Google OAuth access token}`
+   - Content-Type: application/json
 
 2. **Pull (Cloud → Local)**:
-   - GET from GitHub API: `repos/{owner}/{repo}/contents/{path}`
-   - Base64 decode content
+   - GET from public download URL: `drive.google.com/uc?export=download&id={fileId}`
+   - No authentication required (file is publicly shared)
+   - Validate response is JSON (not HTML confirmation page)
    - Deserialize to SaveData
-   - Compare timestamps for conflict detection
 
-3. **Merge (Conflict Resolution)**:
-   - If local.lastModified == cloud.lastModified: no conflict
-   - If differ: present ConflictResolver dialog
-     - "Keep Local" / "Keep Cloud" / "Merge (keep higher values)"
-   - Merge strategy: take max of each counter, union of vault items
+3. **Token Validation**:
+   - GET file metadata from Drive API v3: `drive/v3/files/{fileId}?fields=id,name,modifiedTime`
+   - Verifies the access token has permission to read/write the file
 
 ### 6.3 Cross-App Vault Sharing
 
@@ -1027,12 +1020,12 @@ Key differences from main game:
 - [ ] Add slot machine sound effects and haptics
 
 ### Phase 5: Login & Sync
-- [ ] Implement LoginActivity (GitHub PAT input)
-- [ ] Implement GitHubSyncManager (push/pull via REST API)
+- [x] Implement LoginActivity (Google Drive access token input)
+- [x] Implement GoogleDriveSyncManager (push via Drive API, pull via public URL)
 - [ ] Implement ConflictResolver (merge strategies)
-- [ ] Add sync button to header bar
+- [x] Add sync button to header bar
 - [ ] Add auto-sync on key events (chest open, craft, app pause)
-- [ ] Token validation and error handling
+- [x] Token validation and error handling
 
 ### Phase 6: Polish
 - [ ] Add sound effects for all interactions
@@ -1087,8 +1080,8 @@ For initial development, missing assets will use:
 
 ### 12.1 Manual Test Checklist
 
-- [ ] Login with valid GitHub PAT → sync succeeds
-- [ ] Login with invalid PAT → clear error message
+- [ ] Login with valid Google access token → sync succeeds
+- [ ] Login with invalid token → clear error message
 - [ ] Play offline → all features work without network
 - [ ] Open daily chest → 3 items + coins added to vault
 - [ ] Daily chest cooldown → timer shows, chest grayed out
@@ -1105,7 +1098,7 @@ For initial development, missing assets will use:
 - [ ] Vault: scroll through items, filter, sort, search
 - [ ] Vault: tap item → tooltip with full stats
 - [ ] Coins: display updates on earn/spend
-- [ ] Sync: manual sync button → data syncs to GitHub
+- [ ] Sync: manual sync button → data syncs to Google Drive
 - [ ] Sync: conflict detection → resolution dialog
 - [ ] App pause/resume → save preserved
 - [ ] App kill and restart → save loaded correctly

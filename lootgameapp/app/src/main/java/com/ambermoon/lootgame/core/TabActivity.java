@@ -7,7 +7,7 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
-import com.ambermoon.lootgame.save.GitHubSyncManager;
+import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -136,14 +136,31 @@ public class TabActivity extends Activity {
     }
 
     private void doSync() {
-        if (!GamePreferences.isLoggedIn()) return;
         SaveManager.getInstance().save();
-        GitHubSyncManager.getInstance().syncToCloud(new CloudSyncCallback());
+        if (GamePreferences.isLoggedIn()) {
+            // If logged in with access token, upload to Google Drive
+            GoogleDriveSyncManager.getInstance().syncToCloud(new CloudSyncCallback());
+        } else {
+            // Even without login, can still download from public file
+            GoogleDriveSyncManager.getInstance().syncFromCloud(new GoogleDriveSyncManager.SyncCallback() {
+                @Override
+                public void onSuccess(String msg) {
+                    runOnUiThread(() -> {
+                        switchTab(currentTabIndex); // Refresh current tab
+                        Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
+                    });
+                }
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
+                }
+            });
+        }
     }
 
-    private class CloudSyncCallback implements GitHubSyncManager.SyncCallback {
+    private class CloudSyncCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override public void onSuccess(String msg) {
-            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced!", Toast.LENGTH_SHORT).show());
+            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced to Google Drive!", Toast.LENGTH_SHORT).show());
         }
         @Override public void onError(String error) {
             runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
