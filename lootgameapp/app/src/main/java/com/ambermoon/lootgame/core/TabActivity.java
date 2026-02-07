@@ -8,7 +8,6 @@ import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
-import com.ambermoon.lootgame.save.SyncCallback;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -19,7 +18,6 @@ public class TabActivity extends Activity {
     private int currentTabIndex = 0;
 
     private static final String[] TAB_LABELS = {"Daily", "Monthly", "Alchemy", "Decon", "Slots", "Vault"};
-    private static final String[] TAB_ICONS = {"\u2623", "\u2623", "\u2697", "\uD83D\uDD28", "\uD83C\uDFB0", "\uD83C\uDFDB"};
     private Button[] tabButtons;
 
     @Override
@@ -139,33 +137,24 @@ public class TabActivity extends Activity {
     private void doSync() {
         SaveManager.getInstance().save();
         if (GamePreferences.isLoggedIn()) {
-            // If logged in with access token, upload to Google Drive
-            GoogleDriveSyncManager.getInstance().syncToCloud(new CloudUploadCallback());
+            // Logged in: upload to Google Drive
+            GoogleDriveSyncManager.getInstance().syncToCloud((success, msg) ->
+                runOnUiThread(() -> Toast.makeText(TabActivity.this,
+                    success ? "Synced to Google Drive!" : "Sync failed: " + msg,
+                    Toast.LENGTH_SHORT).show())
+            );
         } else {
-            // Even without login, can still download from public file
-            GoogleDriveSyncManager.getInstance().syncFromCloud(new CloudDownloadCallback());
-        }
-    }
-
-    // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
-    class CloudUploadCallback implements SyncCallback {
-        @Override public void onSuccess(String msg) {
-            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Synced to Google Drive!", Toast.LENGTH_SHORT).show());
-        }
-        @Override public void onError(String error) {
-            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
-        }
-    }
-
-    class CloudDownloadCallback implements SyncCallback {
-        @Override public void onSuccess(String msg) {
-            runOnUiThread(() -> {
-                switchTab(currentTabIndex); // Refresh current tab
-                Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
-            });
-        }
-        @Override public void onError(String error) {
-            runOnUiThread(() -> Toast.makeText(TabActivity.this, "Sync failed: " + error, Toast.LENGTH_SHORT).show());
+            // Not logged in: download from public file
+            GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
+                runOnUiThread(() -> {
+                    if (success) {
+                        switchTab(currentTabIndex);
+                        Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(TabActivity.this, "Sync failed: " + msg, Toast.LENGTH_SHORT).show();
+                    }
+                })
+            );
         }
     }
 
