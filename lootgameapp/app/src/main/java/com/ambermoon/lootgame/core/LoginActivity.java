@@ -137,7 +137,8 @@ public class LoginActivity extends Activity {
         finish();
     }
 
-    private class ValidateTokenCallback implements GoogleDriveSyncManager.SyncCallback {
+    // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
+    class ValidateTokenCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override
         public void onSuccess(String message) {
             statusText.setText("Syncing save data from Google Drive...");
@@ -151,7 +152,7 @@ public class LoginActivity extends Activity {
         }
     }
 
-    private class SyncFromCloudCallback implements GoogleDriveSyncManager.SyncCallback {
+    class SyncFromCloudCallback implements GoogleDriveSyncManager.SyncCallback {
         @Override
         public void onSuccess(String msg) {
             proceedToGame();
