@@ -4,28 +4,25 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import com.ambermoon.lootgame.core.GamePreferences;
-
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Downloads save data from a public Google Drive file.
+ * No authentication required — the file is publicly shared.
+ */
 public class GoogleDriveSyncManager {
     private static final String TAG = "GoogleDriveSync";
 
-    // Public Google Drive file ID extracted from:
-    // https://drive.google.com/file/d/1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx/view?usp=drive_link
+    // Public Google Drive file ID
     private static final String FILE_ID = "1xINYQBBSiJ2o_12qAWT9tvCtrVoTpWfx";
 
-    // Public download URL (no auth required for publicly shared files)
+    // Public download URL (no auth required)
     private static final String PUBLIC_DOWNLOAD_URL =
             "https://drive.google.com/uc?export=download&id=" + FILE_ID;
-
-    // Google Drive API v3 endpoints (auth required for upload)
-    private static final String API_UPLOAD_URL =
-            "https://www.googleapis.com/upload/drive/v3/files/" + FILE_ID + "?uploadType=media";
 
     private static GoogleDriveSyncManager instance;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -37,54 +34,7 @@ public class GoogleDriveSyncManager {
     }
 
     /**
-     * Upload local save data to Google Drive (overwrites the shared file).
-     * Requires a valid Google access token stored in GamePreferences.
-     */
-    public void syncToCloud(SyncCallback callback) {
-        executor.execute(() -> {
-            try {
-                String token = GamePreferences.getGoogleAccessToken();
-                if (token.isEmpty()) {
-                    postResult(callback, false, "No Google access token configured");
-                    return;
-                }
-
-                String json = SaveManager.getInstance().toJson();
-
-                URL url = new URL(API_UPLOAD_URL);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("PATCH");
-                conn.setRequestProperty("Authorization", "Bearer " + token);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setDoOutput(true);
-
-                OutputStream os = conn.getOutputStream();
-                os.write(json.getBytes("UTF-8"));
-                os.close();
-
-                int code = conn.getResponseCode();
-                if (code == 200) {
-                    postResult(callback, true, "Saved to Google Drive");
-                } else {
-                    String errorBody = readErrorStream(conn);
-                    Log.e(TAG, "Upload failed HTTP " + code + ": " + errorBody);
-                    if (code == 401 || code == 403) {
-                        postResult(callback, false, "Access token expired or invalid (HTTP " + code + ")");
-                    } else {
-                        postResult(callback, false, "Upload failed (HTTP " + code + ")");
-                    }
-                }
-                conn.disconnect();
-            } catch (Exception e) {
-                Log.e(TAG, "Upload exception", e);
-                postResult(callback, false, "Upload error: " + e.getMessage());
-            }
-        });
-    }
-
-    /**
      * Download save data from the public Google Drive file.
-     * No authentication required since the file is publicly shared.
      */
     public void syncFromCloud(SyncCallback callback) {
         executor.execute(() -> {
@@ -123,7 +73,6 @@ public class GoogleDriveSyncManager {
                         SaveManager.getInstance().save();
                         postResult(callback, true, "Loaded from Google Drive");
                     } else {
-                        // Probably an HTML confirmation page
                         Log.w(TAG, "Response is not JSON, possibly Google Drive HTML page");
                         postResult(callback, false, "Could not read save file from Google Drive");
                     }
@@ -140,89 +89,12 @@ public class GoogleDriveSyncManager {
         });
     }
 
-    /**
-     * Validate that the Google access token is working by checking Drive API access.
-     * This makes a lightweight metadata request to verify the token.
-     */
-    public void validateToken(SyncCallback callback) {
-        executor.execute(() -> {
-            try {
-                String token = GamePreferences.getGoogleAccessToken();
-                if (token.isEmpty()) {
-                    postResult(callback, false, "No access token provided");
-                    return;
-                }
-
-                // Use the Drive API to get file metadata (lightweight check)
-                String metadataUrl = "https://www.googleapis.com/drive/v3/files/" + FILE_ID
-                        + "?fields=id,name,modifiedTime";
-                URL url = new URL(metadataUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestProperty("Authorization", "Bearer " + token);
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
-
-                int code = conn.getResponseCode();
-                conn.disconnect();
-
-                if (code == 200) {
-                    postResult(callback, true, "Token valid");
-                } else if (code == 401) {
-                    postResult(callback, false, "Access token expired or invalid");
-                } else if (code == 403) {
-                    postResult(callback, false, "Access denied - check token permissions");
-                } else {
-                    postResult(callback, false, "Validation failed (HTTP " + code + ")");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Token validation exception", e);
-                postResult(callback, false, "Validation error: " + e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Test connectivity to the public file without any authentication.
-     */
-    public void testConnection(SyncCallback callback) {
-        executor.execute(() -> {
-            try {
-                URL url = new URL(PUBLIC_DOWNLOAD_URL);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("HEAD");
-                conn.setInstanceFollowRedirects(true);
-                conn.setConnectTimeout(10000);
-
-                int code = conn.getResponseCode();
-                conn.disconnect();
-
-                if (code == 200 || code == 302 || code == 303) {
-                    postResult(callback, true, "Google Drive file accessible");
-                } else {
-                    postResult(callback, false, "File not accessible (HTTP " + code + ")");
-                }
-            } catch (Exception e) {
-                postResult(callback, false, "Connection test failed: " + e.getMessage());
-            }
-        });
-    }
-
     private String readStream(InputStream is) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] buf = new byte[4096];
         int n;
         while ((n = is.read(buf)) != -1) baos.write(buf, 0, n);
         return baos.toString("UTF-8");
-    }
-
-    private String readErrorStream(HttpURLConnection conn) {
-        try {
-            InputStream es = conn.getErrorStream();
-            if (es != null) return readStream(es);
-        } catch (Exception e) {
-            // ignore
-        }
-        return "";
     }
 
     private void postResult(SyncCallback cb, boolean success, String msg) {

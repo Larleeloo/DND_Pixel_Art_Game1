@@ -28,12 +28,8 @@ public class MainActivity extends Activity {
         RecipeManager.initialize(this);
         ItemRegistry.initialize();
 
-        // Route to appropriate activity
-        if (GamePreferences.isLoggedIn()) {
-            startActivity(new Intent(this, TabActivity.class));
-        } else {
-            startActivity(new Intent(this, LoginActivity.class));
-        }
+        // Go straight to the game
+        startActivity(new Intent(this, TabActivity.class));
         finish();
     }
 }
