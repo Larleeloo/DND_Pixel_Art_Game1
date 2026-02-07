@@ -45,7 +45,7 @@ public class GoogleDriveSyncManager {
             try {
                 String token = GamePreferences.getGoogleAccessToken();
                 if (token.isEmpty()) {
-                    postError(callback, "No Google access token configured");
+                    postResult(callback, false, "No Google access token configured");
                     return;
                 }
 
@@ -64,20 +64,20 @@ public class GoogleDriveSyncManager {
 
                 int code = conn.getResponseCode();
                 if (code == 200) {
-                    postSuccess(callback, "Saved to Google Drive");
+                    postResult(callback, true, "Saved to Google Drive");
                 } else {
                     String errorBody = readErrorStream(conn);
                     Log.e(TAG, "Upload failed HTTP " + code + ": " + errorBody);
                     if (code == 401 || code == 403) {
-                        postError(callback, "Access token expired or invalid (HTTP " + code + ")");
+                        postResult(callback, false, "Access token expired or invalid (HTTP " + code + ")");
                     } else {
-                        postError(callback, "Upload failed (HTTP " + code + ")");
+                        postResult(callback, false, "Upload failed (HTTP " + code + ")");
                     }
                 }
                 conn.disconnect();
             } catch (Exception e) {
                 Log.e(TAG, "Upload exception", e);
-                postError(callback, "Upload error: " + e.getMessage());
+                postResult(callback, false, "Upload error: " + e.getMessage());
             }
         });
     }
@@ -118,29 +118,24 @@ public class GoogleDriveSyncManager {
 
                     // Validate that the response is actual JSON save data
                     // (Google Drive may return an HTML page for large files)
-                    if (json.trim().startsWith("{") && json.contains("\"version\"")) {
+                    if (json.trim().startsWith("{")) {
                         SaveManager.getInstance().fromJson(json);
                         SaveManager.getInstance().save();
-                        postSuccess(callback, "Loaded from Google Drive");
-                    } else if (json.trim().startsWith("{")) {
-                        // Valid JSON but might be a new/empty save
-                        SaveManager.getInstance().fromJson(json);
-                        SaveManager.getInstance().save();
-                        postSuccess(callback, "Loaded from Google Drive");
+                        postResult(callback, true, "Loaded from Google Drive");
                     } else {
                         // Probably an HTML confirmation page
                         Log.w(TAG, "Response is not JSON, possibly Google Drive HTML page");
-                        postError(callback, "Could not read save file from Google Drive");
+                        postResult(callback, false, "Could not read save file from Google Drive");
                     }
                 } else if (code == 404) {
-                    postSuccess(callback, "No cloud save found, using local");
+                    postResult(callback, true, "No cloud save found, using local");
                 } else {
-                    postError(callback, "Download failed (HTTP " + code + ")");
+                    postResult(callback, false, "Download failed (HTTP " + code + ")");
                 }
                 conn.disconnect();
             } catch (Exception e) {
                 Log.e(TAG, "Download exception", e);
-                postError(callback, "Download error: " + e.getMessage());
+                postResult(callback, false, "Download error: " + e.getMessage());
             }
         });
     }
@@ -154,7 +149,7 @@ public class GoogleDriveSyncManager {
             try {
                 String token = GamePreferences.getGoogleAccessToken();
                 if (token.isEmpty()) {
-                    postError(callback, "No access token provided");
+                    postResult(callback, false, "No access token provided");
                     return;
                 }
 
@@ -171,24 +166,23 @@ public class GoogleDriveSyncManager {
                 conn.disconnect();
 
                 if (code == 200) {
-                    postSuccess(callback, "Token valid");
+                    postResult(callback, true, "Token valid");
                 } else if (code == 401) {
-                    postError(callback, "Access token expired or invalid");
+                    postResult(callback, false, "Access token expired or invalid");
                 } else if (code == 403) {
-                    postError(callback, "Access denied - check token permissions");
+                    postResult(callback, false, "Access denied - check token permissions");
                 } else {
-                    postError(callback, "Validation failed (HTTP " + code + ")");
+                    postResult(callback, false, "Validation failed (HTTP " + code + ")");
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Token validation exception", e);
-                postError(callback, "Validation error: " + e.getMessage());
+                postResult(callback, false, "Validation error: " + e.getMessage());
             }
         });
     }
 
     /**
      * Test connectivity to the public file without any authentication.
-     * Useful to verify the file is accessible before attempting full sync.
      */
     public void testConnection(SyncCallback callback) {
         executor.execute(() -> {
@@ -203,12 +197,12 @@ public class GoogleDriveSyncManager {
                 conn.disconnect();
 
                 if (code == 200 || code == 302 || code == 303) {
-                    postSuccess(callback, "Google Drive file accessible");
+                    postResult(callback, true, "Google Drive file accessible");
                 } else {
-                    postError(callback, "File not accessible (HTTP " + code + ")");
+                    postResult(callback, false, "File not accessible (HTTP " + code + ")");
                 }
             } catch (Exception e) {
-                postError(callback, "Connection test failed: " + e.getMessage());
+                postResult(callback, false, "Connection test failed: " + e.getMessage());
             }
         });
     }
@@ -231,11 +225,7 @@ public class GoogleDriveSyncManager {
         return "";
     }
 
-    private void postSuccess(SyncCallback cb, String msg) {
-        if (cb != null) mainHandler.post(() -> cb.onSuccess(msg));
-    }
-
-    private void postError(SyncCallback cb, String msg) {
-        if (cb != null) mainHandler.post(() -> cb.onError(msg));
+    private void postResult(SyncCallback cb, boolean success, String msg) {
+        if (cb != null) mainHandler.post(() -> cb.onResult(success, msg));
     }
 }

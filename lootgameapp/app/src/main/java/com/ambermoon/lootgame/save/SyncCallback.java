@@ -1,11 +1,10 @@
 package com.ambermoon.lootgame.save;
 
 /**
- * Callback interface for cloud sync operations.
- * Top-level interface (not nested) to avoid D8 dex compiler crashes
- * when inner classes from other packages implement nested interfaces.
+ * Functional interface for cloud sync operation results.
+ * Single-method so lambdas can be used instead of named inner classes,
+ * which crash the D8 dex compiler (R8 8.2.2).
  */
 public interface SyncCallback {
-    void onSuccess(String message);
-    void onError(String error);
+    void onResult(boolean success, String message);
 }

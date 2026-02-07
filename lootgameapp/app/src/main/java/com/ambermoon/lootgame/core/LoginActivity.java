@@ -10,14 +10,11 @@ import android.view.WindowManager;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
-import com.ambermoon.lootgame.save.SyncCallback;
 
 public class LoginActivity extends Activity {
     private EditText tokenInput;
-    // Package-private to avoid synthetic accessors that crash D8 dex compiler
-    TextView statusText;
-    Button loginButton;
-    private Button offlineButton;
+    private TextView statusText;
+    private Button loginButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +85,7 @@ public class LoginActivity extends Activity {
         layout.addView(loginButton);
 
         // Offline button
-        offlineButton = new Button(this);
+        Button offlineButton = new Button(this);
         offlineButton.setText("Play Offline");
         offlineButton.setTextColor(Color.WHITE);
         offlineButton.setBackgroundColor(Color.parseColor("#28233A"));
@@ -129,39 +126,20 @@ public class LoginActivity extends Activity {
 
         GamePreferences.setGoogleAccessToken(token);
 
-        GoogleDriveSyncManager.getInstance().validateToken(new ValidateTokenCallback());
-    }
-
-    // Package-private to avoid synthetic accessors that crash D8 dex compiler
-    void proceedToGame() {
-        startActivity(new Intent(LoginActivity.this, TabActivity.class));
-        finish();
-    }
-
-    // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
-    class ValidateTokenCallback implements SyncCallback {
-        @Override
-        public void onSuccess(String message) {
-            statusText.setText("Syncing save data from Google Drive...");
-            GoogleDriveSyncManager.getInstance().syncFromCloud(new SyncFromCloudCallback());
-        }
-        @Override
-        public void onError(String error) {
-            loginButton.setEnabled(true);
-            statusText.setTextColor(Color.parseColor("#FF4444"));
-            statusText.setText("Connection failed: " + error);
-        }
-    }
-
-    class SyncFromCloudCallback implements SyncCallback {
-        @Override
-        public void onSuccess(String msg) {
-            proceedToGame();
-        }
-        @Override
-        public void onError(String error) {
-            // Still proceed even if sync fails
-            proceedToGame();
-        }
+        // All callbacks are lambdas — no inner classes that crash D8
+        GoogleDriveSyncManager.getInstance().validateToken((success, msg) -> {
+            if (success) {
+                statusText.setText("Syncing save data from Google Drive...");
+                GoogleDriveSyncManager.getInstance().syncFromCloud((s, m) -> {
+                    // Proceed to game whether sync succeeds or fails
+                    startActivity(new Intent(LoginActivity.this, TabActivity.class));
+                    finish();
+                });
+            } else {
+                loginButton.setEnabled(true);
+                statusText.setTextColor(Color.parseColor("#FF4444"));
+                statusText.setText("Connection failed: " + msg);
+            }
+        });
     }
 }
