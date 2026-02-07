@@ -10,6 +10,7 @@ import android.view.WindowManager;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
+import com.ambermoon.lootgame.save.SyncCallback;
 
 public class LoginActivity extends Activity {
     private EditText tokenInput;
@@ -138,7 +139,7 @@ public class LoginActivity extends Activity {
     }
 
     // Package-private inner classes to avoid synthetic accessors that crash D8 dex compiler
-    class ValidateTokenCallback implements GoogleDriveSyncManager.SyncCallback {
+    class ValidateTokenCallback implements SyncCallback {
         @Override
         public void onSuccess(String message) {
             statusText.setText("Syncing save data from Google Drive...");
@@ -152,7 +153,7 @@ public class LoginActivity extends Activity {
         }
     }
 
-    class SyncFromCloudCallback implements GoogleDriveSyncManager.SyncCallback {
+    class SyncFromCloudCallback implements SyncCallback {
         @Override
         public void onSuccess(String msg) {
             proceedToGame();

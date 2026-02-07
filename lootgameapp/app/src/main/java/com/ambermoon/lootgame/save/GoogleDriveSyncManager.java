@@ -31,11 +31,6 @@ public class GoogleDriveSyncManager {
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    public interface SyncCallback {
-        void onSuccess(String message);
-        void onError(String error);
-    }
-
     public static GoogleDriveSyncManager getInstance() {
         if (instance == null) instance = new GoogleDriveSyncManager();
         return instance;
