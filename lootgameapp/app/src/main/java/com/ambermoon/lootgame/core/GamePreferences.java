@@ -3,6 +3,11 @@ package com.ambermoon.lootgame.core;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class GamePreferences {
     private static final String PREFS_NAME = "loot_game_prefs";
     private static SharedPreferences prefs;
@@ -19,4 +24,28 @@ public class GamePreferences {
 
     public static boolean isDeveloperMode() { return prefs.getBoolean("dev_mode", false); }
     public static void setDeveloperMode(boolean b) { prefs.edit().putBoolean("dev_mode", b).apply(); }
+
+    // --- Username ---
+    public static String getUsername() { return prefs.getString("username", ""); }
+    public static void setUsername(String name) {
+        prefs.edit().putString("username", name).apply();
+        // Track in recent usernames list
+        Set<String> recent = new HashSet<>(prefs.getStringSet("recent_usernames", new HashSet<>()));
+        recent.add(name);
+        prefs.edit().putStringSet("recent_usernames", recent).apply();
+    }
+    public static List<String> getRecentUsernames() {
+        return new ArrayList<>(prefs.getStringSet("recent_usernames", new HashSet<>()));
+    }
+
+    // --- GitHub cloud sync ---
+    public static String getGitHubToken() { return prefs.getString("github_token", ""); }
+    public static void setGitHubToken(String token) { prefs.edit().putString("github_token", token).apply(); }
+
+    public static boolean isCloudSyncEnabled() {
+        return !getGitHubToken().isEmpty() && !getUsername().isEmpty();
+    }
+
+    public static long getLastSyncTime() { return prefs.getLong("last_sync_time", 0); }
+    public static void setLastSyncTime(long t) { prefs.edit().putLong("last_sync_time", t).apply(); }
 }

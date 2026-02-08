@@ -33,6 +33,13 @@
         </activity>
 
         <activity
+            android:name=".core.UsernameActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.Fullscreen"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".core.TabActivity"
             android:exported="false"
             android:screenOrientation="portrait"

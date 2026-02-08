@@ -9,18 +9,33 @@ import java.util.*;
 
 public class SaveManager {
     private static final String TAG = "SaveManager";
-    private static final String SAVE_FILE = "loot_game_save.json";
+    private static final String SAVE_FILE_PREFIX = "loot_game_save_";
+    private static final String SAVE_FILE_SUFFIX = ".json";
     private static SaveManager instance;
     private Context context;
     private SaveData data;
+    private String currentUsername;
 
     public static SaveManager getInstance() { return instance; }
 
     public static void init(Context ctx) {
         instance = new SaveManager();
         instance.context = ctx.getApplicationContext();
+        instance.currentUsername = com.ambermoon.lootgame.core.GamePreferences.getUsername();
         instance.load();
     }
+
+    /**
+     * Returns the save filename for the current user.
+     */
+    private String getSaveFileName() {
+        if (currentUsername == null || currentUsername.isEmpty()) {
+            return "loot_game_save.json"; // fallback
+        }
+        return SAVE_FILE_PREFIX + currentUsername + SAVE_FILE_SUFFIX;
+    }
+
+    public String getCurrentUsername() { return currentUsername; }
 
     public SaveData getData() { return data; }
 
@@ -28,7 +43,7 @@ public class SaveManager {
         data.lastModified = System.currentTimeMillis();
         try {
             String json = serializeToJson(data);
-            FileOutputStream fos = context.openFileOutput(SAVE_FILE, Context.MODE_PRIVATE);
+            FileOutputStream fos = context.openFileOutput(getSaveFileName(), Context.MODE_PRIVATE);
             fos.write(json.getBytes("UTF-8"));
             fos.close();
         } catch (Exception e) {
@@ -38,7 +53,7 @@ public class SaveManager {
 
     public void load() {
         try {
-            FileInputStream fis = context.openFileInput(SAVE_FILE);
+            FileInputStream fis = context.openFileInput(getSaveFileName());
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] buf = new byte[4096];
             int n;
