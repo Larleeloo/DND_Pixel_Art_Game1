@@ -18,20 +18,23 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
 import com.ambermoon.lootgame.save.SaveManager;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Username entry screen shown on app launch.
- * Allows friends to pick their username to load their specific save data.
- * No password required.
+ * Username + PIN entry screen shown on app launch.
+ * Allows friends to pick their username and enter a PIN to load their save data.
  */
 public class UsernameActivity extends Activity {
 
+    public static final String APP_VERSION = "v1.0.0";
+
     private EditText usernameInput;
-    private LinearLayout recentList;
+    private EditText pinInput;
+    private Button playBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +66,7 @@ public class UsernameActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        titleParams.bottomMargin = 12;
+        titleParams.bottomMargin = 4;
         title.setLayoutParams(titleParams);
         root.addView(title);
 
@@ -75,21 +78,33 @@ public class UsernameActivity extends Activity {
         subtitle.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        subParams.bottomMargin = 48;
+        subParams.bottomMargin = 4;
         subtitle.setLayoutParams(subParams);
         root.addView(subtitle);
 
-        // "Enter Username" label
-        TextView label = new TextView(this);
-        label.setText("Enter Username");
-        label.setTextColor(Color.parseColor("#CCCCCC"));
-        label.setTextSize(16);
-        label.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+        // Version number
+        TextView versionLabel = new TextView(this);
+        versionLabel.setText(APP_VERSION);
+        versionLabel.setTextColor(Color.parseColor("#555555"));
+        versionLabel.setTextSize(12);
+        versionLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams verParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        labelParams.bottomMargin = 16;
-        label.setLayoutParams(labelParams);
-        root.addView(label);
+        verParams.bottomMargin = 32;
+        versionLabel.setLayoutParams(verParams);
+        root.addView(versionLabel);
+
+        // "Enter Username" label
+        TextView userLabel = new TextView(this);
+        userLabel.setText("Enter Username");
+        userLabel.setTextColor(Color.parseColor("#CCCCCC"));
+        userLabel.setTextSize(16);
+        userLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams userLabelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        userLabelParams.bottomMargin = 8;
+        userLabel.setLayoutParams(userLabelParams);
+        root.addView(userLabel);
 
         // Username input field
         usernameInput = new EditText(this);
@@ -102,11 +117,10 @@ public class UsernameActivity extends Activity {
         usernameInput.setPadding(32, 24, 32, 24);
         usernameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         usernameInput.setSingleLine(true);
-        // Limit username length and disallow special characters that break file paths
         usernameInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(24)});
         LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        inputParams.bottomMargin = 24;
+        inputParams.bottomMargin = 16;
         usernameInput.setLayoutParams(inputParams);
 
         // Pre-fill with last username
@@ -115,11 +129,53 @@ public class UsernameActivity extends Activity {
             usernameInput.setText(lastUsername);
             usernameInput.setSelection(lastUsername.length());
         }
-
         root.addView(usernameInput);
 
+        // "Enter PIN" label
+        TextView pinLabel = new TextView(this);
+        pinLabel.setText("Enter PIN");
+        pinLabel.setTextColor(Color.parseColor("#CCCCCC"));
+        pinLabel.setTextSize(16);
+        pinLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams pinLabelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pinLabelParams.bottomMargin = 8;
+        pinLabel.setLayoutParams(pinLabelParams);
+        root.addView(pinLabel);
+
+        // PIN input field (4-digit numeric)
+        pinInput = new EditText(this);
+        pinInput.setHint("4-digit PIN");
+        pinInput.setHintTextColor(Color.parseColor("#555555"));
+        pinInput.setTextColor(Color.WHITE);
+        pinInput.setTextSize(24);
+        pinInput.setGravity(Gravity.CENTER);
+        pinInput.setBackgroundColor(Color.parseColor("#2A2440"));
+        pinInput.setPadding(32, 24, 32, 24);
+        pinInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        pinInput.setSingleLine(true);
+        pinInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4)});
+        LinearLayout.LayoutParams pinParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pinParams.bottomMargin = 16;
+        pinInput.setLayoutParams(pinParams);
+        root.addView(pinInput);
+
+        // Disclaimer
+        TextView disclaimer = new TextView(this);
+        disclaimer.setText("Note: PINs are stored alongside save data and are not encrypted. "
+                + "Do not use a PIN you use for other accounts.");
+        disclaimer.setTextColor(Color.parseColor("#AA6644"));
+        disclaimer.setTextSize(11);
+        disclaimer.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams discParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        discParams.bottomMargin = 20;
+        disclaimer.setLayoutParams(discParams);
+        root.addView(disclaimer);
+
         // Play button
-        Button playBtn = new Button(this);
+        playBtn = new Button(this);
         playBtn.setText("PLAY");
         playBtn.setTextColor(Color.parseColor("#1A1525"));
         playBtn.setTextSize(18);
@@ -151,7 +207,7 @@ public class UsernameActivity extends Activity {
             scroll.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f));
 
-            recentList = new LinearLayout(this);
+            LinearLayout recentList = new LinearLayout(this);
             recentList.setOrientation(LinearLayout.VERTICAL);
             recentList.setGravity(Gravity.CENTER_HORIZONTAL);
             scroll.addView(recentList);
@@ -170,7 +226,8 @@ public class UsernameActivity extends Activity {
                 nameBtn.setLayoutParams(nbParams);
                 nameBtn.setOnClickListener(v -> {
                     usernameInput.setText(name);
-                    onPlayClicked();
+                    pinInput.setText("");
+                    pinInput.requestFocus();
                 });
                 recentList.addView(nameBtn);
             }
@@ -188,24 +245,75 @@ public class UsernameActivity extends Activity {
 
     private void onPlayClicked() {
         String username = usernameInput.getText().toString().trim();
+        String pin = pinInput.getText().toString().trim();
 
         if (username.isEmpty()) {
             Toast.makeText(this, "Please enter a username", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Sanitize: only allow alphanumeric, underscore, hyphen
         if (!username.matches("[A-Za-z0-9_\\-]+")) {
             Toast.makeText(this, "Letters, numbers, _ and - only", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (pin.length() != 4) {
+            Toast.makeText(this, "PIN must be 4 digits", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        // Store username and initialize save for this user
+        // Disable button while checking
+        playBtn.setEnabled(false);
+        playBtn.setText("Checking...");
+
+        // Step 1: Check local save
+        if (SaveManager.localSaveExists(this, username)) {
+            String savedPin = SaveManager.readLocalPin(this, username);
+            if (savedPin.isEmpty()) {
+                // Legacy save with no PIN — set the PIN and proceed
+                proceedToGame(username, pin, true);
+            } else if (savedPin.equals(pin)) {
+                proceedToGame(username, pin, false);
+            } else {
+                showPinError();
+            }
+            return;
+        }
+
+        // Step 2: No local save — check cloud
+        GoogleDriveSyncManager.getInstance().fetchCloudSave(username, (json, error) -> {
+            if (json != null) {
+                // Cloud save exists — check PIN
+                String cloudPin = SaveManager.extractPinFromJson(json);
+                if (cloudPin.isEmpty()) {
+                    // Cloud save with no PIN — set PIN and proceed
+                    proceedToGame(username, pin, true);
+                } else if (cloudPin.equals(pin)) {
+                    proceedToGame(username, pin, false);
+                } else {
+                    showPinError();
+                }
+            } else {
+                // No cloud save — this is a brand new user
+                proceedToGame(username, pin, true);
+            }
+        });
+    }
+
+    private void proceedToGame(String username, String pin, boolean setPin) {
         GamePreferences.setUsername(username);
         SaveManager.init(this);
 
-        // Launch the game
+        if (setPin) {
+            SaveManager.getInstance().getData().pin = pin;
+            SaveManager.getInstance().save();
+        }
+
         startActivity(new Intent(this, TabActivity.class));
         finish();
+    }
+
+    private void showPinError() {
+        playBtn.setEnabled(true);
+        playBtn.setText("PLAY");
+        Toast.makeText(this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
     }
 }

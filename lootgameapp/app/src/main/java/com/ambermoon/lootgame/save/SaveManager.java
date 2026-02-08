@@ -159,6 +159,7 @@ public class SaveManager {
         sb.append("{\n");
         sb.append("  \"version\": ").append(d.version).append(",\n");
         sb.append("  \"platform\": \"").append(d.platform).append("\",\n");
+        sb.append("  \"pin\": \"").append(d.pin).append("\",\n");
         sb.append("  \"lastModified\": ").append(d.lastModified).append(",\n");
         sb.append("  \"coins\": ").append(d.coins).append(",\n");
         sb.append("  \"totalCoinsEarned\": ").append(d.totalCoinsEarned).append(",\n");
@@ -187,6 +188,7 @@ public class SaveManager {
     private SaveData deserializeFromJson(String json) {
         SaveData d = new SaveData();
         d.version = extractInt(json, "version", 1);
+        d.pin = extractString(json, "pin", "");
         d.lastModified = extractLong(json, "lastModified", 0);
         d.coins = extractInt(json, "coins", 500);
         d.totalCoinsEarned = extractLong(json, "totalCoinsEarned", 500);
@@ -269,4 +271,56 @@ public class SaveManager {
 
     public String toJson() { return serializeToJson(data); }
     public void fromJson(String json) { data = deserializeFromJson(json); }
+
+    /**
+     * Read the PIN from a local save file without loading it as the active save.
+     * Returns empty string if no save exists or no PIN is set.
+     */
+    public static String readLocalPin(Context ctx, String username) {
+        String filename;
+        if (username == null || username.isEmpty()) {
+            filename = "loot_game_save.json";
+        } else {
+            filename = SAVE_FILE_PREFIX + username + SAVE_FILE_SUFFIX;
+        }
+        try {
+            FileInputStream fis = ctx.openFileInput(filename);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+            fis.close();
+            return extractString(baos.toString("UTF-8"), "pin", "");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Check if a local save file exists for the given username.
+     */
+    public static boolean localSaveExists(Context ctx, String username) {
+        String filename;
+        if (username == null || username.isEmpty()) {
+            filename = "loot_game_save.json";
+        } else {
+            filename = SAVE_FILE_PREFIX + username + SAVE_FILE_SUFFIX;
+        }
+        try {
+            FileInputStream fis = ctx.openFileInput(filename);
+            fis.close();
+            return true;
+        } catch (FileNotFoundException e) {
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Extract PIN from a raw JSON string (for cloud save validation).
+     */
+    public static String extractPinFromJson(String json) {
+        return extractString(json, "pin", "");
+    }
 }
