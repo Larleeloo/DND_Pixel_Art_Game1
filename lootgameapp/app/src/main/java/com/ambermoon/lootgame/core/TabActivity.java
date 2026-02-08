@@ -7,7 +7,7 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
-import com.ambermoon.lootgame.save.CloudSyncManager;
+import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -163,7 +163,7 @@ public class TabActivity extends Activity {
 
     private void doUpload() {
         SaveManager.getInstance().save();
-        CloudSyncManager.getInstance().syncToCloud((success, msg) ->
+        GoogleDriveSyncManager.getInstance().syncToCloud((success, msg) ->
             runOnUiThread(() -> {
                 Toast.makeText(TabActivity.this, msg, Toast.LENGTH_SHORT).show();
             })
@@ -171,7 +171,7 @@ public class TabActivity extends Activity {
     }
 
     private void doDownload() {
-        CloudSyncManager.getInstance().syncFromCloud((success, msg) ->
+        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
             runOnUiThread(() -> {
                 if (success) {
                     switchTab(currentTabIndex);
@@ -188,7 +188,7 @@ public class TabActivity extends Activity {
             SaveManager.getInstance().save();
             // Auto-upload to cloud when leaving the app
             if (GamePreferences.isCloudSyncEnabled()) {
-                CloudSyncManager.getInstance().syncToCloud(null);
+                GoogleDriveSyncManager.getInstance().syncToCloud(null);
             }
         }
     }

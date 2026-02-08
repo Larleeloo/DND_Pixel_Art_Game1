@@ -38,12 +38,12 @@ public class GamePreferences {
         return new ArrayList<>(prefs.getStringSet("recent_usernames", new HashSet<>()));
     }
 
-    // --- GitHub cloud sync ---
-    public static String getGitHubToken() { return prefs.getString("github_token", ""); }
-    public static void setGitHubToken(String token) { prefs.edit().putString("github_token", token).apply(); }
+    // --- Google Drive cloud sync ---
+    public static String getWebAppUrl() { return prefs.getString("web_app_url", ""); }
+    public static void setWebAppUrl(String url) { prefs.edit().putString("web_app_url", url).apply(); }
 
     public static boolean isCloudSyncEnabled() {
-        return !getGitHubToken().isEmpty() && !getUsername().isEmpty();
+        return !getWebAppUrl().isEmpty() && !getUsername().isEmpty();
     }
 
     public static long getLastSyncTime() { return prefs.getLong("last_sync_time", 0); }
