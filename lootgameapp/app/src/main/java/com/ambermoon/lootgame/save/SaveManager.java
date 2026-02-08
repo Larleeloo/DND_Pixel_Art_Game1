@@ -39,7 +39,23 @@ public class SaveManager {
 
     public SaveData getData() { return data; }
 
+    /**
+     * Save locally AND upload to cloud automatically.
+     * Call this after any gameplay action (chest, craft, slot, etc).
+     */
     public void save() {
+        saveLocal();
+        // Auto-upload to cloud in the background
+        if (com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            GoogleDriveSyncManager.getInstance().syncToCloud(null);
+        }
+    }
+
+    /**
+     * Save locally only (no cloud upload).
+     * Used internally after cloud download to avoid re-uploading what was just fetched.
+     */
+    public void saveLocal() {
         data.lastModified = System.currentTimeMillis();
         try {
             String json = serializeToJson(data);
