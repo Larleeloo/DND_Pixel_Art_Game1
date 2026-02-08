@@ -23,6 +23,7 @@ public class DailyChestTab extends ScrollView {
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable timerTick;
     private List<Item> lastLoot = new ArrayList<>();
+    private ChestIconView chestView;
 
     public DailyChestTab(Context context) {
         super(context);
@@ -42,13 +43,15 @@ public class DailyChestTab extends ScrollView {
         title.setTypeface(Typeface.DEFAULT_BOLD);
         content.addView(title);
 
-        // Chest visual placeholder
-        TextView chestIcon = new TextView(context);
-        chestIcon.setText("\uD83D\uDCE6");
-        chestIcon.setTextSize(80);
-        chestIcon.setGravity(Gravity.CENTER);
-        chestIcon.setPadding(0, 32, 0, 16);
-        content.addView(chestIcon);
+        // Chest GIF icon (replaces emoji placeholder)
+        chestView = new ChestIconView(context, "chests/daily_chest.gif",
+                Color.parseColor("#FFB347"));
+        LinearLayout.LayoutParams chestParams = new LinearLayout.LayoutParams(240, 240);
+        chestParams.gravity = Gravity.CENTER;
+        chestParams.topMargin = 32;
+        chestParams.bottomMargin = 16;
+        chestView.setLayoutParams(chestParams);
+        content.addView(chestView);
 
         // Info
         TextView info = new TextView(context);
@@ -99,10 +102,12 @@ public class DailyChestTab extends ScrollView {
             openButton.setBackgroundColor(Color.parseColor("#FFB347"));
             openButton.setText("OPEN CHEST");
             timerText.setText("");
+            chestView.showFirstFrame();
         } else {
             openButton.setEnabled(false);
             openButton.setBackgroundColor(Color.parseColor("#444444"));
             openButton.setText("ON COOLDOWN");
+            chestView.showLastFrame();
             updateTimer();
         }
     }
@@ -131,6 +136,9 @@ public class DailyChestTab extends ScrollView {
     private void openChest() {
         SaveManager sm = SaveManager.getInstance();
         if (!sm.canOpenDailyChest()) return;
+
+        // Play chest opening animation (forward once, hold last frame)
+        chestView.playOnce();
 
         sm.recordDailyChestOpened();
 

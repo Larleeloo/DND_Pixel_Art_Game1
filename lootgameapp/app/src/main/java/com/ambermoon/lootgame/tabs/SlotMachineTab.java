@@ -27,7 +27,7 @@ public class SlotMachineTab extends ScrollView {
     private static final int DOUBLE_PAYOUT = 10;
 
     private SecureRandom rng = new SecureRandom();
-    private TextView[] reelTexts = new TextView[3];
+    private SlotReelView[] reelViews = new SlotReelView[3];
     private Button pullButton;
     private TextView balanceText;
     private TextView resultText;
@@ -60,27 +60,19 @@ public class SlotMachineTab extends ScrollView {
         balanceText.setPadding(0, 16, 0, 24);
         content.addView(balanceText);
 
-        // Reels
+        // Reels (static item images)
         LinearLayout reelRow = new LinearLayout(context);
         reelRow.setOrientation(LinearLayout.HORIZONTAL);
         reelRow.setGravity(Gravity.CENTER);
         reelRow.setBackgroundColor(Color.parseColor("#0F0D17"));
-        reelRow.setPadding(16, 32, 16, 32);
+        reelRow.setPadding(16, 16, 16, 16);
 
         for (int i = 0; i < 3; i++) {
-            reelTexts[i] = new TextView(context);
-            reelTexts[i].setText("?");
-            reelTexts[i].setTextColor(Color.WHITE);
-            reelTexts[i].setTextSize(24);
-            reelTexts[i].setTypeface(Typeface.DEFAULT_BOLD);
-            reelTexts[i].setGravity(Gravity.CENTER);
-            reelTexts[i].setBackgroundColor(Color.parseColor("#28233A"));
-            reelTexts[i].setPadding(24, 32, 24, 32);
-            reelTexts[i].setMinWidth(180);
-            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            reelViews[i] = new SlotReelView(context);
+            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, 200, 1.0f);
             rp.setMargins(8, 0, 8, 0);
-            reelTexts[i].setLayoutParams(rp);
-            reelRow.addView(reelTexts[i]);
+            reelViews[i].setLayoutParams(rp);
+            reelRow.addView(reelViews[i]);
         }
         content.addView(reelRow);
 
@@ -174,28 +166,24 @@ public class SlotMachineTab extends ScrollView {
         // Determine results upfront
         final int[] results = {rollSymbol(), rollSymbol(), rollSymbol()};
 
-        // Animate: show "..." then reveal one by one
+        // Animate: show spinning state then reveal one by one with static images
         for (int i = 0; i < 3; i++) {
-            reelTexts[i].setText("...");
-            reelTexts[i].setTextColor(Color.WHITE);
+            reelViews[i].setSpinning();
         }
 
-        // Reveal reel 1 after 500ms
+        // Reveal reel 1 after 500ms (show static item image)
         handler.postDelayed(() -> {
-            reelTexts[0].setText(SYMBOLS[results[0]]);
-            reelTexts[0].setTextColor(SYMBOL_COLORS[results[0]]);
+            reelViews[0].setSymbol(results[0]);
         }, 500);
 
         // Reveal reel 2 after 1000ms
         handler.postDelayed(() -> {
-            reelTexts[1].setText(SYMBOLS[results[1]]);
-            reelTexts[1].setTextColor(SYMBOL_COLORS[results[1]]);
+            reelViews[1].setSymbol(results[1]);
         }, 1000);
 
         // Reveal reel 3 after 1500ms, then evaluate
         handler.postDelayed(() -> {
-            reelTexts[2].setText(SYMBOLS[results[2]]);
-            reelTexts[2].setTextColor(SYMBOL_COLORS[results[2]]);
+            reelViews[2].setSymbol(results[2]);
 
             // Evaluate
             int payout = calculatePayout(results);

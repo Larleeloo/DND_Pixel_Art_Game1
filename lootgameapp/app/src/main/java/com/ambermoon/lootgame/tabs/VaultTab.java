@@ -10,6 +10,7 @@ import android.widget.*;
 
 import com.ambermoon.lootgame.entity.Item;
 import com.ambermoon.lootgame.entity.ItemRegistry;
+import com.ambermoon.lootgame.graphics.AssetLoader;
 import com.ambermoon.lootgame.save.SaveData;
 import com.ambermoon.lootgame.save.SaveManager;
 
@@ -20,10 +21,12 @@ import java.util.List;
 
 public class VaultTab extends ScrollView implements TextWatcher {
     private LinearLayout itemGrid;
-    private TextView detailPanel;
+    private LinearLayout detailPanel;
     private EditText searchBox;
     private String currentFilter = "All";
     private int currentSort = 0; // 0=rarity, 1=name, 2=count
+    private AnimatedItemView animatedView;
+    private LinearLayout animButtonRow;
 
     public VaultTab(Context context) {
         super(context);
@@ -90,10 +93,9 @@ public class VaultTab extends ScrollView implements TextWatcher {
         itemGrid.setOrientation(LinearLayout.VERTICAL);
         content.addView(itemGrid);
 
-        // Detail panel
-        detailPanel = new TextView(context);
-        detailPanel.setTextColor(Color.parseColor("#CCCCCC"));
-        detailPanel.setTextSize(13);
+        // Detail panel (contains animated preview, animation selector, and tooltip text)
+        detailPanel = new LinearLayout(context);
+        detailPanel.setOrientation(LinearLayout.VERTICAL);
         detailPanel.setBackgroundColor(Color.parseColor("#28233A"));
         detailPanel.setPadding(24, 16, 24, 16);
         detailPanel.setVisibility(View.GONE);
@@ -148,22 +150,38 @@ public class VaultTab extends ScrollView implements TextWatcher {
             }
 
             Item template = ItemRegistry.getTemplate(vi.itemId);
-            TextView itemView = new TextView(getContext());
-            String name = template != null ? template.getName() : vi.itemId;
-            itemView.setText(name + "\nx" + vi.stackCount);
-            itemView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
-            itemView.setTextSize(10);
-            itemView.setGravity(Gravity.CENTER);
-            itemView.setBackgroundColor(Color.parseColor("#28233A"));
-            itemView.setPadding(8, 12, 8, 12);
-            itemView.setMaxLines(3);
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-            p.setMargins(2, 0, 2, 0);
-            itemView.setLayoutParams(p);
+
+            // Item cell: icon sprite + name + count
+            LinearLayout cell = new LinearLayout(getContext());
+            cell.setOrientation(LinearLayout.VERTICAL);
+            cell.setGravity(Gravity.CENTER);
+            cell.setBackgroundColor(Color.parseColor("#28233A"));
+            cell.setPadding(4, 4, 4, 4);
+            LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            cellParams.setMargins(2, 0, 2, 0);
+            cell.setLayoutParams(cellParams);
+
+            // Item icon sprite (first frame of idle GIF, or rarity circle fallback)
+            if (template != null) {
+                View iconView = new ItemIconView(getContext(), template);
+                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+                iconParams.gravity = Gravity.CENTER;
+                iconView.setLayoutParams(iconParams);
+                cell.addView(iconView);
+            }
+
+            // Stack count below icon
+            TextView countView = new TextView(getContext());
+            countView.setText("x" + vi.stackCount);
+            countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+            countView.setTextSize(9);
+            countView.setGravity(Gravity.CENTER);
+            countView.setPadding(0, 2, 0, 0);
+            cell.addView(countView);
 
             final String id = vi.itemId;
-            itemView.setOnClickListener(v -> showDetail(id));
-            currentRow.addView(itemView);
+            cell.setOnClickListener(v -> showDetail(id));
+            currentRow.addView(cell);
             col++;
         }
         if (currentRow != null) {
@@ -198,8 +216,70 @@ public class VaultTab extends ScrollView implements TextWatcher {
             return;
         }
 
+        detailPanel.removeAllViews();
         detailPanel.setVisibility(View.VISIBLE);
-        detailPanel.setText(template.getTooltip() +
+
+        int rarityColor = Item.getRarityColor(template.getRarity().ordinal());
+
+        // Animated item preview
+        animatedView = new AnimatedItemView(getContext(), rarityColor);
+        LinearLayout.LayoutParams animParams = new LinearLayout.LayoutParams(160, 160);
+        animParams.gravity = Gravity.CENTER;
+        animParams.bottomMargin = 12;
+        animatedView.setLayoutParams(animParams);
+        detailPanel.addView(animatedView);
+
+        // Start with idle animation
+        String folderPath = template.getAnimationFolderPath();
+        if (folderPath != null) {
+            String idlePath = folderPath + "/idle.gif";
+            if (AssetLoader.exists(idlePath)) {
+                animatedView.playAnimation(idlePath);
+            } else if (template.getTexturePath() != null) {
+                animatedView.playAnimation(template.getTexturePath());
+            }
+        } else if (template.getTexturePath() != null) {
+            animatedView.playAnimation(template.getTexturePath());
+        }
+
+        // Animation state selector buttons (only if folder-based animations exist)
+        if (folderPath != null) {
+            String[] animStates = AssetLoader.list(folderPath);
+            if (animStates != null && animStates.length > 0) {
+                animButtonRow = new LinearLayout(getContext());
+                animButtonRow.setOrientation(LinearLayout.HORIZONTAL);
+                animButtonRow.setGravity(Gravity.CENTER);
+                animButtonRow.setPadding(0, 4, 0, 8);
+
+                for (String fileName : animStates) {
+                    if (!fileName.endsWith(".gif")) continue;
+                    String label = fileName.replace(".gif", "");
+                    String animPath = folderPath + "/" + fileName;
+
+                    Button animBtn = new Button(getContext());
+                    animBtn.setText(label);
+                    animBtn.setTextColor(Color.parseColor("#AAAACC"));
+                    animBtn.setTextSize(10);
+                    animBtn.setBackgroundColor(Color.parseColor("#1A1525"));
+                    animBtn.setPadding(12, 4, 12, 4);
+                    animBtn.setOnClickListener(v -> animatedView.playAnimation(animPath));
+                    LinearLayout.LayoutParams btnP = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT);
+                    btnP.setMargins(4, 0, 4, 0);
+                    animBtn.setLayoutParams(btnP);
+                    animButtonRow.addView(animBtn);
+                }
+                detailPanel.addView(animButtonRow);
+            }
+        }
+
+        // Tooltip text info
+        TextView tooltipText = new TextView(getContext());
+        tooltipText.setTextColor(Color.parseColor("#CCCCCC"));
+        tooltipText.setTextSize(13);
+        tooltipText.setText(template.getTooltip() +
                 "\nVault Count: " + SaveManager.getInstance().getVaultItemCount(itemId));
+        detailPanel.addView(tooltipText);
     }
 }

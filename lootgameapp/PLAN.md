@@ -41,7 +41,11 @@ lootgameapp/
 │   │   │   │   ├── AlchemyTab.java          # Alchemy crafting tab
 │   │   │   │   ├── DeconstructTab.java      # Item deconstruction tab
 │   │   │   │   ├── SlotMachineTab.java      # Coin slot machine tab
-│   │   │   │   └── VaultTab.java            # Vault inventory browser (bonus tab)
+│   │   │   │   ├── VaultTab.java            # Vault inventory browser (bonus tab)
+│   │   │   │   ├── ItemIconView.java        # Static item sprite (1st frame of idle GIF)
+│   │   │   │   ├── ChestIconView.java       # Animated chest GIF (play-once / hold last)
+│   │   │   │   ├── AnimatedItemView.java    # Looping GIF player for vault detail
+│   │   │   │   └── SlotReelView.java        # Slot reel with static item images
 │   │   │   │
 │   │   │   ├── entity/             # Item and data model classes
 │   │   │   │   ├── Item.java                # Item base class (reused from main game)
@@ -675,17 +679,43 @@ public class AnimatedSprite {
 
 | Context              | Asset Path                    | Behavior          |
 |----------------------|-------------------------------|--------------------|
-| Item icons           | assets/items/{id}/idle.gif    | Looping idle anim  |
-| Daily chest          | assets/chests/daily_chest.gif | Open/close on tap  |
-| Monthly chest        | assets/chests/monthly_chest.gif | Open/close on tap |
+| Item icons (all tabs)| assets/items/{id}/idle.gif    | First frame static (except Vault detail) |
+| Vault detail panel   | assets/items/{id}/*.gif       | Looping animation by selection |
+| Daily chest icon     | assets/chests/daily_chest.gif | Play-once on open, last frame on cooldown |
+| Monthly chest icon   | assets/chests/monthly_chest.gif | Play-once on open, last frame on cooldown |
 | Alchemy table        | assets/items/alchemy_table.gif | Looping ambient   |
 | Reverse craft table  | assets/items/reverse_crafting_table.gif | Looping  |
-| Slot machine reels   | assets/items/{symbol}/idle.gif | Spinning + stop   |
+| Slot machine reels   | assets/items/{symbol}/idle.gif | Static first frame per symbol |
 | Loot light beams     | Generated procedurally        | Color per rarity   |
 | Tab bar icons        | assets/ui/tab_*.gif           | Subtle animation   |
 | Coin icon            | assets/ui/coin.gif            | Spinning coin      |
 
-### 5.4 Performance Considerations
+### 5.4 Sprite Rendering Rules
+
+1. **Default item display**: All screens show the **first frame** of the item's
+   `idle.gif` as a static image via `ItemIconView`.
+
+2. **Vault detail animations**: When the user taps an item in the Vault tab, a
+   detail panel shows the item's animated GIF playing on loop. Animation state
+   buttons (idle, attack, block, etc.) let the user switch between available
+   animations via `AnimatedItemView`.
+
+3. **Chest GIFs**: The daily/monthly chest icons use `ChestIconView` which
+   plays the GIF **forward once** when opened (showing the chest opening), then
+   **holds on the last frame** when on cooldown. When available, shows the first
+   frame (closed chest).
+
+4. **Slot machine**: Reel symbols display **static PNG/first-frame images** of
+   mapped items (apple, iron_sword, steel_shield, diamond, magic_crystal,
+   ancient_crown) via `SlotReelView`. Static images are used to create a fun
+   slot animation.
+
+5. **Fallback**: If ANY image fails to load (missing file, decode error, etc.),
+   the fallback is a **filled circle** colored with the item's rarity color
+   (White=Common, Green=Uncommon, Blue=Rare, Purple=Epic, Orange=Legendary,
+   Cyan=Mythic).
+
+### 5.5 Performance Considerations
 
 - Cache decoded frames in memory (LruCache with configurable size)
 - Recycle Bitmaps when sprites are off-screen
@@ -998,13 +1028,18 @@ Key differences from main game:
 | UI backgrounds       | Tab content area backgrounds         |
 | Particle sprites     | Sparkle, fire, glow particle sheets  |
 
-### 11.3 Placeholder Strategy
+### 11.3 Placeholder / Fallback Strategy
 
-For initial development, missing assets will use:
-- Colored rectangles with rarity-appropriate borders
-- Text labels for identification
+When any image asset fails to load (missing file, decode error, etc.):
+- **Item icons**: A filled circle colored with the item's rarity color is shown
+  (White=Common, Green=Uncommon, Blue=Rare, Purple=Epic, Orange=Legendary,
+  Cyan=Mythic). This applies on all screens: vault grid, alchemy, deconstruct,
+  chest loot displays, and slot machine reels.
+- **Chest icons**: A colored circle matching the tab's accent color is shown.
+- **Slot machine PNGs**: Static first-frame GIF icons are used. If unavailable,
+  rarity-colored circles are drawn. Proper static PNGs can replace these later.
 - Simple geometric shapes for particles
-- These are replaced with proper pixel art sprites in the polish phase
+- These fallbacks ensure the app remains functional even with missing sprites
 
 --------------------------------------------------------------------------------
 ## 12. TESTING STRATEGY

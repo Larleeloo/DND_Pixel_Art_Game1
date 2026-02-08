@@ -212,20 +212,38 @@ public class DeconstructTab extends ScrollView {
             }
 
             Item template = ItemRegistry.getTemplate(vi.itemId);
-            TextView itemView = new TextView(getContext());
-            itemView.setText((template != null ? template.getName() : vi.itemId) + "\nx" + vi.stackCount);
-            itemView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
-            itemView.setTextSize(10);
-            itemView.setGravity(Gravity.CENTER);
-            itemView.setBackgroundColor(Color.parseColor("#28233A"));
-            itemView.setPadding(8, 8, 8, 8);
-            itemView.setMaxLines(3);
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-            p.setMargins(2, 0, 2, 0);
-            itemView.setLayoutParams(p);
+
+            // Item cell: icon sprite + count
+            LinearLayout cell = new LinearLayout(getContext());
+            cell.setOrientation(LinearLayout.VERTICAL);
+            cell.setGravity(Gravity.CENTER);
+            cell.setBackgroundColor(Color.parseColor("#28233A"));
+            cell.setPadding(4, 4, 4, 4);
+            LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            cellParams.setMargins(2, 0, 2, 0);
+            cell.setLayoutParams(cellParams);
+
+            // Item icon sprite (first frame of idle GIF, or rarity circle fallback)
+            if (template != null) {
+                View iconView = new ItemIconView(getContext(), template);
+                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(72, 72);
+                iconParams.gravity = Gravity.CENTER;
+                iconView.setLayoutParams(iconParams);
+                cell.addView(iconView);
+            }
+
+            // Stack count
+            TextView countView = new TextView(getContext());
+            countView.setText("x" + vi.stackCount);
+            countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+            countView.setTextSize(9);
+            countView.setGravity(Gravity.CENTER);
+            countView.setPadding(0, 2, 0, 0);
+            cell.addView(countView);
+
             final String id = vi.itemId;
-            itemView.setOnClickListener(v -> setInput(id));
-            currentRow.addView(itemView);
+            cell.setOnClickListener(v -> setInput(id));
+            currentRow.addView(cell);
             col++;
         }
         if (currentRow != null) {

@@ -31,18 +31,23 @@ Matching symbols pay out coins according to a payout table.
 
 ### Reel Symbols
 
-Each reel contains the same 6 symbols, weighted differently:
+Each reel contains the same 6 symbols, weighted differently. Symbols are
+displayed as **static item images** (first frame of idle GIF) via `SlotReelView`:
 
-| Symbol | Item Sprite Used          | Weight | Rarity     |
-|--------|---------------------------|--------|------------|
-| Apple  | assets/items/apple        | 30     | Common     |
-| Sword  | assets/items/iron_sword   | 25     | Uncommon   |
-| Shield | assets/items/iron_shield  | 20     | Rare       |
-| Gem    | assets/items/diamond      | 15     | Epic       |
-| Star   | assets/items/magic_crystal| 8      | Legendary  |
-| Crown  | assets/items/ancient_crown| 2      | Mythic     |
+| Symbol | Item ID (SlotReelView)    | Asset Path                        | Weight | Rarity     |
+|--------|---------------------------|-----------------------------------|--------|------------|
+| Apple  | apple                     | items/apple/idle.gif              | 30     | Common     |
+| Sword  | iron_sword                | items/iron_sword/idle.gif         | 25     | Uncommon   |
+| Shield | steel_shield              | items/steel_shield/idle.gif       | 20     | Rare       |
+| Gem    | diamond                   | items/diamond/idle.gif            | 15     | Epic       |
+| Star   | magic_crystal             | items/magic_crystal/idle.gif      | 8      | Legendary  |
+| Crown  | ancient_crown             | items/ancient_crown/idle.gif      | 2      | Mythic     |
 
-All symbols render as animated GIF sprites within the reel window.
+All symbols render as **static images** (first frame of idle.gif) within the
+reel window via `SlotReelView`. Dedicated static PNGs can replace these when
+provided. If an image fails to load, a **rarity-colored circle** is shown as
+fallback (White=Common, Green=Uncommon, Blue=Rare, Purple=Epic, Orange=Legendary,
+Cyan=Mythic).
 
 ## Reel Mechanics
 
@@ -60,41 +65,31 @@ Positions 98-99:  Crown   (2 positions)
 
 ### Spin Animation
 
+The slot machine uses `SlotReelView` to display static item images that
+create a fun rolling animation:
+
 ```
 Time 0.0s:  Player taps PULL button
-            - Lever animation plays (pull down, spring back)
             - 25 coins deducted from balance
-            - All 3 reels start spinning simultaneously
-            - Spin speed: fast blur (can't read symbols)
+            - All 3 SlotReelViews show spinning indicator (gray bars)
+            - Results determined upfront via weighted random
 
-Time 0.0-0.8s: All reels spinning
-            - Reel symbols blur vertically (rapid scroll up)
-            - Spinning sound effect loops
+Time 0.5s:  Reel 1 REVEALS
+            - SlotReelView displays static item sprite image
+            - Instant swap from spinning to final symbol
 
-Time 0.8s:  Reel 1 STOPS
-            - Deceleration curve (ease-out) over 200ms
-            - Final position determined by weighted random
-            - Bounce effect: overshoot by 1/4 symbol, spring back
-            - "Click" sound on stop
-            - Mild haptic pulse
+Time 1.0s:  Reel 2 REVEALS
+            - Same instant reveal with item sprite
 
-Time 1.3s:  Reel 2 STOPS
-            - Same deceleration + bounce
-            - If matches Reel 1: subtle glow on matching symbols
-            - Anticipation builds
-
-Time 1.8s:  Reel 3 STOPS
-            - Same deceleration + bounce
+Time 1.5s:  Reel 3 REVEALS
+            - Same instant reveal with item sprite
             - Result evaluation begins immediately
 
-Time 1.9s:  Result Display
-            - If NO MATCH: brief dim flash, "No luck!" text
-            - If DOUBLE MATCH: matching pair highlights with glow
-              Coin payout animates: "+10" floats up
-            - If TRIPLE MATCH: all 3 glow brightly
-              Pay line flashes
-              Coin payout animates with fanfare
-            - If JACKPOT (3x Crown): special sequence (see below)
+Time 1.5s+: Result Display
+            - If NO MATCH: "No match" text in red
+            - If DOUBLE MATCH: "WIN!" text in green + payout amount
+            - If TRIPLE MATCH: "WIN!" text in green + payout amount
+            - If JACKPOT (3x Crown): large payout display
 ```
 
 ### Jackpot Sequence (3x Crown)
@@ -210,32 +205,26 @@ public int[] spinReels() {
 }
 ```
 
-### Animation Implementation
+### Animation Implementation (SlotReelView)
 
-Reel spin uses a custom View with frame-by-frame rendering:
+Reel display uses `SlotReelView`, a custom View that renders static item images:
 
 ```java
-// Pseudo-code for reel spin animation
-float scrollOffset = 0;
-float scrollSpeed = 2000; // pixels per second
+// SlotReelView states:
+// 1. setSpinning()  - shows spinning indicator (gray bars)
+// 2. setSymbol(idx) - shows static item sprite for symbol index
+//
+// Symbol images are preloaded from item registry icons
+// (first frame of idle.gif). Falls back to rarity-colored circles.
 
-void updateReel(float deltaMs) {
-    if (spinning) {
-        scrollOffset += scrollSpeed * (deltaMs / 1000f);
-        scrollOffset %= totalStripHeight;
-
-        if (shouldStop && scrollSpeed > 0) {
-            scrollSpeed -= deceleration * (deltaMs / 1000f);
-            if (scrollSpeed <= 0) {
-                scrollSpeed = 0;
-                spinning = false;
-                snapToNearestSymbol();
-                playBounceAnimation();
-            }
-        }
-    }
-}
+// SlotMachineTab animation uses Handler delays:
+handler.postDelayed(() -> reelViews[0].setSymbol(results[0]), 500);
+handler.postDelayed(() -> reelViews[1].setSymbol(results[1]), 1000);
+handler.postDelayed(() -> reelViews[2].setSymbol(results[2]), 1500);
 ```
+
+Future enhancement: Replace first-frame GIF icons with dedicated static PNGs
+when they are provided, for a more polished slot machine appearance.
 
 ### Preventing Exploits
 
