@@ -202,6 +202,59 @@ public class GoogleDriveSyncManager {
         return baos.toString("UTF-8");
     }
 
+    /**
+     * Callback that returns raw JSON string from cloud.
+     */
+    public interface FetchCallback {
+        void onResult(String json, String error);
+    }
+
+    /**
+     * Fetch the raw save JSON for a username from cloud (for PIN validation).
+     * Does NOT load it into SaveManager.
+     * Returns the JSON string via callback, or null JSON with an error message.
+     */
+    public void fetchCloudSave(String username, FetchCallback callback) {
+        String webAppUrl = GamePreferences.getWebAppUrl();
+        if (webAppUrl.isEmpty() || username.isEmpty()) {
+            mainHandler.post(() -> callback.onResult(null, "Not configured"));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                String downloadUrl = webAppUrl + "?username=" +
+                        java.net.URLEncoder.encode(username, "UTF-8");
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                conn.setRequestMethod("GET");
+                conn.setInstanceFollowRedirects(true);
+                conn.setRequestProperty("User-Agent", "AmberMoon-LootGame/1.0");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    String json = readStream(conn.getInputStream());
+                    conn.disconnect();
+                    String trimmed = json.trim();
+                    if (trimmed.startsWith("{") && trimmed.contains("\"version\"")) {
+                        mainHandler.post(() -> callback.onResult(json, null));
+                    } else {
+                        // No save found or invalid
+                        mainHandler.post(() -> callback.onResult(null, null));
+                    }
+                } else {
+                    conn.disconnect();
+                    mainHandler.post(() -> callback.onResult(null, "HTTP " + code));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Fetch exception", e);
+                mainHandler.post(() -> callback.onResult(null, e.getMessage()));
+            }
+        });
+    }
+
     public boolean isSyncing() { return syncing; }
 
     private void postResult(SyncCallback cb, boolean success, String msg) {

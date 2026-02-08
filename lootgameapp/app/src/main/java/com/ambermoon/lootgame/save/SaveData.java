@@ -8,6 +8,9 @@ public class SaveData {
     public String platform = "android_loot";
     public long lastModified;
 
+    // PIN (stored in save file — not secure, just a convenience lock)
+    public String pin = "";
+
     // Coins
     public int coins = 500; // first launch bonus
     public long totalCoinsEarned = 500;
