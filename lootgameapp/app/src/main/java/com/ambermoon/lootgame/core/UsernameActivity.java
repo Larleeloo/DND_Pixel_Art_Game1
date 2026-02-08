@@ -307,8 +307,12 @@ public class UsernameActivity extends Activity {
             SaveManager.getInstance().save();
         }
 
-        startActivity(new Intent(this, TabActivity.class));
-        finish();
+        // Sync from cloud before entering the game so local data is up to date
+        playBtn.setText("Syncing...");
+        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) -> {
+            startActivity(new Intent(UsernameActivity.this, TabActivity.class));
+            finish();
+        });
     }
 
     private void showPinError() {
