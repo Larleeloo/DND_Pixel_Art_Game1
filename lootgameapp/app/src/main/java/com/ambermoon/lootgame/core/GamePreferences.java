@@ -39,7 +39,7 @@ public class GamePreferences {
     }
 
     // --- Google Drive cloud sync ---
-    public static String getWebAppUrl() { return prefs.getString("web_app_url", ""); }
+    public static String getWebAppUrl() { return prefs.getString("web_app_url", "https://script.google.com/macros/s/AKfycbxKACmep7-LzmbTyzCe0A0I_5QeXVTchVkv5HEaFZR-0Vm3J_ikxGbsmRxQEjwHpWodoQ/exec"); }
     public static void setWebAppUrl(String url) { prefs.edit().putString("web_app_url", url).apply(); }
 
     public static boolean isCloudSyncEnabled() {
