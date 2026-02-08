@@ -185,11 +185,8 @@ public class TabActivity extends Activity {
     protected void onPause() {
         super.onPause();
         if (SaveManager.getInstance() != null) {
+            // save() handles both local save and cloud upload
             SaveManager.getInstance().save();
-            // Auto-upload to cloud when leaving the app
-            if (GamePreferences.isCloudSyncEnabled()) {
-                GoogleDriveSyncManager.getInstance().syncToCloud(null);
-            }
         }
     }
 }

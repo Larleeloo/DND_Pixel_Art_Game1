@@ -1,6 +1,7 @@
 package com.ambermoon.lootgame.core;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -260,64 +261,95 @@ public class UsernameActivity extends Activity {
             return;
         }
 
-        // Disable button while checking
         playBtn.setEnabled(false);
-        playBtn.setText("Checking...");
+        playBtn.setText("Connecting...");
 
-        // Step 1: Check local save
-        if (SaveManager.localSaveExists(this, username)) {
-            String savedPin = SaveManager.readLocalPin(this, username);
-            if (savedPin.isEmpty()) {
-                // Legacy save with no PIN — set the PIN and proceed
-                proceedToGame(username, pin, true);
-            } else if (savedPin.equals(pin)) {
-                proceedToGame(username, pin, false);
-            } else {
-                showPinError();
-            }
-            return;
-        }
-
-        // Step 2: No local save — check cloud
+        // Always check the cloud save — this game requires online
         GoogleDriveSyncManager.getInstance().fetchCloudSave(username, (json, error) -> {
             if (json != null) {
-                // Cloud save exists — check PIN
+                // Cloud save exists
                 String cloudPin = SaveManager.extractPinFromJson(json);
                 if (cloudPin.isEmpty()) {
-                    // Cloud save with no PIN — set PIN and proceed
-                    proceedToGame(username, pin, true);
+                    // Legacy save with no PIN — ask to set one
+                    showPinCreateDialog(username, pin, json);
                 } else if (cloudPin.equals(pin)) {
-                    proceedToGame(username, pin, false);
+                    // PIN matches — load cloud save and enter game
+                    loadCloudSaveAndEnter(username, json);
                 } else {
-                    showPinError();
+                    // Wrong PIN
+                    resetButton();
+                    Toast.makeText(UsernameActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
                 }
+            } else if (error != null) {
+                // Network or server error
+                resetButton();
+                Toast.makeText(UsernameActivity.this,
+                        "Could not connect. This game requires an internet connection.",
+                        Toast.LENGTH_LONG).show();
             } else {
-                // No cloud save — this is a brand new user
-                proceedToGame(username, pin, true);
+                // No cloud save found — new user, confirm PIN creation
+                showPinCreateDialog(username, pin, null);
             }
         });
     }
 
-    private void proceedToGame(String username, String pin, boolean setPin) {
-        GamePreferences.setUsername(username);
-        SaveManager.init(this);
+    /**
+     * Show a confirmation dialog before creating or assigning a PIN.
+     * @param existingJson non-null if a legacy cloud save exists (needs PIN assigned),
+     *                     null if this is a brand new user.
+     */
+    private void showPinCreateDialog(String username, String pin, String existingJson) {
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm PIN")
+                .setMessage("Set PIN " + pin + " for \"" + username + "\"?\n\n"
+                        + "You will need this PIN every time you log in.")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    playBtn.setText("Creating...");
+                    GamePreferences.setUsername(username);
+                    SaveManager.init(this);
 
-        if (setPin) {
-            SaveManager.getInstance().getData().pin = pin;
-            SaveManager.getInstance().save();
-        }
+                    if (existingJson != null) {
+                        // Legacy cloud save — load it first, then stamp the PIN
+                        SaveManager.getInstance().fromJson(existingJson);
+                    }
+                    SaveManager.getInstance().getData().pin = pin;
+                    SaveManager.getInstance().saveLocal();
 
-        // Sync from cloud before entering the game so local data is up to date
-        playBtn.setText("Syncing...");
-        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) -> {
-            startActivity(new Intent(UsernameActivity.this, TabActivity.class));
-            finish();
-        });
+                    // Upload the save (with new PIN) to cloud, then enter game
+                    GoogleDriveSyncManager.getInstance().syncToCloud((success, msg) -> {
+                        if (success) {
+                            enterGame();
+                        } else {
+                            resetButton();
+                            Toast.makeText(UsernameActivity.this,
+                                    "Failed to save to cloud: " + msg, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                })
+                .setNegativeButton("No", (dialog, which) -> resetButton())
+                .setCancelable(false)
+                .show();
     }
 
-    private void showPinError() {
+    /**
+     * Load an existing cloud save JSON into SaveManager and enter the game.
+     */
+    private void loadCloudSaveAndEnter(String username, String cloudJson) {
+        playBtn.setText("Loading...");
+        GamePreferences.setUsername(username);
+        SaveManager.init(this);
+        SaveManager.getInstance().fromJson(cloudJson);
+        SaveManager.getInstance().saveLocal();
+        enterGame();
+    }
+
+    private void enterGame() {
+        startActivity(new Intent(UsernameActivity.this, TabActivity.class));
+        finish();
+    }
+
+    private void resetButton() {
         playBtn.setEnabled(true);
         playBtn.setText("PLAY");
-        Toast.makeText(this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
     }
 }

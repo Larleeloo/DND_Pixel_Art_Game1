@@ -170,7 +170,7 @@ public class GoogleDriveSyncManager {
                     String trimmed = json.trim();
                     if (trimmed.startsWith("{") && trimmed.contains("\"version\"")) {
                         SaveManager.getInstance().fromJson(json);
-                        SaveManager.getInstance().save();
+                        SaveManager.getInstance().saveLocal();
                         syncing = false;
                         GamePreferences.setLastSyncTime(System.currentTimeMillis());
                         postResult(callback, true, "Loaded from Google Drive");
