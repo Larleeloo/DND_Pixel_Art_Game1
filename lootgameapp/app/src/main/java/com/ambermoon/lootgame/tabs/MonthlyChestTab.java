@@ -22,6 +22,7 @@ public class MonthlyChestTab extends ScrollView {
     private LinearLayout lootDisplay;
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable timerTick;
+    private ChestIconView chestView;
 
     public MonthlyChestTab(Context context) {
         super(context);
@@ -40,12 +41,15 @@ public class MonthlyChestTab extends ScrollView {
         title.setTypeface(Typeface.DEFAULT_BOLD);
         content.addView(title);
 
-        TextView chestIcon = new TextView(context);
-        chestIcon.setText("\uD83C\uDF81");
-        chestIcon.setTextSize(80);
-        chestIcon.setGravity(Gravity.CENTER);
-        chestIcon.setPadding(0, 32, 0, 16);
-        content.addView(chestIcon);
+        // Chest GIF icon (replaces emoji placeholder)
+        chestView = new ChestIconView(context, "chests/monthly_chest.gif",
+                Color.parseColor("#B464FF"));
+        LinearLayout.LayoutParams chestParams = new LinearLayout.LayoutParams(240, 240);
+        chestParams.gravity = Gravity.CENTER;
+        chestParams.topMargin = 32;
+        chestParams.bottomMargin = 16;
+        chestView.setLayoutParams(chestParams);
+        content.addView(chestView);
 
         TextView info = new TextView(context);
         info.setText("\u25C8 500-2000 coins  |  \u2605 10 items  |  2.5x rarity boost");
@@ -89,10 +93,12 @@ public class MonthlyChestTab extends ScrollView {
             openButton.setBackgroundColor(Color.parseColor("#B464FF"));
             openButton.setText("OPEN CHEST");
             timerText.setText("");
+            chestView.showFirstFrame();
         } else {
             openButton.setEnabled(false);
             openButton.setBackgroundColor(Color.parseColor("#444444"));
             openButton.setText("ON COOLDOWN");
+            chestView.showLastFrame();
         }
     }
 
@@ -118,6 +124,9 @@ public class MonthlyChestTab extends ScrollView {
     private void openChest() {
         SaveManager sm = SaveManager.getInstance();
         if (!sm.canOpenMonthlyChest()) return;
+
+        // Play chest opening animation (forward once, hold last frame)
+        chestView.playOnce();
 
         sm.recordMonthlyChestOpened();
 
@@ -148,7 +157,7 @@ public class MonthlyChestTab extends ScrollView {
         coinText.setPadding(0, 16, 0, 24);
         lootDisplay.addView(coinText);
 
-        // Display in 2 rows of 5
+        // Display in 2 rows of 5 with item icon sprites
         for (int row = 0; row < 2; row++) {
             LinearLayout rowLayout = new LinearLayout(getContext());
             rowLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -156,18 +165,34 @@ public class MonthlyChestTab extends ScrollView {
             rowLayout.setPadding(0, 8, 0, 8);
             for (int col = 0; col < 5 && row * 5 + col < loot.size(); col++) {
                 Item item = loot.get(row * 5 + col);
-                TextView itemView = new TextView(getContext());
-                itemView.setText(item.getName());
-                itemView.setTextColor(Item.getRarityColor(item.getRarity().ordinal()));
-                itemView.setTextSize(10);
-                itemView.setGravity(Gravity.CENTER);
-                itemView.setBackgroundColor(Color.parseColor("#28233A"));
-                itemView.setPadding(8, 8, 8, 8);
-                itemView.setMaxLines(2);
+
+                LinearLayout itemCard = new LinearLayout(getContext());
+                itemCard.setOrientation(LinearLayout.VERTICAL);
+                itemCard.setGravity(Gravity.CENTER);
+                itemCard.setBackgroundColor(Color.parseColor("#28233A"));
+                itemCard.setPadding(4, 4, 4, 4);
+
+                // Item icon sprite (first frame of idle GIF)
+                View iconView = new ItemIconView(getContext(), item);
+                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+                iconParams.gravity = Gravity.CENTER;
+                iconView.setLayoutParams(iconParams);
+                itemCard.addView(iconView);
+
+                // Item name below icon
+                TextView nameView = new TextView(getContext());
+                nameView.setText(item.getName());
+                nameView.setTextColor(Item.getRarityColor(item.getRarity().ordinal()));
+                nameView.setTextSize(9);
+                nameView.setGravity(Gravity.CENTER);
+                nameView.setMaxLines(2);
+                nameView.setPadding(0, 4, 0, 0);
+                itemCard.addView(nameView);
+
                 LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-                p.setMargins(4, 0, 4, 0);
-                itemView.setLayoutParams(p);
-                rowLayout.addView(itemView);
+                p.setMargins(2, 0, 2, 0);
+                itemCard.setLayoutParams(p);
+                rowLayout.addView(itemCard);
             }
             lootDisplay.addView(rowLayout);
         }
