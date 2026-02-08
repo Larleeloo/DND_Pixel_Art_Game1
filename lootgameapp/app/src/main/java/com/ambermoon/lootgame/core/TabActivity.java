@@ -7,13 +7,14 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
-import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
+import com.ambermoon.lootgame.save.CloudSyncManager;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
     private FrameLayout contentFrame;
     private LinearLayout tabBar;
     private TextView coinDisplay;
+    private TextView usernameDisplay;
     private View currentTab;
     private int currentTabIndex = 0;
 
@@ -50,19 +51,45 @@ public class TabActivity extends Activity {
         coinDisplay.setLayoutParams(coinParams);
         header.addView(coinDisplay);
 
-        // Sync button
-        Button syncBtn = new Button(this);
-        syncBtn.setText("\u21BB");
-        syncBtn.setTextColor(Color.parseColor("#4DA6FF"));
-        syncBtn.setTextSize(18);
-        syncBtn.setBackgroundColor(Color.TRANSPARENT);
-        syncBtn.setOnClickListener(v -> doSync());
+        // Username display (centered)
+        usernameDisplay = new TextView(this);
+        usernameDisplay.setTextColor(Color.parseColor("#B8A9D4"));
+        usernameDisplay.setTextSize(14);
+        String username = GamePreferences.getUsername();
+        usernameDisplay.setText(username.isEmpty() ? "" : username);
+        RelativeLayout.LayoutParams userParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        userParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+        usernameDisplay.setLayoutParams(userParams);
+        header.addView(usernameDisplay);
+
+        // Sync button (upload)
+        Button uploadBtn = new Button(this);
+        uploadBtn.setText("\u2191");
+        uploadBtn.setTextColor(Color.parseColor("#4DA6FF"));
+        uploadBtn.setTextSize(18);
+        uploadBtn.setBackgroundColor(Color.TRANSPARENT);
+        uploadBtn.setOnClickListener(v -> doUpload());
+
+        // Sync button (download)
+        Button downloadBtn = new Button(this);
+        downloadBtn.setText("\u2193");
+        downloadBtn.setTextColor(Color.parseColor("#4DA6FF"));
+        downloadBtn.setTextSize(18);
+        downloadBtn.setBackgroundColor(Color.TRANSPARENT);
+        downloadBtn.setOnClickListener(v -> doDownload());
+
+        // Sync buttons container (right-aligned)
+        LinearLayout syncContainer = new LinearLayout(this);
+        syncContainer.setOrientation(LinearLayout.HORIZONTAL);
+        syncContainer.addView(uploadBtn);
+        syncContainer.addView(downloadBtn);
         RelativeLayout.LayoutParams syncParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         syncParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         syncParams.addRule(RelativeLayout.CENTER_VERTICAL);
-        syncBtn.setLayoutParams(syncParams);
-        header.addView(syncBtn);
+        syncContainer.setLayoutParams(syncParams);
+        header.addView(syncContainer);
 
         root.addView(header);
 
@@ -134,16 +161,22 @@ public class TabActivity extends Activity {
         }
     }
 
-    private void doSync() {
+    private void doUpload() {
         SaveManager.getInstance().save();
-        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
+        CloudSyncManager.getInstance().syncToCloud((success, msg) ->
+            runOnUiThread(() -> {
+                Toast.makeText(TabActivity.this, msg, Toast.LENGTH_SHORT).show();
+            })
+        );
+    }
+
+    private void doDownload() {
+        CloudSyncManager.getInstance().syncFromCloud((success, msg) ->
             runOnUiThread(() -> {
                 if (success) {
                     switchTab(currentTabIndex);
-                    Toast.makeText(TabActivity.this, "Loaded from Google Drive", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(TabActivity.this, "Sync failed: " + msg, Toast.LENGTH_SHORT).show();
                 }
+                Toast.makeText(TabActivity.this, msg, Toast.LENGTH_SHORT).show();
             })
         );
     }
@@ -151,6 +184,12 @@ public class TabActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (SaveManager.getInstance() != null) SaveManager.getInstance().save();
+        if (SaveManager.getInstance() != null) {
+            SaveManager.getInstance().save();
+            // Auto-upload to cloud when leaving the app
+            if (GamePreferences.isCloudSyncEnabled()) {
+                CloudSyncManager.getInstance().syncToCloud(null);
+            }
+        }
     }
 }

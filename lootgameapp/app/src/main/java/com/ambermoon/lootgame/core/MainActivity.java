@@ -9,7 +9,6 @@ import android.view.WindowManager;
 import com.ambermoon.lootgame.graphics.AssetLoader;
 import com.ambermoon.lootgame.entity.ItemRegistry;
 import com.ambermoon.lootgame.entity.RecipeManager;
-import com.ambermoon.lootgame.save.SaveManager;
 
 public class MainActivity extends Activity {
     @Override
@@ -21,15 +20,14 @@ public class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Initialize core systems
+        // Initialize core systems (SaveManager is initialized after username is chosen)
         GamePreferences.init(this);
         AssetLoader.init(this);
-        SaveManager.init(this);
         RecipeManager.initialize(this);
         ItemRegistry.initialize();
 
-        // Go straight to the game
-        startActivity(new Intent(this, TabActivity.class));
+        // Show username screen — SaveManager.init() is called there after user picks a name
+        startActivity(new Intent(this, UsernameActivity.class));
         finish();
     }
 }
