@@ -38,6 +38,9 @@ public class SaveData {
     // Vault items
     public List<VaultItem> vaultItems = new ArrayList<>();
 
+    // Shop items (items available for purchase, configured by Lars)
+    public List<ShopItem> shopItems = new ArrayList<>();
+
     public static class VaultItem {
         public String itemId;
         public int stackCount;
@@ -46,6 +49,17 @@ public class SaveData {
         public VaultItem(String itemId, int count) {
             this.itemId = itemId;
             this.stackCount = count;
+        }
+    }
+
+    public static class ShopItem {
+        public String itemId;
+        public int price;
+
+        public ShopItem() {}
+        public ShopItem(String itemId, int price) {
+            this.itemId = itemId;
+            this.price = price;
         }
     }
 }
