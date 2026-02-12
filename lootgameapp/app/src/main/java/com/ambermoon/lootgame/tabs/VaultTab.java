@@ -8,6 +8,9 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import android.app.AlertDialog;
+import android.graphics.drawable.ColorDrawable;
+
 import com.ambermoon.lootgame.entity.Item;
 import com.ambermoon.lootgame.entity.ItemRegistry;
 import com.ambermoon.lootgame.graphics.AssetLoader;
@@ -21,12 +24,9 @@ import java.util.List;
 
 public class VaultTab extends ScrollView implements TextWatcher {
     private LinearLayout itemGrid;
-    private LinearLayout detailPanel;
     private EditText searchBox;
     private String currentFilter = "All";
     private int currentSort = 0; // 0=rarity, 1=name, 2=count
-    private AnimatedItemView animatedView;
-    private LinearLayout animButtonRow;
 
     public VaultTab(Context context) {
         super(context);
@@ -92,14 +92,6 @@ public class VaultTab extends ScrollView implements TextWatcher {
         itemGrid = new LinearLayout(context);
         itemGrid.setOrientation(LinearLayout.VERTICAL);
         content.addView(itemGrid);
-
-        // Detail panel (contains animated preview, animation selector, and tooltip text)
-        detailPanel = new LinearLayout(context);
-        detailPanel.setOrientation(LinearLayout.VERTICAL);
-        detailPanel.setBackgroundColor(Color.parseColor("#28233A"));
-        detailPanel.setPadding(24, 16, 24, 16);
-        detailPanel.setVisibility(View.GONE);
-        content.addView(detailPanel);
 
         addView(content);
         refreshGrid();
@@ -211,23 +203,38 @@ public class VaultTab extends ScrollView implements TextWatcher {
 
     private void showDetail(String itemId) {
         Item template = ItemRegistry.getTemplate(itemId);
-        if (template == null) {
-            detailPanel.setVisibility(View.GONE);
-            return;
-        }
+        if (template == null) return;
 
-        detailPanel.removeAllViews();
-        detailPanel.setVisibility(View.VISIBLE);
-
+        Context ctx = getContext();
         int rarityColor = Item.getRarityColor(template.getRarity().ordinal());
 
+        // Build dialog content
+        LinearLayout dialogContent = new LinearLayout(ctx);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setGravity(Gravity.CENTER_HORIZONTAL);
+        dialogContent.setBackgroundColor(Color.parseColor("#1E1830"));
+        dialogContent.setPadding(48, 32, 48, 32);
+
+        // Item name header
+        TextView nameView = new TextView(ctx);
+        nameView.setText(template.getName());
+        nameView.setTextColor(rarityColor);
+        nameView.setTextSize(18);
+        nameView.setTypeface(Typeface.DEFAULT_BOLD);
+        nameView.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        nameParams.bottomMargin = 16;
+        nameView.setLayoutParams(nameParams);
+        dialogContent.addView(nameView);
+
         // Animated item preview
-        animatedView = new AnimatedItemView(getContext(), rarityColor);
+        AnimatedItemView animatedView = new AnimatedItemView(ctx, rarityColor);
         LinearLayout.LayoutParams animParams = new LinearLayout.LayoutParams(160, 160);
         animParams.gravity = Gravity.CENTER;
         animParams.bottomMargin = 12;
         animatedView.setLayoutParams(animParams);
-        detailPanel.addView(animatedView);
+        dialogContent.addView(animatedView);
 
         // Start with idle animation
         String folderPath = template.getAnimationFolderPath();
@@ -246,7 +253,7 @@ public class VaultTab extends ScrollView implements TextWatcher {
         if (folderPath != null) {
             String[] animStates = AssetLoader.list(folderPath);
             if (animStates != null && animStates.length > 0) {
-                animButtonRow = new LinearLayout(getContext());
+                LinearLayout animButtonRow = new LinearLayout(ctx);
                 animButtonRow.setOrientation(LinearLayout.HORIZONTAL);
                 animButtonRow.setGravity(Gravity.CENTER);
                 animButtonRow.setPadding(0, 4, 0, 8);
@@ -256,11 +263,11 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     String label = fileName.replace(".gif", "");
                     String animPath = folderPath + "/" + fileName;
 
-                    Button animBtn = new Button(getContext());
+                    Button animBtn = new Button(ctx);
                     animBtn.setText(label);
                     animBtn.setTextColor(Color.parseColor("#AAAACC"));
                     animBtn.setTextSize(10);
-                    animBtn.setBackgroundColor(Color.parseColor("#1A1525"));
+                    animBtn.setBackgroundColor(Color.parseColor("#28233A"));
                     animBtn.setPadding(12, 4, 12, 4);
                     animBtn.setOnClickListener(v -> animatedView.playAnimation(animPath));
                     LinearLayout.LayoutParams btnP = new LinearLayout.LayoutParams(
@@ -270,16 +277,31 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     animBtn.setLayoutParams(btnP);
                     animButtonRow.addView(animBtn);
                 }
-                detailPanel.addView(animButtonRow);
+                dialogContent.addView(animButtonRow);
             }
         }
 
         // Tooltip text info
-        TextView tooltipText = new TextView(getContext());
+        TextView tooltipText = new TextView(ctx);
         tooltipText.setTextColor(Color.parseColor("#CCCCCC"));
         tooltipText.setTextSize(13);
+        tooltipText.setGravity(Gravity.CENTER);
         tooltipText.setText(template.getTooltip() +
                 "\nVault Count: " + SaveManager.getInstance().getVaultItemCount(itemId));
-        detailPanel.addView(tooltipText);
+        LinearLayout.LayoutParams tipParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        tipParams.topMargin = 8;
+        tooltipText.setLayoutParams(tipParams);
+        dialogContent.addView(tooltipText);
+
+        // Show as popup dialog
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(dialogContent)
+                .setPositiveButton("Close", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1E1830")));
+        }
+        dialog.show();
     }
 }

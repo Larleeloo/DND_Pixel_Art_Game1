@@ -57,6 +57,8 @@ public class SaveManager {
      */
     public void saveLocal() {
         data.lastModified = System.currentTimeMillis();
+        data.lastModifiedDate = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", Locale.US).format(new Date(data.lastModified));
+        data.appVersion = com.ambermoon.lootgame.core.UsernameActivity.APP_VERSION;
         try {
             String json = serializeToJson(data);
             FileOutputStream fos = context.openFileOutput(getSaveFileName(), Context.MODE_PRIVATE);
@@ -174,9 +176,11 @@ public class SaveManager {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
         sb.append("  \"version\": ").append(d.version).append(",\n");
+        sb.append("  \"appVersion\": \"").append(d.appVersion).append("\",\n");
         sb.append("  \"platform\": \"").append(d.platform).append("\",\n");
         sb.append("  \"pin\": \"").append(d.pin).append("\",\n");
         sb.append("  \"lastModified\": ").append(d.lastModified).append(",\n");
+        sb.append("  \"lastModifiedDate\": \"").append(d.lastModifiedDate).append("\",\n");
         sb.append("  \"coins\": ").append(d.coins).append(",\n");
         sb.append("  \"totalCoinsEarned\": ").append(d.totalCoinsEarned).append(",\n");
         sb.append("  \"totalCoinsSpent\": ").append(d.totalCoinsSpent).append(",\n");
@@ -204,8 +208,10 @@ public class SaveManager {
     private SaveData deserializeFromJson(String json) {
         SaveData d = new SaveData();
         d.version = extractInt(json, "version", 1);
+        d.appVersion = extractString(json, "appVersion", "");
         d.pin = extractString(json, "pin", "");
         d.lastModified = extractLong(json, "lastModified", 0);
+        d.lastModifiedDate = extractString(json, "lastModifiedDate", "");
         d.coins = extractInt(json, "coins", 500);
         d.totalCoinsEarned = extractLong(json, "totalCoinsEarned", 500);
         d.totalCoinsSpent = extractLong(json, "totalCoinsSpent", 0);
@@ -338,5 +344,12 @@ public class SaveManager {
      */
     public static String extractPinFromJson(String json) {
         return extractString(json, "pin", "");
+    }
+
+    /**
+     * Extract appVersion from a raw JSON string (for version validation).
+     */
+    public static String extractAppVersionFromJson(String json) {
+        return extractString(json, "appVersion", "");
     }
 }

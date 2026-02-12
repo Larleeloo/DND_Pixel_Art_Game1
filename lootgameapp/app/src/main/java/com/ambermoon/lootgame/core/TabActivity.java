@@ -7,7 +7,6 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.save.SaveManager;
-import com.ambermoon.lootgame.save.GoogleDriveSyncManager;
 import com.ambermoon.lootgame.tabs.*;
 
 public class TabActivity extends Activity {
@@ -62,34 +61,6 @@ public class TabActivity extends Activity {
         userParams.addRule(RelativeLayout.CENTER_IN_PARENT);
         usernameDisplay.setLayoutParams(userParams);
         header.addView(usernameDisplay);
-
-        // Sync button (upload)
-        Button uploadBtn = new Button(this);
-        uploadBtn.setText("\u2191");
-        uploadBtn.setTextColor(Color.parseColor("#4DA6FF"));
-        uploadBtn.setTextSize(18);
-        uploadBtn.setBackgroundColor(Color.TRANSPARENT);
-        uploadBtn.setOnClickListener(v -> doUpload());
-
-        // Sync button (download)
-        Button downloadBtn = new Button(this);
-        downloadBtn.setText("\u2193");
-        downloadBtn.setTextColor(Color.parseColor("#4DA6FF"));
-        downloadBtn.setTextSize(18);
-        downloadBtn.setBackgroundColor(Color.TRANSPARENT);
-        downloadBtn.setOnClickListener(v -> doDownload());
-
-        // Sync buttons container (right-aligned)
-        LinearLayout syncContainer = new LinearLayout(this);
-        syncContainer.setOrientation(LinearLayout.HORIZONTAL);
-        syncContainer.addView(uploadBtn);
-        syncContainer.addView(downloadBtn);
-        RelativeLayout.LayoutParams syncParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        syncParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        syncParams.addRule(RelativeLayout.CENTER_VERTICAL);
-        syncContainer.setLayoutParams(syncParams);
-        header.addView(syncContainer);
 
         root.addView(header);
 
@@ -159,26 +130,6 @@ public class TabActivity extends Activity {
         if (coinDisplay != null && SaveManager.getInstance() != null) {
             coinDisplay.setText("\u25C8 " + SaveManager.getInstance().getData().coins + " coins");
         }
-    }
-
-    private void doUpload() {
-        SaveManager.getInstance().save();
-        GoogleDriveSyncManager.getInstance().syncToCloud((success, msg) ->
-            runOnUiThread(() -> {
-                Toast.makeText(TabActivity.this, msg, Toast.LENGTH_SHORT).show();
-            })
-        );
-    }
-
-    private void doDownload() {
-        GoogleDriveSyncManager.getInstance().syncFromCloud((success, msg) ->
-            runOnUiThread(() -> {
-                if (success) {
-                    switchTab(currentTabIndex);
-                }
-                Toast.makeText(TabActivity.this, msg, Toast.LENGTH_SHORT).show();
-            })
-        );
     }
 
     @Override

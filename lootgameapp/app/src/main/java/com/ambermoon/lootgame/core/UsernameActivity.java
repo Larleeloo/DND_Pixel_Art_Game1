@@ -311,6 +311,19 @@ public class UsernameActivity extends Activity {
                     if (existingJson != null) {
                         // Legacy cloud save — load it first, then stamp the PIN
                         SaveManager.getInstance().fromJson(existingJson);
+                        // Check version compatibility
+                        String saveVer = SaveManager.getInstance().getData().appVersion;
+                        if (!saveVer.isEmpty() && !saveVer.equals(APP_VERSION)) {
+                            new AlertDialog.Builder(UsernameActivity.this)
+                                    .setTitle("Version Mismatch")
+                                    .setMessage("This save was created with " + saveVer
+                                            + " but you are running " + APP_VERSION + ".\n\n"
+                                            + "Please update to the latest version of the app to load this save.")
+                                    .setPositiveButton("OK", (d2, w2) -> resetButton())
+                                    .setCancelable(false)
+                                    .show();
+                            return;
+                        }
                     }
                     SaveManager.getInstance().getData().pin = pin;
                     SaveManager.getInstance().saveLocal();
@@ -333,12 +346,28 @@ public class UsernameActivity extends Activity {
 
     /**
      * Load an existing cloud save JSON into SaveManager and enter the game.
+     * Validates that the save's app version matches the current version.
      */
     private void loadCloudSaveAndEnter(String username, String cloudJson) {
         playBtn.setText("Loading...");
         GamePreferences.setUsername(username);
         SaveManager.init(this);
         SaveManager.getInstance().fromJson(cloudJson);
+
+        // Check save file version compatibility
+        String saveVersion = SaveManager.getInstance().getData().appVersion;
+        if (!saveVersion.isEmpty() && !saveVersion.equals(APP_VERSION)) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Version Mismatch")
+                    .setMessage("This save was created with " + saveVersion
+                            + " but you are running " + APP_VERSION + ".\n\n"
+                            + "Please update to the latest version of the app to load this save.")
+                    .setPositiveButton("OK", (dialog, which) -> resetButton())
+                    .setCancelable(false)
+                    .show();
+            return;
+        }
+
         SaveManager.getInstance().saveLocal();
         enterGame();
     }

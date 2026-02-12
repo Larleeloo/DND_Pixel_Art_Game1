@@ -5,8 +5,10 @@ import java.util.List;
 
 public class SaveData {
     public int version = 1;
+    public String appVersion = "";
     public String platform = "android_loot";
     public long lastModified;
+    public String lastModifiedDate = "";
 
     // PIN (stored in save file — not secure, just a convenience lock)
     public String pin = "";

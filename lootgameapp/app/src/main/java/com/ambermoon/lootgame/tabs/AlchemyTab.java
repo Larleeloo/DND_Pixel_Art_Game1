@@ -127,6 +127,17 @@ public class AlchemyTab extends ScrollView {
     private void addItemToSlot(String itemId) {
         for (int i = 0; i < 3; i++) {
             if (inputSlots[i] == null) {
+                // Count how many of this item are already in slots
+                int alreadyInSlots = 0;
+                for (String s : inputSlots) {
+                    if (itemId.equals(s)) alreadyInSlots++;
+                }
+                // Check if vault has more than what's already placed
+                int vaultCount = SaveManager.getInstance().getVaultItemCount(itemId);
+                if (alreadyInSlots >= vaultCount) {
+                    Toast.makeText(getContext(), "Not enough in vault!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 inputSlots[i] = itemId;
                 Item item = ItemRegistry.getTemplate(itemId);
                 slotTexts[i].setText(item != null ? item.getName() : itemId);
@@ -178,10 +189,16 @@ public class AlchemyTab extends ScrollView {
         if (currentRecipe == null) return;
         SaveManager sm = SaveManager.getInstance();
 
-        // Check vault has all ingredients
+        // Count required quantity of each ingredient
+        java.util.HashMap<String, Integer> needed = new java.util.HashMap<>();
         for (String ing : currentRecipe.ingredients) {
-            if (sm.getVaultItemCount(ing) < 1) {
-                Toast.makeText(getContext(), "Missing: " + ing, Toast.LENGTH_SHORT).show();
+            Integer prev = needed.get(ing);
+            needed.put(ing, (prev != null ? prev : 0) + 1);
+        }
+        // Check vault has enough of each ingredient
+        for (java.util.Map.Entry<String, Integer> entry : needed.entrySet()) {
+            if (sm.getVaultItemCount(entry.getKey()) < entry.getValue()) {
+                Toast.makeText(getContext(), "Missing: " + entry.getKey(), Toast.LENGTH_SHORT).show();
                 return;
             }
         }
