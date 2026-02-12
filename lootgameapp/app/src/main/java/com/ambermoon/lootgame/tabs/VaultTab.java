@@ -253,6 +253,10 @@ public class VaultTab extends ScrollView implements TextWatcher {
         if (folderPath != null) {
             String[] animStates = AssetLoader.list(folderPath);
             if (animStates != null && animStates.length > 0) {
+                HorizontalScrollView animScroll = new HorizontalScrollView(ctx);
+                animScroll.setHorizontalScrollBarEnabled(false);
+                animScroll.setFillViewport(true);
+
                 LinearLayout animButtonRow = new LinearLayout(ctx);
                 animButtonRow.setOrientation(LinearLayout.HORIZONTAL);
                 animButtonRow.setGravity(Gravity.CENTER);
@@ -263,12 +267,15 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     String label = fileName.replace(".gif", "");
                     String animPath = folderPath + "/" + fileName;
 
-                    Button animBtn = new Button(ctx);
+                    TextView animBtn = new TextView(ctx);
                     animBtn.setText(label);
                     animBtn.setTextColor(Color.parseColor("#AAAACC"));
                     animBtn.setTextSize(10);
                     animBtn.setBackgroundColor(Color.parseColor("#28233A"));
-                    animBtn.setPadding(12, 4, 12, 4);
+                    animBtn.setPadding(16, 8, 16, 8);
+                    animBtn.setGravity(Gravity.CENTER);
+                    animBtn.setMinWidth(0);
+                    animBtn.setMinimumWidth(0);
                     animBtn.setOnClickListener(v -> animatedView.playAnimation(animPath));
                     LinearLayout.LayoutParams btnP = new LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -277,7 +284,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     animBtn.setLayoutParams(btnP);
                     animButtonRow.addView(animBtn);
                 }
-                dialogContent.addView(animButtonRow);
+                animScroll.addView(animButtonRow);
+                dialogContent.addView(animScroll);
             }
         }
 
@@ -294,9 +302,13 @@ public class VaultTab extends ScrollView implements TextWatcher {
         tooltipText.setLayoutParams(tipParams);
         dialogContent.addView(tooltipText);
 
+        // Wrap in ScrollView so content is accessible on small screens
+        ScrollView dialogScroll = new ScrollView(ctx);
+        dialogScroll.addView(dialogContent);
+
         // Show as popup dialog
         AlertDialog dialog = new AlertDialog.Builder(ctx)
-                .setView(dialogContent)
+                .setView(dialogScroll)
                 .setPositiveButton("Close", null)
                 .create();
         if (dialog.getWindow() != null) {
