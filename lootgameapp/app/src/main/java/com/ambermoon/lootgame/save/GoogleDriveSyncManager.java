@@ -257,6 +257,123 @@ public class GoogleDriveSyncManager {
 
     public boolean isSyncing() { return syncing; }
 
+    // --- Shared Shop Data Cloud Sync ---
+    // Uses a special fixed username "_shop_" so shop data is shared across all users.
+
+    private static final String SHOP_CLOUD_KEY = "_shop_";
+
+    /**
+     * Upload shop data JSON to Google Drive under the shared "_shop_" key.
+     * Called by SaveManager when Lars edits the shop.
+     */
+    public void uploadShopToCloud(String shopJson, SyncCallback callback) {
+        String webAppUrl = GamePreferences.getWebAppUrl();
+        if (webAppUrl.isEmpty()) {
+            postResult(callback, false, "Google Drive sync not configured");
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                String uploadUrl = webAppUrl + "?username=" +
+                        java.net.URLEncoder.encode(SHOP_CLOUD_KEY, "UTF-8");
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(uploadUrl).openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("User-Agent", "AmberMoon-LootGame/1.0");
+                conn.setDoOutput(true);
+                conn.setInstanceFollowRedirects(false);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                OutputStream os = conn.getOutputStream();
+                os.write(shopJson.getBytes("UTF-8"));
+                os.close();
+
+                int code = conn.getResponseCode();
+                String response;
+
+                if (code == 302 || code == 301 || code == 303 || code == 307) {
+                    String redirect = conn.getHeaderField("Location");
+                    conn.disconnect();
+                    if (redirect != null) {
+                        HttpURLConnection rConn = (HttpURLConnection) new URL(redirect).openConnection();
+                        rConn.setInstanceFollowRedirects(true);
+                        rConn.setConnectTimeout(15000);
+                        rConn.setReadTimeout(15000);
+                        code = rConn.getResponseCode();
+                        response = readStream(rConn.getInputStream());
+                        rConn.disconnect();
+                    } else {
+                        response = "";
+                    }
+                } else if (code == 200) {
+                    response = readStream(conn.getInputStream());
+                    conn.disconnect();
+                } else {
+                    conn.disconnect();
+                    postResult(callback, false, "Shop upload failed (HTTP " + code + ")");
+                    return;
+                }
+
+                if (response.contains("\"success\"") || response.contains("\"ok\"")) {
+                    postResult(callback, true, "Shop saved to Google Drive");
+                } else {
+                    postResult(callback, false, "Shop upload may have failed: " + response);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Shop upload exception", e);
+                postResult(callback, false, "Shop upload error: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Download shop data JSON from Google Drive using the shared "_shop_" key.
+     * Called by SaveManager when any user opens the Shop tab.
+     */
+    public void downloadShopFromCloud(FetchCallback callback) {
+        String webAppUrl = GamePreferences.getWebAppUrl();
+        if (webAppUrl.isEmpty()) {
+            mainHandler.post(() -> callback.onResult(null, "Not configured"));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                String downloadUrl = webAppUrl + "?username=" +
+                        java.net.URLEncoder.encode(SHOP_CLOUD_KEY, "UTF-8");
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                conn.setRequestMethod("GET");
+                conn.setInstanceFollowRedirects(true);
+                conn.setRequestProperty("User-Agent", "AmberMoon-LootGame/1.0");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    String json = readStream(conn.getInputStream());
+                    conn.disconnect();
+                    String trimmed = json.trim();
+                    if (trimmed.startsWith("{") && trimmed.contains("\"shopItems\"")) {
+                        mainHandler.post(() -> callback.onResult(json, null));
+                    } else {
+                        // No shop data found
+                        mainHandler.post(() -> callback.onResult(null, null));
+                    }
+                } else {
+                    conn.disconnect();
+                    mainHandler.post(() -> callback.onResult(null, "HTTP " + code));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Shop download exception", e);
+                mainHandler.post(() -> callback.onResult(null, e.getMessage()));
+            }
+        });
+    }
+
     private void postResult(SyncCallback cb, boolean success, String msg) {
         if (cb != null) mainHandler.post(() -> cb.onResult(success, msg));
     }
