@@ -63,16 +63,38 @@ public class ShopTab extends ScrollView {
         content.addView(itemGrid);
 
         addView(content);
-        refreshShop();
+
+        // Show loading text, then sync shop from cloud before displaying items
+        showLoading();
+        SaveManager.getInstance().syncShopFromCloud(items -> {
+            shopItems = items;
+            populateGrid();
+        });
+    }
+
+    private void showLoading() {
+        updateBalance();
+        itemGrid.removeAllViews();
+        TextView loading = new TextView(getContext());
+        loading.setText("Loading shop...");
+        loading.setTextColor(Color.parseColor("#AAAACC"));
+        loading.setTextSize(14);
+        loading.setGravity(Gravity.CENTER);
+        loading.setPadding(0, 48, 0, 0);
+        itemGrid.addView(loading);
     }
 
     private void refreshShop() {
         updateBalance();
+        shopItems = SaveManager.getInstance().loadShopItems();
+        populateGrid();
+    }
+
+    private void populateGrid() {
+        updateBalance();
         itemGrid.removeAllViews();
 
-        shopItems = SaveManager.getInstance().loadShopItems();
-
-        if (shopItems.isEmpty()) {
+        if (shopItems == null || shopItems.isEmpty()) {
             TextView empty = new TextView(getContext());
             empty.setText("The shop is empty.\nCheck back later!");
             empty.setTextColor(Color.parseColor("#888888"));

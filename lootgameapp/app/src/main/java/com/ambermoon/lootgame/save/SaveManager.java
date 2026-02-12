@@ -321,18 +321,56 @@ public class SaveManager {
     }
 
     /**
-     * Saves shared shop items to the separate shop file.
+     * Saves shared shop items locally AND uploads to Google Drive.
      * Only Lars should call this.
      */
     public void saveShopItems(List<SaveData.ShopItem> items) {
+        String json = serializeShopItems(items);
+        // Save locally
         try {
-            String json = serializeShopItems(items);
             FileOutputStream fos = context.openFileOutput(SHOP_FILE, android.content.Context.MODE_PRIVATE);
             fos.write(json.getBytes("UTF-8"));
             fos.close();
         } catch (Exception e) {
-            Log.e(TAG, "Failed to save shop: " + e.getMessage());
+            Log.e(TAG, "Failed to save shop locally: " + e.getMessage());
         }
+        // Upload to Google Drive in background
+        if (com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            GoogleDriveSyncManager.getInstance().uploadShopToCloud(json, null);
+        }
+    }
+
+    /**
+     * Downloads the latest shop data from Google Drive and saves it locally.
+     * Any user can call this to get the latest shop Lars configured.
+     * Callback is invoked on the main thread with the loaded items.
+     */
+    public void syncShopFromCloud(ShopSyncCallback callback) {
+        if (!com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            if (callback != null) callback.onShopLoaded(loadShopItems());
+            return;
+        }
+        GoogleDriveSyncManager.getInstance().downloadShopFromCloud((json, error) -> {
+            if (json != null) {
+                // Save cloud shop data locally
+                try {
+                    FileOutputStream fos = context.openFileOutput(SHOP_FILE, android.content.Context.MODE_PRIVATE);
+                    fos.write(json.getBytes("UTF-8"));
+                    fos.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to cache cloud shop locally: " + e.getMessage());
+                }
+                List<SaveData.ShopItem> items = parseShopItems(json);
+                if (callback != null) callback.onShopLoaded(items);
+            } else {
+                // No cloud data or error — fall back to local
+                if (callback != null) callback.onShopLoaded(loadShopItems());
+            }
+        });
+    }
+
+    public interface ShopSyncCallback {
+        void onShopLoaded(List<SaveData.ShopItem> items);
     }
 
     private String serializeShopItems(List<SaveData.ShopItem> items) {
