@@ -294,6 +294,83 @@ public class SaveManager {
     public String toJson() { return serializeToJson(data); }
     public void fromJson(String json) { data = deserializeFromJson(json); }
 
+    // --- Shared Shop Data (separate file, read by all, written by Lars) ---
+
+    private static final String SHOP_FILE = "loot_game_shop.json";
+
+    /**
+     * Loads shared shop items from the separate shop file.
+     * All users can call this to see what's available for purchase.
+     */
+    public List<SaveData.ShopItem> loadShopItems() {
+        List<SaveData.ShopItem> items = new ArrayList<>();
+        try {
+            FileInputStream fis = context.openFileInput(SHOP_FILE);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+            fis.close();
+            items = parseShopItems(baos.toString("UTF-8"));
+        } catch (FileNotFoundException e) {
+            // No shop file yet - empty shop
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load shop: " + e.getMessage());
+        }
+        return items;
+    }
+
+    /**
+     * Saves shared shop items to the separate shop file.
+     * Only Lars should call this.
+     */
+    public void saveShopItems(List<SaveData.ShopItem> items) {
+        try {
+            String json = serializeShopItems(items);
+            FileOutputStream fos = context.openFileOutput(SHOP_FILE, android.content.Context.MODE_PRIVATE);
+            fos.write(json.getBytes("UTF-8"));
+            fos.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to save shop: " + e.getMessage());
+        }
+    }
+
+    private String serializeShopItems(List<SaveData.ShopItem> items) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n  \"shopItems\": [\n");
+        for (int i = 0; i < items.size(); i++) {
+            SaveData.ShopItem si = items.get(i);
+            sb.append("    {\"itemId\": \"").append(si.itemId).append("\", \"price\": ").append(si.price).append("}");
+            if (i < items.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ]\n}");
+        return sb.toString();
+    }
+
+    private List<SaveData.ShopItem> parseShopItems(String json) {
+        List<SaveData.ShopItem> items = new ArrayList<>();
+        int arrStart = json.indexOf("\"shopItems\"");
+        if (arrStart == -1) return items;
+        int brStart = json.indexOf('[', arrStart);
+        int brEnd = json.indexOf(']', brStart);
+        if (brStart == -1 || brEnd == -1) return items;
+        String arr = json.substring(brStart + 1, brEnd);
+        int objStart = 0;
+        while ((objStart = arr.indexOf('{', objStart)) != -1) {
+            int objEnd = arr.indexOf('}', objStart);
+            if (objEnd == -1) break;
+            String obj = arr.substring(objStart, objEnd + 1);
+            String itemId = extractString(obj, "itemId", "");
+            int price = extractInt(obj, "price", 0);
+            if (!itemId.isEmpty() && price > 0) {
+                items.add(new SaveData.ShopItem(itemId, price));
+            }
+            objStart = objEnd + 1;
+        }
+        return items;
+    }
+
     /**
      * Read the PIN from a local save file without loading it as the active save.
      * Returns empty string if no save exists or no PIN is set.

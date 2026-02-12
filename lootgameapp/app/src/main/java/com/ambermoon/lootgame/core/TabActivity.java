@@ -9,6 +9,9 @@ import android.widget.*;
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.tabs.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TabActivity extends Activity {
     private FrameLayout contentFrame;
     private LinearLayout tabBar;
@@ -17,8 +20,9 @@ public class TabActivity extends Activity {
     private View currentTab;
     private int currentTabIndex = 0;
 
-    private static final String[] TAB_LABELS = {"Daily", "Monthly", "Alchemy", "Decon", "Slots", "Vault"};
+    private String[] tabLabels;
     private Button[] tabButtons;
+    private boolean isLars;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +30,24 @@ public class TabActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        // Determine if the current user is Lars (case-insensitive)
+        String username = GamePreferences.getUsername();
+        isLars = "lars".equalsIgnoreCase(username.trim());
+
+        // Build tab list dynamically
+        List<String> labels = new ArrayList<>();
+        labels.add("Daily");
+        labels.add("Monthly");
+        labels.add("Alchemy");
+        labels.add("Decon");
+        labels.add("Slots");
+        labels.add("Vault");
+        labels.add("Shop");
+        if (isLars) {
+            labels.add("Edit");
+        }
+        tabLabels = labels.toArray(new String[0]);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -54,7 +76,6 @@ public class TabActivity extends Activity {
         usernameDisplay = new TextView(this);
         usernameDisplay.setTextColor(Color.parseColor("#B8A9D4"));
         usernameDisplay.setTextSize(14);
-        String username = GamePreferences.getUsername();
         usernameDisplay.setText(username.isEmpty() ? "" : username);
         RelativeLayout.LayoutParams userParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -81,11 +102,11 @@ public class TabActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         tabBar.setLayoutParams(tabBarParams);
 
-        tabButtons = new Button[TAB_LABELS.length];
-        for (int i = 0; i < TAB_LABELS.length; i++) {
+        tabButtons = new Button[tabLabels.length];
+        for (int i = 0; i < tabLabels.length; i++) {
             final int idx = i;
             Button btn = new Button(this);
-            btn.setText(TAB_LABELS[i]);
+            btn.setText(tabLabels[i]);
             btn.setTextColor(Color.parseColor("#888888"));
             btn.setTextSize(11);
             btn.setBackgroundColor(Color.TRANSPARENT);
@@ -119,6 +140,14 @@ public class TabActivity extends Activity {
             case 3: tabView = new DeconstructTab(this); break;
             case 4: tabView = new SlotMachineTab(this); break;
             case 5: tabView = new VaultTab(this); break;
+            case 6: tabView = new ShopTab(this); break;
+            case 7:
+                if (isLars) {
+                    tabView = new ShopEditorTab(this);
+                } else {
+                    tabView = new DailyChestTab(this);
+                }
+                break;
             default: tabView = new DailyChestTab(this); break;
         }
         currentTab = tabView;
