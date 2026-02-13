@@ -212,19 +212,26 @@ public class SlotReelView extends View {
         canvas.save();
         canvas.clipRect(0, 0, w, h);
 
+        // Use a square region centered in the cell so sprites keep their
+        // aspect ratio regardless of view width vs height.
+        float side = Math.min(w, h);
+        float left = (w - side) / 2f;
+        float top = yOffset + (h - side) / 2f;
+        float padding = side * 0.1f;
+
         Bitmap icon = (idx >= 0 && idx < cachedIcons.length) ? cachedIcons[idx] : null;
         if (icon != null && !icon.isRecycled()) {
-            float padding = w * 0.1f;
             paint.setFilterBitmap(false);
             canvas.drawBitmap(icon, null,
-                new RectF(padding, yOffset + padding, w - padding, yOffset + h - padding), paint);
+                new RectF(left + padding, top + padding,
+                          left + side - padding, top + side - padding), paint);
         } else if (idx >= 0 && idx < SYMBOL_COLORS.length) {
             // Fallback: rarity-colored circle
             paint.setColor(SYMBOL_COLORS[idx]);
             paint.setStyle(Paint.Style.FILL);
             float cx = w / 2f;
             float cy = yOffset + h / 2f;
-            float radius = Math.min(w, h) / 3f;
+            float radius = side / 3f;
             canvas.drawCircle(cx, cy, radius, paint);
         }
 
