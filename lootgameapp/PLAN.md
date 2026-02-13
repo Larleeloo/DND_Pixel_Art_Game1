@@ -45,7 +45,7 @@ lootgameapp/
 │   │   │   │   ├── ItemIconView.java        # Static item sprite (1st frame of idle GIF)
 │   │   │   │   ├── ChestIconView.java       # Animated chest GIF (play-once / hold last)
 │   │   │   │   ├── AnimatedItemView.java    # Looping GIF player for vault detail
-│   │   │   │   └── SlotReelView.java        # Slot reel with static item images
+│   │   │   │   └── SlotReelView.java        # Slot reel with vertical scrolling animation
 │   │   │   │
 │   │   │   ├── entity/             # Item and data model classes
 │   │   │   │   ├── Item.java                # Item base class (reused from main game)
@@ -466,8 +466,9 @@ public Google Drive file — no authentication required.
 **Behavior**:
 - 3 reels with 6 possible symbols each
 - Each pull costs 25 coins
-- Reels spin sequentially (left → middle → right) with 0.5s delay between stops
-- Reel symbols are animated GIF sprites (item icons from the game)
+- Reels scroll symbols vertically and decelerate to a stop sequentially (left
+  at ~1.0s, middle at ~1.6s, right at ~2.2s) using ease-out cubic easing
+- Reel symbols are item sprite images (first frame of idle GIF or static PNG)
 - Matching symbols pay out according to payout table
 - Jackpot (3 crowns) triggers special animation with fireworks
 - Pull history shows last 10 results
@@ -685,7 +686,7 @@ public class AnimatedSprite {
 | Monthly chest icon   | assets/chests/monthly_chest.gif | Play-once on open, last frame on cooldown |
 | Alchemy table        | assets/items/alchemy_table.gif | Looping ambient   |
 | Reverse craft table  | assets/items/reverse_crafting_table.gif | Looping  |
-| Slot machine reels   | assets/items/{symbol}/idle.gif | Static first frame per symbol |
+| Slot machine reels   | assets/items/{symbol}/idle.gif | First frame, scrolls vertically during spin |
 | Loot light beams     | Generated procedurally        | Color per rarity   |
 | Tab bar icons        | assets/ui/tab_*.gif           | Subtle animation   |
 | Coin icon            | assets/ui/coin.gif            | Spinning coin      |
@@ -705,10 +706,11 @@ public class AnimatedSprite {
    **holds on the last frame** when on cooldown. When available, shows the first
    frame (closed chest).
 
-4. **Slot machine**: Reel symbols display **static PNG/first-frame images** of
-   mapped items (apple, iron_sword, steel_shield, diamond, magic_crystal,
-   ancient_crown) via `SlotReelView`. Static images are used to create a fun
-   slot animation.
+4. **Slot machine**: Reel symbols display **first-frame images** (or dedicated
+   static PNGs) of mapped items (apple, iron_sword, steel_shield, diamond,
+   magic_crystal, ancient_crown) via `SlotReelView`. During a spin, these images
+   scroll vertically through the reel window with deceleration (ease-out cubic),
+   mimicking a real slot machine.
 
 5. **Fallback**: If ANY image fails to load (missing file, decode error, etc.),
    the fallback is a **filled circle** colored with the item's rarity color
@@ -1036,8 +1038,8 @@ When any image asset fails to load (missing file, decode error, etc.):
   Cyan=Mythic). This applies on all screens: vault grid, alchemy, deconstruct,
   chest loot displays, and slot machine reels.
 - **Chest icons**: A colored circle matching the tab's accent color is shown.
-- **Slot machine PNGs**: Static first-frame GIF icons are used. If unavailable,
-  rarity-colored circles are drawn. Proper static PNGs can replace these later.
+- **Slot machine symbols**: First-frame GIF icons scroll vertically during spins.
+  If unavailable, rarity-colored circles are drawn. Static PNGs can replace these.
 - Simple geometric shapes for particles
 - These fallbacks ensure the app remains functional even with missing sprites
 
