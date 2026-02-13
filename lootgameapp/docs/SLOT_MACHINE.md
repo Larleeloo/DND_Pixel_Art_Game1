@@ -32,7 +32,8 @@ Matching symbols pay out coins according to a payout table.
 ### Reel Symbols
 
 Each reel contains the same 6 symbols, weighted differently. Symbols are
-displayed as **static item images** (first frame of idle GIF) via `SlotReelView`:
+displayed as **static item images** (first frame of idle GIF) via `SlotReelView`
+and scroll vertically through the reel window during a spin:
 
 | Symbol | Item ID (SlotReelView)    | Asset Path                        | Weight | Rarity     |
 |--------|---------------------------|-----------------------------------|--------|------------|
@@ -43,11 +44,12 @@ displayed as **static item images** (first frame of idle GIF) via `SlotReelView`
 | Star   | magic_crystal             | items/magic_crystal/idle.gif      | 8      | Legendary  |
 | Crown  | ancient_crown             | items/ancient_crown/idle.gif      | 2      | Mythic     |
 
-All symbols render as **static images** (first frame of idle.gif) within the
-reel window via `SlotReelView`. Dedicated static PNGs can replace these when
-provided. If an image fails to load, a **rarity-colored circle** is shown as
-fallback (White=Common, Green=Uncommon, Blue=Rare, Purple=Epic, Orange=Legendary,
-Cyan=Mythic).
+Symbol images are the **first frame** of each item's idle.gif (or a dedicated
+static PNG if provided). During a spin, the reel displays a vertically scrolling
+strip of these symbol images, cycling through the full set multiple times before
+decelerating and landing on the target symbol. If an image fails to load, a
+**rarity-colored circle** is shown as fallback (White=Common, Green=Uncommon,
+Blue=Rare, Purple=Epic, Orange=Legendary, Cyan=Mythic).
 
 ## Reel Mechanics
 
@@ -65,32 +67,42 @@ Positions 98-99:  Crown   (2 positions)
 
 ### Spin Animation
 
-The slot machine uses `SlotReelView` to display static item images that
-create a fun rolling animation:
+The slot machine uses `SlotReelView` to create a realistic vertical scrolling
+reel animation. Each reel displays a strip of symbol images that scroll
+downward rapidly and then decelerate smoothly (ease-out cubic) before landing
+on the target symbol, just like a physical slot machine.
 
 ```
 Time 0.0s:  Player taps PULL button
             - 25 coins deducted from balance
-            - All 3 SlotReelViews show spinning indicator (gray bars)
+            - All 3 reels begin scrolling symbols vertically at high speed
             - Results determined upfront via weighted random
+            - Each reel scrolls through ~4 full symbol cycles
 
-Time 0.5s:  Reel 1 REVEALS
-            - SlotReelView displays static item sprite image
-            - Instant swap from spinning to final symbol
+Time 0.0-1.0s:  Reel 1 SPINNING → DECELERATING → STOPS
+            - Symbols scroll downward through the reel window
+            - Scroll speed decelerates via ease-out cubic curve
+            - Reel snaps to center the target symbol at 1.0s
 
-Time 1.0s:  Reel 2 REVEALS
-            - Same instant reveal with item sprite
+Time 0.0-1.6s:  Reel 2 SPINNING → DECELERATING → STOPS
+            - Same scrolling animation, longer duration
+            - Reel snaps to center the target symbol at 1.6s
 
-Time 1.5s:  Reel 3 REVEALS
-            - Same instant reveal with item sprite
-            - Result evaluation begins immediately
+Time 0.0-2.2s:  Reel 3 SPINNING → DECELERATING → STOPS
+            - Same scrolling animation, longest duration
+            - Reel snaps to center the target symbol at 2.2s
+            - Result evaluation begins immediately after stop
 
-Time 1.5s+: Result Display
+Time 2.2s+: Result Display
             - If NO MATCH: "No match" text in red
             - If DOUBLE MATCH: "WIN!" text in green + payout amount
             - If TRIPLE MATCH: "WIN!" text in green + payout amount
             - If JACKPOT (3x Crown): large payout display
 ```
+
+During the scroll, the reel window shows up to 3 symbols at once (the current
+center symbol and its neighbors above and below), creating the classic slot
+machine look of symbols whipping past and gradually slowing to a stop.
 
 ### Jackpot Sequence (3x Crown)
 ```
@@ -207,24 +219,33 @@ public int[] spinReels() {
 
 ### Animation Implementation (SlotReelView)
 
-Reel display uses `SlotReelView`, a custom View that renders static item images:
+Reel display uses `SlotReelView`, a custom View that renders a vertically
+scrolling strip of symbol images with deceleration:
 
 ```java
-// SlotReelView states:
-// 1. setSpinning()  - shows spinning indicator (gray bars)
-// 2. setSymbol(idx) - shows static item sprite for symbol index
+// SlotReelView API:
+// spin(targetSymbol, durationMs, onStopCallback)
+//   - Scrolls symbols vertically through the reel window
+//   - Cycles through all 6 symbols ~4 times (SPIN_CYCLES)
+//   - Decelerates via ease-out cubic easing
+//   - Snaps to target symbol when animation completes
+//   - Fires onStopCallback when stopped
+//
+// setSymbol(idx) - instantly display symbol (no animation)
 //
 // Symbol images are preloaded from item registry icons
 // (first frame of idle.gif). Falls back to rarity-colored circles.
 
-// SlotMachineTab animation uses Handler delays:
-handler.postDelayed(() -> reelViews[0].setSymbol(results[0]), 500);
-handler.postDelayed(() -> reelViews[1].setSymbol(results[1]), 1000);
-handler.postDelayed(() -> reelViews[2].setSymbol(results[2]), 1500);
+// SlotMachineTab starts all 3 reels with staggered durations:
+reelViews[0].spin(results[0], 1000, null);       // stops at ~1.0s
+reelViews[1].spin(results[1], 1600, null);       // stops at ~1.6s
+reelViews[2].spin(results[2], 2200, () -> {      // stops at ~2.2s
+    // evaluate results after final reel stops
+});
 ```
 
-Future enhancement: Replace first-frame GIF icons with dedicated static PNGs
-when they are provided, for a more polished slot machine appearance.
+Dedicated static PNGs can replace the first-frame GIF icons when provided,
+for a more polished slot machine appearance.
 
 ### Preventing Exploits
 

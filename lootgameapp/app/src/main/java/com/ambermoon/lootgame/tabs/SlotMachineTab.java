@@ -60,7 +60,7 @@ public class SlotMachineTab extends ScrollView {
         balanceText.setPadding(0, 16, 0, 24);
         content.addView(balanceText);
 
-        // Reels (static item images)
+        // Reels (vertically scrolling symbol animation)
         LinearLayout reelRow = new LinearLayout(context);
         reelRow.setOrientation(LinearLayout.HORIZONTAL);
         reelRow.setGravity(Gravity.CENTER);
@@ -166,26 +166,13 @@ public class SlotMachineTab extends ScrollView {
         // Determine results upfront
         final int[] results = {rollSymbol(), rollSymbol(), rollSymbol()};
 
-        // Animate: show spinning state then reveal one by one with static images
-        for (int i = 0; i < 3; i++) {
-            reelViews[i].setSpinning();
-        }
-
-        // Reveal reel 1 after 500ms (show static item image)
-        handler.postDelayed(() -> {
-            reelViews[0].setSymbol(results[0]);
-        }, 500);
-
-        // Reveal reel 2 after 1000ms
-        handler.postDelayed(() -> {
-            reelViews[1].setSymbol(results[1]);
-        }, 1000);
-
-        // Reveal reel 3 after 1500ms, then evaluate
-        handler.postDelayed(() -> {
-            reelViews[2].setSymbol(results[2]);
-
-            // Evaluate
+        // Spin all 3 reels with staggered durations so they stop sequentially.
+        // Reel 1 stops first (shortest spin), reel 3 stops last (longest spin).
+        // Each reel scrolls through symbols and decelerates to land on its target.
+        reelViews[0].spin(results[0], 1000, null);
+        reelViews[1].spin(results[1], 1600, null);
+        reelViews[2].spin(results[2], 2200, () -> {
+            // All reels have stopped - evaluate results
             int payout = calculatePayout(results);
             if (payout > 0) sm.addCoins(payout);
 
@@ -212,7 +199,7 @@ public class SlotMachineTab extends ScrollView {
             spinning = false;
             updateBalance();
             if (getContext() instanceof TabActivity) ((TabActivity) getContext()).updateCoinDisplay();
-        }, 1500);
+        });
     }
 
     private int calculatePayout(int[] results) {

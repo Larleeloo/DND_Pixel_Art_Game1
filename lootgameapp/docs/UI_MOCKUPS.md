@@ -125,10 +125,9 @@ Phase 5: Cooldown State
 │         LUCKY SLOTS         │
 │                             │
 │  ╔═══════╦═══════╦═══════╗  │
-│  ║       ║       ║       ║  │
-│  ║[ITEM] ║[ITEM] ║[ITEM] ║  │  ← Static item sprite images
-│  ║ IMG   ║ IMG   ║ IMG   ║  │     (1st frame of idle GIF)
-│  ║       ║       ║       ║  │
+│  ║ ↕↕↕↕ ║ ↕↕↕↕ ║ ↕↕↕↕ ║  │  ← Symbols scroll vertically
+│  ║[ITEM] ║[ITEM] ║[ITEM] ║  │     through each reel window
+│  ║ ↕↕↕↕ ║ ↕↕↕↕ ║ ↕↕↕↕ ║  │     (1st frame of idle GIF)
 │  ╚═══════╩═══════╩═══════╝  │
 │                             │
 │  ┌─────────────────────┐    │
@@ -136,7 +135,7 @@ Phase 5: Cooldown State
 │  └─────────────────────┘    │
 └─────────────────────────────┘
 
-Reel Symbols (static item images):
+Reel Symbols (item sprite images):
   Apple   → assets/items/apple/idle.gif (1st frame)
   Sword   → assets/items/iron_sword/idle.gif (1st frame)
   Shield  → assets/items/steel_shield/idle.gif (1st frame)
@@ -145,14 +144,21 @@ Reel Symbols (static item images):
   Crown   → assets/items/ancient_crown/idle.gif (1st frame)
 
 Fallback: Rarity-colored circle if image not available.
-Future: Replace with dedicated static PNGs when provided.
+Dedicated static PNGs can replace these when provided.
+
+Reel Spin Animation:
+  Each reel displays a vertical strip of symbol images that scroll
+  downward, showing up to 3 symbols at a time (above, center, below).
+  The scroll speed decelerates via ease-out cubic easing, creating the
+  classic slot machine effect of symbols whipping past then slowing to
+  land on the target.
 
 Reel Spin Sequence:
 1. Tap PULL button → 25 coins deducted
-2. All 3 SlotReelViews show spinning indicator bars
-3. Reel 1 reveals static item image (0.5s)
-4. Reel 2 reveals static item image (1.0s)
-5. Reel 3 reveals static item image (1.5s)
+2. All 3 reels begin scrolling symbols vertically at high speed
+3. Reel 1 decelerates and stops on target (~1.0s)
+4. Reel 2 decelerates and stops on target (~1.6s)
+5. Reel 3 decelerates and stops on target (~2.2s)
 6. If match: WIN text + payout display
 7. If jackpot: special highlight
 ```
