@@ -154,15 +154,19 @@ public class SaveManager {
         return 0;
     }
 
-    public void addDiscoveredRecipe(String recipeId) {
-        if (recipeId == null || recipeId.isEmpty()) return;
-        if (!data.discoveredRecipes.contains(recipeId)) {
-            data.discoveredRecipes.add(recipeId);
+    public void addLearnedRecipe(String id, String name, java.util.List<String> ingredients, String result, int resultCount) {
+        if (id == null || id.isEmpty()) return;
+        for (SaveData.LearnedRecipe lr : data.learnedRecipes) {
+            if (lr.id.equals(id)) return; // already learned
         }
+        data.learnedRecipes.add(new SaveData.LearnedRecipe(id, name, ingredients, result, resultCount));
     }
 
-    public boolean isRecipeDiscovered(String recipeId) {
-        return data.discoveredRecipes.contains(recipeId);
+    public boolean isRecipeLearned(String recipeId) {
+        for (SaveData.LearnedRecipe lr : data.learnedRecipes) {
+            if (lr.id.equals(recipeId)) return true;
+        }
+        return false;
     }
 
     private void checkDailyStreak() {
@@ -212,10 +216,20 @@ public class SaveManager {
             sb.append("\n");
         }
         sb.append("  ],\n");
-        sb.append("  \"discoveredRecipes\": [\n");
-        for (int i = 0; i < d.discoveredRecipes.size(); i++) {
-            sb.append("    \"").append(d.discoveredRecipes.get(i)).append("\"");
-            if (i < d.discoveredRecipes.size() - 1) sb.append(",");
+        sb.append("  \"learnedRecipes\": [\n");
+        for (int i = 0; i < d.learnedRecipes.size(); i++) {
+            SaveData.LearnedRecipe lr = d.learnedRecipes.get(i);
+            sb.append("    {\"id\": \"").append(lr.id).append("\", ");
+            sb.append("\"name\": \"").append(lr.name).append("\", ");
+            sb.append("\"ingredients\": [");
+            for (int j = 0; j < lr.ingredients.size(); j++) {
+                sb.append("\"").append(lr.ingredients.get(j)).append("\"");
+                if (j < lr.ingredients.size() - 1) sb.append(", ");
+            }
+            sb.append("], ");
+            sb.append("\"result\": \"").append(lr.result).append("\", ");
+            sb.append("\"resultCount\": ").append(lr.resultCount).append("}");
+            if (i < d.learnedRecipes.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append("  ]\n");
@@ -265,22 +279,46 @@ public class SaveManager {
             }
         }
 
-        // Parse discovered recipes array
-        int recipesStart = json.indexOf("\"discoveredRecipes\"");
+        // Parse learned recipes array (objects with nested ingredients arrays)
+        int recipesStart = json.indexOf("\"learnedRecipes\"");
         if (recipesStart != -1) {
-            int arrStart = json.indexOf('[', recipesStart);
-            int arrEnd = json.indexOf(']', arrStart);
-            if (arrStart != -1 && arrEnd != -1) {
-                String arr = json.substring(arrStart + 1, arrEnd);
-                int q1 = 0;
-                while ((q1 = arr.indexOf('"', q1)) != -1) {
-                    int q2 = arr.indexOf('"', q1 + 1);
-                    if (q2 == -1) break;
-                    String recipeId = arr.substring(q1 + 1, q2);
-                    if (!recipeId.isEmpty()) {
-                        d.discoveredRecipes.add(recipeId);
+            int outerArrStart = json.indexOf('[', recipesStart);
+            if (outerArrStart != -1) {
+                int outerArrEnd = findMatchingBracket(json, outerArrStart);
+                if (outerArrEnd != -1) {
+                    String arr = json.substring(outerArrStart + 1, outerArrEnd);
+                    int objStart = 0;
+                    while ((objStart = arr.indexOf('{', objStart)) != -1) {
+                        int objEnd = findMatchingBrace(arr, objStart);
+                        if (objEnd == -1) break;
+                        String obj = arr.substring(objStart, objEnd + 1);
+                        SaveData.LearnedRecipe lr = new SaveData.LearnedRecipe();
+                        lr.id = extractString(obj, "id", "");
+                        lr.name = extractString(obj, "name", "");
+                        lr.result = extractString(obj, "result", "");
+                        lr.resultCount = extractInt(obj, "resultCount", 1);
+                        // Parse ingredients sub-array
+                        int ingStart = obj.indexOf("\"ingredients\"");
+                        if (ingStart != -1) {
+                            int ingArrStart = obj.indexOf('[', ingStart);
+                            int ingArrEnd = obj.indexOf(']', ingArrStart);
+                            if (ingArrStart != -1 && ingArrEnd != -1) {
+                                String ingArr = obj.substring(ingArrStart + 1, ingArrEnd);
+                                int q1 = 0;
+                                while ((q1 = ingArr.indexOf('"', q1)) != -1) {
+                                    int q2 = ingArr.indexOf('"', q1 + 1);
+                                    if (q2 == -1) break;
+                                    String ing = ingArr.substring(q1 + 1, q2);
+                                    if (!ing.isEmpty()) lr.ingredients.add(ing);
+                                    q1 = q2 + 1;
+                                }
+                            }
+                        }
+                        if (!lr.id.isEmpty() && !lr.result.isEmpty()) {
+                            d.learnedRecipes.add(lr);
+                        }
+                        objStart = objEnd + 1;
                     }
-                    q1 = q2 + 1;
                 }
             }
         }
@@ -327,6 +365,32 @@ public class SaveManager {
         int q2 = json.indexOf('"', q1 + 1);
         if (q2 == -1) return def;
         return json.substring(q1 + 1, q2);
+    }
+
+    private static int findMatchingBracket(String str, int openIndex) {
+        if (openIndex == -1 || openIndex >= str.length() || str.charAt(openIndex) != '[') return -1;
+        int depth = 1;
+        for (int i = openIndex + 1; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '[') depth++;
+            else if (c == ']') { depth--; if (depth == 0) return i; }
+        }
+        return -1;
+    }
+
+    private static int findMatchingBrace(String str, int openIndex) {
+        if (openIndex == -1 || openIndex >= str.length() || str.charAt(openIndex) != '{') return -1;
+        int depth = 1;
+        boolean inString = false;
+        for (int i = openIndex + 1; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '"' && (i == 0 || str.charAt(i - 1) != '\\')) inString = !inString;
+            else if (!inString) {
+                if (c == '{') depth++;
+                else if (c == '}') { depth--; if (depth == 0) return i; }
+            }
+        }
+        return -1;
     }
 
     public String toJson() { return serializeToJson(data); }
