@@ -357,93 +357,82 @@ public class AlchemyTab extends ScrollView {
             dialogContent.addView(empty);
         } else {
             for (SaveData.LearnedRecipe lr : recipes) {
-                // Recipe row container
-                LinearLayout recipeRow = new LinearLayout(ctx);
-                recipeRow.setOrientation(LinearLayout.HORIZONTAL);
-                recipeRow.setGravity(Gravity.CENTER_VERTICAL);
-                recipeRow.setBackgroundColor(Color.parseColor("#28233A"));
-                recipeRow.setPadding(12, 8, 12, 8);
-                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                // Recipe card: name label on top, compact icon row below
+                LinearLayout card = new LinearLayout(ctx);
+                card.setOrientation(LinearLayout.VERTICAL);
+                card.setBackgroundColor(Color.parseColor("#28233A"));
+                card.setPadding(12, 8, 12, 8);
+                LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                rowParams.bottomMargin = 6;
-                recipeRow.setLayoutParams(rowParams);
+                cardParams.bottomMargin = 6;
+                card.setLayoutParams(cardParams);
 
-                // Ingredient icons + names
+                // Recipe name
+                Item resultTemplate = ItemRegistry.getTemplate(lr.result);
+                TextView nameLabel = new TextView(ctx);
+                String displayName = lr.name != null && !lr.name.isEmpty() ? lr.name :
+                        (resultTemplate != null ? resultTemplate.getName() : lr.result);
+                if (lr.resultCount > 1) displayName = lr.resultCount + "x " + displayName;
+                nameLabel.setText(displayName);
+                nameLabel.setTextColor(resultTemplate != null
+                        ? Item.getRarityColor(resultTemplate.getRarity().ordinal()) : Color.WHITE);
+                nameLabel.setTextSize(12);
+                nameLabel.setTypeface(Typeface.DEFAULT_BOLD);
+                nameLabel.setGravity(Gravity.CENTER);
+                LinearLayout.LayoutParams nameP = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                nameP.bottomMargin = 4;
+                nameLabel.setLayoutParams(nameP);
+                card.addView(nameLabel);
+
+                // Compact icon row (icons only, no text labels)
+                LinearLayout iconRow = new LinearLayout(ctx);
+                iconRow.setOrientation(LinearLayout.HORIZONTAL);
+                iconRow.setGravity(Gravity.CENTER);
+
                 for (int i = 0; i < lr.ingredients.size(); i++) {
                     String ingId = lr.ingredients.get(i);
                     Item ingTemplate = ItemRegistry.getTemplate(ingId);
 
-                    LinearLayout ingCell = new LinearLayout(ctx);
-                    ingCell.setOrientation(LinearLayout.VERTICAL);
-                    ingCell.setGravity(Gravity.CENTER);
-                    ingCell.setPadding(4, 2, 4, 2);
-
                     if (ingTemplate != null) {
                         View ingIcon = new ItemIconView(ctx, ingTemplate);
-                        LinearLayout.LayoutParams ingIconP = new LinearLayout.LayoutParams(48, 48);
-                        ingIconP.gravity = Gravity.CENTER;
+                        LinearLayout.LayoutParams ingIconP = new LinearLayout.LayoutParams(36, 36);
+                        ingIconP.setMargins(2, 0, 2, 0);
                         ingIcon.setLayoutParams(ingIconP);
-                        ingCell.addView(ingIcon);
+                        iconRow.addView(ingIcon);
                     }
-
-                    TextView ingName = new TextView(ctx);
-                    ingName.setText(ingTemplate != null ? ingTemplate.getName() : ingId);
-                    ingName.setTextColor(ingTemplate != null
-                            ? Item.getRarityColor(ingTemplate.getRarity().ordinal()) : Color.WHITE);
-                    ingName.setTextSize(8);
-                    ingName.setGravity(Gravity.CENTER);
-                    ingName.setMaxLines(2);
-                    ingCell.addView(ingName);
-
-                    recipeRow.addView(ingCell);
 
                     if (i < lr.ingredients.size() - 1) {
                         TextView plus = new TextView(ctx);
                         plus.setText("+");
                         plus.setTextColor(Color.parseColor("#AAAACC"));
-                        plus.setTextSize(14);
-                        plus.setPadding(4, 0, 4, 0);
+                        plus.setTextSize(12);
+                        plus.setPadding(2, 0, 2, 0);
                         plus.setGravity(Gravity.CENTER);
-                        recipeRow.addView(plus);
+                        iconRow.addView(plus);
                     }
                 }
 
                 // Arrow
                 TextView arrowText = new TextView(ctx);
-                arrowText.setText(" \u2192 ");
+                arrowText.setText("\u2192");
                 arrowText.setTextColor(Color.parseColor("#64DC96"));
-                arrowText.setTextSize(14);
+                arrowText.setTextSize(12);
+                arrowText.setPadding(6, 0, 6, 0);
                 arrowText.setGravity(Gravity.CENTER);
-                recipeRow.addView(arrowText);
+                iconRow.addView(arrowText);
 
-                // Result icon + name
-                Item resultTemplate = ItemRegistry.getTemplate(lr.result);
-                LinearLayout resultCell = new LinearLayout(ctx);
-                resultCell.setOrientation(LinearLayout.VERTICAL);
-                resultCell.setGravity(Gravity.CENTER);
-                resultCell.setPadding(4, 2, 4, 2);
-
+                // Result icon
                 if (resultTemplate != null) {
                     View resultIcon = new ItemIconView(ctx, resultTemplate);
-                    LinearLayout.LayoutParams resIconP = new LinearLayout.LayoutParams(48, 48);
-                    resIconP.gravity = Gravity.CENTER;
+                    LinearLayout.LayoutParams resIconP = new LinearLayout.LayoutParams(36, 36);
+                    resIconP.setMargins(2, 0, 2, 0);
                     resultIcon.setLayoutParams(resIconP);
-                    resultCell.addView(resultIcon);
+                    iconRow.addView(resultIcon);
                 }
 
-                TextView resultName = new TextView(ctx);
-                String resultLabel = resultTemplate != null ? resultTemplate.getName() : lr.result;
-                if (lr.resultCount > 1) resultLabel = lr.resultCount + "x " + resultLabel;
-                resultName.setText(resultLabel);
-                resultName.setTextColor(resultTemplate != null
-                        ? Item.getRarityColor(resultTemplate.getRarity().ordinal()) : Color.WHITE);
-                resultName.setTextSize(8);
-                resultName.setGravity(Gravity.CENTER);
-                resultName.setMaxLines(2);
-                resultCell.addView(resultName);
-
-                recipeRow.addView(resultCell);
-                dialogContent.addView(recipeRow);
+                card.addView(iconRow);
+                dialogContent.addView(card);
             }
         }
 
