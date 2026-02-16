@@ -898,12 +898,6 @@ ALCHEMY/CRAFTING SYSTEM:
   - Breaks down items into component parts
   - 1 input slot, 3 output slots
 
-  LEARNED RECIPES DIALOG:
-  - View all discovered recipes via "LEARNED RECIPES" button on Alchemy tab
-  - Compact two-line cards: recipe name on top, small 36px icons below
-  - Vertically scrollable list (no horizontal scrolling)
-  - Recipes discovered by crafting or deconstructing items
-
   RECIPES (data/alchemy_recipes.json):
   - 100+ recipes: Weapons, Armor, Tools, Potions, Materials, Ammo, Blocks
 
