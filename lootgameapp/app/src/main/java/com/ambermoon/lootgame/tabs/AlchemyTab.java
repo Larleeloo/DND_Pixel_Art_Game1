@@ -8,6 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.*;
 import com.ambermoon.lootgame.save.SaveManager;
@@ -158,6 +159,7 @@ public class AlchemyTab extends ScrollView {
                 Item item = ItemRegistry.getTemplate(itemId);
                 slotTexts[i].setText(item != null ? item.getName() : itemId);
                 slotTexts[i].setTextColor(item != null ? Item.getRarityColor(item.getRarity().ordinal()) : Color.WHITE);
+                HapticManager.getInstance().tap();
                 checkRecipe();
                 return;
             }
@@ -230,6 +232,9 @@ public class AlchemyTab extends ScrollView {
         sm.addLearnedRecipe(currentRecipe.id, currentRecipe.name,
                 currentRecipe.ingredients, currentRecipe.result, currentRecipe.resultCount);
         sm.save();
+
+        // Haptic: satisfying rising double-tap for successful craft
+        HapticManager.getInstance().craftSuccess();
 
         Toast.makeText(getContext(), "Crafted: " + currentRecipe.name, Toast.LENGTH_SHORT).show();
 

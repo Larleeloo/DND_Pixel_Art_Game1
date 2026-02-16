@@ -8,6 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.*;
 import com.ambermoon.lootgame.save.SaveManager;
@@ -128,11 +129,19 @@ public class MonthlyChestTab extends ScrollView {
         // Play chest opening animation (forward once, hold last frame)
         chestView.playOnce();
 
+        // Haptic: dramatic monthly chest opening rumble
+        HapticManager.getInstance().chestOpenMonthly();
+
         sm.recordMonthlyChestOpened();
 
         List<Item> loot = LootTable.generateLoot(10, 2.5f);
         int coins = CoinReward.calculateMonthly();
         sm.addCoins(coins);
+
+        // Staggered item-drop haptics for all 10 items
+        for (int idx = 0; idx < loot.size(); idx++) {
+            handler.postDelayed(() -> HapticManager.getInstance().itemDrop(), 400 + idx * 120);
+        }
 
         for (Item item : loot) {
             String id = item.getRegistryId();

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.tabs.*;
 
@@ -30,6 +31,9 @@ public class TabActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        // Initialize haptic feedback
+        HapticManager.getInstance().init(this);
 
         // Determine if the current user is Lars (case-insensitive)
         String username = GamePreferences.getUsername();
@@ -124,6 +128,9 @@ public class TabActivity extends Activity {
     }
 
     public void switchTab(int index) {
+        if (index != currentTabIndex) {
+            HapticManager.getInstance().tap();
+        }
         currentTabIndex = index;
         contentFrame.removeAllViews();
 

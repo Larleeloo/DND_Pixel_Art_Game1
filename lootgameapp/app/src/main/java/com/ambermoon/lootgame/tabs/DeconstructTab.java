@@ -7,6 +7,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.entity.*;
 import com.ambermoon.lootgame.save.SaveData;
 import com.ambermoon.lootgame.save.SaveManager;
@@ -129,6 +130,7 @@ public class DeconstructTab extends ScrollView {
     }
 
     private void setInput(String itemId) {
+        HapticManager.getInstance().tap();
         inputItemId = itemId;
         Item item = ItemRegistry.getTemplate(itemId);
         inputSlotText.setText(item != null ? item.getName() : itemId);
@@ -192,6 +194,9 @@ public class DeconstructTab extends ScrollView {
         sm.addLearnedRecipe(currentRecipe.id, currentRecipe.name,
                 currentRecipe.ingredients, currentRecipe.result, currentRecipe.resultCount);
         sm.save();
+
+        // Haptic: descending double-tap for deconstruction
+        HapticManager.getInstance().deconstructSuccess();
 
         Toast.makeText(getContext(), "Deconstructed!", Toast.LENGTH_SHORT).show();
         clearInput();

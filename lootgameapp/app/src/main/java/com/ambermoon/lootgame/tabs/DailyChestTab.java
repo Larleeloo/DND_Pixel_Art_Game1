@@ -8,6 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.*;
 import com.ambermoon.lootgame.save.SaveManager;
@@ -140,6 +141,9 @@ public class DailyChestTab extends ScrollView {
         // Play chest opening animation (forward once, hold last frame)
         chestView.playOnce();
 
+        // Haptic: chest opening thump
+        HapticManager.getInstance().chestOpenDaily();
+
         sm.recordDailyChestOpened();
 
         // Generate loot
@@ -147,7 +151,11 @@ public class DailyChestTab extends ScrollView {
         int coins = CoinReward.calculateDaily(sm.getData().consecutiveDays);
         sm.addCoins(coins);
 
-        // Add items to vault
+        // Add items to vault with staggered item-drop haptics
+        for (int idx = 0; idx < lastLoot.size(); idx++) {
+            final int i = idx;
+            handler.postDelayed(() -> HapticManager.getInstance().itemDrop(), 300 + idx * 150);
+        }
         for (Item item : lastLoot) {
             String id = item.getRegistryId();
             if (id != null) {
