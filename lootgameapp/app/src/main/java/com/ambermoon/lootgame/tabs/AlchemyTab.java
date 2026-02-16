@@ -1,7 +1,9 @@
 package com.ambermoon.lootgame.tabs;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.*;
+import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -107,6 +109,20 @@ public class AlchemyTab extends ScrollView {
         craftButton.setOnClickListener(v -> doCraft());
         content.addView(craftButton);
 
+        // Learned Recipes button
+        Button recipesButton = new Button(context);
+        recipesButton.setText("LEARNED RECIPES");
+        recipesButton.setTextColor(Color.WHITE);
+        recipesButton.setTextSize(13);
+        recipesButton.setBackgroundColor(Color.parseColor("#28233A"));
+        recipesButton.setPadding(32, 12, 32, 12);
+        LinearLayout.LayoutParams recBtnP = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        recBtnP.topMargin = 12;
+        recipesButton.setLayoutParams(recBtnP);
+        recipesButton.setOnClickListener(v -> showLearnedRecipes());
+        content.addView(recipesButton);
+
         // Vault section
         TextView vaultLabel = new TextView(context);
         vaultLabel.setText("--- Your Vault ---");
@@ -211,7 +227,8 @@ public class AlchemyTab extends ScrollView {
         // Add result
         sm.addVaultItem(currentRecipe.result, currentRecipe.resultCount);
         sm.getData().totalItemsCollected += currentRecipe.resultCount;
-        sm.addDiscoveredRecipe(currentRecipe.id);
+        sm.addLearnedRecipe(currentRecipe.id, currentRecipe.name,
+                currentRecipe.ingredients, currentRecipe.result, currentRecipe.resultCount);
         sm.save();
 
         Toast.makeText(getContext(), "Crafted: " + currentRecipe.name, Toast.LENGTH_SHORT).show();
@@ -293,5 +310,153 @@ public class AlchemyTab extends ScrollView {
             empty.setPadding(0, 32, 0, 0);
             vaultGrid.addView(empty);
         }
+    }
+
+    private void showLearnedRecipes() {
+        Context ctx = getContext();
+        SaveManager sm = SaveManager.getInstance();
+        List<SaveData.LearnedRecipe> recipes = sm.getData().learnedRecipes;
+
+        LinearLayout dialogContent = new LinearLayout(ctx);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setBackgroundColor(Color.parseColor("#1E1830"));
+        dialogContent.setPadding(32, 24, 32, 24);
+
+        // Title
+        TextView title = new TextView(ctx);
+        title.setText("LEARNED RECIPES");
+        title.setTextColor(Color.parseColor("#64DC96"));
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleP = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleP.bottomMargin = 8;
+        title.setLayoutParams(titleP);
+        dialogContent.addView(title);
+
+        // Recipe count
+        TextView countLabel = new TextView(ctx);
+        countLabel.setText(recipes.size() + " recipe" + (recipes.size() != 1 ? "s" : "") + " discovered");
+        countLabel.setTextColor(Color.parseColor("#AAAACC"));
+        countLabel.setTextSize(12);
+        countLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams countP = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        countP.bottomMargin = 16;
+        countLabel.setLayoutParams(countP);
+        dialogContent.addView(countLabel);
+
+        if (recipes.isEmpty()) {
+            TextView empty = new TextView(ctx);
+            empty.setText("No recipes learned yet.\nCraft or deconstruct items to discover recipes!");
+            empty.setTextColor(Color.parseColor("#888888"));
+            empty.setTextSize(13);
+            empty.setGravity(Gravity.CENTER);
+            empty.setPadding(0, 32, 0, 32);
+            dialogContent.addView(empty);
+        } else {
+            for (SaveData.LearnedRecipe lr : recipes) {
+                // Recipe row container
+                LinearLayout recipeRow = new LinearLayout(ctx);
+                recipeRow.setOrientation(LinearLayout.HORIZONTAL);
+                recipeRow.setGravity(Gravity.CENTER_VERTICAL);
+                recipeRow.setBackgroundColor(Color.parseColor("#28233A"));
+                recipeRow.setPadding(12, 8, 12, 8);
+                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                rowParams.bottomMargin = 6;
+                recipeRow.setLayoutParams(rowParams);
+
+                // Ingredient icons + names
+                for (int i = 0; i < lr.ingredients.size(); i++) {
+                    String ingId = lr.ingredients.get(i);
+                    Item ingTemplate = ItemRegistry.getTemplate(ingId);
+
+                    LinearLayout ingCell = new LinearLayout(ctx);
+                    ingCell.setOrientation(LinearLayout.VERTICAL);
+                    ingCell.setGravity(Gravity.CENTER);
+                    ingCell.setPadding(4, 2, 4, 2);
+
+                    if (ingTemplate != null) {
+                        View ingIcon = new ItemIconView(ctx, ingTemplate);
+                        LinearLayout.LayoutParams ingIconP = new LinearLayout.LayoutParams(48, 48);
+                        ingIconP.gravity = Gravity.CENTER;
+                        ingIcon.setLayoutParams(ingIconP);
+                        ingCell.addView(ingIcon);
+                    }
+
+                    TextView ingName = new TextView(ctx);
+                    ingName.setText(ingTemplate != null ? ingTemplate.getName() : ingId);
+                    ingName.setTextColor(ingTemplate != null
+                            ? Item.getRarityColor(ingTemplate.getRarity().ordinal()) : Color.WHITE);
+                    ingName.setTextSize(8);
+                    ingName.setGravity(Gravity.CENTER);
+                    ingName.setMaxLines(2);
+                    ingCell.addView(ingName);
+
+                    recipeRow.addView(ingCell);
+
+                    if (i < lr.ingredients.size() - 1) {
+                        TextView plus = new TextView(ctx);
+                        plus.setText("+");
+                        plus.setTextColor(Color.parseColor("#AAAACC"));
+                        plus.setTextSize(14);
+                        plus.setPadding(4, 0, 4, 0);
+                        plus.setGravity(Gravity.CENTER);
+                        recipeRow.addView(plus);
+                    }
+                }
+
+                // Arrow
+                TextView arrowText = new TextView(ctx);
+                arrowText.setText(" \u2192 ");
+                arrowText.setTextColor(Color.parseColor("#64DC96"));
+                arrowText.setTextSize(14);
+                arrowText.setGravity(Gravity.CENTER);
+                recipeRow.addView(arrowText);
+
+                // Result icon + name
+                Item resultTemplate = ItemRegistry.getTemplate(lr.result);
+                LinearLayout resultCell = new LinearLayout(ctx);
+                resultCell.setOrientation(LinearLayout.VERTICAL);
+                resultCell.setGravity(Gravity.CENTER);
+                resultCell.setPadding(4, 2, 4, 2);
+
+                if (resultTemplate != null) {
+                    View resultIcon = new ItemIconView(ctx, resultTemplate);
+                    LinearLayout.LayoutParams resIconP = new LinearLayout.LayoutParams(48, 48);
+                    resIconP.gravity = Gravity.CENTER;
+                    resultIcon.setLayoutParams(resIconP);
+                    resultCell.addView(resultIcon);
+                }
+
+                TextView resultName = new TextView(ctx);
+                String resultLabel = resultTemplate != null ? resultTemplate.getName() : lr.result;
+                if (lr.resultCount > 1) resultLabel = lr.resultCount + "x " + resultLabel;
+                resultName.setText(resultLabel);
+                resultName.setTextColor(resultTemplate != null
+                        ? Item.getRarityColor(resultTemplate.getRarity().ordinal()) : Color.WHITE);
+                resultName.setTextSize(8);
+                resultName.setGravity(Gravity.CENTER);
+                resultName.setMaxLines(2);
+                resultCell.addView(resultName);
+
+                recipeRow.addView(resultCell);
+                dialogContent.addView(recipeRow);
+            }
+        }
+
+        ScrollView dialogScroll = new ScrollView(ctx);
+        dialogScroll.addView(dialogContent);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(dialogScroll)
+                .setPositiveButton("Close", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1E1830")));
+        }
+        dialog.show();
     }
 }

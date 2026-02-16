@@ -13,7 +13,6 @@ import android.graphics.drawable.ColorDrawable;
 
 import com.ambermoon.lootgame.entity.Item;
 import com.ambermoon.lootgame.entity.ItemRegistry;
-import com.ambermoon.lootgame.entity.RecipeManager;
 import com.ambermoon.lootgame.graphics.AssetLoader;
 import com.ambermoon.lootgame.save.SaveData;
 import com.ambermoon.lootgame.save.SaveManager;
@@ -302,121 +301,6 @@ public class VaultTab extends ScrollView implements TextWatcher {
         tipParams.topMargin = 8;
         tooltipText.setLayoutParams(tipParams);
         dialogContent.addView(tooltipText);
-
-        // Discovered recipes section
-        SaveManager sm2 = SaveManager.getInstance();
-        List<RecipeManager.Recipe> recipesForItem = RecipeManager.findRecipesForResult(itemId);
-        List<RecipeManager.Recipe> discoveredForItem = new ArrayList<>();
-        for (RecipeManager.Recipe recipe : recipesForItem) {
-            if (sm2.isRecipeDiscovered(recipe.id)) {
-                discoveredForItem.add(recipe);
-            }
-        }
-        if (!discoveredForItem.isEmpty()) {
-            TextView recipesHeader = new TextView(ctx);
-            recipesHeader.setText("LEARNED RECIPES");
-            recipesHeader.setTextColor(Color.parseColor("#64DC96"));
-            recipesHeader.setTextSize(14);
-            recipesHeader.setTypeface(Typeface.DEFAULT_BOLD);
-            recipesHeader.setGravity(Gravity.CENTER);
-            LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            headerParams.topMargin = 24;
-            headerParams.bottomMargin = 8;
-            recipesHeader.setLayoutParams(headerParams);
-            dialogContent.addView(recipesHeader);
-
-            for (RecipeManager.Recipe recipe : discoveredForItem) {
-                // Recipe row container
-                LinearLayout recipeRow = new LinearLayout(ctx);
-                recipeRow.setOrientation(LinearLayout.HORIZONTAL);
-                recipeRow.setGravity(Gravity.CENTER);
-                recipeRow.setBackgroundColor(Color.parseColor("#28233A"));
-                recipeRow.setPadding(12, 8, 12, 8);
-                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                rowParams.bottomMargin = 6;
-                recipeRow.setLayoutParams(rowParams);
-
-                // Ingredient icons + names
-                for (int i = 0; i < recipe.ingredients.size(); i++) {
-                    String ingId = recipe.ingredients.get(i);
-                    Item ingTemplate = ItemRegistry.getTemplate(ingId);
-
-                    LinearLayout ingCell = new LinearLayout(ctx);
-                    ingCell.setOrientation(LinearLayout.VERTICAL);
-                    ingCell.setGravity(Gravity.CENTER);
-                    ingCell.setPadding(4, 2, 4, 2);
-
-                    if (ingTemplate != null) {
-                        View ingIcon = new ItemIconView(ctx, ingTemplate);
-                        LinearLayout.LayoutParams ingIconParams = new LinearLayout.LayoutParams(48, 48);
-                        ingIconParams.gravity = Gravity.CENTER;
-                        ingIcon.setLayoutParams(ingIconParams);
-                        ingCell.addView(ingIcon);
-                    }
-
-                    TextView ingName = new TextView(ctx);
-                    ingName.setText(ingTemplate != null ? ingTemplate.getName() : ingId);
-                    ingName.setTextColor(ingTemplate != null
-                            ? Item.getRarityColor(ingTemplate.getRarity().ordinal()) : Color.WHITE);
-                    ingName.setTextSize(8);
-                    ingName.setGravity(Gravity.CENTER);
-                    ingName.setMaxLines(2);
-                    ingCell.addView(ingName);
-
-                    recipeRow.addView(ingCell);
-
-                    // Add "+" separator between ingredients
-                    if (i < recipe.ingredients.size() - 1) {
-                        TextView plus = new TextView(ctx);
-                        plus.setText("+");
-                        plus.setTextColor(Color.parseColor("#AAAACC"));
-                        plus.setTextSize(14);
-                        plus.setPadding(4, 0, 4, 0);
-                        plus.setGravity(Gravity.CENTER);
-                        recipeRow.addView(plus);
-                    }
-                }
-
-                // Arrow to result
-                TextView arrowText = new TextView(ctx);
-                arrowText.setText(" \u2192 ");
-                arrowText.setTextColor(Color.parseColor("#64DC96"));
-                arrowText.setTextSize(14);
-                arrowText.setGravity(Gravity.CENTER);
-                recipeRow.addView(arrowText);
-
-                // Result icon + name
-                Item resultTemplate = ItemRegistry.getTemplate(recipe.result);
-                LinearLayout resultCell = new LinearLayout(ctx);
-                resultCell.setOrientation(LinearLayout.VERTICAL);
-                resultCell.setGravity(Gravity.CENTER);
-                resultCell.setPadding(4, 2, 4, 2);
-
-                if (resultTemplate != null) {
-                    View resultIcon = new ItemIconView(ctx, resultTemplate);
-                    LinearLayout.LayoutParams resIconParams = new LinearLayout.LayoutParams(48, 48);
-                    resIconParams.gravity = Gravity.CENTER;
-                    resultIcon.setLayoutParams(resIconParams);
-                    resultCell.addView(resultIcon);
-                }
-
-                TextView resultName = new TextView(ctx);
-                String resultLabel = resultTemplate != null ? resultTemplate.getName() : recipe.result;
-                if (recipe.resultCount > 1) resultLabel = recipe.resultCount + "x " + resultLabel;
-                resultName.setText(resultLabel);
-                resultName.setTextColor(resultTemplate != null
-                        ? Item.getRarityColor(resultTemplate.getRarity().ordinal()) : Color.WHITE);
-                resultName.setTextSize(8);
-                resultName.setGravity(Gravity.CENTER);
-                resultName.setMaxLines(2);
-                resultCell.addView(resultName);
-
-                recipeRow.addView(resultCell);
-                dialogContent.addView(recipeRow);
-            }
-        }
 
         // Wrap in ScrollView so content is accessible on small screens
         ScrollView dialogScroll = new ScrollView(ctx);

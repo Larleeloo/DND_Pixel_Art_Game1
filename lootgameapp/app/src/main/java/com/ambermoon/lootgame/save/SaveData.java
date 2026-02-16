@@ -38,8 +38,8 @@ public class SaveData {
     // Vault items
     public List<VaultItem> vaultItems = new ArrayList<>();
 
-    // Discovered recipes (recipe IDs the user has successfully crafted)
-    public List<String> discoveredRecipes = new ArrayList<>();
+    // Learned recipes (full recipe data stored in save, similar to alchemy_recipes.json)
+    public List<LearnedRecipe> learnedRecipes = new ArrayList<>();
 
     // Shop items (items available for purchase, configured by Lars)
     public List<ShopItem> shopItems = new ArrayList<>();
@@ -52,6 +52,27 @@ public class SaveData {
         public VaultItem(String itemId, int count) {
             this.itemId = itemId;
             this.stackCount = count;
+        }
+    }
+
+    public static class LearnedRecipe {
+        public String id;
+        public String name;
+        public List<String> ingredients;
+        public String result;
+        public int resultCount;
+
+        public LearnedRecipe() {
+            ingredients = new ArrayList<>();
+            resultCount = 1;
+        }
+
+        public LearnedRecipe(String id, String name, List<String> ingredients, String result, int resultCount) {
+            this.id = id;
+            this.name = name;
+            this.ingredients = new ArrayList<>(ingredients);
+            this.result = result;
+            this.resultCount = resultCount;
         }
     }
 
