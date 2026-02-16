@@ -92,6 +92,23 @@ MYTHIC:     #00FFFF  Cyan
 - Background: dark panel (#28233A)
 - Fallback: rarity-colored circle if GIF fails to load
 
+### Learned Recipe Card (Learned Recipes Dialog)
+```
+┌─────────────────────────────────┐
+│        Iron Sword               │  Recipe name (bold, 12sp, rarity-colored)
+│  [36x36] + [36x36] → [36x36]   │  Icons only, no text labels per icon
+└─────────────────────────────────┘
+```
+- Background: #28233A, 6dp bottom margin between cards
+- Recipe name centered, bold, colored by result item rarity
+- Icon row: 36x36dp ItemIconView icons with 2dp horizontal margins
+- "+" separators: #AAAACC, 12sp, 2dp horizontal padding
+- Arrow: #64DC96 (alchemy green), 12sp, 6dp horizontal padding
+- No horizontal scrolling — compact layout fits within screen width
+- Dialog wraps all cards in a vertical ScrollView for scrolling through many recipes
+- Result count shown above displayed as "[N] recipe(s) discovered"
+- Empty state shows centered gray message when no recipes learned
+
 ### Chest Animation Sequence (ChestIconView)
 ```
 Phase 1: Idle (chest available)

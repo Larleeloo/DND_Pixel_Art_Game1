@@ -378,6 +378,23 @@ public Google Drive file — no authentication required.
 
 **Recipe Data**: Loaded from `data/alchemy_recipes.json` (same 1264+ recipes)
 
+**Learned Recipes Dialog** (opened via "LEARNED RECIPES" button):
+- Displays all recipes the player has discovered through crafting or deconstructing
+- Vertically scrollable list inside a ScrollView dialog
+- Each recipe is a compact two-line card:
+  ```
+  ┌─────────────────────────────┐
+  │       Iron Sword            │  ← Recipe name (bold, rarity-colored, 12sp)
+  │  [ing] + [ing] + [ing] → [res] │  ← 36x36dp icons only (no text labels)
+  └─────────────────────────────┘
+  ```
+- Card background: #28233A with 6dp bottom margin
+- Icons are 36x36dp with 2dp horizontal margins
+- "+" separators in #AAAACC (12sp), arrow in #64DC96 (12sp)
+- No horizontal scrolling — compact layout fits on screen
+- Shows recipe count at top (e.g., "12 recipes discovered")
+- Empty state: "No recipes learned yet" message
+
 ### 3.4 Deconstruction Tab
 
 **Purpose**: Break down items into component materials.
