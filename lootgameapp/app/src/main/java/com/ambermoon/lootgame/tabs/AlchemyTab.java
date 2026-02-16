@@ -357,16 +357,20 @@ public class AlchemyTab extends ScrollView {
             dialogContent.addView(empty);
         } else {
             for (SaveData.LearnedRecipe lr : recipes) {
+                // Horizontal scroll wrapper so wide recipes can be swiped
+                HorizontalScrollView rowScroll = new HorizontalScrollView(ctx);
+                rowScroll.setHorizontalScrollBarEnabled(false);
+                rowScroll.setBackgroundColor(Color.parseColor("#28233A"));
+                LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                scrollParams.bottomMargin = 6;
+                rowScroll.setLayoutParams(scrollParams);
+
                 // Recipe row container
                 LinearLayout recipeRow = new LinearLayout(ctx);
                 recipeRow.setOrientation(LinearLayout.HORIZONTAL);
                 recipeRow.setGravity(Gravity.CENTER_VERTICAL);
-                recipeRow.setBackgroundColor(Color.parseColor("#28233A"));
                 recipeRow.setPadding(12, 8, 12, 8);
-                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                rowParams.bottomMargin = 6;
-                recipeRow.setLayoutParams(rowParams);
 
                 // Ingredient icons + names
                 for (int i = 0; i < lr.ingredients.size(); i++) {
@@ -443,7 +447,8 @@ public class AlchemyTab extends ScrollView {
                 resultCell.addView(resultName);
 
                 recipeRow.addView(resultCell);
-                dialogContent.addView(recipeRow);
+                rowScroll.addView(recipeRow);
+                dialogContent.addView(rowScroll);
             }
         }
 
