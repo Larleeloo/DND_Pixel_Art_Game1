@@ -413,6 +413,24 @@ public class RecipeManager {
     }
 
     /**
+     * Finds all recipes that produce the given item (regardless of reversibility).
+     */
+    public static List<Recipe> findRecipesForResult(String itemId) {
+        initialize();
+
+        List<Recipe> result = new ArrayList<>();
+        if (itemId == null || itemId.isEmpty()) return result;
+
+        for (Recipe recipe : recipes) {
+            if (recipe.result.equals(itemId)) {
+                result.add(recipe);
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Checks if an item can be deconstructed.
      */
     public static boolean canDeconstruct(String itemId) {

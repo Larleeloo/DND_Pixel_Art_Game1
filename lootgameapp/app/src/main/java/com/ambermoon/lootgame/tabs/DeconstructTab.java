@@ -189,6 +189,7 @@ public class DeconstructTab extends ScrollView {
         for (String comp : currentRecipe.ingredients) {
             sm.addVaultItem(comp, 1);
         }
+        sm.addDiscoveredRecipe(currentRecipe.id);
         sm.save();
 
         Toast.makeText(getContext(), "Deconstructed!", Toast.LENGTH_SHORT).show();
