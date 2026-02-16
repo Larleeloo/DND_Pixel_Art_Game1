@@ -8,6 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 
+import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.save.SaveManager;
 
@@ -155,7 +156,12 @@ public class SlotMachineTab extends ScrollView {
 
     private void pull() {
         SaveManager sm = SaveManager.getInstance();
-        if (sm.getData().coins < COST_PER_PULL || spinning) return;
+        if (sm.getData().coins < COST_PER_PULL || spinning) {
+            if (sm.getData().coins < COST_PER_PULL) {
+                HapticManager.getInstance().errorBuzz();
+            }
+            return;
+        }
 
         sm.spendCoins(COST_PER_PULL);
         spinning = true;
@@ -163,15 +169,21 @@ public class SlotMachineTab extends ScrollView {
         resultText.setText("");
         updateBalance();
 
+        // Haptic: pull lever click
+        HapticManager.getInstance().slotPull();
+
         // Determine results upfront
         final int[] results = {rollSymbol(), rollSymbol(), rollSymbol()};
 
         // Spin all 3 reels with staggered durations so they stop sequentially.
         // Reel 1 stops first (shortest spin), reel 3 stops last (longest spin).
         // Each reel scrolls through symbols and decelerates to land on its target.
-        reelViews[0].spin(results[0], 1000, null);
-        reelViews[1].spin(results[1], 1600, null);
+        reelViews[0].spin(results[0], 1000, () -> HapticManager.getInstance().reelStop());
+        reelViews[1].spin(results[1], 1600, () -> HapticManager.getInstance().reelStop());
         reelViews[2].spin(results[2], 2200, () -> {
+            // Final reel stop haptic
+            HapticManager.getInstance().reelStop();
+
             // All reels have stopped - evaluate results
             int payout = calculatePayout(results);
             if (payout > 0) sm.addCoins(payout);
@@ -181,6 +193,19 @@ public class SlotMachineTab extends ScrollView {
                 resultText.setText("WIN! \u25C8 +" + payout);
                 resultText.setTextColor(Color.parseColor("#44FF44"));
                 histEntry += " = \u25C8 " + payout;
+
+                // Win haptics (delayed slightly so reel-stop is felt first)
+                boolean isTriple = results[0] == results[1] && results[1] == results[2];
+                boolean isJackpot = isTriple && results[0] == 5; // Crown = index 5
+                handler.postDelayed(() -> {
+                    if (isJackpot) {
+                        HapticManager.getInstance().slotJackpot();
+                    } else if (isTriple) {
+                        HapticManager.getInstance().slotWinTriple();
+                    } else {
+                        HapticManager.getInstance().slotWinDouble();
+                    }
+                }, 150);
             } else {
                 resultText.setText("No match");
                 resultText.setTextColor(Color.parseColor("#FF4444"));
