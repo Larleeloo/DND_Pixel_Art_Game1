@@ -211,6 +211,7 @@ public class AlchemyTab extends ScrollView {
         // Add result
         sm.addVaultItem(currentRecipe.result, currentRecipe.resultCount);
         sm.getData().totalItemsCollected += currentRecipe.resultCount;
+        sm.addDiscoveredRecipe(currentRecipe.id);
         sm.save();
 
         Toast.makeText(getContext(), "Crafted: " + currentRecipe.name, Toast.LENGTH_SHORT).show();

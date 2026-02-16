@@ -154,6 +154,17 @@ public class SaveManager {
         return 0;
     }
 
+    public void addDiscoveredRecipe(String recipeId) {
+        if (recipeId == null || recipeId.isEmpty()) return;
+        if (!data.discoveredRecipes.contains(recipeId)) {
+            data.discoveredRecipes.add(recipeId);
+        }
+    }
+
+    public boolean isRecipeDiscovered(String recipeId) {
+        return data.discoveredRecipes.contains(recipeId);
+    }
+
     private void checkDailyStreak() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
         if (!today.equals(data.lastLoginDate)) {
@@ -200,6 +211,13 @@ public class SaveManager {
             if (i < d.vaultItems.size() - 1) sb.append(",");
             sb.append("\n");
         }
+        sb.append("  ],\n");
+        sb.append("  \"discoveredRecipes\": [\n");
+        for (int i = 0; i < d.discoveredRecipes.size(); i++) {
+            sb.append("    \"").append(d.discoveredRecipes.get(i)).append("\"");
+            if (i < d.discoveredRecipes.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
         sb.append("  ]\n");
         sb.append("}");
         return sb.toString();
@@ -243,6 +261,26 @@ public class SaveManager {
                         d.vaultItems.add(new SaveData.VaultItem(itemId, count));
                     }
                     objStart = objEnd + 1;
+                }
+            }
+        }
+
+        // Parse discovered recipes array
+        int recipesStart = json.indexOf("\"discoveredRecipes\"");
+        if (recipesStart != -1) {
+            int arrStart = json.indexOf('[', recipesStart);
+            int arrEnd = json.indexOf(']', arrStart);
+            if (arrStart != -1 && arrEnd != -1) {
+                String arr = json.substring(arrStart + 1, arrEnd);
+                int q1 = 0;
+                while ((q1 = arr.indexOf('"', q1)) != -1) {
+                    int q2 = arr.indexOf('"', q1 + 1);
+                    if (q2 == -1) break;
+                    String recipeId = arr.substring(q1 + 1, q2);
+                    if (!recipeId.isEmpty()) {
+                        d.discoveredRecipes.add(recipeId);
+                    }
+                    q1 = q2 + 1;
                 }
             }
         }

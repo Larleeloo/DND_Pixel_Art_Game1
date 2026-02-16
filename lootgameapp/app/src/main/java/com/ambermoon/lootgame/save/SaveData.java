@@ -38,6 +38,9 @@ public class SaveData {
     // Vault items
     public List<VaultItem> vaultItems = new ArrayList<>();
 
+    // Discovered recipes (recipe IDs the user has successfully crafted)
+    public List<String> discoveredRecipes = new ArrayList<>();
+
     // Shop items (items available for purchase, configured by Lars)
     public List<ShopItem> shopItems = new ArrayList<>();
 
