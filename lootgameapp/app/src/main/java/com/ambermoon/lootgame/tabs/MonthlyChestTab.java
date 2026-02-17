@@ -27,7 +27,7 @@ public class MonthlyChestTab extends ScrollView {
 
     public MonthlyChestTab(Context context) {
         super(context);
-        setBackgroundColor(Color.parseColor("#1A1525"));
+        setBackgroundColor(Color.TRANSPARENT);
 
         content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
