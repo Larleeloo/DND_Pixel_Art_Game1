@@ -164,6 +164,16 @@ public class CosmeticsPopup {
     }
 
     private static Set<String> getUnlockedIds() {
+        // Lars gets all backgrounds unlocked automatically
+        String username = GamePreferences.getUsername();
+        if ("lars".equalsIgnoreCase(username.trim())) {
+            Set<String> allIds = new java.util.HashSet<>();
+            for (BackgroundEntry entry : BackgroundRegistry.getAll()) {
+                allIds.add(entry.id);
+            }
+            return allIds;
+        }
+
         if (SaveManager.getInstance() != null) {
             return SaveManager.getInstance().getUnlockedBackgroundIds();
         }
