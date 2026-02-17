@@ -28,7 +28,7 @@ public class DailyChestTab extends ScrollView {
 
     public DailyChestTab(Context context) {
         super(context);
-        setBackgroundColor(Color.parseColor("#1A1525"));
+        setBackgroundColor(Color.TRANSPARENT);
 
         content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);

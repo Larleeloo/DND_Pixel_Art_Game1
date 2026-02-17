@@ -24,7 +24,7 @@ public class DeconstructTab extends ScrollView {
 
     public DeconstructTab(Context context) {
         super(context);
-        setBackgroundColor(Color.parseColor("#1A1525"));
+        setBackgroundColor(Color.TRANSPARENT);
 
         LinearLayout content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);

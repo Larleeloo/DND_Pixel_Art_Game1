@@ -30,7 +30,7 @@ public class ShopEditorTab extends ScrollView implements TextWatcher {
 
     public ShopEditorTab(Context context) {
         super(context);
-        setBackgroundColor(Color.parseColor("#1A1525"));
+        setBackgroundColor(Color.TRANSPARENT);
 
         // Load current shop prices into map
         loadShopPrices();

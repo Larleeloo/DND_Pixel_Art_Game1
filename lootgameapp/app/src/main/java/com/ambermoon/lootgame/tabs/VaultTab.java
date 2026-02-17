@@ -41,7 +41,7 @@ public class VaultTab extends ScrollView implements TextWatcher {
 
     public VaultTab(Context context) {
         super(context);
-        setBackgroundColor(Color.parseColor("#1A1525"));
+        setBackgroundColor(Color.TRANSPARENT);
 
         rootContent = new LinearLayout(context);
         rootContent.setOrientation(LinearLayout.VERTICAL);
