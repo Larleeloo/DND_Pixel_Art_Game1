@@ -7,6 +7,7 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.audio.HapticManager;
+import com.ambermoon.lootgame.graphics.AssetLoader;
 import com.ambermoon.lootgame.graphics.BackgroundRegistry;
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.tabs.*;
@@ -224,13 +225,23 @@ public class TabActivity extends Activity {
     }
 
     /**
-     * Custom view that tiles a 32x64 pixel art background across the content area.
-     * Uses nearest-neighbor scaling to preserve crisp pixel art.
+     * Custom view that draws a background image scaled to fill the entire content area.
+     * Uses center-crop scaling with nearest-neighbor filtering for crisp pixel art.
+     * Supports animated GIF playback with a frame timer.
      */
     private static class BackgroundTileView extends View {
         private BackgroundRegistry.BackgroundEntry entry;
+        private AssetLoader.ImageAsset imageAsset;
         private final Paint paint = new Paint();
         private final Paint bitmapPaint = new Paint();
+        private long animStartTime;
+        private boolean animating = false;
+        private final Runnable frameTickRunnable = () -> {
+            if (animating) {
+                invalidate();
+                scheduleNextFrame();
+            }
+        };
 
         public BackgroundTileView(android.content.Context context) {
             super(context);
@@ -241,51 +252,99 @@ public class TabActivity extends Activity {
 
         public void setBackgroundEntry(BackgroundRegistry.BackgroundEntry entry) {
             this.entry = entry;
+            stopAnimation();
+            if (entry != null && !entry.isBuiltIn) {
+                imageAsset = entry.getImageAsset();
+                if (imageAsset != null && imageAsset.isAnimated) {
+                    startAnimation();
+                }
+            } else {
+                imageAsset = null;
+            }
             invalidate();
+        }
+
+        private void startAnimation() {
+            animStartTime = System.currentTimeMillis();
+            animating = true;
+            scheduleNextFrame();
+        }
+
+        private void stopAnimation() {
+            animating = false;
+            removeCallbacks(frameTickRunnable);
+        }
+
+        private void scheduleNextFrame() {
+            // Redraw at ~30fps for smooth GIF playback
+            postDelayed(frameTickRunnable, 33);
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (imageAsset != null && imageAsset.isAnimated && !animating) {
+                startAnimation();
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            stopAnimation();
+            super.onDetachedFromWindow();
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
+            int viewW = getWidth();
+            int viewH = getHeight();
+
             if (entry == null) {
                 paint.setColor(Color.parseColor("#1A1525"));
-                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                canvas.drawRect(0, 0, viewW, viewH, paint);
                 return;
             }
 
             if (entry.isBuiltIn) {
                 paint.setColor(entry.solidColor);
-                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                canvas.drawRect(0, 0, viewW, viewH, paint);
                 return;
             }
 
-            Bitmap bmp = entry.getBitmap();
+            // Get the current frame (animated or static)
+            Bitmap bmp;
+            if (imageAsset != null && imageAsset.isAnimated) {
+                long elapsed = System.currentTimeMillis() - animStartTime;
+                bmp = imageAsset.getFrame(elapsed);
+            } else if (imageAsset != null) {
+                bmp = imageAsset.bitmap;
+            } else {
+                bmp = entry.getBitmap();
+            }
+
             if (bmp == null) {
                 paint.setColor(Color.parseColor("#1A1525"));
-                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                canvas.drawRect(0, 0, viewW, viewH, paint);
                 return;
             }
 
-            // Calculate tile size: scale the 32x64 image so each pixel is
-            // an integer multiple of device pixels for crisp rendering.
-            // Target roughly 4x scale so tiles are visible but not huge.
-            float density = getResources().getDisplayMetrics().density;
-            int scale = Math.max(2, Math.round(density * 3));
-            int tileW = BackgroundRegistry.BG_PIXEL_WIDTH * scale;
-            int tileH = BackgroundRegistry.BG_PIXEL_HEIGHT * scale;
+            // Scale to cover the entire view (center-crop) with integer scaling
+            // for crisp pixel art. The 32x64 image fills the full screen.
+            int imgW = bmp.getWidth();
+            int imgH = bmp.getHeight();
+            float scaleX = (float) viewW / imgW;
+            float scaleY = (float) viewH / imgH;
+            float scale = Math.max(scaleX, scaleY);
 
-            Rect src = new Rect(0, 0, bmp.getWidth(), bmp.getHeight());
-            int viewW = getWidth();
-            int viewH = getHeight();
+            int scaledW = Math.round(imgW * scale);
+            int scaledH = Math.round(imgH * scale);
+            int offsetX = (viewW - scaledW) / 2;
+            int offsetY = (viewH - scaledH) / 2;
 
-            for (int y = 0; y < viewH; y += tileH) {
-                for (int x = 0; x < viewW; x += tileW) {
-                    Rect dst = new Rect(x, y,
-                            Math.min(x + tileW, viewW),
-                            Math.min(y + tileH, viewH));
-                    canvas.drawBitmap(bmp, src, dst, bitmapPaint);
-                }
-            }
+            Rect src = new Rect(0, 0, imgW, imgH);
+            Rect dst = new Rect(offsetX, offsetY, offsetX + scaledW, offsetY + scaledH);
+            canvas.drawBitmap(bmp, src, dst, bitmapPaint);
         }
     }
 }

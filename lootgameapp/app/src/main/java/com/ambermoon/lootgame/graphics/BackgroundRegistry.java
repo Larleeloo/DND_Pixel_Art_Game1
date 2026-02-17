@@ -32,7 +32,7 @@ public class BackgroundRegistry {
         public final int solidColor;       // used when assetPath is null
         public final boolean isBuiltIn;
 
-        private Bitmap cachedBitmap;
+        private AssetLoader.ImageAsset cachedAsset;
 
         public BackgroundEntry(String id, String displayName, String assetPath) {
             this.id = id;
@@ -51,19 +51,24 @@ public class BackgroundRegistry {
         }
 
         /**
-         * Loads the background bitmap from assets.
+         * Loads the full ImageAsset (with all GIF frames) from assets.
          * Returns null for built-in solid-color backgrounds.
          */
-        public Bitmap getBitmap() {
+        public AssetLoader.ImageAsset getImageAsset() {
             if (isBuiltIn) return null;
-            if (cachedBitmap != null) return cachedBitmap;
+            if (cachedAsset != null) return cachedAsset;
             if (assetPath == null) return null;
 
-            AssetLoader.ImageAsset asset = AssetLoader.load(assetPath);
-            if (asset != null && asset.bitmap != null) {
-                cachedBitmap = asset.bitmap;
-            }
-            return cachedBitmap;
+            cachedAsset = AssetLoader.load(assetPath);
+            return cachedAsset;
+        }
+
+        /**
+         * Returns the first frame bitmap (for thumbnails/previews).
+         */
+        public Bitmap getBitmap() {
+            AssetLoader.ImageAsset asset = getImageAsset();
+            return (asset != null) ? asset.bitmap : null;
         }
     }
 
