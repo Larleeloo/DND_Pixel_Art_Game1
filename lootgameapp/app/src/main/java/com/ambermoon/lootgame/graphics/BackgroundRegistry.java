@@ -132,31 +132,26 @@ public class BackgroundRegistry {
         register(new BackgroundEntry("copper_dusk", "Copper Dusk", Color.parseColor("#2A1A10"), RARITY_UNCOMMON, false));
         register(new BackgroundEntry("moss_stone", "Moss Stone", Color.parseColor("#1A2A1A"), RARITY_UNCOMMON, false));
 
-        // === RARE (6 backgrounds) ===
+        // === RARE (16 backgrounds) ===
         register(new BackgroundEntry("sapphire_abyss", "Sapphire Abyss", Color.parseColor("#0A0A3A"), RARITY_RARE, false));
         register(new BackgroundEntry("ruby_depths", "Ruby Depths", Color.parseColor("#3A0A0A"), RARITY_RARE, false));
         register(new BackgroundEntry("emerald_cavern", "Emerald Cavern", Color.parseColor("#0A3A0A"), RARITY_RARE, false));
         register(new BackgroundEntry("amber_glow", "Amber Glow", Color.parseColor("#3A2A0A"), RARITY_RARE, false));
         register(new BackgroundEntry("amethyst_haze", "Amethyst Haze", Color.parseColor("#2A0A3A"), RARITY_RARE, false));
         register(new BackgroundEntry("teal_shadow", "Teal Shadow", Color.parseColor("#0A3A3A"), RARITY_RARE, false));
-
-        // === EPIC (5 backgrounds) ===
-        register(new BackgroundEntry("dragonfire", "Dragonfire", Color.parseColor("#4A1A00"), RARITY_EPIC, false));
-        register(new BackgroundEntry("void_walker", "Void Walker", Color.parseColor("#0A0020"), RARITY_EPIC, false));
-        register(new BackgroundEntry("enchanted_forest", "Enchanted Forest", Color.parseColor("#003A1A"), RARITY_EPIC, false));
-        register(new BackgroundEntry("blood_moon", "Blood Moon", Color.parseColor("#3A0014"), RARITY_EPIC, false));
-        register(new BackgroundEntry("frozen_tundra", "Frozen Tundra", Color.parseColor("#0A2A3A"), RARITY_EPIC, false));
-
-        // === LEGENDARY (3 backgrounds) ===
-        register(new BackgroundEntry("phoenix_flame", "Phoenix Flame", Color.parseColor("#5A2A00"), RARITY_LEGENDARY, false));
-        register(new BackgroundEntry("abyssal_dark", "Abyssal Dark", Color.parseColor("#000020"), RARITY_LEGENDARY, false));
-        register(new BackgroundEntry("celestial_gold", "Celestial Gold", Color.parseColor("#3A3A00"), RARITY_LEGENDARY, false));
-
-        // === MYTHIC (2 backgrounds) ===
-        register(new BackgroundEntry("astral_plane", "Astral Plane", Color.parseColor("#1A0A3A"), RARITY_MYTHIC, false));
-        register(new BackgroundEntry("primordial_chaos", "Primordial Chaos", Color.parseColor("#2A0A1A"), RARITY_MYTHIC, false));
+        register(new BackgroundEntry("dragonfire", "Dragonfire", Color.parseColor("#4A1A00"), RARITY_RARE, false));
+        register(new BackgroundEntry("void_walker", "Void Walker", Color.parseColor("#0A0020"), RARITY_RARE, false));
+        register(new BackgroundEntry("enchanted_forest", "Enchanted Forest", Color.parseColor("#003A1A"), RARITY_RARE, false));
+        register(new BackgroundEntry("blood_moon", "Blood Moon", Color.parseColor("#3A0014"), RARITY_RARE, false));
+        register(new BackgroundEntry("frozen_tundra", "Frozen Tundra", Color.parseColor("#0A2A3A"), RARITY_RARE, false));
+        register(new BackgroundEntry("phoenix_flame", "Phoenix Flame", Color.parseColor("#5A2A00"), RARITY_RARE, false));
+        register(new BackgroundEntry("abyssal_dark", "Abyssal Dark", Color.parseColor("#000020"), RARITY_RARE, false));
+        register(new BackgroundEntry("celestial_gold", "Celestial Gold", Color.parseColor("#3A3A00"), RARITY_RARE, false));
+        register(new BackgroundEntry("astral_plane", "Astral Plane", Color.parseColor("#1A0A3A"), RARITY_RARE, false));
+        register(new BackgroundEntry("primordial_chaos", "Primordial Chaos", Color.parseColor("#2A0A1A"), RARITY_RARE, false));
 
         // Scan for image-based backgrounds in the assets folder
+        // GIF backgrounds are automatically Epic rarity; PNGs are Common
         String[] files = AssetLoader.list(BACKGROUNDS_BASE_PATH);
         if (files != null) {
             for (String file : files) {
@@ -165,9 +160,10 @@ public class BackgroundRegistry {
                     String id = file.substring(0, file.lastIndexOf('.'));
                     String displayName = formatDisplayName(id);
                     String assetPath = BACKGROUNDS_BASE_PATH + file;
+                    int rarity = file.endsWith(".gif") ? RARITY_EPIC : RARITY_COMMON;
 
                     if (!entries.containsKey(id)) {
-                        register(new BackgroundEntry(id, displayName, assetPath, RARITY_COMMON));
+                        register(new BackgroundEntry(id, displayName, assetPath, rarity));
                     }
                 }
             }
