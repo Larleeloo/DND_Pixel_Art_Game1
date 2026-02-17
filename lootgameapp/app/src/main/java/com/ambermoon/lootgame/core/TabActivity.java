@@ -253,7 +253,7 @@ public class TabActivity extends Activity {
         public void setBackgroundEntry(BackgroundRegistry.BackgroundEntry entry) {
             this.entry = entry;
             stopAnimation();
-            if (entry != null && !entry.isBuiltIn) {
+            if (entry != null && !entry.isSolidColor) {
                 imageAsset = entry.getImageAsset();
                 if (imageAsset != null && imageAsset.isAnimated) {
                     startAnimation();
@@ -306,7 +306,7 @@ public class TabActivity extends Activity {
                 return;
             }
 
-            if (entry.isBuiltIn) {
+            if (entry.isSolidColor) {
                 paint.setColor(entry.solidColor);
                 canvas.drawRect(0, 0, viewW, viewH, paint);
                 return;

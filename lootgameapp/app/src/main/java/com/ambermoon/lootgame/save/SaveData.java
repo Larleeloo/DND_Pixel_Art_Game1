@@ -57,6 +57,7 @@ public class SaveData {
 
     // Cosmetics
     public String selectedBackgroundId = "none";
+    public List<String> unlockedBackgrounds = new ArrayList<>();
 
     public static class VaultItem {
         public String itemId;
