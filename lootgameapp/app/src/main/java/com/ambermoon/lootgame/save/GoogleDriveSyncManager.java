@@ -374,6 +374,120 @@ public class GoogleDriveSyncManager {
         });
     }
 
+    // --- Shared Marketplace Data Cloud Sync ---
+    // Uses a special fixed username "_marketplace_" so marketplace data is shared across all users.
+
+    private static final String MARKETPLACE_CLOUD_KEY = "_marketplace_";
+
+    /**
+     * Upload marketplace data JSON to Google Drive under the shared "_marketplace_" key.
+     */
+    public void uploadMarketplaceToCloud(String marketplaceJson, SyncCallback callback) {
+        String webAppUrl = GamePreferences.getWebAppUrl();
+        if (webAppUrl.isEmpty()) {
+            postResult(callback, false, "Google Drive sync not configured");
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                String uploadUrl = webAppUrl + "?username=" +
+                        java.net.URLEncoder.encode(MARKETPLACE_CLOUD_KEY, "UTF-8");
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(uploadUrl).openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("User-Agent", "AmberMoon-LootGame/1.0");
+                conn.setDoOutput(true);
+                conn.setInstanceFollowRedirects(false);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                OutputStream os = conn.getOutputStream();
+                os.write(marketplaceJson.getBytes("UTF-8"));
+                os.close();
+
+                int code = conn.getResponseCode();
+                String response;
+
+                if (code == 302 || code == 301 || code == 303 || code == 307) {
+                    String redirect = conn.getHeaderField("Location");
+                    conn.disconnect();
+                    if (redirect != null) {
+                        HttpURLConnection rConn = (HttpURLConnection) new URL(redirect).openConnection();
+                        rConn.setInstanceFollowRedirects(true);
+                        rConn.setConnectTimeout(15000);
+                        rConn.setReadTimeout(15000);
+                        code = rConn.getResponseCode();
+                        response = readStream(rConn.getInputStream());
+                        rConn.disconnect();
+                    } else {
+                        response = "";
+                    }
+                } else if (code == 200) {
+                    response = readStream(conn.getInputStream());
+                    conn.disconnect();
+                } else {
+                    conn.disconnect();
+                    postResult(callback, false, "Marketplace upload failed (HTTP " + code + ")");
+                    return;
+                }
+
+                if (response.contains("\"success\"") || response.contains("\"ok\"")) {
+                    postResult(callback, true, "Marketplace saved to Google Drive");
+                } else {
+                    postResult(callback, false, "Marketplace upload may have failed: " + response);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Marketplace upload exception", e);
+                postResult(callback, false, "Marketplace upload error: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Download marketplace data JSON from Google Drive using the shared "_marketplace_" key.
+     */
+    public void downloadMarketplaceFromCloud(FetchCallback callback) {
+        String webAppUrl = GamePreferences.getWebAppUrl();
+        if (webAppUrl.isEmpty()) {
+            mainHandler.post(() -> callback.onResult(null, "Not configured"));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                String downloadUrl = webAppUrl + "?username=" +
+                        java.net.URLEncoder.encode(MARKETPLACE_CLOUD_KEY, "UTF-8");
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                conn.setRequestMethod("GET");
+                conn.setInstanceFollowRedirects(true);
+                conn.setRequestProperty("User-Agent", "AmberMoon-LootGame/1.0");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    String json = readStream(conn.getInputStream());
+                    conn.disconnect();
+                    String trimmed = json.trim();
+                    if (trimmed.startsWith("{") && trimmed.contains("\"listings\"")) {
+                        mainHandler.post(() -> callback.onResult(json, null));
+                    } else {
+                        mainHandler.post(() -> callback.onResult(null, null));
+                    }
+                } else {
+                    conn.disconnect();
+                    mainHandler.post(() -> callback.onResult(null, "HTTP " + code));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Marketplace download exception", e);
+                mainHandler.post(() -> callback.onResult(null, e.getMessage()));
+            }
+        });
+    }
+
     private void postResult(SyncCallback cb, boolean success, String msg) {
         if (cb != null) mainHandler.post(() -> cb.onResult(success, msg));
     }

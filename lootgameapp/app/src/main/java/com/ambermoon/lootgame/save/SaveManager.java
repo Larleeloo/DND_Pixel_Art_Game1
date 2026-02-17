@@ -232,7 +232,27 @@ public class SaveManager {
             if (i < d.learnedRecipes.size() - 1) sb.append(",");
             sb.append("\n");
         }
-        sb.append("  ]\n");
+        sb.append("  ],\n");
+        // Player marketplace listings
+        sb.append("  \"playerListings\": [\n");
+        for (int i = 0; i < d.playerListings.size(); i++) {
+            SaveData.PlayerListing pl = d.playerListings.get(i);
+            sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
+            sb.append("\"price\": ").append(pl.price).append(", ");
+            sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
+            sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
+            if (i < d.playerListings.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
+        // Sell timestamps (for weekly limit)
+        sb.append("  \"sellTimestamps\": [");
+        for (int i = 0; i < d.sellTimestamps.size(); i++) {
+            sb.append(d.sellTimestamps.get(i));
+            if (i < d.sellTimestamps.size() - 1) sb.append(", ");
+        }
+        sb.append("],\n");
+        sb.append("  \"pendingTradeCoins\": ").append(d.pendingTradeCoins).append("\n");
         sb.append("}");
         return sb.toString();
     }
@@ -323,6 +343,55 @@ public class SaveManager {
             }
         }
 
+        // Parse player listings array
+        int listingsStart = json.indexOf("\"playerListings\"");
+        if (listingsStart != -1) {
+            int plArrStart = json.indexOf('[', listingsStart);
+            int plArrEnd = json.indexOf(']', plArrStart);
+            if (plArrStart != -1 && plArrEnd != -1) {
+                String arr = json.substring(plArrStart + 1, plArrEnd);
+                int objStart = 0;
+                while ((objStart = arr.indexOf('{', objStart)) != -1) {
+                    int objEnd = arr.indexOf('}', objStart);
+                    if (objEnd == -1) break;
+                    String obj = arr.substring(objStart, objEnd + 1);
+                    String itemId = extractString(obj, "itemId", "");
+                    int price = extractInt(obj, "price", 0);
+                    String seller = extractString(obj, "sellerUsername", "");
+                    long ts = extractLong(obj, "listTimestamp", 0);
+                    if (!itemId.isEmpty() && price > 0) {
+                        d.playerListings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
+                    }
+                    objStart = objEnd + 1;
+                }
+            }
+        }
+
+        // Parse sell timestamps array
+        int sellTsStart = json.indexOf("\"sellTimestamps\"");
+        if (sellTsStart != -1) {
+            int tsArrStart = json.indexOf('[', sellTsStart);
+            int tsArrEnd = json.indexOf(']', tsArrStart);
+            if (tsArrStart != -1 && tsArrEnd != -1) {
+                String arr = json.substring(tsArrStart + 1, tsArrEnd);
+                StringBuilder num = new StringBuilder();
+                for (int i = 0; i < arr.length(); i++) {
+                    char c = arr.charAt(i);
+                    if (Character.isDigit(c) || c == '-') {
+                        num.append(c);
+                    } else if (num.length() > 0) {
+                        try { d.sellTimestamps.add(Long.parseLong(num.toString())); } catch (Exception ignored) {}
+                        num.setLength(0);
+                    }
+                }
+                if (num.length() > 0) {
+                    try { d.sellTimestamps.add(Long.parseLong(num.toString())); } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        d.pendingTradeCoins = extractInt(json, "pendingTradeCoins", 0);
+
         checkDailyStreak();
         return d;
     }
@@ -391,6 +460,214 @@ public class SaveManager {
             }
         }
         return -1;
+    }
+
+    // --- Weekly sell limit ---
+
+    private static final int MAX_SELLS_PER_WEEK = 5;
+
+    /**
+     * Count how many items this player has sold in the current calendar week
+     * (Monday through Sunday).
+     */
+    public int getWeeklySellCount() {
+        long weekStart = getStartOfWeekMillis();
+        int count = 0;
+        for (Long ts : data.sellTimestamps) {
+            if (ts >= weekStart) count++;
+        }
+        return count;
+    }
+
+    public boolean canSellThisWeek() {
+        return getWeeklySellCount() < MAX_SELLS_PER_WEEK;
+    }
+
+    public int getMaxSellsPerWeek() {
+        return MAX_SELLS_PER_WEEK;
+    }
+
+    private long getStartOfWeekMillis() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        // If today is before Monday in the calendar's week, go back 7 days
+        if (cal.getTimeInMillis() > System.currentTimeMillis()) {
+            cal.add(Calendar.DAY_OF_YEAR, -7);
+        }
+        return cal.getTimeInMillis();
+    }
+
+    /**
+     * Record a sell timestamp for the weekly limit tracker.
+     * Also prunes timestamps older than 2 weeks to keep save data clean.
+     */
+    private void recordSell() {
+        data.sellTimestamps.add(System.currentTimeMillis());
+        // Prune old timestamps (keep only those within the last 2 weeks)
+        long twoWeeksAgo = System.currentTimeMillis() - 14L * 24 * 60 * 60 * 1000;
+        Iterator<Long> it = data.sellTimestamps.iterator();
+        while (it.hasNext()) {
+            if (it.next() < twoWeeksAgo) it.remove();
+        }
+    }
+
+    /**
+     * List an item for sale on the player marketplace.
+     * Removes 1 from vault, adds to shared marketplace file, records sell timestamp.
+     * Returns true if successful.
+     */
+    public boolean listItemForSale(String itemId, int price) {
+        if (!canSellThisWeek()) return false;
+        if (price <= 0) return false;
+        if (!removeVaultItem(itemId, 1)) return false;
+
+        String seller = currentUsername;
+        long timestamp = System.currentTimeMillis();
+        SaveData.PlayerListing listing = new SaveData.PlayerListing(itemId, price, seller, timestamp);
+
+        // Add to player's own listing tracker
+        data.playerListings.add(listing);
+        recordSell();
+        save();
+
+        // Add to shared marketplace file
+        List<SaveData.PlayerListing> marketplace = loadMarketplaceListings();
+        marketplace.add(listing);
+        saveMarketplaceListings(marketplace);
+
+        return true;
+    }
+
+    /**
+     * Cancel a listing and return the item to the player's vault.
+     */
+    public boolean cancelListing(String itemId, long listTimestamp) {
+        // Find and remove from player's listing tracker
+        SaveData.PlayerListing found = null;
+        for (SaveData.PlayerListing pl : data.playerListings) {
+            if (pl.itemId.equals(itemId) && pl.listTimestamp == listTimestamp) {
+                found = pl;
+                break;
+            }
+        }
+        if (found == null) return false;
+
+        data.playerListings.remove(found);
+        addVaultItem(itemId, 1);
+        save();
+
+        // Remove from shared marketplace
+        List<SaveData.PlayerListing> marketplace = loadMarketplaceListings();
+        Iterator<SaveData.PlayerListing> it = marketplace.iterator();
+        while (it.hasNext()) {
+            SaveData.PlayerListing pl = it.next();
+            if (pl.itemId.equals(itemId) && pl.listTimestamp == listTimestamp
+                    && pl.sellerUsername.equals(currentUsername)) {
+                it.remove();
+                break;
+            }
+        }
+        saveMarketplaceListings(marketplace);
+        return true;
+    }
+
+    /**
+     * Update the price of an active listing.
+     */
+    public boolean updateListingPrice(String itemId, long listTimestamp, int newPrice) {
+        if (newPrice <= 0) return false;
+
+        // Update in player's local listing tracker
+        boolean foundLocal = false;
+        for (SaveData.PlayerListing pl : data.playerListings) {
+            if (pl.itemId.equals(itemId) && pl.listTimestamp == listTimestamp) {
+                pl.price = newPrice;
+                foundLocal = true;
+                break;
+            }
+        }
+        if (!foundLocal) return false;
+        save();
+
+        // Update in shared marketplace
+        List<SaveData.PlayerListing> marketplace = loadMarketplaceListings();
+        for (SaveData.PlayerListing pl : marketplace) {
+            if (pl.itemId.equals(itemId) && pl.listTimestamp == listTimestamp
+                    && pl.sellerUsername.equals(currentUsername)) {
+                pl.price = newPrice;
+                break;
+            }
+        }
+        saveMarketplaceListings(marketplace);
+        return true;
+    }
+
+    /**
+     * Purchase a player listing from the marketplace.
+     * Deducts coins from buyer, adds item to buyer's vault,
+     * records pending coins for the seller in the marketplace file.
+     */
+    public boolean purchasePlayerListing(SaveData.PlayerListing listing) {
+        if (listing.sellerUsername.equals(currentUsername)) return false; // can't buy own listing
+        if (!spendCoins(listing.price)) return false;
+
+        addVaultItem(listing.itemId, 1);
+        data.totalItemsCollected++;
+        save();
+
+        // Remove listing from marketplace and credit seller's pending coins
+        List<SaveData.PlayerListing> marketplace = loadMarketplaceListings();
+        Map<String, Integer> pendingCoins = loadMarketplacePendingCoins();
+        Iterator<SaveData.PlayerListing> it = marketplace.iterator();
+        while (it.hasNext()) {
+            SaveData.PlayerListing pl = it.next();
+            if (pl.itemId.equals(listing.itemId) && pl.listTimestamp == listing.listTimestamp
+                    && pl.sellerUsername.equals(listing.sellerUsername)) {
+                it.remove();
+                // Credit seller
+                int current = pendingCoins.containsKey(pl.sellerUsername) ? pendingCoins.get(pl.sellerUsername) : 0;
+                pendingCoins.put(pl.sellerUsername, current + pl.price);
+                break;
+            }
+        }
+        saveMarketplaceData(marketplace, pendingCoins);
+        return true;
+    }
+
+    /**
+     * Collect any pending trade coins for the current user from the marketplace.
+     * Called automatically during marketplace sync.
+     * Returns the amount collected.
+     */
+    public int collectPendingTradeCoins() {
+        Map<String, Integer> pendingCoins = loadMarketplacePendingCoins();
+        int amount = pendingCoins.containsKey(currentUsername) ? pendingCoins.get(currentUsername) : 0;
+        if (amount > 0) {
+            addCoins(amount);
+            pendingCoins.remove(currentUsername);
+            // Also remove any sold listings from the player's local tracker
+            List<SaveData.PlayerListing> marketplace = loadMarketplaceListings();
+            List<String> marketItemIds = new ArrayList<>();
+            for (SaveData.PlayerListing pl : marketplace) {
+                if (pl.sellerUsername.equals(currentUsername)) {
+                    marketItemIds.add(pl.itemId + "_" + pl.listTimestamp);
+                }
+            }
+            Iterator<SaveData.PlayerListing> it = data.playerListings.iterator();
+            while (it.hasNext()) {
+                SaveData.PlayerListing pl = it.next();
+                if (!marketItemIds.contains(pl.itemId + "_" + pl.listTimestamp)) {
+                    it.remove(); // was sold, no longer in marketplace
+                }
+            }
+            save();
+            saveMarketplaceData(marketplace, pendingCoins);
+        }
+        return amount;
     }
 
     public String toJson() { return serializeToJson(data); }
@@ -568,5 +845,178 @@ public class SaveManager {
      */
     public static String extractAppVersionFromJson(String json) {
         return extractString(json, "appVersion", "");
+    }
+
+    // --- Shared Marketplace Data (separate file, read/written by all players) ---
+
+    private static final String MARKETPLACE_FILE = "loot_game_marketplace.json";
+
+    /**
+     * Load all active marketplace listings from the local marketplace file.
+     */
+    public List<SaveData.PlayerListing> loadMarketplaceListings() {
+        String json = readMarketplaceFile();
+        if (json == null) return new ArrayList<>();
+        return parseMarketplaceListings(json);
+    }
+
+    /**
+     * Load pending coins map from the marketplace file.
+     */
+    public Map<String, Integer> loadMarketplacePendingCoins() {
+        String json = readMarketplaceFile();
+        if (json == null) return new HashMap<>();
+        return parseMarketplacePendingCoins(json);
+    }
+
+    private String readMarketplaceFile() {
+        try {
+            FileInputStream fis = context.openFileInput(MARKETPLACE_FILE);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+            fis.close();
+            return baos.toString("UTF-8");
+        } catch (FileNotFoundException e) {
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load marketplace: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Save marketplace listings to the local file.
+     */
+    public void saveMarketplaceListings(List<SaveData.PlayerListing> listings) {
+        Map<String, Integer> pendingCoins = loadMarketplacePendingCoins();
+        saveMarketplaceData(listings, pendingCoins);
+    }
+
+    /**
+     * Save both listings and pending coins to the marketplace file, then upload to cloud.
+     */
+    private void saveMarketplaceData(List<SaveData.PlayerListing> listings, Map<String, Integer> pendingCoins) {
+        String json = serializeMarketplace(listings, pendingCoins);
+        try {
+            FileOutputStream fos = context.openFileOutput(MARKETPLACE_FILE, android.content.Context.MODE_PRIVATE);
+            fos.write(json.getBytes("UTF-8"));
+            fos.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to save marketplace locally: " + e.getMessage());
+        }
+        if (com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            GoogleDriveSyncManager.getInstance().uploadMarketplaceToCloud(json, null);
+        }
+    }
+
+    /**
+     * Sync marketplace from cloud, auto-collect pending coins for the current user.
+     */
+    public void syncMarketplaceFromCloud(MarketplaceSyncCallback callback) {
+        if (!com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            int collected = collectPendingTradeCoins();
+            if (callback != null) callback.onMarketplaceLoaded(loadMarketplaceListings(), collected);
+            return;
+        }
+        GoogleDriveSyncManager.getInstance().downloadMarketplaceFromCloud((json, error) -> {
+            if (json != null) {
+                try {
+                    FileOutputStream fos = context.openFileOutput(MARKETPLACE_FILE, android.content.Context.MODE_PRIVATE);
+                    fos.write(json.getBytes("UTF-8"));
+                    fos.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to cache cloud marketplace locally: " + e.getMessage());
+                }
+            }
+            int collected = collectPendingTradeCoins();
+            List<SaveData.PlayerListing> listings = loadMarketplaceListings();
+            if (callback != null) callback.onMarketplaceLoaded(listings, collected);
+        });
+    }
+
+    public interface MarketplaceSyncCallback {
+        void onMarketplaceLoaded(List<SaveData.PlayerListing> listings, int coinsCollected);
+    }
+
+    private String serializeMarketplace(List<SaveData.PlayerListing> listings, Map<String, Integer> pendingCoins) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n  \"listings\": [\n");
+        for (int i = 0; i < listings.size(); i++) {
+            SaveData.PlayerListing pl = listings.get(i);
+            sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
+            sb.append("\"price\": ").append(pl.price).append(", ");
+            sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
+            sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
+            if (i < listings.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n  \"pendingCoins\": {\n");
+        int idx = 0;
+        for (Map.Entry<String, Integer> entry : pendingCoins.entrySet()) {
+            sb.append("    \"").append(entry.getKey()).append("\": ").append(entry.getValue());
+            if (idx < pendingCoins.size() - 1) sb.append(",");
+            sb.append("\n");
+            idx++;
+        }
+        sb.append("  }\n}");
+        return sb.toString();
+    }
+
+    private List<SaveData.PlayerListing> parseMarketplaceListings(String json) {
+        List<SaveData.PlayerListing> listings = new ArrayList<>();
+        int listStart = json.indexOf("\"listings\"");
+        if (listStart == -1) return listings;
+        int arrStart = json.indexOf('[', listStart);
+        int arrEnd = json.indexOf(']', arrStart);
+        if (arrStart == -1 || arrEnd == -1) return listings;
+        String arr = json.substring(arrStart + 1, arrEnd);
+        int objStart = 0;
+        while ((objStart = arr.indexOf('{', objStart)) != -1) {
+            int objEnd = arr.indexOf('}', objStart);
+            if (objEnd == -1) break;
+            String obj = arr.substring(objStart, objEnd + 1);
+            String itemId = extractString(obj, "itemId", "");
+            int price = extractInt(obj, "price", 0);
+            String seller = extractString(obj, "sellerUsername", "");
+            long ts = extractLong(obj, "listTimestamp", 0);
+            if (!itemId.isEmpty() && price > 0 && !seller.isEmpty()) {
+                listings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
+            }
+            objStart = objEnd + 1;
+        }
+        return listings;
+    }
+
+    private Map<String, Integer> parseMarketplacePendingCoins(String json) {
+        Map<String, Integer> coins = new HashMap<>();
+        int pcStart = json.indexOf("\"pendingCoins\"");
+        if (pcStart == -1) return coins;
+        int braceStart = json.indexOf('{', pcStart + 14);
+        if (braceStart == -1) return coins;
+        int braceEnd = findMatchingBrace(json, braceStart);
+        if (braceEnd == -1) return coins;
+        String obj = json.substring(braceStart + 1, braceEnd);
+        // Parse key-value pairs: "username": amount
+        int q1 = 0;
+        while ((q1 = obj.indexOf('"', q1)) != -1) {
+            int q2 = obj.indexOf('"', q1 + 1);
+            if (q2 == -1) break;
+            String key = obj.substring(q1 + 1, q2);
+            int colon = obj.indexOf(':', q2);
+            if (colon == -1) break;
+            StringBuilder num = new StringBuilder();
+            for (int i = colon + 1; i < obj.length(); i++) {
+                char c = obj.charAt(i);
+                if (Character.isDigit(c) || c == '-') num.append(c);
+                else if (num.length() > 0) break;
+            }
+            if (num.length() > 0 && !key.isEmpty()) {
+                try { coins.put(key, Integer.parseInt(num.toString())); } catch (Exception ignored) {}
+            }
+            q1 = q2 + 1;
+        }
+        return coins;
     }
 }
