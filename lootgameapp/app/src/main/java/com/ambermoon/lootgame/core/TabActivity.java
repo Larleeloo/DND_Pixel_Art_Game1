@@ -7,6 +7,7 @@ import android.view.*;
 import android.widget.*;
 
 import com.ambermoon.lootgame.audio.HapticManager;
+import com.ambermoon.lootgame.graphics.BackgroundRegistry;
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.tabs.*;
 
@@ -20,6 +21,7 @@ public class TabActivity extends Activity {
     private TextView usernameDisplay;
     private View currentTab;
     private int currentTabIndex = 0;
+    private BackgroundTileView backgroundView;
 
     private String[] tabLabels;
     private Button[] tabButtons;
@@ -34,6 +36,9 @@ public class TabActivity extends Activity {
 
         // Initialize haptic feedback
         HapticManager.getInstance().init(this);
+
+        // Initialize background registry
+        BackgroundRegistry.initialize();
 
         // Determine if the current user is Lars (case-insensitive)
         String username = GamePreferences.getUsername();
@@ -87,15 +92,41 @@ public class TabActivity extends Activity {
         usernameDisplay.setLayoutParams(userParams);
         header.addView(usernameDisplay);
 
+        // Cosmetics button (top right)
+        TextView cosmeticsBtn = new TextView(this);
+        cosmeticsBtn.setText("\u2728"); // sparkles unicode
+        cosmeticsBtn.setTextSize(20);
+        cosmeticsBtn.setPadding(16, 4, 0, 4);
+        cosmeticsBtn.setOnClickListener(v -> {
+            HapticManager.getInstance().tap();
+            CosmeticsPopup.show(this, this::applyBackground);
+        });
+        RelativeLayout.LayoutParams cosmeticsBtnParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cosmeticsBtnParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        cosmeticsBtnParams.addRule(RelativeLayout.CENTER_VERTICAL);
+        cosmeticsBtn.setLayoutParams(cosmeticsBtnParams);
+        header.addView(cosmeticsBtn);
+
         root.addView(header);
 
-        // Content area
-        contentFrame = new FrameLayout(this);
-        contentFrame.setBackgroundColor(Color.parseColor("#1A1525"));
-        LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(
+        // Content area with background support
+        FrameLayout contentWrapper = new FrameLayout(this);
+        LinearLayout.LayoutParams wrapperParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f);
-        contentFrame.setLayoutParams(contentParams);
-        root.addView(contentFrame);
+        contentWrapper.setLayoutParams(wrapperParams);
+
+        // Background tiling view (behind content)
+        backgroundView = new BackgroundTileView(this);
+        contentWrapper.addView(backgroundView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        // Content frame (on top of background)
+        contentFrame = new FrameLayout(this);
+        contentWrapper.addView(contentFrame, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        root.addView(contentWrapper);
 
         // Tab bar
         tabBar = new LinearLayout(this);
@@ -124,6 +155,14 @@ public class TabActivity extends Activity {
         root.addView(tabBar);
 
         setContentView(root);
+
+        // Apply saved background
+        String savedBgId = "none";
+        if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
+            savedBgId = SaveManager.getInstance().getData().selectedBackgroundId;
+        }
+        applyBackground(savedBgId);
+
         switchTab(0);
     }
 
@@ -162,6 +201,13 @@ public class TabActivity extends Activity {
         updateCoinDisplay();
     }
 
+    private void applyBackground(String backgroundId) {
+        BackgroundRegistry.BackgroundEntry entry = BackgroundRegistry.get(backgroundId);
+        if (backgroundView != null) {
+            backgroundView.setBackgroundEntry(entry);
+        }
+    }
+
     public void updateCoinDisplay() {
         if (coinDisplay != null && SaveManager.getInstance() != null) {
             coinDisplay.setText("\u25C8 " + SaveManager.getInstance().getData().coins + " coins");
@@ -174,6 +220,72 @@ public class TabActivity extends Activity {
         if (SaveManager.getInstance() != null) {
             // save() handles both local save and cloud upload
             SaveManager.getInstance().save();
+        }
+    }
+
+    /**
+     * Custom view that tiles a 32x64 pixel art background across the content area.
+     * Uses nearest-neighbor scaling to preserve crisp pixel art.
+     */
+    private static class BackgroundTileView extends View {
+        private BackgroundRegistry.BackgroundEntry entry;
+        private final Paint paint = new Paint();
+        private final Paint bitmapPaint = new Paint();
+
+        public BackgroundTileView(android.content.Context context) {
+            super(context);
+            paint.setAntiAlias(false);
+            bitmapPaint.setAntiAlias(false);
+            bitmapPaint.setFilterBitmap(false); // nearest-neighbor for pixel art
+        }
+
+        public void setBackgroundEntry(BackgroundRegistry.BackgroundEntry entry) {
+            this.entry = entry;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (entry == null) {
+                paint.setColor(Color.parseColor("#1A1525"));
+                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                return;
+            }
+
+            if (entry.isBuiltIn) {
+                paint.setColor(entry.solidColor);
+                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                return;
+            }
+
+            Bitmap bmp = entry.getBitmap();
+            if (bmp == null) {
+                paint.setColor(Color.parseColor("#1A1525"));
+                canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+                return;
+            }
+
+            // Calculate tile size: scale the 32x64 image so each pixel is
+            // an integer multiple of device pixels for crisp rendering.
+            // Target roughly 4x scale so tiles are visible but not huge.
+            float density = getResources().getDisplayMetrics().density;
+            int scale = Math.max(2, Math.round(density * 3));
+            int tileW = BackgroundRegistry.BG_PIXEL_WIDTH * scale;
+            int tileH = BackgroundRegistry.BG_PIXEL_HEIGHT * scale;
+
+            Rect src = new Rect(0, 0, bmp.getWidth(), bmp.getHeight());
+            int viewW = getWidth();
+            int viewH = getHeight();
+
+            for (int y = 0; y < viewH; y += tileH) {
+                for (int x = 0; x < viewW; x += tileW) {
+                    Rect dst = new Rect(x, y,
+                            Math.min(x + tileW, viewW),
+                            Math.min(y + tileH, viewH));
+                    canvas.drawBitmap(bmp, src, dst, bitmapPaint);
+                }
+            }
         }
     }
 }
