@@ -53,8 +53,65 @@ Streak resets if a day is missed entirely (no daily chest opened).
 Cost per pull:     25 coins
 ```
 
-This is the only coin sink in the game. Coins cannot be exchanged for items,
-used in crafting, or traded. This simplicity keeps the economy balanced.
+### Player Marketplace (Buying)
+```
+Cost:              Set by the selling player
+Frequency:         Unlimited (when listings are available)
+```
+
+When a player purchases an item from the Player Market section of the shop,
+their coins are deducted and held as pending coins for the seller. The seller
+receives the coins automatically the next time they open the Shop tab and
+the marketplace syncs from cloud.
+
+## Player Trading (Marketplace)
+
+### Overview
+Players can list items from their vault for sale in the shop. Other players
+can then purchase these listings. This creates a player-to-player economy
+alongside the admin-curated shop.
+
+### Selling
+```
+Weekly limit:      5 sales per player per week (Monday-Sunday)
+Price:             Set freely by the seller (must be > 0)
+Price changes:     Allowed at any time while listed
+Cancellation:      Allowed (item returns to vault)
+```
+
+When a player lists an item:
+1. The item is removed from their vault (1 unit)
+2. The listing appears in the Shop tab under "PLAYER MARKET"
+3. The seller's weekly sell count increments by 1
+
+### Buying from Player Market
+```
+Cost:              The listed price (set by seller)
+Recipient:         Coins go to the seller (via pending coins)
+```
+
+When a buyer purchases a player listing:
+1. Coins are deducted from the buyer's balance
+2. The item is added to the buyer's vault
+3. The listing is removed from the marketplace
+4. The seller's pending coins are credited in the marketplace file
+5. When the seller next syncs, pending coins are auto-collected
+
+### Coin Flow
+```
+Seller lists item → item removed from vault, listing appears in shop
+Buyer purchases   → buyer coins deducted, item to buyer vault
+                  → seller pending coins credited in marketplace
+Seller opens shop → pending coins auto-collected to seller balance
+```
+
+### Economy Impact
+The marketplace is a **coin-neutral** mechanism — coins transfer between
+players rather than being created or destroyed. This means:
+- Total coins in the economy remain unchanged
+- Players who farm items can earn coins from other players
+- Players who want specific items can buy them directly
+- The 5-per-week sell limit prevents market flooding
 
 ## Monthly Income Projection
 

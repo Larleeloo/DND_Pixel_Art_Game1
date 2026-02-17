@@ -1,7 +1,9 @@
 package com.ambermoon.lootgame.save;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SaveData {
     public int version = 1;
@@ -44,6 +46,15 @@ public class SaveData {
     // Shop items (items available for purchase, configured by Lars)
     public List<ShopItem> shopItems = new ArrayList<>();
 
+    // Player marketplace: items this player currently has listed for sale
+    public List<PlayerListing> playerListings = new ArrayList<>();
+
+    // Timestamps of when this player sold items (for 5-per-week limit tracking)
+    public List<Long> sellTimestamps = new ArrayList<>();
+
+    // Coins earned from marketplace sales that haven't been collected yet
+    public int pendingTradeCoins = 0;
+
     public static class VaultItem {
         public String itemId;
         public int stackCount;
@@ -84,6 +95,21 @@ public class SaveData {
         public ShopItem(String itemId, int price) {
             this.itemId = itemId;
             this.price = price;
+        }
+    }
+
+    public static class PlayerListing {
+        public String itemId;
+        public int price;
+        public String sellerUsername;
+        public long listTimestamp;
+
+        public PlayerListing() {}
+        public PlayerListing(String itemId, int price, String sellerUsername, long listTimestamp) {
+            this.itemId = itemId;
+            this.price = price;
+            this.sellerUsername = sellerUsername;
+            this.listTimestamp = listTimestamp;
         }
     }
 }
