@@ -11,6 +11,7 @@ import android.widget.*;
 import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.*;
+import com.ambermoon.lootgame.graphics.BackgroundRegistry;
 import com.ambermoon.lootgame.save.SaveManager;
 
 import java.util.ArrayList;
@@ -166,10 +167,17 @@ public class DailyChestTab extends ScrollView {
             }
         }
 
+        // Roll for background unlock (15% chance, 1.0x rarity boost for daily)
+        BackgroundRegistry.BackgroundEntry bgDrop = BackgroundRegistry.rollChestDrop(
+                sm.getUnlockedBackgroundIds(), 1.0f, 0.15f);
+        if (bgDrop != null) {
+            sm.unlockBackground(bgDrop.id);
+        }
+
         sm.save();
 
         // Display loot
-        showLoot(coins);
+        showLoot(coins, bgDrop);
         updateUI();
 
         // Update coin display in parent
@@ -178,7 +186,7 @@ public class DailyChestTab extends ScrollView {
         }
     }
 
-    private void showLoot(int coins) {
+    private void showLoot(int coins, BackgroundRegistry.BackgroundEntry bgDrop) {
         lootDisplay.removeAllViews();
 
         // Coin reward
@@ -190,6 +198,37 @@ public class DailyChestTab extends ScrollView {
         coinText.setGravity(Gravity.CENTER);
         coinText.setPadding(0, 16, 0, 24);
         lootDisplay.addView(coinText);
+
+        // Background drop notification
+        if (bgDrop != null) {
+            LinearLayout bgCard = new LinearLayout(getContext());
+            bgCard.setOrientation(LinearLayout.HORIZONTAL);
+            bgCard.setGravity(Gravity.CENTER);
+            bgCard.setBackgroundColor(Color.parseColor("#28233A"));
+            bgCard.setPadding(24, 16, 24, 16);
+            LinearLayout.LayoutParams bgCardParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            bgCardParams.bottomMargin = 16;
+            bgCard.setLayoutParams(bgCardParams);
+
+            // Color preview swatch
+            View swatch = new View(getContext());
+            swatch.setBackgroundColor(bgDrop.solidColor);
+            LinearLayout.LayoutParams swatchParams = new LinearLayout.LayoutParams(48, 48);
+            swatchParams.rightMargin = 16;
+            swatch.setLayoutParams(swatchParams);
+            bgCard.addView(swatch);
+
+            // Text
+            TextView bgText = new TextView(getContext());
+            bgText.setText("\u2728 NEW BACKGROUND: " + bgDrop.displayName);
+            bgText.setTextColor(BackgroundRegistry.getRarityColor(bgDrop.rarity));
+            bgText.setTextSize(14);
+            bgText.setTypeface(Typeface.DEFAULT_BOLD);
+            bgCard.addView(bgText);
+
+            lootDisplay.addView(bgCard);
+        }
 
         // Section header
         TextView header = new TextView(getContext());

@@ -169,6 +169,22 @@ public class SaveManager {
         return false;
     }
 
+    // --- Background unlocks ---
+
+    public boolean unlockBackground(String backgroundId) {
+        if (data.unlockedBackgrounds.contains(backgroundId)) return false;
+        data.unlockedBackgrounds.add(backgroundId);
+        return true;
+    }
+
+    public boolean isBackgroundUnlocked(String backgroundId) {
+        return data.unlockedBackgrounds.contains(backgroundId);
+    }
+
+    public java.util.Set<String> getUnlockedBackgroundIds() {
+        return new java.util.HashSet<>(data.unlockedBackgrounds);
+    }
+
     private void checkDailyStreak() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
         if (!today.equals(data.lastLoginDate)) {
@@ -253,7 +269,13 @@ public class SaveManager {
         }
         sb.append("],\n");
         sb.append("  \"pendingTradeCoins\": ").append(d.pendingTradeCoins).append(",\n");
-        sb.append("  \"selectedBackgroundId\": \"").append(d.selectedBackgroundId).append("\"\n");
+        sb.append("  \"selectedBackgroundId\": \"").append(d.selectedBackgroundId).append("\",\n");
+        sb.append("  \"unlockedBackgrounds\": [");
+        for (int i = 0; i < d.unlockedBackgrounds.size(); i++) {
+            sb.append("\"").append(d.unlockedBackgrounds.get(i)).append("\"");
+            if (i < d.unlockedBackgrounds.size() - 1) sb.append(", ");
+        }
+        sb.append("]\n");
         sb.append("}");
         return sb.toString();
     }
@@ -393,6 +415,24 @@ public class SaveManager {
 
         d.pendingTradeCoins = extractInt(json, "pendingTradeCoins", 0);
         d.selectedBackgroundId = extractString(json, "selectedBackgroundId", "none");
+
+        // Parse unlocked backgrounds array
+        int ubStart = json.indexOf("\"unlockedBackgrounds\"");
+        if (ubStart != -1) {
+            int ubArrStart = json.indexOf('[', ubStart);
+            int ubArrEnd = json.indexOf(']', ubArrStart);
+            if (ubArrStart != -1 && ubArrEnd != -1) {
+                String ubArr = json.substring(ubArrStart + 1, ubArrEnd);
+                int q1 = 0;
+                while ((q1 = ubArr.indexOf('"', q1)) != -1) {
+                    int q2 = ubArr.indexOf('"', q1 + 1);
+                    if (q2 == -1) break;
+                    String bgId = ubArr.substring(q1 + 1, q2);
+                    if (!bgId.isEmpty()) d.unlockedBackgrounds.add(bgId);
+                    q1 = q2 + 1;
+                }
+            }
+        }
 
         checkDailyStreak();
         return d;
