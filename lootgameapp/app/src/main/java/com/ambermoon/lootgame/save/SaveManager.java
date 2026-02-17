@@ -252,7 +252,8 @@ public class SaveManager {
             if (i < d.sellTimestamps.size() - 1) sb.append(", ");
         }
         sb.append("],\n");
-        sb.append("  \"pendingTradeCoins\": ").append(d.pendingTradeCoins).append("\n");
+        sb.append("  \"pendingTradeCoins\": ").append(d.pendingTradeCoins).append(",\n");
+        sb.append("  \"selectedBackgroundId\": \"").append(d.selectedBackgroundId).append("\"\n");
         sb.append("}");
         return sb.toString();
     }
@@ -391,6 +392,7 @@ public class SaveManager {
         }
 
         d.pendingTradeCoins = extractInt(json, "pendingTradeCoins", 0);
+        d.selectedBackgroundId = extractString(json, "selectedBackgroundId", "none");
 
         checkDailyStreak();
         return d;

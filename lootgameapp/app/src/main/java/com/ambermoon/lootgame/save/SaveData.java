@@ -55,6 +55,9 @@ public class SaveData {
     // Coins earned from marketplace sales that haven't been collected yet
     public int pendingTradeCoins = 0;
 
+    // Cosmetics
+    public String selectedBackgroundId = "none";
+
     public static class VaultItem {
         public String itemId;
         public int stackCount;
