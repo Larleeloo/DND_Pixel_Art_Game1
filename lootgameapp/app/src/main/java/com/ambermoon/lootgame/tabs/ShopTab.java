@@ -12,6 +12,7 @@ import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.Item;
 import com.ambermoon.lootgame.entity.ItemRegistry;
 import com.ambermoon.lootgame.graphics.AssetLoader;
+import com.ambermoon.lootgame.graphics.CoinIconHelper;
 import com.ambermoon.lootgame.save.SaveData;
 import com.ambermoon.lootgame.save.SaveManager;
 
@@ -75,7 +76,8 @@ public class ShopTab extends ScrollView {
                 marketplaceListings = listings;
                 if (coinsCollected > 0) {
                     Toast.makeText(getContext(),
-                            "Collected \u25C8 " + coinsCollected + " coins from sales!",
+                            CoinIconHelper.withCoin(getContext(),
+                            "Collected \u25C8 " + coinsCollected + " coins from sales!", 14),
                             Toast.LENGTH_LONG).show();
                     if (getContext() instanceof TabActivity) {
                         ((TabActivity) getContext()).updateCoinDisplay();
@@ -233,7 +235,8 @@ public class ShopTab extends ScrollView {
         buyCol.setGravity(Gravity.CENTER);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText("\u25C8 " + shopItem.price);
+        priceText.setText(CoinIconHelper.withCoin(ctx,
+                "\u25C8 " + shopItem.price, 14));
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(14);
         priceText.setGravity(Gravity.CENTER);
@@ -309,7 +312,8 @@ public class ShopTab extends ScrollView {
         buyCol.setGravity(Gravity.CENTER);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText("\u25C8 " + listing.price);
+        priceText.setText(CoinIconHelper.withCoin(ctx,
+                "\u25C8 " + listing.price, 14));
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(14);
         priceText.setGravity(Gravity.CENTER);
@@ -402,7 +406,8 @@ public class ShopTab extends ScrollView {
 
         // Price
         TextView priceView = new TextView(ctx);
-        priceView.setText("\nPrice: \u25C8 " + shopItem.price + " coins");
+        priceView.setText(CoinIconHelper.withCoin(ctx,
+                "\nPrice: \u25C8 " + shopItem.price + " coins", 16));
         priceView.setTextColor(Color.parseColor("#FFD700"));
         priceView.setTextSize(16);
         priceView.setGravity(Gravity.CENTER);
@@ -428,7 +433,8 @@ public class ShopTab extends ScrollView {
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
         builder.setView(dialogScroll);
         if (canAfford) {
-            builder.setPositiveButton("Buy (\u25C8 " + shopItem.price + ")", (dialog, which) -> {
+            builder.setPositiveButton(CoinIconHelper.withCoin(ctx,
+                    "Buy (\u25C8 " + shopItem.price + ")", 14), (dialog, which) -> {
                 purchaseItem(shopItem, template);
             });
         }
@@ -501,7 +507,8 @@ public class ShopTab extends ScrollView {
 
         // Price
         TextView priceView = new TextView(ctx);
-        priceView.setText("\nPrice: \u25C8 " + listing.price + " coins");
+        priceView.setText(CoinIconHelper.withCoin(ctx,
+                "\nPrice: \u25C8 " + listing.price + " coins", 16));
         priceView.setTextColor(Color.parseColor("#FFD700"));
         priceView.setTextSize(16);
         priceView.setGravity(Gravity.CENTER);
@@ -535,7 +542,8 @@ public class ShopTab extends ScrollView {
         if (!isOwnListing) {
             boolean canAfford = SaveManager.getInstance().getData().coins >= listing.price;
             if (canAfford) {
-                builder.setPositiveButton("Buy (\u25C8 " + listing.price + ")", (dialog, which) -> {
+                builder.setPositiveButton(CoinIconHelper.withCoin(ctx,
+                        "Buy (\u25C8 " + listing.price + ")", 14), (dialog, which) -> {
                     purchaseMarketplaceItem(listing, template);
                 });
             }
@@ -554,13 +562,15 @@ public class ShopTab extends ScrollView {
         int coins = SaveManager.getInstance().getData().coins;
 
         if (coins < shopItem.price) {
-            Toast.makeText(ctx, "Not enough coins! Need \u25C8 " + shopItem.price, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, CoinIconHelper.withCoin(ctx,
+                    "Not enough coins! Need \u25C8 " + shopItem.price, 14), Toast.LENGTH_SHORT).show();
             return;
         }
 
         new AlertDialog.Builder(ctx)
                 .setTitle("Buy " + template.getName() + "?")
-                .setMessage("Cost: \u25C8 " + shopItem.price + " coins\nYour balance: \u25C8 " + coins + " coins\n\nAfter purchase: \u25C8 " + (coins - shopItem.price) + " coins")
+                .setMessage(CoinIconHelper.withCoin(ctx,
+                        "Cost: \u25C8 " + shopItem.price + " coins\nYour balance: \u25C8 " + coins + " coins\n\nAfter purchase: \u25C8 " + (coins - shopItem.price) + " coins", 14))
                 .setPositiveButton("Buy", (dialog, which) -> purchaseItem(shopItem, template))
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -574,13 +584,15 @@ public class ShopTab extends ScrollView {
         int coins = SaveManager.getInstance().getData().coins;
 
         if (coins < listing.price) {
-            Toast.makeText(ctx, "Not enough coins! Need \u25C8 " + listing.price, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, CoinIconHelper.withCoin(ctx,
+                    "Not enough coins! Need \u25C8 " + listing.price, 14), Toast.LENGTH_SHORT).show();
             return;
         }
 
         new AlertDialog.Builder(ctx)
                 .setTitle("Buy " + template.getName() + "?")
-                .setMessage("Cost: \u25C8 " + listing.price + " coins\nSold by: " + listing.sellerUsername + "\nYour balance: \u25C8 " + coins + " coins\n\nAfter purchase: \u25C8 " + (coins - listing.price) + " coins\n\nCoins will go to " + listing.sellerUsername + ".")
+                .setMessage(CoinIconHelper.withCoin(ctx,
+                        "Cost: \u25C8 " + listing.price + " coins\nSold by: " + listing.sellerUsername + "\nYour balance: \u25C8 " + coins + " coins\n\nAfter purchase: \u25C8 " + (coins - listing.price) + " coins\n\nCoins will go to " + listing.sellerUsername + ".", 14))
                 .setPositiveButton("Buy", (dialog, which) -> purchaseMarketplaceItem(listing, template))
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -625,6 +637,7 @@ public class ShopTab extends ScrollView {
 
     private void updateBalance() {
         SaveManager sm = SaveManager.getInstance();
-        balanceText.setText("Your Coins: \u25C8 " + sm.getData().coins);
+        balanceText.setText(CoinIconHelper.withCoin(getContext(),
+                "Your Coins: \u25C8 " + sm.getData().coins, 16));
     }
 }
