@@ -1138,8 +1138,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
                 + "from your vault you want to bring into the game!\n\n"
                 + "Items can be freely moved back and forth between your vault and "
                 + "the loadout at any time to create the perfect loadout from your save file.\n\n"
-                + "Once the Amber Moon game launches, the items in your loadout will be "
-                + "waiting for you in your starting inventory.");
+                + "Items in your loadout will be made available to you at some point "
+                + "during your Amber Moon adventure.");
         infoText.setTextColor(Color.parseColor("#CCCCCC"));
         infoText.setTextSize(14);
         infoText.setLineSpacing(4, 1.0f);
