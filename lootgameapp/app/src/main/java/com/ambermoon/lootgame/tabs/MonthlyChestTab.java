@@ -25,6 +25,7 @@ public class MonthlyChestTab extends ScrollView {
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable timerTick;
     private ChestIconView chestView;
+    private TextView infoText;
 
     public MonthlyChestTab(Context context) {
         super(context);
@@ -53,13 +54,12 @@ public class MonthlyChestTab extends ScrollView {
         chestView.setLayoutParams(chestParams);
         content.addView(chestView);
 
-        TextView info = new TextView(context);
-        info.setText("\u25C8 500-2000 coins  |  \u2605 10 items  |  2.5x rarity boost");
-        info.setTextColor(Color.parseColor("#AAAACC"));
-        info.setTextSize(14);
-        info.setGravity(Gravity.CENTER);
-        info.setPadding(0, 0, 0, 24);
-        content.addView(info);
+        infoText = new TextView(context);
+        infoText.setTextColor(Color.parseColor("#AAAACC"));
+        infoText.setTextSize(14);
+        infoText.setGravity(Gravity.CENTER);
+        infoText.setPadding(0, 0, 0, 24);
+        content.addView(infoText);
 
         openButton = new Button(context);
         openButton.setText("OPEN CHEST");
@@ -88,8 +88,23 @@ public class MonthlyChestTab extends ScrollView {
         startTimer();
     }
 
+    private int getStreakBonusItems() {
+        SaveManager sm = SaveManager.getInstance();
+        return Math.min(sm.getData().consecutiveDays / 5, 15);
+    }
+
     private void updateUI() {
         SaveManager sm = SaveManager.getInstance();
+
+        // Update info text with streak bonus
+        int bonusItems = getStreakBonusItems();
+        if (bonusItems > 0) {
+            infoText.setText("\u25C8 500-2000 coins  |  \u2605 10 + " + bonusItems
+                    + " streak items  |  2.5x rarity boost");
+        } else {
+            infoText.setText("\u25C8 500-2000 coins  |  \u2605 10 items  |  2.5x rarity boost");
+        }
+
         if (sm.canOpenMonthlyChest()) {
             openButton.setEnabled(true);
             openButton.setBackgroundColor(Color.parseColor("#B464FF"));
@@ -135,11 +150,15 @@ public class MonthlyChestTab extends ScrollView {
 
         sm.recordMonthlyChestOpened();
 
-        List<Item> loot = LootTable.generateLoot(10, 2.5f);
+        // Calculate streak bonus items: +1 item per 5 consecutive days, max 15 bonus
+        int bonusItems = getStreakBonusItems();
+        int totalItems = 10 + bonusItems;
+
+        List<Item> loot = LootTable.generateLoot(totalItems, 2.5f);
         int coins = CoinReward.calculateMonthly();
         sm.addCoins(coins);
 
-        // Staggered item-drop haptics for all 10 items
+        // Staggered item-drop haptics for all items
         for (int idx = 0; idx < loot.size(); idx++) {
             handler.postDelayed(() -> HapticManager.getInstance().itemDrop(), 400 + idx * 120);
         }
@@ -175,6 +194,19 @@ public class MonthlyChestTab extends ScrollView {
         coinText.setPadding(0, 16, 0, 24);
         lootDisplay.addView(coinText);
 
+        // Streak bonus notification
+        if (bonusItems > 0) {
+            TextView streakText = new TextView(getContext());
+            streakText.setText("+" + bonusItems + " bonus item" + (bonusItems > 1 ? "s" : "")
+                    + " from " + sm.getData().consecutiveDays + "-day streak!");
+            streakText.setTextColor(Color.parseColor("#B464FF"));
+            streakText.setTextSize(14);
+            streakText.setTypeface(Typeface.DEFAULT_BOLD);
+            streakText.setGravity(Gravity.CENTER);
+            streakText.setPadding(0, 0, 0, 16);
+            lootDisplay.addView(streakText);
+        }
+
         // Background drop notification
         if (bgDrop != null) {
             LinearLayout bgCard = new LinearLayout(getContext());
@@ -204,8 +236,9 @@ public class MonthlyChestTab extends ScrollView {
             lootDisplay.addView(bgCard);
         }
 
-        // Display in 2 rows of 5 with item icon sprites
-        for (int row = 0; row < 2; row++) {
+        // Display items in rows of 5 with item icon sprites
+        int rows = (int) Math.ceil(loot.size() / 5.0);
+        for (int row = 0; row < rows; row++) {
             LinearLayout rowLayout = new LinearLayout(getContext());
             rowLayout.setOrientation(LinearLayout.HORIZONTAL);
             rowLayout.setGravity(Gravity.CENTER);
