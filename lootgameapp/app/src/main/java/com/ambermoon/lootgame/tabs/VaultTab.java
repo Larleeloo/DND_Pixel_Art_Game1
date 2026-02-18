@@ -30,14 +30,18 @@ public class VaultTab extends ScrollView implements TextWatcher {
     private String currentFilter = "All";
     private int currentSort = 0; // 0=rarity, 1=name, 2=count
 
-    // Sub-tab state: 0 = Items, 1 = Trading
+    // Sub-tab state: 0 = Items, 1 = Trading, 2 = Loadout
     private int currentSubTab = 0;
     private TextView itemsTabBtn;
     private TextView tradingTabBtn;
+    private TextView loadoutTabBtn;
 
     // Trading sub-tab views
     private LinearLayout tradingContent;
     private LinearLayout itemsContent;
+
+    // Loadout sub-tab views
+    private LinearLayout loadoutContent;
 
     public VaultTab(Context context) {
         super(context);
@@ -97,6 +101,16 @@ public class VaultTab extends ScrollView implements TextWatcher {
         tradingTabBtn.setLayoutParams(tabBtnParams);
         subTabRow.addView(tradingTabBtn);
 
+        loadoutTabBtn = new TextView(context);
+        loadoutTabBtn.setText("LOADOUT");
+        loadoutTabBtn.setTextSize(14);
+        loadoutTabBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        loadoutTabBtn.setGravity(Gravity.CENTER);
+        loadoutTabBtn.setPadding(32, 12, 32, 12);
+        loadoutTabBtn.setOnClickListener(v -> switchSubTab(2));
+        loadoutTabBtn.setLayoutParams(tabBtnParams);
+        subTabRow.addView(loadoutTabBtn);
+
         rootContent.addView(subTabRow);
 
         // Items sub-tab content container
@@ -110,6 +124,12 @@ public class VaultTab extends ScrollView implements TextWatcher {
         tradingContent.setOrientation(LinearLayout.VERTICAL);
         tradingContent.setVisibility(View.GONE);
         rootContent.addView(tradingContent);
+
+        // Loadout sub-tab content container (hidden initially)
+        loadoutContent = new LinearLayout(context);
+        loadoutContent.setOrientation(LinearLayout.VERTICAL);
+        loadoutContent.setVisibility(View.GONE);
+        rootContent.addView(loadoutContent);
 
         addView(rootContent);
         updateSubTabStyles();
@@ -156,29 +176,31 @@ public class VaultTab extends ScrollView implements TextWatcher {
     private void switchSubTab(int tab) {
         currentSubTab = tab;
         updateSubTabStyles();
+        itemsContent.setVisibility(tab == 0 ? View.VISIBLE : View.GONE);
+        tradingContent.setVisibility(tab == 1 ? View.VISIBLE : View.GONE);
+        loadoutContent.setVisibility(tab == 2 ? View.VISIBLE : View.GONE);
         if (tab == 0) {
-            itemsContent.setVisibility(View.VISIBLE);
-            tradingContent.setVisibility(View.GONE);
             refreshGrid();
-        } else {
-            itemsContent.setVisibility(View.GONE);
-            tradingContent.setVisibility(View.VISIBLE);
+        } else if (tab == 1) {
             refreshTrading();
+        } else {
+            refreshLoadout();
         }
     }
 
     private void updateSubTabStyles() {
-        if (currentSubTab == 0) {
-            itemsTabBtn.setTextColor(Color.parseColor("#FFD700"));
-            itemsTabBtn.setBackgroundColor(Color.parseColor("#28233A"));
-            tradingTabBtn.setTextColor(Color.parseColor("#888888"));
-            tradingTabBtn.setBackgroundColor(Color.TRANSPARENT);
-        } else {
-            itemsTabBtn.setTextColor(Color.parseColor("#888888"));
-            itemsTabBtn.setBackgroundColor(Color.TRANSPARENT);
-            tradingTabBtn.setTextColor(Color.parseColor("#FFD700"));
-            tradingTabBtn.setBackgroundColor(Color.parseColor("#28233A"));
-        }
+        // Reset all to inactive
+        itemsTabBtn.setTextColor(Color.parseColor("#888888"));
+        itemsTabBtn.setBackgroundColor(Color.TRANSPARENT);
+        tradingTabBtn.setTextColor(Color.parseColor("#888888"));
+        tradingTabBtn.setBackgroundColor(Color.TRANSPARENT);
+        loadoutTabBtn.setTextColor(Color.parseColor("#888888"));
+        loadoutTabBtn.setBackgroundColor(Color.TRANSPARENT);
+
+        // Highlight active tab
+        TextView activeBtn = currentSubTab == 0 ? itemsTabBtn : currentSubTab == 1 ? tradingTabBtn : loadoutTabBtn;
+        activeBtn.setTextColor(Color.parseColor("#FFD700"));
+        activeBtn.setBackgroundColor(Color.parseColor("#28233A"));
     }
 
     // ==================== ITEMS SUB-TAB ====================
@@ -867,5 +889,462 @@ public class VaultTab extends ScrollView implements TextWatcher {
                 })
                 .setNegativeButton("Keep Listed", null)
                 .show();
+    }
+
+    // ==================== LOADOUT SUB-TAB ====================
+
+    private void refreshLoadout() {
+        loadoutContent.removeAllViews();
+        Context ctx = getContext();
+        SaveManager sm = SaveManager.getInstance();
+
+        // --- Header row with title + info button ---
+        FrameLayout headerFrame = new FrameLayout(ctx);
+        LinearLayout.LayoutParams headerFrameParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        headerFrameParams.setMargins(0, 0, 0, 8);
+        headerFrame.setLayoutParams(headerFrameParams);
+
+        TextView loadoutTitle = new TextView(ctx);
+        loadoutTitle.setText("AMBER MOON LOADOUT");
+        loadoutTitle.setTextColor(Color.parseColor("#FFD700"));
+        loadoutTitle.setTextSize(16);
+        loadoutTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        loadoutTitle.setGravity(Gravity.CENTER);
+        FrameLayout.LayoutParams titleParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        titleParams.gravity = Gravity.CENTER;
+        loadoutTitle.setLayoutParams(titleParams);
+        headerFrame.addView(loadoutTitle);
+
+        // Info "i" button in top right
+        TextView infoBtn = new TextView(ctx);
+        infoBtn.setText("i");
+        infoBtn.setTextColor(Color.WHITE);
+        infoBtn.setTextSize(14);
+        infoBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        infoBtn.setGravity(Gravity.CENTER);
+        int infoBtnSize = 36;
+        FrameLayout.LayoutParams infoBtnParams = new FrameLayout.LayoutParams(infoBtnSize, infoBtnSize);
+        infoBtnParams.gravity = Gravity.END | Gravity.TOP;
+        infoBtnParams.setMargins(0, 0, 4, 0);
+        infoBtn.setLayoutParams(infoBtnParams);
+        infoBtn.setBackgroundColor(Color.parseColor("#3C3555"));
+        infoBtn.setOnClickListener(v -> showLoadoutInfo());
+        headerFrame.addView(infoBtn);
+
+        loadoutContent.addView(headerFrame);
+
+        // Slot counter
+        int usedSlots = sm.getLoadoutSlotCount();
+        TextView slotCounter = new TextView(ctx);
+        slotCounter.setText(usedSlots + " / " + SaveManager.MAX_LOADOUT_SLOTS + " slots used");
+        slotCounter.setTextColor(usedSlots >= SaveManager.MAX_LOADOUT_SLOTS ?
+                Color.parseColor("#FF4444") : Color.parseColor("#AAAACC"));
+        slotCounter.setTextSize(13);
+        slotCounter.setGravity(Gravity.CENTER);
+        slotCounter.setPadding(0, 0, 0, 12);
+        loadoutContent.addView(slotCounter);
+
+        // --- Loadout Grid (5 columns x 5 rows = 25 slots) ---
+        List<SaveData.VaultItem> loadoutItems = sm.getData().loadoutItems;
+        for (int row = 0; row < 5; row++) {
+            LinearLayout rowLayout = new LinearLayout(ctx);
+            rowLayout.setOrientation(LinearLayout.HORIZONTAL);
+            rowLayout.setPadding(0, 2, 0, 2);
+            rowLayout.setGravity(Gravity.CENTER);
+
+            for (int col = 0; col < 5; col++) {
+                int slotIndex = row * 5 + col;
+
+                LinearLayout cell = new LinearLayout(ctx);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setGravity(Gravity.CENTER);
+                cell.setPadding(4, 4, 4, 4);
+                LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+                cellParams.setMargins(2, 0, 2, 0);
+                cell.setLayoutParams(cellParams);
+
+                if (slotIndex < loadoutItems.size()) {
+                    // Filled slot
+                    SaveData.VaultItem loadoutItem = loadoutItems.get(slotIndex);
+                    Item template = ItemRegistry.getTemplate(loadoutItem.itemId);
+                    cell.setBackgroundColor(Color.parseColor("#28233A"));
+
+                    if (template != null) {
+                        View iconView = new ItemIconView(ctx, template);
+                        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(72, 72);
+                        iconParams.gravity = Gravity.CENTER;
+                        iconView.setLayoutParams(iconParams);
+                        cell.addView(iconView);
+
+                        // Slot number label
+                        TextView slotLabel = new TextView(ctx);
+                        slotLabel.setText(String.valueOf(slotIndex + 1));
+                        slotLabel.setTextColor(Item.getRarityColor(template.getRarity().ordinal()));
+                        slotLabel.setTextSize(8);
+                        slotLabel.setGravity(Gravity.CENTER);
+                        cell.addView(slotLabel);
+                    }
+
+                    final int idx = slotIndex;
+                    cell.setOnClickListener(v -> showRemoveFromLoadoutDialog(idx));
+                } else {
+                    // Empty slot
+                    cell.setBackgroundColor(Color.parseColor("#1A1525"));
+
+                    // Empty slot icon (dashed border look)
+                    TextView emptyIcon = new TextView(ctx);
+                    emptyIcon.setText("-");
+                    emptyIcon.setTextColor(Color.parseColor("#3C3555"));
+                    emptyIcon.setTextSize(24);
+                    emptyIcon.setGravity(Gravity.CENTER);
+                    LinearLayout.LayoutParams emptyParams = new LinearLayout.LayoutParams(72, 72);
+                    emptyParams.gravity = Gravity.CENTER;
+                    emptyIcon.setLayoutParams(emptyParams);
+                    cell.addView(emptyIcon);
+
+                    // Slot number label
+                    TextView slotLabel = new TextView(ctx);
+                    slotLabel.setText(String.valueOf(slotIndex + 1));
+                    slotLabel.setTextColor(Color.parseColor("#3C3555"));
+                    slotLabel.setTextSize(8);
+                    slotLabel.setGravity(Gravity.CENTER);
+                    cell.addView(slotLabel);
+                }
+
+                rowLayout.addView(cell);
+            }
+
+            loadoutContent.addView(rowLayout);
+        }
+
+        // --- Spacer ---
+        View spacer = new View(ctx);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 20));
+        loadoutContent.addView(spacer);
+
+        // --- Add from Vault section ---
+        TextView addHeader = new TextView(ctx);
+        addHeader.setText("ADD FROM VAULT");
+        addHeader.setTextColor(Color.WHITE);
+        addHeader.setTextSize(15);
+        addHeader.setTypeface(Typeface.DEFAULT_BOLD);
+        addHeader.setGravity(Gravity.CENTER);
+        addHeader.setPadding(0, 8, 0, 4);
+        loadoutContent.addView(addHeader);
+
+        TextView addSubtitle = new TextView(ctx);
+        addSubtitle.setText("Tap an item to add it to your loadout");
+        addSubtitle.setTextColor(Color.parseColor("#AAAACC"));
+        addSubtitle.setTextSize(11);
+        addSubtitle.setGravity(Gravity.CENTER);
+        addSubtitle.setPadding(0, 0, 0, 8);
+        loadoutContent.addView(addSubtitle);
+
+        // Show vault items in 4-column grid
+        List<SaveData.VaultItem> vaultItems = sm.getData().vaultItems;
+        if (vaultItems.isEmpty()) {
+            TextView empty = new TextView(ctx);
+            empty.setText("No items in vault to add.");
+            empty.setTextColor(Color.parseColor("#888888"));
+            empty.setTextSize(13);
+            empty.setGravity(Gravity.CENTER);
+            empty.setPadding(0, 24, 0, 0);
+            loadoutContent.addView(empty);
+        } else {
+            LinearLayout currentRow = null;
+            int col = 0;
+            for (SaveData.VaultItem vi : vaultItems) {
+                if (col % 4 == 0) {
+                    currentRow = new LinearLayout(ctx);
+                    currentRow.setOrientation(LinearLayout.HORIZONTAL);
+                    currentRow.setPadding(0, 4, 0, 4);
+                    loadoutContent.addView(currentRow);
+                    col = 0;
+                }
+
+                Item template = ItemRegistry.getTemplate(vi.itemId);
+
+                LinearLayout cell = new LinearLayout(ctx);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setGravity(Gravity.CENTER);
+                cell.setBackgroundColor(Color.parseColor("#28233A"));
+                cell.setPadding(4, 4, 4, 4);
+                LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+                cellParams.setMargins(2, 0, 2, 0);
+                cell.setLayoutParams(cellParams);
+
+                if (template != null) {
+                    View iconView = new ItemIconView(ctx, template);
+                    LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+                    iconParams.gravity = Gravity.CENTER;
+                    iconView.setLayoutParams(iconParams);
+                    cell.addView(iconView);
+                }
+
+                TextView countView = new TextView(ctx);
+                countView.setText("x" + vi.stackCount);
+                countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+                countView.setTextSize(9);
+                countView.setGravity(Gravity.CENTER);
+                countView.setPadding(0, 2, 0, 0);
+                cell.addView(countView);
+
+                final String id = vi.itemId;
+                cell.setOnClickListener(v -> showAddToLoadoutDialog(id));
+                currentRow.addView(cell);
+                col++;
+            }
+            if (currentRow != null) {
+                while (col % 4 != 0) {
+                    View filler = new View(ctx);
+                    filler.setLayoutParams(new LinearLayout.LayoutParams(0, 1, 1.0f));
+                    currentRow.addView(filler);
+                    col++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Show the info dialog explaining what the loadout does.
+     */
+    private void showLoadoutInfo() {
+        Context ctx = getContext();
+
+        LinearLayout dialogContent = new LinearLayout(ctx);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setBackgroundColor(Color.parseColor("#1E1830"));
+        dialogContent.setPadding(48, 32, 48, 32);
+
+        TextView infoTitle = new TextView(ctx);
+        infoTitle.setText("Amber Moon Loadout");
+        infoTitle.setTextColor(Color.parseColor("#FFD700"));
+        infoTitle.setTextSize(18);
+        infoTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        infoTitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = 16;
+        infoTitle.setLayoutParams(titleParams);
+        dialogContent.addView(infoTitle);
+
+        TextView infoText = new TextView(ctx);
+        infoText.setText("The loadout is your personal selection of items that will be "
+                + "transferred to the official Amber Moon game.\n\n"
+                + "You have 25 inventory slots available. Choose carefully which items "
+                + "from your vault you want to bring into the game!\n\n"
+                + "Items can be freely moved back and forth between your vault and "
+                + "the loadout at any time to create the perfect loadout from your save file.\n\n"
+                + "Once the Amber Moon game launches, the items in your loadout will be "
+                + "waiting for you in your starting inventory.");
+        infoText.setTextColor(Color.parseColor("#CCCCCC"));
+        infoText.setTextSize(14);
+        infoText.setLineSpacing(4, 1.0f);
+        dialogContent.addView(infoText);
+
+        ScrollView dialogScroll = new ScrollView(ctx);
+        dialogScroll.addView(dialogContent);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(dialogScroll)
+                .setPositiveButton("Got it", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1E1830")));
+        }
+        dialog.show();
+    }
+
+    /**
+     * Show dialog to confirm adding an item from vault to loadout.
+     */
+    private void showAddToLoadoutDialog(String itemId) {
+        SaveManager sm = SaveManager.getInstance();
+
+        if (sm.getLoadoutSlotCount() >= SaveManager.MAX_LOADOUT_SLOTS) {
+            Toast.makeText(getContext(), "Loadout is full! (" + SaveManager.MAX_LOADOUT_SLOTS + "/" + SaveManager.MAX_LOADOUT_SLOTS + " slots)", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Item template = ItemRegistry.getTemplate(itemId);
+        if (template == null) return;
+
+        Context ctx = getContext();
+        int rarityColor = Item.getRarityColor(template.getRarity().ordinal());
+
+        LinearLayout dialogContent = new LinearLayout(ctx);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setGravity(Gravity.CENTER_HORIZONTAL);
+        dialogContent.setBackgroundColor(Color.parseColor("#1E1830"));
+        dialogContent.setPadding(48, 32, 48, 32);
+
+        TextView nameView = new TextView(ctx);
+        nameView.setText("Add to Loadout?");
+        nameView.setTextColor(Color.WHITE);
+        nameView.setTextSize(18);
+        nameView.setTypeface(Typeface.DEFAULT_BOLD);
+        nameView.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        nameParams.bottomMargin = 16;
+        nameView.setLayoutParams(nameParams);
+        dialogContent.addView(nameView);
+
+        // Item icon
+        View iconView = new ItemIconView(ctx, template);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(96, 96);
+        iconParams.gravity = Gravity.CENTER;
+        iconParams.bottomMargin = 12;
+        iconView.setLayoutParams(iconParams);
+        dialogContent.addView(iconView);
+
+        // Item name with rarity color
+        TextView itemNameView = new TextView(ctx);
+        itemNameView.setText(template.getName());
+        itemNameView.setTextColor(rarityColor);
+        itemNameView.setTextSize(16);
+        itemNameView.setTypeface(Typeface.DEFAULT_BOLD);
+        itemNameView.setGravity(Gravity.CENTER);
+        itemNameView.setPadding(0, 0, 0, 8);
+        dialogContent.addView(itemNameView);
+
+        // Vault count
+        int owned = sm.getVaultItemCount(itemId);
+        TextView ownedView = new TextView(ctx);
+        ownedView.setText("In vault: x" + owned);
+        ownedView.setTextColor(Color.parseColor("#AAAACC"));
+        ownedView.setTextSize(12);
+        ownedView.setGravity(Gravity.CENTER);
+        dialogContent.addView(ownedView);
+
+        // Loadout slots remaining
+        int slotsRemaining = SaveManager.MAX_LOADOUT_SLOTS - sm.getLoadoutSlotCount();
+        TextView slotsView = new TextView(ctx);
+        slotsView.setText("Loadout slots available: " + slotsRemaining);
+        slotsView.setTextColor(Color.parseColor("#AAAACC"));
+        slotsView.setTextSize(12);
+        slotsView.setGravity(Gravity.CENTER);
+        slotsView.setPadding(0, 4, 0, 12);
+        dialogContent.addView(slotsView);
+
+        // Info text
+        TextView infoText = new TextView(ctx);
+        infoText.setText("This will move 1 item from your vault\nto your Amber Moon loadout.");
+        infoText.setTextColor(Color.parseColor("#888899"));
+        infoText.setTextSize(11);
+        infoText.setGravity(Gravity.CENTER);
+        dialogContent.addView(infoText);
+
+        ScrollView dialogScroll = new ScrollView(ctx);
+        dialogScroll.addView(dialogContent);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(dialogScroll)
+                .setPositiveButton("Add to Loadout", (d, which) -> {
+                    if (sm.moveToLoadout(itemId)) {
+                        Toast.makeText(ctx, template.getName() + " added to loadout!", Toast.LENGTH_SHORT).show();
+                        refreshLoadout();
+                    } else {
+                        Toast.makeText(ctx, "Failed to add item", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1E1830")));
+        }
+        dialog.show();
+    }
+
+    /**
+     * Show dialog to confirm removing an item from loadout back to vault.
+     */
+    private void showRemoveFromLoadoutDialog(int slotIndex) {
+        SaveManager sm = SaveManager.getInstance();
+        List<SaveData.VaultItem> loadoutItems = sm.getData().loadoutItems;
+        if (slotIndex < 0 || slotIndex >= loadoutItems.size()) return;
+
+        SaveData.VaultItem loadoutItem = loadoutItems.get(slotIndex);
+        Item template = ItemRegistry.getTemplate(loadoutItem.itemId);
+        if (template == null) return;
+
+        Context ctx = getContext();
+        int rarityColor = Item.getRarityColor(template.getRarity().ordinal());
+
+        LinearLayout dialogContent = new LinearLayout(ctx);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setGravity(Gravity.CENTER_HORIZONTAL);
+        dialogContent.setBackgroundColor(Color.parseColor("#1E1830"));
+        dialogContent.setPadding(48, 32, 48, 32);
+
+        TextView nameView = new TextView(ctx);
+        nameView.setText("Remove from Loadout?");
+        nameView.setTextColor(Color.WHITE);
+        nameView.setTextSize(18);
+        nameView.setTypeface(Typeface.DEFAULT_BOLD);
+        nameView.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        nameParams.bottomMargin = 16;
+        nameView.setLayoutParams(nameParams);
+        dialogContent.addView(nameView);
+
+        // Item icon
+        View iconView = new ItemIconView(ctx, template);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(96, 96);
+        iconParams.gravity = Gravity.CENTER;
+        iconParams.bottomMargin = 12;
+        iconView.setLayoutParams(iconParams);
+        dialogContent.addView(iconView);
+
+        // Item name with rarity color
+        TextView itemNameView = new TextView(ctx);
+        itemNameView.setText(template.getName());
+        itemNameView.setTextColor(rarityColor);
+        itemNameView.setTextSize(16);
+        itemNameView.setTypeface(Typeface.DEFAULT_BOLD);
+        itemNameView.setGravity(Gravity.CENTER);
+        itemNameView.setPadding(0, 0, 0, 8);
+        dialogContent.addView(itemNameView);
+
+        // Slot info
+        TextView slotInfo = new TextView(ctx);
+        slotInfo.setText("Slot #" + (slotIndex + 1));
+        slotInfo.setTextColor(Color.parseColor("#AAAACC"));
+        slotInfo.setTextSize(12);
+        slotInfo.setGravity(Gravity.CENTER);
+        slotInfo.setPadding(0, 0, 0, 12);
+        dialogContent.addView(slotInfo);
+
+        // Info text
+        TextView infoText = new TextView(ctx);
+        infoText.setText("This will move the item back to your vault\nand free up a loadout slot.");
+        infoText.setTextColor(Color.parseColor("#888899"));
+        infoText.setTextSize(11);
+        infoText.setGravity(Gravity.CENTER);
+        dialogContent.addView(infoText);
+
+        ScrollView dialogScroll = new ScrollView(ctx);
+        dialogScroll.addView(dialogContent);
+
+        AlertDialog dialog = new AlertDialog.Builder(ctx)
+                .setView(dialogScroll)
+                .setPositiveButton("Return to Vault", (d, which) -> {
+                    if (sm.moveFromLoadout(slotIndex)) {
+                        Toast.makeText(ctx, template.getName() + " returned to vault", Toast.LENGTH_SHORT).show();
+                        refreshLoadout();
+                    } else {
+                        Toast.makeText(ctx, "Failed to remove item", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Keep in Loadout", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1E1830")));
+        }
+        dialog.show();
     }
 }

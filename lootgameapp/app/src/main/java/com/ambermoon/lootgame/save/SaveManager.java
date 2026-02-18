@@ -154,6 +154,58 @@ public class SaveManager {
         return 0;
     }
 
+    // --- Loadout operations (25-slot inventory for Amber Moon transfer) ---
+
+    public static final int MAX_LOADOUT_SLOTS = 25;
+
+    public int getLoadoutSlotCount() {
+        return data.loadoutItems.size();
+    }
+
+    public int getLoadoutItemCount(String itemId) {
+        for (SaveData.VaultItem vi : data.loadoutItems) {
+            if (vi.itemId.equals(itemId)) return vi.stackCount;
+        }
+        return 0;
+    }
+
+    /**
+     * Move one item from vault to loadout.
+     * Each item in loadout occupies one slot (no stacking). Max 25 slots.
+     */
+    public boolean moveToLoadout(String itemId) {
+        if (data.loadoutItems.size() >= MAX_LOADOUT_SLOTS) return false;
+        if (!removeVaultItem(itemId, 1)) return false;
+        // Each item in loadout is a separate single-count entry (one per slot)
+        data.loadoutItems.add(new SaveData.VaultItem(itemId, 1));
+        save();
+        return true;
+    }
+
+    /**
+     * Move one item from loadout back to vault.
+     * Removes by index since loadout slots are positional.
+     */
+    public boolean moveFromLoadout(int slotIndex) {
+        if (slotIndex < 0 || slotIndex >= data.loadoutItems.size()) return false;
+        SaveData.VaultItem removed = data.loadoutItems.remove(slotIndex);
+        addVaultItem(removed.itemId, 1);
+        save();
+        return true;
+    }
+
+    /**
+     * Move one item from loadout back to vault by item ID (removes first match).
+     */
+    public boolean moveFromLoadoutByItemId(String itemId) {
+        for (int i = 0; i < data.loadoutItems.size(); i++) {
+            if (data.loadoutItems.get(i).itemId.equals(itemId)) {
+                return moveFromLoadout(i);
+            }
+        }
+        return false;
+    }
+
     public void addLearnedRecipe(String id, String name, java.util.List<String> ingredients, String result, int resultCount) {
         if (id == null || id.isEmpty()) return;
         for (SaveData.LearnedRecipe lr : data.learnedRecipes) {
@@ -269,6 +321,15 @@ public class SaveManager {
         }
         sb.append("],\n");
         sb.append("  \"pendingTradeCoins\": ").append(d.pendingTradeCoins).append(",\n");
+        // Loadout items
+        sb.append("  \"loadoutItems\": [\n");
+        for (int i = 0; i < d.loadoutItems.size(); i++) {
+            SaveData.VaultItem li = d.loadoutItems.get(i);
+            sb.append("    {\"itemId\": \"").append(li.itemId).append("\", \"stackCount\": ").append(li.stackCount).append("}");
+            if (i < d.loadoutItems.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
         sb.append("  \"selectedBackgroundId\": \"").append(d.selectedBackgroundId).append("\",\n");
         sb.append("  \"unlockedBackgrounds\": [");
         for (int i = 0; i < d.unlockedBackgrounds.size(); i++) {
@@ -414,6 +475,29 @@ public class SaveManager {
         }
 
         d.pendingTradeCoins = extractInt(json, "pendingTradeCoins", 0);
+
+        // Parse loadout items array
+        int loadoutStart = json.indexOf("\"loadoutItems\"");
+        if (loadoutStart != -1) {
+            int loadoutArrStart = json.indexOf('[', loadoutStart);
+            int loadoutArrEnd = json.indexOf(']', loadoutArrStart);
+            if (loadoutArrStart != -1 && loadoutArrEnd != -1) {
+                String loadoutArr = json.substring(loadoutArrStart + 1, loadoutArrEnd);
+                int loadoutObjStart = 0;
+                while ((loadoutObjStart = loadoutArr.indexOf('{', loadoutObjStart)) != -1) {
+                    int loadoutObjEnd = loadoutArr.indexOf('}', loadoutObjStart);
+                    if (loadoutObjEnd == -1) break;
+                    String obj = loadoutArr.substring(loadoutObjStart, loadoutObjEnd + 1);
+                    String itemId = extractString(obj, "itemId", "");
+                    int count = extractInt(obj, "stackCount", 1);
+                    if (!itemId.isEmpty()) {
+                        d.loadoutItems.add(new SaveData.VaultItem(itemId, count));
+                    }
+                    loadoutObjStart = loadoutObjEnd + 1;
+                }
+            }
+        }
+
         d.selectedBackgroundId = extractString(json, "selectedBackgroundId", "none");
 
         // Parse unlocked backgrounds array

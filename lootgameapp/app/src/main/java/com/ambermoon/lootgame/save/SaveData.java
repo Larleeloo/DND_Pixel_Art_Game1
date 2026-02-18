@@ -55,6 +55,9 @@ public class SaveData {
     // Coins earned from marketplace sales that haven't been collected yet
     public int pendingTradeCoins = 0;
 
+    // Loadout: items reserved for the Amber Moon game (max 25 slots)
+    public List<VaultItem> loadoutItems = new ArrayList<>();
+
     // Cosmetics
     public String selectedBackgroundId = "none";
     public List<String> unlockedBackgrounds = new ArrayList<>();
