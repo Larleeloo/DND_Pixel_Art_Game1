@@ -16,6 +16,7 @@ import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.Item;
 import com.ambermoon.lootgame.entity.ItemRegistry;
 import com.ambermoon.lootgame.graphics.AssetLoader;
+import com.ambermoon.lootgame.graphics.CoinIconHelper;
 import com.ambermoon.lootgame.save.SaveData;
 import com.ambermoon.lootgame.save.SaveManager;
 
@@ -618,7 +619,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
         nameCol.addView(nameText);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText("\u25C8 " + listing.price + " coins");
+        priceText.setText(CoinIconHelper.withCoin(ctx,
+                "\u25C8 " + listing.price + " coins", 12));
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(12);
         nameCol.addView(priceText);
@@ -772,7 +774,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
                         return;
                     }
                     if (sm.listItemForSale(itemId, price)) {
-                        Toast.makeText(ctx, template.getName() + " listed for \u25C8 " + price + "!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ctx, CoinIconHelper.withCoin(ctx,
+                                template.getName() + " listed for \u25C8 " + price + "!", 14), Toast.LENGTH_SHORT).show();
                         refreshTrading();
                         if (ctx instanceof TabActivity) {
                             ((TabActivity) ctx).updateCoinDisplay();
@@ -813,7 +816,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
         dialogContent.addView(title);
 
         TextView currentPriceView = new TextView(ctx);
-        currentPriceView.setText("Current price: \u25C8 " + listing.price);
+        currentPriceView.setText(CoinIconHelper.withCoin(ctx,
+                "Current price: \u25C8 " + listing.price, 14));
         currentPriceView.setTextColor(Color.parseColor("#FFD700"));
         currentPriceView.setTextSize(14);
         currentPriceView.setGravity(Gravity.CENTER);
@@ -853,7 +857,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     }
                     SaveManager sm = SaveManager.getInstance();
                     if (sm.updateListingPrice(listing.itemId, listing.listTimestamp, newPrice)) {
-                        Toast.makeText(ctx, "Price updated to \u25C8 " + newPrice, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ctx, CoinIconHelper.withCoin(ctx,
+                                "Price updated to \u25C8 " + newPrice, 14), Toast.LENGTH_SHORT).show();
                         refreshTrading();
                     } else {
                         Toast.makeText(ctx, "Failed to update price", Toast.LENGTH_SHORT).show();
@@ -877,7 +882,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
 
         new AlertDialog.Builder(ctx)
                 .setTitle("Cancel Listing?")
-                .setMessage("Remove " + itemName + " from the shop and return it to your vault?\n\nCurrent price: \u25C8 " + listing.price)
+                .setMessage(CoinIconHelper.withCoin(ctx,
+                        "Remove " + itemName + " from the shop and return it to your vault?\n\nCurrent price: \u25C8 " + listing.price, 14))
                 .setPositiveButton("Cancel Listing", (d, which) -> {
                     SaveManager sm = SaveManager.getInstance();
                     if (sm.cancelListing(listing.itemId, listing.listTimestamp)) {

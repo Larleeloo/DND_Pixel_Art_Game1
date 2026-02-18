@@ -10,6 +10,7 @@ import android.widget.*;
 
 import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
+import com.ambermoon.lootgame.graphics.CoinIconHelper;
 import com.ambermoon.lootgame.save.SaveManager;
 
 import java.security.SecureRandom;
@@ -86,7 +87,8 @@ public class SlotMachineTab extends ScrollView {
 
         // Pull button
         pullButton = new Button(context);
-        pullButton.setText("PULL  (\u25C8 " + COST_PER_PULL + ")");
+        pullButton.setText(CoinIconHelper.withCoin(context,
+                "PULL  (\u25C8 " + COST_PER_PULL + ")", 18));
         pullButton.setTextColor(Color.WHITE);
         pullButton.setTextSize(18);
         pullButton.setTypeface(Typeface.DEFAULT_BOLD);
@@ -105,14 +107,16 @@ public class SlotMachineTab extends ScrollView {
 
         for (int i = SYMBOLS.length - 1; i >= 0; i--) {
             TextView payLine = new TextView(context);
-            payLine.setText("3x " + SYMBOLS[i] + " = \u25C8 " + TRIPLE_PAYOUTS[i]);
+            payLine.setText(CoinIconHelper.withCoin(context,
+                    "3x " + SYMBOLS[i] + " = \u25C8 " + TRIPLE_PAYOUTS[i], 13));
             payLine.setTextColor(SYMBOL_COLORS[i]);
             payLine.setTextSize(13);
             payLine.setGravity(Gravity.CENTER);
             content.addView(payLine);
         }
         TextView doublePay = new TextView(context);
-        doublePay.setText("Any 2 match = \u25C8 " + DOUBLE_PAYOUT);
+        doublePay.setText(CoinIconHelper.withCoin(context,
+                "Any 2 match = \u25C8 " + DOUBLE_PAYOUT, 13));
         doublePay.setTextColor(Color.parseColor("#888888"));
         doublePay.setTextSize(13);
         doublePay.setGravity(Gravity.CENTER);
@@ -136,7 +140,8 @@ public class SlotMachineTab extends ScrollView {
 
     private void updateBalance() {
         SaveManager sm = SaveManager.getInstance();
-        balanceText.setText("Your Coins: \u25C8 " + sm.getData().coins);
+        balanceText.setText(CoinIconHelper.withCoin(getContext(),
+                "Your Coins: \u25C8 " + sm.getData().coins, 16));
         pullButton.setEnabled(!spinning && sm.getData().coins >= COST_PER_PULL);
         pullButton.setBackgroundColor(
             sm.getData().coins >= COST_PER_PULL && !spinning ? Color.parseColor("#FFD700") : Color.parseColor("#444444"));
@@ -190,7 +195,8 @@ public class SlotMachineTab extends ScrollView {
 
             String histEntry = SYMBOLS[results[0]] + " | " + SYMBOLS[results[1]] + " | " + SYMBOLS[results[2]];
             if (payout > 0) {
-                resultText.setText("WIN! \u25C8 +" + payout);
+                resultText.setText(CoinIconHelper.withCoin(getContext(),
+                        "WIN! \u25C8 +" + payout, 18));
                 resultText.setTextColor(Color.parseColor("#44FF44"));
                 histEntry += " = \u25C8 " + payout;
 
@@ -243,7 +249,7 @@ public class SlotMachineTab extends ScrollView {
         historyLayout.removeAllViews();
         for (String entry : history) {
             TextView tv = new TextView(getContext());
-            tv.setText(entry);
+            tv.setText(CoinIconHelper.withCoin(getContext(), entry, 12));
             tv.setTextColor(entry.contains("= 0") ? Color.parseColor("#666666") : Color.parseColor("#44FF44"));
             tv.setTextSize(12);
             tv.setGravity(Gravity.CENTER);

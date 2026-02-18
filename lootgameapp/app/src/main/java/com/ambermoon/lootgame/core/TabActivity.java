@@ -9,6 +9,7 @@ import android.widget.*;
 import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.graphics.AssetLoader;
 import com.ambermoon.lootgame.graphics.BackgroundRegistry;
+import com.ambermoon.lootgame.graphics.CoinIconHelper;
 import com.ambermoon.lootgame.save.SaveManager;
 import com.ambermoon.lootgame.tabs.*;
 
@@ -211,7 +212,8 @@ public class TabActivity extends Activity {
 
     public void updateCoinDisplay() {
         if (coinDisplay != null && SaveManager.getInstance() != null) {
-            coinDisplay.setText("\u25C8 " + SaveManager.getInstance().getData().coins + " coins");
+            coinDisplay.setText(CoinIconHelper.withCoin(this,
+                    "\u25C8 " + SaveManager.getInstance().getData().coins + " coins", 18));
         }
     }
 

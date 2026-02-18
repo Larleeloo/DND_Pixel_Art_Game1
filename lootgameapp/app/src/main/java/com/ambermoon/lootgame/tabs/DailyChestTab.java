@@ -12,6 +12,7 @@ import com.ambermoon.lootgame.audio.HapticManager;
 import com.ambermoon.lootgame.core.TabActivity;
 import com.ambermoon.lootgame.entity.*;
 import com.ambermoon.lootgame.graphics.BackgroundRegistry;
+import com.ambermoon.lootgame.graphics.CoinIconHelper;
 import com.ambermoon.lootgame.save.SaveManager;
 
 import java.util.ArrayList;
@@ -57,7 +58,8 @@ public class DailyChestTab extends ScrollView {
 
         // Info
         TextView info = new TextView(context);
-        info.setText("\u25C8 50-250 coins  |  \u2605 3 items");
+        info.setText(CoinIconHelper.withCoin(context,
+                "\u25C8 50-250 coins  |  \u2605 3 items", 14));
         info.setTextColor(Color.parseColor("#AAAACC"));
         info.setTextSize(14);
         info.setGravity(Gravity.CENTER);
@@ -191,7 +193,8 @@ public class DailyChestTab extends ScrollView {
 
         // Coin reward
         TextView coinText = new TextView(getContext());
-        coinText.setText("\u25C8 +" + coins + " coins");
+        coinText.setText(CoinIconHelper.withCoin(getContext(),
+                "\u25C8 +" + coins + " coins", 20));
         coinText.setTextColor(Color.parseColor("#FFD700"));
         coinText.setTextSize(20);
         coinText.setTypeface(Typeface.DEFAULT_BOLD);
