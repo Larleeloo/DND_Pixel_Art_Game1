@@ -235,8 +235,8 @@ public class ShopTab extends ScrollView {
         buyCol.setGravity(Gravity.CENTER);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText(CoinIconHelper.withCoin(ctx,
-                "\u25C8 " + shopItem.price, 14));
+        CoinIconHelper.setCoinText(priceText,
+                "\u25C8 " + shopItem.price, 14);
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(14);
         priceText.setGravity(Gravity.CENTER);
@@ -312,8 +312,8 @@ public class ShopTab extends ScrollView {
         buyCol.setGravity(Gravity.CENTER);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText(CoinIconHelper.withCoin(ctx,
-                "\u25C8 " + listing.price, 14));
+        CoinIconHelper.setCoinText(priceText,
+                "\u25C8 " + listing.price, 14);
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(14);
         priceText.setGravity(Gravity.CENTER);
@@ -406,8 +406,8 @@ public class ShopTab extends ScrollView {
 
         // Price
         TextView priceView = new TextView(ctx);
-        priceView.setText(CoinIconHelper.withCoin(ctx,
-                "\nPrice: \u25C8 " + shopItem.price + " coins", 16));
+        CoinIconHelper.setCoinText(priceView,
+                "\nPrice: \u25C8 " + shopItem.price + " coins", 16);
         priceView.setTextColor(Color.parseColor("#FFD700"));
         priceView.setTextSize(16);
         priceView.setGravity(Gravity.CENTER);
@@ -507,8 +507,8 @@ public class ShopTab extends ScrollView {
 
         // Price
         TextView priceView = new TextView(ctx);
-        priceView.setText(CoinIconHelper.withCoin(ctx,
-                "\nPrice: \u25C8 " + listing.price + " coins", 16));
+        CoinIconHelper.setCoinText(priceView,
+                "\nPrice: \u25C8 " + listing.price + " coins", 16);
         priceView.setTextColor(Color.parseColor("#FFD700"));
         priceView.setTextSize(16);
         priceView.setGravity(Gravity.CENTER);
@@ -637,7 +637,7 @@ public class ShopTab extends ScrollView {
 
     private void updateBalance() {
         SaveManager sm = SaveManager.getInstance();
-        balanceText.setText(CoinIconHelper.withCoin(getContext(),
-                "Your Coins: \u25C8 " + sm.getData().coins, 16));
+        CoinIconHelper.setCoinText(balanceText,
+                "Your Coins: \u25C8 " + sm.getData().coins, 16);
     }
 }

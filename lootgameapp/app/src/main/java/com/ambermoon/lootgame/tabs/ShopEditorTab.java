@@ -225,8 +225,8 @@ public class ShopEditorTab extends ScrollView implements TextWatcher {
         // Price / status badge
         if (inShop) {
             TextView priceTag = new TextView(ctx);
-            priceTag.setText(CoinIconHelper.withCoin(ctx,
-                    "\u25C8 " + shopPrices.get(itemId), 13));
+            CoinIconHelper.setCoinText(priceTag,
+                    "\u25C8 " + shopPrices.get(itemId), 13);
             priceTag.setTextColor(Color.parseColor("#FFD700"));
             priceTag.setTextSize(13);
             priceTag.setTypeface(Typeface.DEFAULT_BOLD);
@@ -287,8 +287,8 @@ public class ShopEditorTab extends ScrollView implements TextWatcher {
         // Current price label
         if (inShop) {
             TextView currentLabel = new TextView(ctx);
-            currentLabel.setText(CoinIconHelper.withCoin(ctx,
-                    "Current price: \u25C8 " + shopPrices.get(itemId), 14));
+            CoinIconHelper.setCoinText(currentLabel,
+                    "Current price: \u25C8 " + shopPrices.get(itemId), 14);
             currentLabel.setTextColor(Color.parseColor("#FFD700"));
             currentLabel.setTextSize(14);
             currentLabel.setGravity(Gravity.CENTER);

@@ -212,8 +212,8 @@ public class TabActivity extends Activity {
 
     public void updateCoinDisplay() {
         if (coinDisplay != null && SaveManager.getInstance() != null) {
-            coinDisplay.setText(CoinIconHelper.withCoin(this,
-                    "\u25C8 " + SaveManager.getInstance().getData().coins + " coins", 18));
+            CoinIconHelper.setCoinText(coinDisplay,
+                    "\u25C8 " + SaveManager.getInstance().getData().coins + " coins", 18);
         }
     }
 

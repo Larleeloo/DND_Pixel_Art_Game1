@@ -619,8 +619,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
         nameCol.addView(nameText);
 
         TextView priceText = new TextView(ctx);
-        priceText.setText(CoinIconHelper.withCoin(ctx,
-                "\u25C8 " + listing.price + " coins", 12));
+        CoinIconHelper.setCoinText(priceText,
+                "\u25C8 " + listing.price + " coins", 12);
         priceText.setTextColor(Color.parseColor("#FFD700"));
         priceText.setTextSize(12);
         nameCol.addView(priceText);
@@ -816,8 +816,8 @@ public class VaultTab extends ScrollView implements TextWatcher {
         dialogContent.addView(title);
 
         TextView currentPriceView = new TextView(ctx);
-        currentPriceView.setText(CoinIconHelper.withCoin(ctx,
-                "Current price: \u25C8 " + listing.price, 14));
+        CoinIconHelper.setCoinText(currentPriceView,
+                "Current price: \u25C8 " + listing.price, 14);
         currentPriceView.setTextColor(Color.parseColor("#FFD700"));
         currentPriceView.setTextSize(14);
         currentPriceView.setGravity(Gravity.CENTER);

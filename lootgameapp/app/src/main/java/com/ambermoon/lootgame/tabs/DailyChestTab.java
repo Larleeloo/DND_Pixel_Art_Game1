@@ -58,8 +58,8 @@ public class DailyChestTab extends ScrollView {
 
         // Info
         TextView info = new TextView(context);
-        info.setText(CoinIconHelper.withCoin(context,
-                "\u25C8 50-250 coins  |  \u2605 3 items", 14));
+        CoinIconHelper.setCoinText(info,
+                "\u25C8 50-250 coins  |  \u2605 3 items", 14);
         info.setTextColor(Color.parseColor("#AAAACC"));
         info.setTextSize(14);
         info.setGravity(Gravity.CENTER);
@@ -193,8 +193,8 @@ public class DailyChestTab extends ScrollView {
 
         // Coin reward
         TextView coinText = new TextView(getContext());
-        coinText.setText(CoinIconHelper.withCoin(getContext(),
-                "\u25C8 +" + coins + " coins", 20));
+        CoinIconHelper.setCoinText(coinText,
+                "\u25C8 +" + coins + " coins", 20);
         coinText.setTextColor(Color.parseColor("#FFD700"));
         coinText.setTextSize(20);
         coinText.setTypeface(Typeface.DEFAULT_BOLD);
