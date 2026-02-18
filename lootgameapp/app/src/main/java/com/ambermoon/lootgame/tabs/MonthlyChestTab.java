@@ -100,12 +100,12 @@ public class MonthlyChestTab extends ScrollView {
         // Update info text with streak bonus
         int bonusItems = getStreakBonusItems();
         if (bonusItems > 0) {
-            infoText.setText(CoinIconHelper.withCoin(getContext(),
+            CoinIconHelper.setCoinText(infoText,
                     "\u25C8 500-2000 coins  |  \u2605 10 + " + bonusItems
-                    + " streak items  |  2.5x rarity boost", 14));
+                    + " streak items  |  2.5x rarity boost", 14);
         } else {
-            infoText.setText(CoinIconHelper.withCoin(getContext(),
-                    "\u25C8 500-2000 coins  |  \u2605 10 items  |  2.5x rarity boost", 14));
+            CoinIconHelper.setCoinText(infoText,
+                    "\u25C8 500-2000 coins  |  \u2605 10 items  |  2.5x rarity boost", 14);
         }
 
         if (sm.canOpenMonthlyChest()) {
@@ -189,8 +189,8 @@ public class MonthlyChestTab extends ScrollView {
         lootDisplay.removeAllViews();
 
         TextView coinText = new TextView(getContext());
-        coinText.setText(CoinIconHelper.withCoin(getContext(),
-                "\u25C8 +" + coins + " coins", 20));
+        CoinIconHelper.setCoinText(coinText,
+                "\u25C8 +" + coins + " coins", 20);
         coinText.setTextColor(Color.parseColor("#FFD700"));
         coinText.setTextSize(20);
         coinText.setTypeface(Typeface.DEFAULT_BOLD);
