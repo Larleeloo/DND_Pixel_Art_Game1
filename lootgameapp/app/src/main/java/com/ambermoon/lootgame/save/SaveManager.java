@@ -885,7 +885,10 @@ public class SaveManager {
     }
 
     public String toJson() { return serializeToJson(data); }
-    public void fromJson(String json) { data = deserializeFromJson(json); }
+    public void fromJson(String json) {
+        data = deserializeFromJson(json);
+        validateSaveData();
+    }
 
     // --- Shared Shop Data (separate file, read by all, written by Lars) ---
 
