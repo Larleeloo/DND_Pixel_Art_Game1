@@ -23,7 +23,7 @@ public class LootTable {
     private static final Random random = new Random();
 
     // Rarity weights for daily chest (rarityBoost = 1.0)
-    private static final int[] BASE_WEIGHTS = {100, 50, 25, 10, 3, 1}; // common..mythic
+    private static final int[] BASE_WEIGHTS = {1000, 500, 250, 100, 3, 1}; // common..mythic
 
     /**
      * Generates a list of random loot items.
