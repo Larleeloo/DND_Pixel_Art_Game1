@@ -3,6 +3,8 @@ package com.ambermoon.lootgame.save;
 import android.content.Context;
 import android.util.Log;
 
+import com.ambermoon.lootgame.entity.ItemRegistry;
+
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -78,12 +80,18 @@ public class SaveManager {
             while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
             fis.close();
             data = deserializeFromJson(baos.toString("UTF-8"));
+            // Persist streak update immediately so it survives even if
+            // the user closes the app without performing a save action.
+            saveLocal();
         } catch (FileNotFoundException e) {
             data = new SaveData();
             checkDailyStreak();
+            saveLocal();
         } catch (Exception e) {
             Log.e(TAG, "Load failed: " + e.getMessage());
             data = new SaveData();
+            checkDailyStreak();
+            saveLocal();
         }
     }
 
@@ -235,6 +243,45 @@ public class SaveManager {
 
     public java.util.Set<String> getUnlockedBackgroundIds() {
         return new java.util.HashSet<>(data.unlockedBackgrounds);
+    }
+
+    /**
+     * Removes items from vault, loadout, and player listings that reference
+     * item IDs no longer registered in ItemRegistry.
+     * Returns the number of entries removed.
+     */
+    public int purgeInvalidItems() {
+        int removed = 0;
+
+        Iterator<SaveData.VaultItem> vaultIt = data.vaultItems.iterator();
+        while (vaultIt.hasNext()) {
+            if (!ItemRegistry.exists(vaultIt.next().itemId)) {
+                vaultIt.remove();
+                removed++;
+            }
+        }
+
+        Iterator<SaveData.VaultItem> loadoutIt = data.loadoutItems.iterator();
+        while (loadoutIt.hasNext()) {
+            if (!ItemRegistry.exists(loadoutIt.next().itemId)) {
+                loadoutIt.remove();
+                removed++;
+            }
+        }
+
+        Iterator<SaveData.PlayerListing> listingIt = data.playerListings.iterator();
+        while (listingIt.hasNext()) {
+            if (!ItemRegistry.exists(listingIt.next().itemId)) {
+                listingIt.remove();
+                removed++;
+            }
+        }
+
+        if (removed > 0) {
+            Log.d(TAG, "Purged " + removed + " invalid item entries from save data");
+            save();
+        }
+        return removed;
     }
 
     private void checkDailyStreak() {
