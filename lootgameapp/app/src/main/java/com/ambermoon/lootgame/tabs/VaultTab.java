@@ -211,28 +211,25 @@ public class VaultTab extends ScrollView implements TextWatcher {
         SaveManager sm = SaveManager.getInstance();
         String search = searchBox.getText().toString().toLowerCase().trim();
 
-        // Build filtered/sorted list
+        // Build filtered/sorted list (skip items not in registry)
         List<SaveData.VaultItem> items = new ArrayList<>();
         for (SaveData.VaultItem vi : sm.getData().vaultItems) {
             Item template = ItemRegistry.getTemplate(vi.itemId);
-            String name = template != null ? template.getName() : vi.itemId;
+            if (template == null) continue;
+            String name = template.getName();
             if (!search.isEmpty() && !name.toLowerCase().contains(search)) continue;
             items.add(vi);
         }
 
-        // Sort
+        // Sort (templates are guaranteed non-null after filtering above)
         Collections.sort(items, (a, b) -> {
             Item ta = ItemRegistry.getTemplate(a.itemId);
             Item tb = ItemRegistry.getTemplate(b.itemId);
             switch (currentSort) {
                 case 0: // rarity (highest first)
-                    int ra = ta != null ? ta.getRarity().ordinal() : 0;
-                    int rb = tb != null ? tb.getRarity().ordinal() : 0;
-                    return rb - ra;
+                    return tb.getRarity().ordinal() - ta.getRarity().ordinal();
                 case 1: // name
-                    String na = ta != null ? ta.getName() : a.itemId;
-                    String nb = tb != null ? tb.getName() : b.itemId;
-                    return na.compareToIgnoreCase(nb);
+                    return ta.getName().compareToIgnoreCase(tb.getName());
                 case 2: // count (highest first)
                     return b.stackCount - a.stackCount;
                 default: return 0;
@@ -263,18 +260,16 @@ public class VaultTab extends ScrollView implements TextWatcher {
             cell.setLayoutParams(cellParams);
 
             // Item icon sprite (first frame of idle GIF, or rarity circle fallback)
-            if (template != null) {
-                View iconView = new ItemIconView(getContext(), template);
-                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
-                iconParams.gravity = Gravity.CENTER;
-                iconView.setLayoutParams(iconParams);
-                cell.addView(iconView);
-            }
+            View iconView = new ItemIconView(getContext(), template);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+            iconParams.gravity = Gravity.CENTER;
+            iconView.setLayoutParams(iconParams);
+            cell.addView(iconView);
 
             // Stack count below icon
             TextView countView = new TextView(getContext());
             countView.setText("x" + vi.stackCount);
-            countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+            countView.setTextColor(Item.getRarityColor(template.getRarity().ordinal()));
             countView.setTextSize(9);
             countView.setGravity(Gravity.CENTER);
             countView.setPadding(0, 2, 0, 0);
@@ -527,6 +522,9 @@ public class VaultTab extends ScrollView implements TextWatcher {
             LinearLayout currentRow = null;
             int col = 0;
             for (SaveData.VaultItem vi : vaultItems) {
+                Item template = ItemRegistry.getTemplate(vi.itemId);
+                if (template == null) continue;
+
                 if (col % 4 == 0) {
                     currentRow = new LinearLayout(ctx);
                     currentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -534,8 +532,6 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     tradingContent.addView(currentRow);
                     col = 0;
                 }
-
-                Item template = ItemRegistry.getTemplate(vi.itemId);
 
                 LinearLayout cell = new LinearLayout(ctx);
                 cell.setOrientation(LinearLayout.VERTICAL);
@@ -546,17 +542,15 @@ public class VaultTab extends ScrollView implements TextWatcher {
                 cellParams.setMargins(2, 0, 2, 0);
                 cell.setLayoutParams(cellParams);
 
-                if (template != null) {
-                    View iconView = new ItemIconView(ctx, template);
-                    LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
-                    iconParams.gravity = Gravity.CENTER;
-                    iconView.setLayoutParams(iconParams);
-                    cell.addView(iconView);
-                }
+                View iconView = new ItemIconView(ctx, template);
+                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+                iconParams.gravity = Gravity.CENTER;
+                iconView.setLayoutParams(iconParams);
+                cell.addView(iconView);
 
                 TextView countView = new TextView(ctx);
                 countView.setText("x" + vi.stackCount);
-                countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+                countView.setTextColor(Item.getRarityColor(template.getRarity().ordinal()));
                 countView.setTextSize(9);
                 countView.setGravity(Gravity.CENTER);
                 countView.setPadding(0, 2, 0, 0);
@@ -1063,6 +1057,9 @@ public class VaultTab extends ScrollView implements TextWatcher {
             LinearLayout currentRow = null;
             int col = 0;
             for (SaveData.VaultItem vi : vaultItems) {
+                Item template = ItemRegistry.getTemplate(vi.itemId);
+                if (template == null) continue;
+
                 if (col % 4 == 0) {
                     currentRow = new LinearLayout(ctx);
                     currentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1070,8 +1067,6 @@ public class VaultTab extends ScrollView implements TextWatcher {
                     loadoutContent.addView(currentRow);
                     col = 0;
                 }
-
-                Item template = ItemRegistry.getTemplate(vi.itemId);
 
                 LinearLayout cell = new LinearLayout(ctx);
                 cell.setOrientation(LinearLayout.VERTICAL);
@@ -1082,17 +1077,15 @@ public class VaultTab extends ScrollView implements TextWatcher {
                 cellParams.setMargins(2, 0, 2, 0);
                 cell.setLayoutParams(cellParams);
 
-                if (template != null) {
-                    View iconView = new ItemIconView(ctx, template);
-                    LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
-                    iconParams.gravity = Gravity.CENTER;
-                    iconView.setLayoutParams(iconParams);
-                    cell.addView(iconView);
-                }
+                View iconView = new ItemIconView(ctx, template);
+                LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(80, 80);
+                iconParams.gravity = Gravity.CENTER;
+                iconView.setLayoutParams(iconParams);
+                cell.addView(iconView);
 
                 TextView countView = new TextView(ctx);
                 countView.setText("x" + vi.stackCount);
-                countView.setTextColor(template != null ? Item.getRarityColor(template.getRarity().ordinal()) : Color.WHITE);
+                countView.setTextColor(Item.getRarityColor(template.getRarity().ordinal()));
                 countView.setTextSize(9);
                 countView.setGravity(Gravity.CENTER);
                 countView.setPadding(0, 2, 0, 0);
