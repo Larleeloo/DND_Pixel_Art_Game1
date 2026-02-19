@@ -11,8 +11,6 @@ public class Cannon extends Item {
         setDamage(50);
         setAttackSpeed(0.15f);
         setRange(200);
-        setHasAreaEffect(true);
-        setAreaEffectRadius(60);
     }
 
     @Override
