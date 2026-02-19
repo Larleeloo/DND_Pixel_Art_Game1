@@ -10,7 +10,7 @@ public class ChameleonCloak extends Item {
 
     public ChameleonCloak() {
         super("Chameleon Cloak", ItemCategory.CLOTHING);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Changes color to blend in");
         setSpecialEffect("Partial invisibility");
         setStackable(false);

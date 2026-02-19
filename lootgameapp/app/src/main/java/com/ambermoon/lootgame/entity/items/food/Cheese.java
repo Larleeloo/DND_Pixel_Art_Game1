@@ -9,13 +9,13 @@ import com.ambermoon.lootgame.entity.Item;
 public class Cheese extends Item {
 
     public Cheese() {
-        super("Cheese", ItemCategory.FOOD);
+        super("Cheese Wheel", ItemCategory.FOOD);
         setHealthRestore(15);
         setManaRestore(0);
         setStaminaRestore(8);
         setConsumeTime(1.5f);
         setRarity(ItemRarity.COMMON);
-        setDescription("A wedge of cheese");
+        setDescription("A whole wheel of cheese");
     }
 
     @Override

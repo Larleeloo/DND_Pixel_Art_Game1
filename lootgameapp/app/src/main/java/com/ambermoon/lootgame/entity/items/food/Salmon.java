@@ -9,13 +9,13 @@ import com.ambermoon.lootgame.entity.Item;
 public class Salmon extends Item {
 
     public Salmon() {
-        super("Salmon", ItemCategory.FOOD);
+        super("Cooked Salmon", ItemCategory.FOOD);
         setHealthRestore(25);
         setManaRestore(0);
         setStaminaRestore(12);
         setConsumeTime(1.5f);
-        setRarity(ItemRarity.COMMON);
-        setDescription("Fresh caught fish");
+        setRarity(ItemRarity.UNCOMMON);
+        setDescription("A perfectly cooked salmon fillet");
     }
 
     @Override

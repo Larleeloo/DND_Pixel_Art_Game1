@@ -13,7 +13,7 @@ public class SoulboundDagger extends Item {
         setDamage(15);
         setAttackSpeed(2.5f);
         setRange(45);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Bound to your soul, returns when thrown");
         setSpecialEffect("Returns to owner");
         setScalesWithStrength(true);

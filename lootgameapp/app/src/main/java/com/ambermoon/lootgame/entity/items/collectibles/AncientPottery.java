@@ -10,7 +10,7 @@ public class AncientPottery extends Item {
 
     public AncientPottery() {
         super("Ancient Pottery", ItemCategory.OTHER);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("A relic from ancient times");
         setStackable(true);
         setMaxStackSize(16);

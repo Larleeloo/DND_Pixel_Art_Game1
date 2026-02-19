@@ -9,9 +9,9 @@ import com.ambermoon.lootgame.entity.Item;
 public class Shirt extends Item {
 
     public Shirt() {
-        super("Shirt", ItemCategory.CLOTHING);
+        super("Work Shirt", ItemCategory.CLOTHING);
         setRarity(ItemRarity.COMMON);
-        setDescription("A simple cloth shirt");
+        setDescription("A sturdy shirt for manual labor");
         setStackable(false);
     }
 

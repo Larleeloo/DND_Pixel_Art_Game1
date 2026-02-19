@@ -10,7 +10,7 @@ public class TreasureMap extends Item {
 
     public TreasureMap() {
         super("Ancient Treasure Map", ItemCategory.OTHER);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Marks the location of hidden riches");
         setSpecialEffect("Reveals secret areas");
         setStackable(true);

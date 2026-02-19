@@ -13,7 +13,7 @@ public class NecromancersBlade extends Item {
         setDamage(28);
         setAttackSpeed(1.1f);
         setRange(70);
-        setRarity(ItemRarity.EPIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("A blade infused with dark energy");
         setSpecialEffect("Lifesteal on hit");
         setScalesWithStrength(true);

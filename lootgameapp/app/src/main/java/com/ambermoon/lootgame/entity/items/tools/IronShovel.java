@@ -11,7 +11,7 @@ public class IronShovel extends Item {
     public IronShovel() {
         super("Iron Shovel", ItemCategory.TOOL);
         setDamage(4);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Faster digging");
     }
 

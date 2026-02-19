@@ -329,12 +329,12 @@ public class RecipeManager {
      */
     private static void createDefaultRecipes() {
         Recipe bow = new Recipe();
-        bow.id = "wooden_bow";
-        bow.name = "Wooden Bow";
-        bow.ingredients.add("string");
+        bow.id = "bow";
+        bow.name = "Bow";
         bow.ingredients.add("planks");
+        bow.ingredients.add("yarn");
         bow.ingredients.add("arrow");
-        bow.result = "wooden_bow";
+        bow.result = "bow";
         bow.resultCount = 1;
         bow.category = "weapons";
         bow.reversible = true;
@@ -343,8 +343,8 @@ public class RecipeManager {
         Recipe sword = new Recipe();
         sword.id = "iron_sword";
         sword.name = "Iron Sword";
-        sword.ingredients.add("iron_ingot");
-        sword.ingredients.add("iron_ingot");
+        sword.ingredients.add("iron_ore");
+        sword.ingredients.add("iron_ore");
         sword.ingredients.add("planks");
         sword.result = "iron_sword";
         sword.resultCount = 1;

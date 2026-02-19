@@ -10,7 +10,7 @@ public class TripWireTrap extends Item {
 
     public TripWireTrap() {
         super("Trip-Wire Trap", ItemCategory.OTHER);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Catches unsuspecting foes");
         setStackable(true);
         setMaxStackSize(16);

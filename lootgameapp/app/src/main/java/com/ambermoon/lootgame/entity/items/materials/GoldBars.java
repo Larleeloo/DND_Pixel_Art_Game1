@@ -9,9 +9,9 @@ import com.ambermoon.lootgame.entity.Item;
 public class GoldBars extends Item {
 
     public GoldBars() {
-        super("Gold Bars", ItemCategory.MATERIAL);
-        setRarity(ItemRarity.UNCOMMON);
-        setDescription("Refined gold, highly valuable");
+        super("Gold Bar", ItemCategory.MATERIAL);
+        setRarity(ItemRarity.EPIC);
+        setDescription("A bar of pure gold");
     }
 
     @Override

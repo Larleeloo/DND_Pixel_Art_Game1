@@ -14,7 +14,7 @@ public class ElixirOfImmortality extends Item {
         setManaRestore(0);
         setStaminaRestore(0);
         setConsumeTime(0.5f);
-        setRarity(ItemRarity.MYTHIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Grants temporary invincibility");
         setSpecialEffect("Immune to all damage for 30 seconds");
     }

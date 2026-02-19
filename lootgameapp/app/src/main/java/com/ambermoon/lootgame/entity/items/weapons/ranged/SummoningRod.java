@@ -12,7 +12,7 @@ public class SummoningRod extends Item {
     public SummoningRod() {
         super("Summoning Rod", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 18, 10.0f);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Calls forth magical entities");
         setSpecialEffect("Summons spectral allies");
         setAmmoItemName("mana");

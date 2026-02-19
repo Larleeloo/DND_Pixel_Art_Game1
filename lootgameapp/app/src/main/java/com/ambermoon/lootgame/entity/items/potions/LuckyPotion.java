@@ -14,7 +14,7 @@ public class LuckyPotion extends Item {
         setManaRestore(0);
         setStaminaRestore(0);
         setConsumeTime(0.5f);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Increases your fortune");
         setSpecialEffect("+25% drop rate for 60 seconds");
     }

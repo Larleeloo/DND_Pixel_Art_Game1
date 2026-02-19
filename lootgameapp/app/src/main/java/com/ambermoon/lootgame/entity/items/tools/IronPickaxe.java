@@ -11,7 +11,7 @@ public class IronPickaxe extends Item {
     public IronPickaxe() {
         super("Iron Pickaxe", ItemCategory.TOOL);
         setDamage(5);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Standard mining tool");
     }
 

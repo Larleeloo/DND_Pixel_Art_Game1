@@ -12,7 +12,7 @@ public class ArcaneStaff extends Item {
     public ArcaneStaff() {
         super("Arcane Staff", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 35, 16.0f);
-        setRarity(ItemRarity.EPIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Channels pure arcane energy");
         setCritChance(0.20f);
         setAmmoItemName("mana");

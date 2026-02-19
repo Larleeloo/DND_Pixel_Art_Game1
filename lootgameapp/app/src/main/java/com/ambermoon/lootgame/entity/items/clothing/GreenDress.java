@@ -10,7 +10,7 @@ public class GreenDress extends Item {
 
     public GreenDress() {
         super("Green Dress", ItemCategory.CLOTHING);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("An elegant green gown");
         setStackable(false);
     }

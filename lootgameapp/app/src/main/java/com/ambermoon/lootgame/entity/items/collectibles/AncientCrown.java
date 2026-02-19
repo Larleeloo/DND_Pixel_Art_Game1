@@ -9,9 +9,9 @@ import com.ambermoon.lootgame.entity.Item;
 public class AncientCrown extends Item {
 
     public AncientCrown() {
-        super("Ancient Crown", ItemCategory.OTHER);
+        super("Crown", ItemCategory.OTHER);
         setRarity(ItemRarity.EPIC);
-        setDescription("A crown worn by forgotten kings");
+        setDescription("A regal crown of ancient origin");
         setSpecialEffect("+20% to all stats");
         setStackable(true);
         setMaxStackSize(16);

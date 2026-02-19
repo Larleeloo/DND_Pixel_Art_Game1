@@ -9,10 +9,10 @@ import com.ambermoon.lootgame.entity.Item;
 public class WoodenAxeTool extends Item {
 
     public WoodenAxeTool() {
-        super("Wooden Axe", ItemCategory.TOOL);
+        super("Carpenter's Axe", ItemCategory.TOOL);
         setDamage(4);
         setRarity(ItemRarity.COMMON);
-        setDescription("Chops wood");
+        setDescription("A sturdy axe for woodworking");
     }
 
     @Override

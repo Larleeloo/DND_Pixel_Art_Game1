@@ -12,7 +12,7 @@ public class MagicFishingRod extends Item {
     public MagicFishingRod() {
         super("Magic Fishing Rod", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 8, 12.0f);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Catches fish and magic alike");
         setSpecialEffect("Pulls items toward you");
         setAmmoItemName("mana");

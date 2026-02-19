@@ -9,12 +9,12 @@ import com.ambermoon.lootgame.entity.Item;
 public class VampiricBlade extends Item {
 
     public VampiricBlade() {
-        super("Vampiric Blade", ItemCategory.WEAPON);
+        super("Vampiric Dagger", ItemCategory.WEAPON);
         setDamage(20);
         setAttackSpeed(1.0f);
         setRange(60);
-        setRarity(ItemRarity.RARE);
-        setDescription("Thirsts for blood");
+        setRarity(ItemRarity.EPIC);
+        setDescription("A cursed dagger that drains life force");
         setSpecialEffect("10% lifesteal");
         setScalesWithStrength(true);
     }

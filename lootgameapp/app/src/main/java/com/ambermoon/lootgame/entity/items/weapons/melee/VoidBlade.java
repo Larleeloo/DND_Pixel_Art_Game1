@@ -13,7 +13,7 @@ public class VoidBlade extends Item {
         setDamage(65);
         setAttackSpeed(1.3f);
         setRange(85);
-        setRarity(ItemRarity.MYTHIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Forged in the heart of a black hole");
         setSpecialEffect("Absorbs enemy souls");
         setCritChance(0.30f);

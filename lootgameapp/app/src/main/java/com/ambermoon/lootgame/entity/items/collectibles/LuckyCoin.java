@@ -10,7 +10,7 @@ public class LuckyCoin extends Item {
 
     public LuckyCoin() {
         super("Lucky Coin", ItemCategory.OTHER);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Fortune favors the brave");
         setSpecialEffect("+15% drop rate");
         setStackable(true);
