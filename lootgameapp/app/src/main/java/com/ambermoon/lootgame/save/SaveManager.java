@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.ambermoon.lootgame.entity.ItemRegistry;
+import com.ambermoon.lootgame.entity.RecipeManager;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -25,6 +26,7 @@ public class SaveManager {
         instance.context = ctx.getApplicationContext();
         instance.currentUsername = com.ambermoon.lootgame.core.GamePreferences.getUsername();
         instance.load();
+        instance.validateSaveData();
     }
 
     /**
@@ -246,13 +248,17 @@ public class SaveManager {
     }
 
     /**
-     * Removes items from vault, loadout, and player listings that reference
-     * item IDs no longer registered in ItemRegistry.
-     * Returns the number of entries removed.
+     * Validates all save data against the current ItemRegistry and RecipeManager.
+     * Removes vault/loadout/listing entries whose item IDs no longer exist,
+     * and removes learned recipes whose ingredients, result, or recipe definition
+     * have been changed or removed.
+     * Called automatically on init() after load().
+     * Returns the total number of entries removed.
      */
-    public int purgeInvalidItems() {
+    public int validateSaveData() {
         int removed = 0;
 
+        // --- Purge vault items with invalid IDs ---
         Iterator<SaveData.VaultItem> vaultIt = data.vaultItems.iterator();
         while (vaultIt.hasNext()) {
             if (!ItemRegistry.exists(vaultIt.next().itemId)) {
@@ -261,6 +267,7 @@ public class SaveManager {
             }
         }
 
+        // --- Purge loadout items with invalid IDs ---
         Iterator<SaveData.VaultItem> loadoutIt = data.loadoutItems.iterator();
         while (loadoutIt.hasNext()) {
             if (!ItemRegistry.exists(loadoutIt.next().itemId)) {
@@ -269,6 +276,7 @@ public class SaveManager {
             }
         }
 
+        // --- Purge player listings with invalid IDs ---
         Iterator<SaveData.PlayerListing> listingIt = data.playerListings.iterator();
         while (listingIt.hasNext()) {
             if (!ItemRegistry.exists(listingIt.next().itemId)) {
@@ -277,11 +285,44 @@ public class SaveManager {
             }
         }
 
+        // --- Purge learned recipes that are no longer valid ---
+        Iterator<SaveData.LearnedRecipe> recipeIt = data.learnedRecipes.iterator();
+        while (recipeIt.hasNext()) {
+            SaveData.LearnedRecipe lr = recipeIt.next();
+            if (!isLearnedRecipeValid(lr)) {
+                recipeIt.remove();
+                removed++;
+            }
+        }
+
         if (removed > 0) {
-            Log.d(TAG, "Purged " + removed + " invalid item entries from save data");
+            Log.d(TAG, "Validated save data: removed " + removed + " invalid entries");
             save();
         }
         return removed;
+    }
+
+    /**
+     * Checks whether a learned recipe is still valid:
+     * - Result item must exist in ItemRegistry
+     * - All ingredient items must exist in ItemRegistry
+     * - A matching recipe must still exist in RecipeManager
+     */
+    private boolean isLearnedRecipeValid(SaveData.LearnedRecipe lr) {
+        if (lr.result == null || lr.result.isEmpty()) return false;
+        if (!ItemRegistry.exists(lr.result)) return false;
+
+        if (lr.ingredients == null || lr.ingredients.isEmpty()) return false;
+        for (String ing : lr.ingredients) {
+            if (ing == null || !ItemRegistry.exists(ing)) return false;
+        }
+
+        // Verify the recipe still exists in RecipeManager with matching definition
+        RecipeManager.Recipe current = RecipeManager.findRecipe(lr.ingredients);
+        if (current == null) return false;
+        if (!lr.result.equals(current.result)) return false;
+
+        return true;
     }
 
     private void checkDailyStreak() {
