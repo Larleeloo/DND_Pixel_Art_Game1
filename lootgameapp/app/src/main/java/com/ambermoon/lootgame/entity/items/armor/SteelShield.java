@@ -11,7 +11,7 @@ public class SteelShield extends Item {
     public SteelShield() {
         super("Steel Shield", ItemCategory.ARMOR);
         setDefense(12);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("A sturdy defensive shield");
         setSpecialEffect("Block incoming projectiles");
     }

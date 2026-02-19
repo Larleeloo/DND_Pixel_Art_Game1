@@ -11,7 +11,7 @@ public class IronBoots extends Item {
     public IronBoots() {
         super("Iron Boots", ItemCategory.ARMOR);
         setDefense(4);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Basic foot protection");
     }
 

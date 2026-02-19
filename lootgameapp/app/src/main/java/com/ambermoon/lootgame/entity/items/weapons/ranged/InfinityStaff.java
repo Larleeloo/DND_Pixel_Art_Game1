@@ -12,7 +12,7 @@ public class InfinityStaff extends Item {
     public InfinityStaff() {
         super("Staff of Infinity", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 55, 20.0f);
-        setRarity(ItemRarity.MYTHIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Contains the power of infinity");
         setSpecialEffect("Reality-bending damage");
         setAmmoItemName("mana");

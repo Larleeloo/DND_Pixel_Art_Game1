@@ -10,7 +10,7 @@ public class Swimwear extends Item {
 
     public Swimwear() {
         super("Swimwear", ItemCategory.CLOTHING);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Perfect for beach adventures");
         setStackable(false);
     }

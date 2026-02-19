@@ -10,7 +10,7 @@ public class WitchsHat extends Item {
 
     public WitchsHat() {
         super("Witch's Hat", ItemCategory.CLOTHING);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("A pointy magical hat");
         setSpecialEffect("+5% magic damage");
         setStackable(false);

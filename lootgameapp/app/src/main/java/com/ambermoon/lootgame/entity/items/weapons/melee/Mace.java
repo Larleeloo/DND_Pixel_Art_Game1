@@ -13,7 +13,7 @@ public class Mace extends Item {
         setDamage(15);
         setAttackSpeed(0.9f);
         setRange(55);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Good against armored foes");
         setScalesWithStrength(true);
     }

@@ -14,7 +14,7 @@ public class Melon extends Item {
         setManaRestore(0);
         setStaminaRestore(10);
         setConsumeTime(1.5f);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("A juicy refreshing melon");
     }
 

@@ -10,7 +10,7 @@ public class RubySkull extends Item {
 
     public RubySkull() {
         super("The Ruby Skull", ItemCategory.ACCESSORY);
-        setRarity(ItemRarity.LEGENDARY);
+        setRarity(ItemRarity.EPIC);
         setDescription("A crimson skull pulsing with dark energy");
         setSpecialEffect("Unlimited jumps while held");
         setStackable(false);

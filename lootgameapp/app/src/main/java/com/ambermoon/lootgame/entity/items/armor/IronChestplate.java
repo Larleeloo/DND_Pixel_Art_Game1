@@ -11,7 +11,7 @@ public class IronChestplate extends Item {
     public IronChestplate() {
         super("Iron Chestplate", ItemCategory.ARMOR);
         setDefense(10);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Basic chest protection");
     }
 

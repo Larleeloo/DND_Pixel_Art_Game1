@@ -11,7 +11,7 @@ public class WizardHat extends Item {
     public WizardHat() {
         super("Wizard Hat", ItemCategory.ARMOR);
         setDefense(2);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Increases mana regen");
         setSpecialEffect("+10% mana regeneration");
     }

@@ -11,7 +11,7 @@ public class FancyBoots extends Item {
     public FancyBoots() {
         super("Fancy Boots", ItemCategory.ARMOR);
         setDefense(3);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Stylish and somewhat protective");
         setSpecialEffect("+10% movement speed");
     }

@@ -11,7 +11,7 @@ public class CelestialRobes extends Item {
     public CelestialRobes() {
         super("Celestial Robes", ItemCategory.ARMOR);
         setDefense(20);
-        setRarity(ItemRarity.MYTHIC);
+        setRarity(ItemRarity.EPIC);
         setDescription("Garments of the gods");
         setSpecialEffect("+50% mana, +30% magic damage");
         setScalesWithIntelligence(true);

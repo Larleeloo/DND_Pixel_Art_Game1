@@ -10,10 +10,10 @@ import com.ambermoon.lootgame.entity.ProjectileEntity;
 public class WoodenBow extends Item {
 
     public WoodenBow() {
-        super("Wooden Bow", ItemCategory.RANGED_WEAPON);
+        super("Bow", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_ARROW, 8, 12.0f);
         setRarity(ItemRarity.COMMON);
-        setDescription("A simple hunting bow");
+        setDescription("A simple wooden bow");
         setAmmoItemName("arrow");
         setChargeable(true, 2.0f, 0, 2.0f);
         setChargeSpeedMultiplier(1.5f);

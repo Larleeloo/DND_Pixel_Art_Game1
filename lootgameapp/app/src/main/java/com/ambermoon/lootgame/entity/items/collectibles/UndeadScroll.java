@@ -10,7 +10,7 @@ public class UndeadScroll extends Item {
 
     public UndeadScroll() {
         super("Undead Scroll", ItemCategory.OTHER);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Contains necromantic knowledge");
         setStackable(true);
         setMaxStackSize(16);

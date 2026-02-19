@@ -13,7 +13,7 @@ public class EtherealDragonslayer extends Item {
         setDamage(50);
         setAttackSpeed(0.8f);
         setRange(90);
-        setRarity(ItemRarity.MYTHIC);
+        setRarity(ItemRarity.LEGENDARY);
         setDescription("Forged to slay ancient dragons");
         setSpecialEffect("+200% damage to dragons");
         setCritChance(0.25f);

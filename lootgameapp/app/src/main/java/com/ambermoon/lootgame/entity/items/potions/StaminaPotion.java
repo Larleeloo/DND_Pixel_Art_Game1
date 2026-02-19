@@ -14,7 +14,7 @@ public class StaminaPotion extends Item {
         setManaRestore(0);
         setStaminaRestore(100);
         setConsumeTime(0.5f);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Restores all stamina");
     }
 

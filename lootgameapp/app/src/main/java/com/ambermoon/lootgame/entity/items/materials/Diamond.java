@@ -2,16 +2,12 @@ package com.ambermoon.lootgame.entity.items.materials;
 
 import com.ambermoon.lootgame.entity.Item;
 
-/**
- * Diamond - A valuable gemstone.
- * Rare crafting material.
- */
 public class Diamond extends Item {
 
     public Diamond() {
         super("Diamond", ItemCategory.MATERIAL);
         setRarity(ItemRarity.RARE);
-        setDescription("A valuable gemstone");
+        setDescription("A dazzling precious diamond");
     }
 
     @Override

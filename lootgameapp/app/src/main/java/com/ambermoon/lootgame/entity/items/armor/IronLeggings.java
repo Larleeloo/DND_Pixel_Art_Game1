@@ -11,7 +11,7 @@ public class IronLeggings extends Item {
     public IronLeggings() {
         super("Iron Leggings", ItemCategory.ARMOR);
         setDefense(7);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Basic leg protection");
     }
 

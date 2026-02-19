@@ -10,7 +10,7 @@ public class ThreePieceSuit extends Item {
 
     public ThreePieceSuit() {
         super("3-Piece Suit", ItemCategory.CLOTHING);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Formal attire for special occasions");
         setStackable(false);
     }

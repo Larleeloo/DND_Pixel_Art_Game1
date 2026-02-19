@@ -10,7 +10,7 @@ public class Frog extends Item {
 
     public Frog() {
         super("Frog", ItemCategory.OTHER);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("A small amphibian friend");
         setStackable(true);
         setMaxStackSize(16);

@@ -12,7 +12,7 @@ public class ThrowingKnife extends Item {
     public ThrowingKnife() {
         super("Throwing Knife", ItemCategory.THROWABLE);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_THROWING_KNIFE, 10, 18.0f);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Quick and accurate");
         setStackable(true);
         setMaxStackSize(16);

@@ -12,7 +12,7 @@ public class MagicWand extends Item {
     public MagicWand() {
         super("Magic Wand", ItemCategory.RANGED_WEAPON);
         setRangedWeapon(true, ProjectileEntity.PROJECTILE_MAGIC_BOLT, 10, 15.0f);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Fires magic bolts");
         setAmmoItemName("mana");
         setScalesWithIntelligence(true);

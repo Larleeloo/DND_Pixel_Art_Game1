@@ -10,7 +10,7 @@ public class MysteriousCandle extends Item {
 
     public MysteriousCandle() {
         super("Mysterious Candle", ItemCategory.OTHER);
-        setRarity(ItemRarity.RARE);
+        setRarity(ItemRarity.EPIC);
         setDescription("Burns with an ethereal flame");
         setStackable(true);
         setMaxStackSize(16);

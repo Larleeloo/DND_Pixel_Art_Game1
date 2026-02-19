@@ -20,18 +20,18 @@ import com.ambermoon.lootgame.graphics.AssetLoader;
  *
  * Slot symbols map to item IDs:
  *   Apple  -> "apple"
- *   Sword  -> "iron_sword"
+ *   Sword  -> "katana"
  *   Shield -> "steel_shield"
  *   Gem    -> "diamond"
- *   Star   -> "magic_crystal"
- *   Crown  -> "ancient_crown"
+ *   Star   -> "magic_gemstone"
+ *   Crown  -> "crown"
  *
  * Top-level class to avoid D8 dex compiler crash on inner classes.
  */
 public class SlotReelView extends View {
     /** Item IDs corresponding to each symbol index. */
     public static final String[] SYMBOL_ITEM_IDS = {
-        "apple", "iron_sword", "steel_shield", "diamond", "magic_crystal", "ancient_crown"
+        "apple", "katana", "steel_shield", "diamond", "magic_gemstone", "crown"
     };
 
     /** Rarity colors per symbol for fallback circles. */

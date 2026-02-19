@@ -10,7 +10,7 @@ public class Journal extends Item {
 
     public Journal() {
         super("Journal", ItemCategory.OTHER);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("A book for recording thoughts");
         setStackable(true);
         setMaxStackSize(16);

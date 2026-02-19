@@ -13,7 +13,7 @@ public class IronSword extends Item {
         setDamage(12);
         setAttackSpeed(1.0f);
         setRange(60);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("A reliable iron blade");
         setScalesWithStrength(true);
     }

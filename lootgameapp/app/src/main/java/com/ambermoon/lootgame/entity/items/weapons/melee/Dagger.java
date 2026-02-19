@@ -9,12 +9,12 @@ import com.ambermoon.lootgame.entity.Item;
 public class Dagger extends Item {
 
     public Dagger() {
-        super("Iron Dagger", ItemCategory.WEAPON);
+        super("Daggers", ItemCategory.WEAPON);
         setDamage(8);
         setAttackSpeed(2.0f);
         setRange(40);
-        setRarity(ItemRarity.COMMON);
-        setDescription("Quick but short range");
+        setRarity(ItemRarity.UNCOMMON);
+        setDescription("A pair of sharp daggers");
         setScalesWithStrength(true);
     }
 

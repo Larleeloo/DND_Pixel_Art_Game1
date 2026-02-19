@@ -9,9 +9,9 @@ import com.ambermoon.lootgame.entity.Item;
 public class MysteriousGemstone extends Item {
 
     public MysteriousGemstone() {
-        super("Mysterious Gemstone", ItemCategory.MATERIAL);
-        setRarity(ItemRarity.RARE);
-        setDescription("Pulses with unknown energy");
+        super("Magic Gemstone", ItemCategory.MATERIAL);
+        setRarity(ItemRarity.EPIC);
+        setDescription("A gemstone pulsing with arcane energy");
     }
 
     @Override

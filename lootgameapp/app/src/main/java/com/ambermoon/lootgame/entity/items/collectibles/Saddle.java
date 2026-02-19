@@ -10,7 +10,7 @@ public class Saddle extends Item {
 
     public Saddle() {
         super("Saddle", ItemCategory.OTHER);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("For riding mounts");
         setStackable(true);
         setMaxStackSize(16);

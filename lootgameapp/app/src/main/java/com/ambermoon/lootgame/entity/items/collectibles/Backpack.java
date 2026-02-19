@@ -10,7 +10,7 @@ public class Backpack extends Item {
 
     public Backpack() {
         super("Backpack", ItemCategory.OTHER);
-        setRarity(ItemRarity.UNCOMMON);
+        setRarity(ItemRarity.RARE);
         setDescription("Increases carrying capacity");
         setSpecialEffect("+8 inventory slots");
         setStackable(true);

@@ -13,7 +13,7 @@ public class ThunderHammer extends Item {
         setDamage(55);
         setAttackSpeed(0.6f);
         setRange(90);
-        setRarity(ItemRarity.LEGENDARY);
+        setRarity(ItemRarity.EPIC);
         setDescription("Strikes with the fury of storms");
         setSpecialEffect("Chain lightning on hit");
         setCritChance(0.12f);

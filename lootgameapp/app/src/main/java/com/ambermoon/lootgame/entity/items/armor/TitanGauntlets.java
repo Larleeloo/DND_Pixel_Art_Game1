@@ -11,7 +11,7 @@ public class TitanGauntlets extends Item {
     public TitanGauntlets() {
         super("Titan Gauntlets", ItemCategory.ARMOR);
         setDefense(18);
-        setRarity(ItemRarity.LEGENDARY);
+        setRarity(ItemRarity.EPIC);
         setDescription("Worn by ancient giants");
         setSpecialEffect("+40% melee damage, ground slam ability");
         setScalesWithStrength(true);

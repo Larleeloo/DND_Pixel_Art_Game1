@@ -14,7 +14,7 @@ public class HealthPotion extends Item {
         setManaRestore(0);
         setStaminaRestore(0);
         setConsumeTime(0.5f);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Restores 50 health");
     }
 

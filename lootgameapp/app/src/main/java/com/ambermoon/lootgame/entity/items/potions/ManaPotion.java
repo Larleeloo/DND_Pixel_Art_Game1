@@ -14,7 +14,7 @@ public class ManaPotion extends Item {
         setManaRestore(50);
         setStaminaRestore(0);
         setConsumeTime(0.5f);
-        setRarity(ItemRarity.COMMON);
+        setRarity(ItemRarity.UNCOMMON);
         setDescription("Restores 50 mana");
     }
 
