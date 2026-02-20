@@ -360,7 +360,8 @@ public class CosmeticsPopup {
         String base64 = "";
         String username = GamePreferences.getUsername();
         if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
-            base64 = SaveManager.getInstance().getData().profilePicBase64;
+            String raw = SaveManager.getInstance().getData().profilePicBase64;
+            if (raw != null) base64 = raw;
         }
         final String picData = base64;
         final String initial = (username != null && !username.isEmpty())

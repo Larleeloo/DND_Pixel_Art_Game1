@@ -365,9 +365,10 @@ public class ShopTab extends ScrollView {
      * Shows the decoded Base64 image or a colored initial.
      */
     private View createSellerPicView(Context ctx, SaveData.PlayerListing listing, boolean isOwnListing) {
-        final String picData = isOwnListing
+        String raw = isOwnListing
                 ? SaveManager.getInstance().getData().profilePicBase64
                 : listing.sellerProfilePic;
+        final String picData = raw != null ? raw : "";
         final String initial = (listing.sellerUsername != null && !listing.sellerUsername.isEmpty())
                 ? listing.sellerUsername.substring(0, 1).toUpperCase() : "?";
 
