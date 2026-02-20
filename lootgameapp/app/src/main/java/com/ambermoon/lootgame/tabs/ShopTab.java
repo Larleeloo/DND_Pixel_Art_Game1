@@ -368,55 +368,69 @@ public class ShopTab extends ScrollView {
         String raw = isOwnListing
                 ? SaveManager.getInstance().getData().profilePicBase64
                 : listing.sellerProfilePic;
-        final String picData = raw != null ? raw : "";
+        if (raw == null) raw = "";
         final String initial = (listing.sellerUsername != null && !listing.sellerUsername.isEmpty())
                 ? listing.sellerUsername.substring(0, 1).toUpperCase() : "?";
 
-        View view = new View(ctx) {
-            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private Bitmap picBitmap;
-            {
-                if (picData != null && !picData.isEmpty()) {
-                    try {
-                        byte[] bytes = Base64.decode(picData, Base64.NO_WRAP);
-                        picBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    } catch (Exception ignored) {}
-                }
-            }
+        // Decode bitmap OUTSIDE the anonymous class to avoid D8 instance-init bug
+        Bitmap decoded = null;
+        if (!raw.isEmpty()) {
+            try {
+                byte[] bytes = Base64.decode(raw, Base64.NO_WRAP);
+                decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            } catch (Exception ignored) {}
+        }
+        final Bitmap picBitmap = decoded;
 
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                float cx = getWidth() / 2f;
-                float cy = getHeight() / 2f;
-                float radius = Math.min(cx, cy) - 1;
-
-                if (picBitmap != null && !picBitmap.isRecycled()) {
-                    canvas.save();
-                    android.graphics.Path clipPath = new android.graphics.Path();
-                    clipPath.addCircle(cx, cy, radius, android.graphics.Path.Direction.CW);
-                    canvas.clipPath(clipPath);
-                    RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
-                    paint.setFilterBitmap(true);
-                    canvas.drawBitmap(picBitmap, null, dst, paint);
-                    canvas.restore();
-                } else {
-                    paint.setColor(Color.parseColor("#3C3555"));
-                    paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(cx, cy, radius, paint);
-                    paint.setColor(Color.parseColor("#B8A9D4"));
-                    paint.setTextSize(radius * 0.9f);
-                    paint.setTextAlign(Paint.Align.CENTER);
-                    Paint.FontMetrics fm = paint.getFontMetrics();
-                    float textY = cy - (fm.ascent + fm.descent) / 2;
-                    canvas.drawText(initial, cx, textY, paint);
-                }
-            }
-        };
-
+        View view = new SellerPicView(ctx, picBitmap, initial);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(24, 24);
         view.setLayoutParams(params);
         return view;
+    }
+
+    /**
+     * Named View subclass for seller profile pictures.
+     * Avoids D8 compiler bug with anonymous inner classes that have instance initializer blocks.
+     */
+    private static class SellerPicView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Bitmap picBitmap;
+        private final String initial;
+
+        SellerPicView(Context ctx, Bitmap picBitmap, String initial) {
+            super(ctx);
+            this.picBitmap = picBitmap;
+            this.initial = initial;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float cx = getWidth() / 2f;
+            float cy = getHeight() / 2f;
+            float radius = Math.min(cx, cy) - 1;
+
+            if (picBitmap != null && !picBitmap.isRecycled()) {
+                canvas.save();
+                Path clipPath = new Path();
+                clipPath.addCircle(cx, cy, radius, Path.Direction.CW);
+                canvas.clipPath(clipPath);
+                RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
+                paint.setFilterBitmap(true);
+                canvas.drawBitmap(picBitmap, null, dst, paint);
+                canvas.restore();
+            } else {
+                paint.setColor(Color.parseColor("#3C3555"));
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(cx, cy, radius, paint);
+                paint.setColor(Color.parseColor("#B8A9D4"));
+                paint.setTextSize(radius * 0.9f);
+                paint.setTextAlign(Paint.Align.CENTER);
+                Paint.FontMetrics fm = paint.getFontMetrics();
+                float textY = cy - (fm.ascent + fm.descent) / 2;
+                canvas.drawText(initial, cx, textY, paint);
+            }
+        }
     }
 
     private void showItemDetail(SaveData.ShopItem shopItem, Item template) {

@@ -363,123 +363,145 @@ public class CosmeticsPopup {
             String raw = SaveManager.getInstance().getData().profilePicBase64;
             if (raw != null) base64 = raw;
         }
-        final String picData = base64;
         final String initial = (username != null && !username.isEmpty())
                 ? username.substring(0, 1).toUpperCase() : "?";
 
-        View view = new View(context) {
-            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private Bitmap picBitmap;
-            {
-                if (picData != null && !picData.isEmpty()) {
-                    try {
-                        byte[] bytes = Base64.decode(picData, Base64.NO_WRAP);
-                        picBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    } catch (Exception ignored) {}
-                }
-            }
+        // Decode bitmap outside the View class to avoid D8 instance-init bug
+        Bitmap decoded = null;
+        if (!base64.isEmpty()) {
+            try {
+                byte[] bytes = Base64.decode(base64, Base64.NO_WRAP);
+                decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            } catch (Exception ignored) {}
+        }
 
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                float cx = getWidth() / 2f;
-                float cy = getHeight() / 2f;
-                float radius = Math.min(cx, cy) - 2;
-
-                if (picBitmap != null && !picBitmap.isRecycled()) {
-                    // Clip to circle and draw bitmap
-                    canvas.save();
-                    android.graphics.Path clipPath = new android.graphics.Path();
-                    clipPath.addCircle(cx, cy, radius, android.graphics.Path.Direction.CW);
-                    canvas.clipPath(clipPath);
-                    RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
-                    paint.setFilterBitmap(true);
-                    canvas.drawBitmap(picBitmap, null, dst, paint);
-                    canvas.restore();
-                } else {
-                    // Placeholder circle with initial
-                    paint.setColor(Color.parseColor("#3C3555"));
-                    paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(cx, cy, radius, paint);
-                    paint.setColor(Color.parseColor("#B8A9D4"));
-                    paint.setTextSize(radius * 0.9f);
-                    paint.setTextAlign(Paint.Align.CENTER);
-                    Paint.FontMetrics fm = paint.getFontMetrics();
-                    float textY = cy - (fm.ascent + fm.descent) / 2;
-                    canvas.drawText(initial, cx, textY, paint);
-                }
-
-                // Circle border
-                paint.setColor(Color.parseColor("#FFD700"));
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(2);
-                canvas.drawCircle(cx, cy, radius, paint);
-            }
-        };
-
+        View view = new ProfilePicPreviewView(context, decoded, initial);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(96, 96);
         params.gravity = Gravity.CENTER_VERTICAL;
         view.setLayoutParams(params);
         return view;
     }
 
+    /**
+     * Named View subclass for profile picture preview.
+     * Avoids D8 compiler bug with anonymous inner classes that have instance initializer blocks.
+     */
+    private static class ProfilePicPreviewView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Bitmap picBitmap;
+        private final String initial;
+
+        ProfilePicPreviewView(Context context, Bitmap picBitmap, String initial) {
+            super(context);
+            this.picBitmap = picBitmap;
+            this.initial = initial;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float cx = getWidth() / 2f;
+            float cy = getHeight() / 2f;
+            float radius = Math.min(cx, cy) - 2;
+
+            if (picBitmap != null && !picBitmap.isRecycled()) {
+                canvas.save();
+                android.graphics.Path clipPath = new android.graphics.Path();
+                clipPath.addCircle(cx, cy, radius, android.graphics.Path.Direction.CW);
+                canvas.clipPath(clipPath);
+                RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
+                paint.setFilterBitmap(true);
+                canvas.drawBitmap(picBitmap, null, dst, paint);
+                canvas.restore();
+            } else {
+                paint.setColor(Color.parseColor("#3C3555"));
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(cx, cy, radius, paint);
+                paint.setColor(Color.parseColor("#B8A9D4"));
+                paint.setTextSize(radius * 0.9f);
+                paint.setTextAlign(Paint.Align.CENTER);
+                Paint.FontMetrics fm = paint.getFontMetrics();
+                float textY = cy - (fm.ascent + fm.descent) / 2;
+                canvas.drawText(initial, cx, textY, paint);
+            }
+
+            paint.setColor(Color.parseColor("#FFD700"));
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2);
+            canvas.drawCircle(cx, cy, radius, paint);
+        }
+    }
+
     private static View createThumbnailView(Context context, BackgroundEntry entry,
                                              boolean isSelected, boolean isUnlocked) {
-        View view = new View(context) {
-            private final Paint paint = new Paint();
-            private final Paint borderPaint = new Paint();
-            private final Paint lockOverlayPaint = new Paint();
+        // Compute border color outside the View class to avoid D8 instance-init bug
+        int borderColor;
+        if (isSelected) {
+            borderColor = Color.parseColor("#FFD700");
+        } else if (isUnlocked) {
+            borderColor = BackgroundRegistry.getRarityColor(entry.rarity);
+        } else {
+            borderColor = Color.parseColor("#2A2A2A");
+        }
 
-            {
-                paint.setFilterBitmap(false);
-                paint.setAntiAlias(false);
-                borderPaint.setStyle(Paint.Style.STROKE);
-                borderPaint.setStrokeWidth(isSelected ? 4 : 2);
-                if (isSelected) {
-                    borderPaint.setColor(Color.parseColor("#FFD700"));
-                } else if (isUnlocked) {
-                    borderPaint.setColor(BackgroundRegistry.getRarityColor(entry.rarity));
-                } else {
-                    borderPaint.setColor(Color.parseColor("#2A2A2A"));
-                }
-                lockOverlayPaint.setColor(Color.argb(160, 0, 0, 0));
-            }
-
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                int w = getWidth();
-                int h = getHeight();
-
-                if (entry.isSolidColor) {
-                    paint.setColor(entry.solidColor);
-                    canvas.drawRect(0, 0, w, h, paint);
-                } else {
-                    Bitmap bmp = entry.getBitmap();
-                    if (bmp != null) {
-                        Rect src = new Rect(0, 0, bmp.getWidth(), bmp.getHeight());
-                        Rect dst = new Rect(0, 0, w, h);
-                        canvas.drawBitmap(bmp, src, dst, paint);
-                    } else {
-                        paint.setColor(Color.parseColor("#222222"));
-                        canvas.drawRect(0, 0, w, h, paint);
-                    }
-                }
-
-                // Darken overlay for locked backgrounds
-                if (!isUnlocked) {
-                    canvas.drawRect(0, 0, w, h, lockOverlayPaint);
-                }
-
-                // Border
-                canvas.drawRect(1, 1, w - 1, h - 1, borderPaint);
-            }
-        };
-
+        View view = new ThumbnailView(context, entry, isSelected, isUnlocked, borderColor);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
         params.gravity = Gravity.CENTER_HORIZONTAL;
         view.setLayoutParams(params);
         return view;
+    }
+
+    /**
+     * Named View subclass for background thumbnails.
+     * Avoids D8 compiler bug with anonymous inner classes that have instance initializer blocks.
+     */
+    private static class ThumbnailView extends View {
+        private final Paint paint = new Paint();
+        private final Paint borderPaint = new Paint();
+        private final Paint lockOverlayPaint = new Paint();
+        private final BackgroundEntry entry;
+        private final boolean isUnlocked;
+
+        ThumbnailView(Context context, BackgroundEntry entry, boolean isSelected,
+                       boolean isUnlocked, int borderColor) {
+            super(context);
+            this.entry = entry;
+            this.isUnlocked = isUnlocked;
+            paint.setFilterBitmap(false);
+            paint.setAntiAlias(false);
+            borderPaint.setStyle(Paint.Style.STROKE);
+            borderPaint.setStrokeWidth(isSelected ? 4 : 2);
+            borderPaint.setColor(borderColor);
+            lockOverlayPaint.setColor(Color.argb(160, 0, 0, 0));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int w = getWidth();
+            int h = getHeight();
+
+            if (entry.isSolidColor) {
+                paint.setColor(entry.solidColor);
+                canvas.drawRect(0, 0, w, h, paint);
+            } else {
+                Bitmap bmp = entry.getBitmap();
+                if (bmp != null) {
+                    Rect src = new Rect(0, 0, bmp.getWidth(), bmp.getHeight());
+                    Rect dst = new Rect(0, 0, w, h);
+                    canvas.drawBitmap(bmp, src, dst, paint);
+                } else {
+                    paint.setColor(Color.parseColor("#222222"));
+                    canvas.drawRect(0, 0, w, h, paint);
+                }
+            }
+
+            if (!isUnlocked) {
+                canvas.drawRect(0, 0, w, h, lockOverlayPaint);
+            }
+
+            canvas.drawRect(1, 1, w - 1, h - 1, borderPaint);
+        }
     }
 }
