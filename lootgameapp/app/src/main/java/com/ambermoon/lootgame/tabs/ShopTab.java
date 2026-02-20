@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.*;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -298,12 +299,23 @@ public class ShopTab extends ScrollView {
         nameText.setTypeface(Typeface.DEFAULT_BOLD);
         nameCol.addView(nameText);
 
+        // Seller row: profile pic + username
+        LinearLayout sellerRow = new LinearLayout(ctx);
+        sellerRow.setOrientation(LinearLayout.HORIZONTAL);
+        sellerRow.setGravity(Gravity.CENTER_VERTICAL);
+        sellerRow.setPadding(0, 2, 0, 0);
+
+        View sellerPicView = createSellerPicView(ctx, listing, isOwnListing);
+        sellerRow.addView(sellerPicView);
+
         TextView sellerText = new TextView(ctx);
-        sellerText.setText(isOwnListing ? "YOUR LISTING" : "Sold by " + listing.sellerUsername);
+        sellerText.setText(isOwnListing ? "YOUR LISTING" : listing.sellerUsername);
         sellerText.setTextColor(isOwnListing ? Color.parseColor("#44BBFF") : Color.parseColor("#888899"));
         sellerText.setTextSize(10);
-        nameCol.addView(sellerText);
+        sellerText.setPadding(4, 0, 0, 0);
+        sellerRow.addView(sellerText);
 
+        nameCol.addView(sellerRow);
         row.addView(nameCol);
 
         // Price + buy/own indicator
@@ -346,6 +358,64 @@ public class ShopTab extends ScrollView {
         row.setOnClickListener(v -> showMarketplaceItemDetail(listing, template, isOwnListing));
 
         itemGrid.addView(row);
+    }
+
+    /**
+     * Creates a small circular profile picture (20x20) for a marketplace seller.
+     * Shows the decoded Base64 image or a colored initial.
+     */
+    private View createSellerPicView(Context ctx, SaveData.PlayerListing listing, boolean isOwnListing) {
+        final String picData = isOwnListing
+                ? SaveManager.getInstance().getData().profilePicBase64
+                : listing.sellerProfilePic;
+        final String initial = (listing.sellerUsername != null && !listing.sellerUsername.isEmpty())
+                ? listing.sellerUsername.substring(0, 1).toUpperCase() : "?";
+
+        View view = new View(ctx) {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private Bitmap picBitmap;
+            {
+                if (picData != null && !picData.isEmpty()) {
+                    try {
+                        byte[] bytes = Base64.decode(picData, Base64.NO_WRAP);
+                        picBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                float cx = getWidth() / 2f;
+                float cy = getHeight() / 2f;
+                float radius = Math.min(cx, cy) - 1;
+
+                if (picBitmap != null && !picBitmap.isRecycled()) {
+                    canvas.save();
+                    android.graphics.Path clipPath = new android.graphics.Path();
+                    clipPath.addCircle(cx, cy, radius, android.graphics.Path.Direction.CW);
+                    canvas.clipPath(clipPath);
+                    RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
+                    paint.setFilterBitmap(true);
+                    canvas.drawBitmap(picBitmap, null, dst, paint);
+                    canvas.restore();
+                } else {
+                    paint.setColor(Color.parseColor("#3C3555"));
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(cx, cy, radius, paint);
+                    paint.setColor(Color.parseColor("#B8A9D4"));
+                    paint.setTextSize(radius * 0.9f);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    Paint.FontMetrics fm = paint.getFontMetrics();
+                    float textY = cy - (fm.ascent + fm.descent) / 2;
+                    canvas.drawText(initial, cx, textY, paint);
+                }
+            }
+        };
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(24, 24);
+        view.setLayoutParams(params);
+        return view;
     }
 
     private void showItemDetail(SaveData.ShopItem shopItem, Item template) {

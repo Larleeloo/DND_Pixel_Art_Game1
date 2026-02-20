@@ -62,6 +62,9 @@ public class SaveData {
     public String selectedBackgroundId = "none";
     public List<String> unlockedBackgrounds = new ArrayList<>();
 
+    // Profile picture (Base64-encoded JPEG, max 64x64)
+    public String profilePicBase64 = "";
+
     public static class VaultItem {
         public String itemId;
         public int stackCount;
@@ -110,6 +113,7 @@ public class SaveData {
         public int price;
         public String sellerUsername;
         public long listTimestamp;
+        public String sellerProfilePic = "";
 
         public PlayerListing() {}
         public PlayerListing(String itemId, int price, String sellerUsername, long listTimestamp) {
