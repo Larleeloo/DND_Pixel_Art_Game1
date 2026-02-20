@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.*;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Base64;
 import android.view.*;
 import android.widget.*;
 
@@ -120,21 +121,81 @@ public class CosmeticsPopup {
         // Divider before clothing section
         root.addView(createDivider(context, 16, 16));
 
-        // --- Clothing Section (placeholder) ---
-        TextView clothingSectionTitle = new TextView(context);
-        clothingSectionTitle.setText("Clothing Mockups");
-        clothingSectionTitle.setTextColor(Color.parseColor("#B8A9D4"));
-        clothingSectionTitle.setTextSize(14);
-        clothingSectionTitle.setTypeface(null, Typeface.BOLD);
-        clothingSectionTitle.setPadding(0, 0, 0, 8);
-        root.addView(clothingSectionTitle);
+        // --- Profile Picture Section ---
+        TextView profileSectionTitle = new TextView(context);
+        profileSectionTitle.setText("Profile Picture");
+        profileSectionTitle.setTextColor(Color.parseColor("#B8A9D4"));
+        profileSectionTitle.setTextSize(14);
+        profileSectionTitle.setTypeface(null, Typeface.BOLD);
+        profileSectionTitle.setPadding(0, 0, 0, 4);
+        root.addView(profileSectionTitle);
 
-        TextView comingSoon = new TextView(context);
-        comingSoon.setText("Coming soon...");
-        comingSoon.setTextColor(Color.parseColor("#666666"));
-        comingSoon.setTextSize(12);
-        comingSoon.setPadding(0, 0, 0, 16);
-        root.addView(comingSoon);
+        TextView profileHint = new TextView(context);
+        profileHint.setText("Shows next to your name in the shop");
+        profileHint.setTextColor(Color.parseColor("#666666"));
+        profileHint.setTextSize(10);
+        profileHint.setPadding(0, 0, 0, 8);
+        root.addView(profileHint);
+
+        // Current profile picture preview + buttons row
+        LinearLayout profileRow = new LinearLayout(context);
+        profileRow.setOrientation(LinearLayout.HORIZONTAL);
+        profileRow.setGravity(Gravity.CENTER);
+        profileRow.setPadding(0, 0, 0, 16);
+
+        // Profile picture preview (circular)
+        View profilePreview = createProfilePicPreview(context);
+        profileRow.addView(profilePreview);
+
+        // Buttons column
+        LinearLayout btnCol = new LinearLayout(context);
+        btnCol.setOrientation(LinearLayout.VERTICAL);
+        btnCol.setPadding(16, 0, 0, 0);
+
+        Button uploadBtn = new Button(context);
+        uploadBtn.setText("Upload Photo");
+        uploadBtn.setTextColor(Color.WHITE);
+        uploadBtn.setTextSize(12);
+        uploadBtn.setBackgroundColor(Color.parseColor("#2E6B8B"));
+        uploadBtn.setPadding(24, 8, 24, 8);
+        uploadBtn.setOnClickListener(v -> {
+            if (context instanceof TabActivity) {
+                dialog.dismiss();
+                ((TabActivity) context).pickProfilePicture(() -> {
+                    // Reopen cosmetics popup after picture is set
+                    CosmeticsPopup.show(context, listener);
+                });
+            }
+        });
+        btnCol.addView(uploadBtn);
+
+        // Remove button (only if a picture is set)
+        String currentPic = "";
+        if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
+            currentPic = SaveManager.getInstance().getData().profilePicBase64;
+        }
+        if (currentPic != null && !currentPic.isEmpty()) {
+            Button removeBtn = new Button(context);
+            removeBtn.setText("Remove");
+            removeBtn.setTextColor(Color.WHITE);
+            removeBtn.setTextSize(12);
+            removeBtn.setBackgroundColor(Color.parseColor("#8B2E2E"));
+            removeBtn.setPadding(24, 8, 24, 8);
+            LinearLayout.LayoutParams removeBtnP = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            removeBtnP.topMargin = 4;
+            removeBtn.setLayoutParams(removeBtnP);
+            removeBtn.setOnClickListener(v -> {
+                SaveManager.getInstance().getData().profilePicBase64 = "";
+                SaveManager.getInstance().save();
+                dialog.dismiss();
+                CosmeticsPopup.show(context, listener);
+            });
+            btnCol.addView(removeBtn);
+        }
+
+        profileRow.addView(btnCol);
+        root.addView(profileRow);
 
         // Close button
         Button closeBtn = new Button(context);
@@ -289,6 +350,76 @@ public class CosmeticsPopup {
                 colIndex++;
             }
         }
+    }
+
+    /**
+     * Creates a circular profile picture preview (64x64 display).
+     * Shows the decoded Base64 image or a placeholder initial.
+     */
+    private static View createProfilePicPreview(Context context) {
+        String base64 = "";
+        String username = GamePreferences.getUsername();
+        if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
+            base64 = SaveManager.getInstance().getData().profilePicBase64;
+        }
+        final String picData = base64;
+        final String initial = (username != null && !username.isEmpty())
+                ? username.substring(0, 1).toUpperCase() : "?";
+
+        View view = new View(context) {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private Bitmap picBitmap;
+            {
+                if (picData != null && !picData.isEmpty()) {
+                    try {
+                        byte[] bytes = Base64.decode(picData, Base64.NO_WRAP);
+                        picBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                float cx = getWidth() / 2f;
+                float cy = getHeight() / 2f;
+                float radius = Math.min(cx, cy) - 2;
+
+                if (picBitmap != null && !picBitmap.isRecycled()) {
+                    // Clip to circle and draw bitmap
+                    canvas.save();
+                    android.graphics.Path clipPath = new android.graphics.Path();
+                    clipPath.addCircle(cx, cy, radius, android.graphics.Path.Direction.CW);
+                    canvas.clipPath(clipPath);
+                    RectF dst = new RectF(cx - radius, cy - radius, cx + radius, cy + radius);
+                    paint.setFilterBitmap(true);
+                    canvas.drawBitmap(picBitmap, null, dst, paint);
+                    canvas.restore();
+                } else {
+                    // Placeholder circle with initial
+                    paint.setColor(Color.parseColor("#3C3555"));
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(cx, cy, radius, paint);
+                    paint.setColor(Color.parseColor("#B8A9D4"));
+                    paint.setTextSize(radius * 0.9f);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    Paint.FontMetrics fm = paint.getFontMetrics();
+                    float textY = cy - (fm.ascent + fm.descent) / 2;
+                    canvas.drawText(initial, cx, textY, paint);
+                }
+
+                // Circle border
+                paint.setColor(Color.parseColor("#FFD700"));
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(2);
+                canvas.drawCircle(cx, cy, radius, paint);
+            }
+        };
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(96, 96);
+        params.gravity = Gravity.CENTER_VERTICAL;
+        view.setLayoutParams(params);
+        return view;
     }
 
     private static View createThumbnailView(Context context, BackgroundEntry entry,

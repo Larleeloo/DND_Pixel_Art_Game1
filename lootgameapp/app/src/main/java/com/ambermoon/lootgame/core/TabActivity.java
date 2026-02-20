@@ -1,8 +1,11 @@
 package com.ambermoon.lootgame.core;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.*;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.*;
 import android.widget.*;
 
@@ -17,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TabActivity extends Activity {
+    private static final int REQUEST_PICK_PROFILE_PIC = 9001;
+
     private FrameLayout contentFrame;
     private LinearLayout tabBar;
     private TextView coinDisplay;
@@ -24,6 +29,7 @@ public class TabActivity extends Activity {
     private View currentTab;
     private int currentTabIndex = 0;
     private BackgroundTileView backgroundView;
+    private Runnable profilePicCallback;
 
     private String[] tabLabels;
     private Button[] tabButtons;
@@ -214,6 +220,73 @@ public class TabActivity extends Activity {
         if (coinDisplay != null && SaveManager.getInstance() != null) {
             CoinIconHelper.setCoinText(coinDisplay,
                     "\u25C8 " + SaveManager.getInstance().getData().coins + " coins", 18);
+        }
+    }
+
+    /**
+     * Launch the system image picker for profile picture selection.
+     * Called from CosmeticsPopup. The callback is invoked after the image is saved.
+     */
+    public void pickProfilePicture(Runnable onComplete) {
+        this.profilePicCallback = onComplete;
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Profile Picture"), REQUEST_PICK_PROFILE_PIC);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_PICK_PROFILE_PIC && resultCode == RESULT_OK && data != null) {
+            Uri imageUri = data.getData();
+            if (imageUri != null) {
+                processProfilePicture(imageUri);
+            }
+        }
+    }
+
+    /**
+     * Load image from URI, center-crop to square, resize to 64x64, compress to JPEG,
+     * encode as Base64, and save to SaveData.
+     */
+    private void processProfilePicture(Uri imageUri) {
+        try {
+            java.io.InputStream is = getContentResolver().openInputStream(imageUri);
+            if (is == null) return;
+            Bitmap original = BitmapFactory.decodeStream(is);
+            is.close();
+            if (original == null) return;
+
+            // Center-crop to square
+            int w = original.getWidth();
+            int h = original.getHeight();
+            int size = Math.min(w, h);
+            int x = (w - size) / 2;
+            int y = (h - size) / 2;
+            Bitmap cropped = Bitmap.createBitmap(original, x, y, size, size);
+            if (cropped != original) original.recycle();
+
+            // Resize to 64x64
+            Bitmap scaled = Bitmap.createScaledBitmap(cropped, 64, 64, true);
+            if (scaled != cropped) cropped.recycle();
+
+            // Compress to JPEG and encode as Base64
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            scaled.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            scaled.recycle();
+            String base64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+
+            SaveManager.getInstance().getData().profilePicBase64 = base64;
+            SaveManager.getInstance().save();
+
+            Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+
+            if (profilePicCallback != null) {
+                profilePicCallback.run();
+                profilePicCallback = null;
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
         }
     }
 

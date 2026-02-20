@@ -396,6 +396,7 @@ public class SaveManager {
             sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
             sb.append("\"price\": ").append(pl.price).append(", ");
             sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
+            sb.append("\"sellerProfilePic\": \"").append(pl.sellerProfilePic).append("\", ");
             sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
             if (i < d.playerListings.size() - 1) sb.append(",");
             sb.append("\n");
@@ -424,7 +425,8 @@ public class SaveManager {
             sb.append("\"").append(d.unlockedBackgrounds.get(i)).append("\"");
             if (i < d.unlockedBackgrounds.size() - 1) sb.append(", ");
         }
-        sb.append("]\n");
+        sb.append("],\n");
+        sb.append("  \"profilePicBase64\": \"").append(d.profilePicBase64).append("\"\n");
         sb.append("}");
         return sb.toString();
     }
@@ -530,9 +532,12 @@ public class SaveManager {
                     String itemId = extractString(obj, "itemId", "");
                     int price = extractInt(obj, "price", 0);
                     String seller = extractString(obj, "sellerUsername", "");
+                    String sellerPic = extractLargeString(obj, "sellerProfilePic", "");
                     long ts = extractLong(obj, "listTimestamp", 0);
                     if (!itemId.isEmpty() && price > 0) {
-                        d.playerListings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
+                        SaveData.PlayerListing pl = new SaveData.PlayerListing(itemId, price, seller, ts);
+                        pl.sellerProfilePic = sellerPic;
+                        d.playerListings.add(pl);
                     }
                     objStart = objEnd + 1;
                 }
@@ -606,6 +611,8 @@ public class SaveManager {
             }
         }
 
+        d.profilePicBase64 = extractLargeString(json, "profilePicBase64", "");
+
         checkDailyStreak();
         return d;
     }
@@ -642,6 +649,24 @@ public class SaveManager {
         int idx = json.indexOf("\"" + key + "\"");
         if (idx == -1) return def;
         int colon = json.indexOf(':', idx);
+        if (colon == -1) return def;
+        int q1 = json.indexOf('"', colon + 1);
+        if (q1 == -1) return def;
+        int q2 = json.indexOf('"', q1 + 1);
+        if (q2 == -1) return def;
+        return json.substring(q1 + 1, q2);
+    }
+
+    /**
+     * Extract a potentially large string value (e.g. Base64 data).
+     * Works the same as extractString but searches from the END of the JSON
+     * to avoid matching a key that appears as a substring in a Base64 value.
+     */
+    private static String extractLargeString(String json, String key, String def) {
+        String needle = "\"" + key + "\"";
+        int idx = json.lastIndexOf(needle);
+        if (idx == -1) return def;
+        int colon = json.indexOf(':', idx + needle.length());
         if (colon == -1) return def;
         int q1 = json.indexOf('"', colon + 1);
         if (q1 == -1) return def;
@@ -742,6 +767,7 @@ public class SaveManager {
         String seller = currentUsername;
         long timestamp = System.currentTimeMillis();
         SaveData.PlayerListing listing = new SaveData.PlayerListing(itemId, price, seller, timestamp);
+        listing.sellerProfilePic = data.profilePicBase64;
 
         // Add to player's own listing tracker
         data.playerListings.add(listing);
@@ -1165,6 +1191,7 @@ public class SaveManager {
             sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
             sb.append("\"price\": ").append(pl.price).append(", ");
             sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
+            sb.append("\"sellerProfilePic\": \"").append(pl.sellerProfilePic).append("\", ");
             sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
             if (i < listings.size() - 1) sb.append(",");
             sb.append("\n");
@@ -1197,9 +1224,12 @@ public class SaveManager {
             String itemId = extractString(obj, "itemId", "");
             int price = extractInt(obj, "price", 0);
             String seller = extractString(obj, "sellerUsername", "");
+            String sellerPic = extractLargeString(obj, "sellerProfilePic", "");
             long ts = extractLong(obj, "listTimestamp", 0);
             if (!itemId.isEmpty() && price > 0 && !seller.isEmpty()) {
-                listings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
+                SaveData.PlayerListing pl = new SaveData.PlayerListing(itemId, price, seller, ts);
+                pl.sellerProfilePic = sellerPic;
+                listings.add(pl);
             }
             objStart = objEnd + 1;
         }
