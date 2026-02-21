@@ -362,7 +362,7 @@ public class ShopTab extends ScrollView {
     }
 
     /**
-     * Creates a circular profile picture (40x40) for a marketplace seller.
+     * Creates a circular profile picture (36dp) for a marketplace seller.
      * Shows the decoded Base64 image or a colored initial.
      * Profile pics are loaded from the shared cloud profile pics cache.
      */
@@ -382,7 +382,8 @@ public class ShopTab extends ScrollView {
         final Bitmap picBitmap = decoded;
 
         View view = new SellerPicView(ctx, picBitmap, initial);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40, 40);
+        int sizePx = (int) (36 * ctx.getResources().getDisplayMetrics().density);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(sizePx, sizePx);
         view.setLayoutParams(params);
         return view;
     }

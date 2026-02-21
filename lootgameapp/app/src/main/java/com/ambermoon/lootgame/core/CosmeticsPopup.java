@@ -354,7 +354,7 @@ public class CosmeticsPopup {
     }
 
     /**
-     * Creates a circular profile picture preview (64x64 display).
+     * Creates a circular profile picture preview (80dp display).
      * Shows the decoded Base64 image or a placeholder initial.
      */
     private static View createProfilePicPreview(Context context) {
@@ -377,7 +377,8 @@ public class CosmeticsPopup {
         }
 
         View view = new ProfilePicPreviewView(context, decoded, initial);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(96, 96);
+        int sizePx = (int) (80 * context.getResources().getDisplayMetrics().density);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(sizePx, sizePx);
         params.gravity = Gravity.CENTER_VERTICAL;
         view.setLayoutParams(params);
         return view;
