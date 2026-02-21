@@ -62,7 +62,7 @@ public class SaveData {
     public String selectedBackgroundId = "none";
     public List<String> unlockedBackgrounds = new ArrayList<>();
 
-    // Profile picture (Base64-encoded JPEG, max 64x64)
+    // Profile picture (Base64-encoded JPEG, max 128x128)
     public String profilePicBase64 = "";
 
     public static class VaultItem {

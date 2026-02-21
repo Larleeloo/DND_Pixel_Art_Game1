@@ -246,7 +246,7 @@ public class TabActivity extends Activity {
     }
 
     /**
-     * Load image from URI, center-crop to square, resize to 64x64, compress to JPEG,
+     * Load image from URI, center-crop to square, resize to 128x128, compress to JPEG,
      * encode as Base64, and save to SaveData.
      */
     private void processProfilePicture(Uri imageUri) {
@@ -266,13 +266,13 @@ public class TabActivity extends Activity {
             Bitmap cropped = Bitmap.createBitmap(original, x, y, size, size);
             if (cropped != original) original.recycle();
 
-            // Resize to 64x64
-            Bitmap scaled = Bitmap.createScaledBitmap(cropped, 64, 64, true);
+            // Resize to 128x128 for crisp display on high-density screens
+            Bitmap scaled = Bitmap.createScaledBitmap(cropped, 128, 128, true);
             if (scaled != cropped) cropped.recycle();
 
             // Compress to JPEG and encode as Base64
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-            scaled.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            scaled.compress(Bitmap.CompressFormat.JPEG, 75, baos);
             scaled.recycle();
             String base64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
 
