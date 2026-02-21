@@ -95,6 +95,8 @@ public class SaveManager {
             checkDailyStreak();
             saveLocal();
         }
+        // Load profile pic from its separate local file
+        loadProfilePicLocal();
     }
 
     // --- Cooldown checks ---
@@ -396,7 +398,6 @@ public class SaveManager {
             sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
             sb.append("\"price\": ").append(pl.price).append(", ");
             sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
-            sb.append("\"sellerProfilePic\": \"").append(pl.sellerProfilePic).append("\", ");
             sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
             if (i < d.playerListings.size() - 1) sb.append(",");
             sb.append("\n");
@@ -425,8 +426,7 @@ public class SaveManager {
             sb.append("\"").append(d.unlockedBackgrounds.get(i)).append("\"");
             if (i < d.unlockedBackgrounds.size() - 1) sb.append(", ");
         }
-        sb.append("],\n");
-        sb.append("  \"profilePicBase64\": \"").append(d.profilePicBase64).append("\"\n");
+        sb.append("]\n");
         sb.append("}");
         return sb.toString();
     }
@@ -532,12 +532,9 @@ public class SaveManager {
                     String itemId = extractString(obj, "itemId", "");
                     int price = extractInt(obj, "price", 0);
                     String seller = extractString(obj, "sellerUsername", "");
-                    String sellerPic = extractLargeString(obj, "sellerProfilePic", "");
                     long ts = extractLong(obj, "listTimestamp", 0);
                     if (!itemId.isEmpty() && price > 0) {
-                        SaveData.PlayerListing pl = new SaveData.PlayerListing(itemId, price, seller, ts);
-                        pl.sellerProfilePic = sellerPic;
-                        d.playerListings.add(pl);
+                        d.playerListings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
                     }
                     objStart = objEnd + 1;
                 }
@@ -611,8 +608,6 @@ public class SaveManager {
             }
         }
 
-        d.profilePicBase64 = extractLargeString(json, "profilePicBase64", "");
-
         checkDailyStreak();
         return d;
     }
@@ -649,24 +644,6 @@ public class SaveManager {
         int idx = json.indexOf("\"" + key + "\"");
         if (idx == -1) return def;
         int colon = json.indexOf(':', idx);
-        if (colon == -1) return def;
-        int q1 = json.indexOf('"', colon + 1);
-        if (q1 == -1) return def;
-        int q2 = json.indexOf('"', q1 + 1);
-        if (q2 == -1) return def;
-        return json.substring(q1 + 1, q2);
-    }
-
-    /**
-     * Extract a potentially large string value (e.g. Base64 data).
-     * Works the same as extractString but searches from the END of the JSON
-     * to avoid matching a key that appears as a substring in a Base64 value.
-     */
-    private static String extractLargeString(String json, String key, String def) {
-        String needle = "\"" + key + "\"";
-        int idx = json.lastIndexOf(needle);
-        if (idx == -1) return def;
-        int colon = json.indexOf(':', idx + needle.length());
         if (colon == -1) return def;
         int q1 = json.indexOf('"', colon + 1);
         if (q1 == -1) return def;
@@ -767,7 +744,6 @@ public class SaveManager {
         String seller = currentUsername;
         long timestamp = System.currentTimeMillis();
         SaveData.PlayerListing listing = new SaveData.PlayerListing(itemId, price, seller, timestamp);
-        listing.sellerProfilePic = data.profilePicBase64;
 
         // Add to player's own listing tracker
         data.playerListings.add(listing);
@@ -913,6 +889,7 @@ public class SaveManager {
     public String toJson() { return serializeToJson(data); }
     public void fromJson(String json) {
         data = deserializeFromJson(json);
+        loadProfilePicLocal();
         validateSaveData();
     }
 
@@ -1191,7 +1168,6 @@ public class SaveManager {
             sb.append("    {\"itemId\": \"").append(pl.itemId).append("\", ");
             sb.append("\"price\": ").append(pl.price).append(", ");
             sb.append("\"sellerUsername\": \"").append(pl.sellerUsername).append("\", ");
-            sb.append("\"sellerProfilePic\": \"").append(pl.sellerProfilePic).append("\", ");
             sb.append("\"listTimestamp\": ").append(pl.listTimestamp).append("}");
             if (i < listings.size() - 1) sb.append(",");
             sb.append("\n");
@@ -1224,12 +1200,9 @@ public class SaveManager {
             String itemId = extractString(obj, "itemId", "");
             int price = extractInt(obj, "price", 0);
             String seller = extractString(obj, "sellerUsername", "");
-            String sellerPic = extractLargeString(obj, "sellerProfilePic", "");
             long ts = extractLong(obj, "listTimestamp", 0);
             if (!itemId.isEmpty() && price > 0 && !seller.isEmpty()) {
-                SaveData.PlayerListing pl = new SaveData.PlayerListing(itemId, price, seller, ts);
-                pl.sellerProfilePic = sellerPic;
-                listings.add(pl);
+                listings.add(new SaveData.PlayerListing(itemId, price, seller, ts));
             }
             objStart = objEnd + 1;
         }
@@ -1265,5 +1238,175 @@ public class SaveManager {
             q1 = q2 + 1;
         }
         return coins;
+    }
+
+    // --- Profile Picture (separate file, not in main save JSON) ---
+
+    private static final String PROFILE_PIC_FILE = "loot_game_profilepic.txt";
+    private static final String PROFILE_PICS_CACHE_FILE = "loot_game_profilepics.json";
+    private Map<String, String> profilePicsCache = new HashMap<>();
+
+    /**
+     * Save the current user's profile pic to a separate local file.
+     * This keeps the Base64 data out of the main save JSON.
+     */
+    public void saveProfilePicLocal() {
+        try {
+            FileOutputStream fos = context.openFileOutput(PROFILE_PIC_FILE, Context.MODE_PRIVATE);
+            fos.write(data.profilePicBase64.getBytes("UTF-8"));
+            fos.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to save profile pic locally: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Load the current user's profile pic from the separate local file.
+     * Called during init/load to restore the in-memory field.
+     */
+    private void loadProfilePicLocal() {
+        try {
+            FileInputStream fis = context.openFileInput(PROFILE_PIC_FILE);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+            fis.close();
+            data.profilePicBase64 = baos.toString("UTF-8");
+        } catch (FileNotFoundException e) {
+            // No profile pic file yet
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load profile pic: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Upload the current user's profile pic to the shared cloud profile pics file.
+     * Downloads the existing file first, updates the current user's entry, re-uploads.
+     */
+    public void syncProfilePicToCloud() {
+        if (!com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) return;
+
+        GoogleDriveSyncManager.getInstance().downloadProfilePicsFromCloud((json, error) -> {
+            Map<String, String> allPics = new HashMap<>();
+            if (json != null) {
+                allPics = parseProfilePics(json);
+            }
+            // Update current user's pic
+            if (data.profilePicBase64 != null && !data.profilePicBase64.isEmpty()) {
+                allPics.put(currentUsername, data.profilePicBase64);
+            } else {
+                allPics.remove(currentUsername);
+            }
+            // Re-upload
+            String updatedJson = serializeProfilePics(allPics);
+            GoogleDriveSyncManager.getInstance().uploadProfilePicsToCloud(updatedJson, null);
+        });
+    }
+
+    /**
+     * Download all profile pics from cloud and cache locally.
+     * Called when ShopTab loads to display seller profile pictures.
+     */
+    public void syncProfilePicsFromCloud(ProfilePicsSyncCallback callback) {
+        if (!com.ambermoon.lootgame.core.GamePreferences.isCloudSyncEnabled()) {
+            loadProfilePicsCacheLocal();
+            if (callback != null) callback.onProfilePicsLoaded(profilePicsCache);
+            return;
+        }
+        GoogleDriveSyncManager.getInstance().downloadProfilePicsFromCloud((json, error) -> {
+            if (json != null) {
+                profilePicsCache = parseProfilePics(json);
+                // Cache locally
+                try {
+                    FileOutputStream fos = context.openFileOutput(PROFILE_PICS_CACHE_FILE, Context.MODE_PRIVATE);
+                    fos.write(json.getBytes("UTF-8"));
+                    fos.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to cache profile pics locally: " + e.getMessage());
+                }
+            } else {
+                loadProfilePicsCacheLocal();
+            }
+            if (callback != null) callback.onProfilePicsLoaded(profilePicsCache);
+        });
+    }
+
+    public interface ProfilePicsSyncCallback {
+        void onProfilePicsLoaded(Map<String, String> pics);
+    }
+
+    /**
+     * Get a user's profile pic Base64 from the cache.
+     * Returns empty string if not found.
+     */
+    public String getProfilePic(String username) {
+        if (username == null) return "";
+        // For the current user, prefer the local in-memory value
+        if (username.equalsIgnoreCase(currentUsername)) {
+            return data.profilePicBase64;
+        }
+        String pic = profilePicsCache.get(username);
+        return pic != null ? pic : "";
+    }
+
+    private void loadProfilePicsCacheLocal() {
+        try {
+            FileInputStream fis = context.openFileInput(PROFILE_PICS_CACHE_FILE);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+            fis.close();
+            profilePicsCache = parseProfilePics(baos.toString("UTF-8"));
+        } catch (FileNotFoundException e) {
+            // No cache file yet
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load profile pics cache: " + e.getMessage());
+        }
+    }
+
+    private String serializeProfilePics(Map<String, String> pics) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"pics\": {");
+        int idx = 0;
+        for (Map.Entry<String, String> entry : pics.entrySet()) {
+            sb.append("\"").append(entry.getKey()).append("\": \"").append(entry.getValue()).append("\"");
+            if (idx < pics.size() - 1) sb.append(", ");
+            idx++;
+        }
+        sb.append("}}");
+        return sb.toString();
+    }
+
+    private Map<String, String> parseProfilePics(String json) {
+        Map<String, String> pics = new HashMap<>();
+        int picsStart = json.indexOf("\"pics\"");
+        if (picsStart == -1) return pics;
+        int braceStart = json.indexOf('{', picsStart + 6);
+        if (braceStart == -1) return pics;
+        int braceEnd = findMatchingBrace(json, braceStart);
+        if (braceEnd == -1) return pics;
+        String inner = json.substring(braceStart + 1, braceEnd);
+        // Parse "username": "base64data" pairs
+        int pos = 0;
+        while (pos < inner.length()) {
+            int keyStart = inner.indexOf('"', pos);
+            if (keyStart == -1) break;
+            int keyEnd = inner.indexOf('"', keyStart + 1);
+            if (keyEnd == -1) break;
+            String key = inner.substring(keyStart + 1, keyEnd);
+            int colon = inner.indexOf(':', keyEnd + 1);
+            if (colon == -1) break;
+            int valStart = inner.indexOf('"', colon + 1);
+            if (valStart == -1) break;
+            int valEnd = inner.indexOf('"', valStart + 1);
+            if (valEnd == -1) break;
+            if (!key.isEmpty()) {
+                pics.put(key, inner.substring(valStart + 1, valEnd));
+            }
+            pos = valEnd + 1;
+        }
+        return pics;
     }
 }

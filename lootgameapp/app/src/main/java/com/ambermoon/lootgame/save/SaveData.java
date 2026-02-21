@@ -113,7 +113,6 @@ public class SaveData {
         public int price;
         public String sellerUsername;
         public long listTimestamp;
-        public String sellerProfilePic = "";
 
         public PlayerListing() {}
         public PlayerListing(String itemId, int price, String sellerUsername, long listTimestamp) {
