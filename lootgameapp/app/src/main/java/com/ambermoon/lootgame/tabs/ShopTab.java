@@ -67,7 +67,7 @@ public class ShopTab extends ScrollView {
 
         addView(content);
 
-        // Show loading text, then sync shop + marketplace from cloud before displaying
+        // Show loading text, then sync shop + marketplace + profile pics from cloud
         showLoading();
         SaveManager sm = SaveManager.getInstance();
         sm.syncShopFromCloud(items -> {
@@ -84,7 +84,8 @@ public class ShopTab extends ScrollView {
                         ((TabActivity) getContext()).updateCoinDisplay();
                     }
                 }
-                populateGrid();
+                // Sync profile pics for seller display, then populate
+                sm.syncProfilePicsFromCloud(pics -> populateGrid());
             });
         });
     }
@@ -305,7 +306,7 @@ public class ShopTab extends ScrollView {
         sellerRow.setGravity(Gravity.CENTER_VERTICAL);
         sellerRow.setPadding(0, 2, 0, 0);
 
-        View sellerPicView = createSellerPicView(ctx, listing, isOwnListing);
+        View sellerPicView = createSellerPicView(ctx, listing);
         sellerRow.addView(sellerPicView);
 
         TextView sellerText = new TextView(ctx);
@@ -361,18 +362,16 @@ public class ShopTab extends ScrollView {
     }
 
     /**
-     * Creates a small circular profile picture (20x20) for a marketplace seller.
+     * Creates a circular profile picture (40x40) for a marketplace seller.
      * Shows the decoded Base64 image or a colored initial.
+     * Profile pics are loaded from the shared cloud profile pics cache.
      */
-    private View createSellerPicView(Context ctx, SaveData.PlayerListing listing, boolean isOwnListing) {
-        String raw = isOwnListing
-                ? SaveManager.getInstance().getData().profilePicBase64
-                : listing.sellerProfilePic;
+    private View createSellerPicView(Context ctx, SaveData.PlayerListing listing) {
+        String raw = SaveManager.getInstance().getProfilePic(listing.sellerUsername);
         if (raw == null) raw = "";
         final String initial = (listing.sellerUsername != null && !listing.sellerUsername.isEmpty())
                 ? listing.sellerUsername.substring(0, 1).toUpperCase() : "?";
 
-        // Decode bitmap OUTSIDE the anonymous class to avoid D8 instance-init bug
         Bitmap decoded = null;
         if (!raw.isEmpty()) {
             try {
@@ -383,7 +382,7 @@ public class ShopTab extends ScrollView {
         final Bitmap picBitmap = decoded;
 
         View view = new SellerPicView(ctx, picBitmap, initial);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(24, 24);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40, 40);
         view.setLayoutParams(params);
         return view;
     }

@@ -277,7 +277,8 @@ public class TabActivity extends Activity {
             String base64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
 
             SaveManager.getInstance().getData().profilePicBase64 = base64;
-            SaveManager.getInstance().save();
+            SaveManager.getInstance().saveProfilePicLocal();
+            SaveManager.getInstance().syncProfilePicToCloud();
 
             Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
 

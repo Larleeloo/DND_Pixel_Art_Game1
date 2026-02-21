@@ -187,7 +187,8 @@ public class CosmeticsPopup {
             removeBtn.setLayoutParams(removeBtnP);
             removeBtn.setOnClickListener(v -> {
                 SaveManager.getInstance().getData().profilePicBase64 = "";
-                SaveManager.getInstance().save();
+                SaveManager.getInstance().saveProfilePicLocal();
+                SaveManager.getInstance().syncProfilePicToCloud();
                 dialog.dismiss();
                 CosmeticsPopup.show(context, listener);
             });
