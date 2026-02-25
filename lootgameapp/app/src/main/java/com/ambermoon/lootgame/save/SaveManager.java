@@ -82,17 +82,12 @@ public class SaveManager {
             while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
             fis.close();
             data = deserializeFromJson(baos.toString("UTF-8"));
-            // Persist streak update immediately so it survives even if
-            // the user closes the app without performing a save action.
-            saveLocal();
         } catch (FileNotFoundException e) {
             data = new SaveData();
-            checkDailyStreak();
             saveLocal();
         } catch (Exception e) {
             Log.e(TAG, "Load failed: " + e.getMessage());
             data = new SaveData();
-            checkDailyStreak();
             saveLocal();
         }
         // Load profile pic from its separate local file
@@ -121,7 +116,10 @@ public class SaveManager {
         return Math.max(0, 30L * 24 * 60 * 60 * 1000 - elapsed);
     }
 
-    public void recordDailyChestOpened() { data.dailyChestLastOpened = System.currentTimeMillis(); }
+    public void recordDailyChestOpened() {
+        checkDailyStreak();
+        data.dailyChestLastOpened = System.currentTimeMillis();
+    }
     public void recordMonthlyChestOpened() { data.monthlyChestLastOpened = System.currentTimeMillis(); }
 
     public void addCoins(int amount) {
@@ -608,7 +606,6 @@ public class SaveManager {
             }
         }
 
-        checkDailyStreak();
         return d;
     }
 
