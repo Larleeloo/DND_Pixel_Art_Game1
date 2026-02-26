@@ -3,6 +3,7 @@ package com.ambermoon.lootgame.entity;
 import android.util.Log;
 
 import com.ambermoon.lootgame.graphics.AssetLoader;
+import com.ambermoon.lootgame.graphics.EquipmentSlot;
 
 // Melee Weapons
 import com.ambermoon.lootgame.entity.items.weapons.melee.WoodenSword;
@@ -762,6 +763,9 @@ public class ItemRegistry {
         register("mana_god_key", new ManaGodKey());
         register("domine_god_key", new DomineGodKey());
 
+        // Assign equipment slots based on item names/categories
+        assignEquipmentSlots();
+
         // Load all item textures
         loadAllItemTextures();
 
@@ -778,6 +782,23 @@ public class ItemRegistry {
     public static void registerItem(String id, Item item) {
         item.setRegistryId(id);
         templates.put(id, item);
+    }
+
+    /**
+     * Assigns equipment slots to all clothing/armor/accessory items
+     * based on their names and categories.
+     */
+    private static void assignEquipmentSlots() {
+        int assigned = 0;
+        for (Map.Entry<String, Item> entry : templates.entrySet()) {
+            Item item = entry.getValue();
+            int slot = EquipmentSlot.getSlotForItem(item);
+            if (slot != EquipmentSlot.SLOT_NONE) {
+                item.setEquipmentSlot(slot);
+                assigned++;
+            }
+        }
+        Log.d(TAG, "Assigned equipment slots to " + assigned + " items");
     }
 
     /**

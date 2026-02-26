@@ -229,6 +229,9 @@ public class Item {
     private boolean scalesWithIntelligence = false;
     private int wisdomRequirement = 0;
 
+    // Equipment slot for clothing preview system (-1 = not equippable)
+    private int equipmentSlot = -1;
+
     // Reusable Paint for drawing
     private static final Paint drawPaint = new Paint();
     private static final Rect srcRect = new Rect();
@@ -334,6 +337,7 @@ public class Item {
         this.scalesWithDexterity = original.scalesWithDexterity;
         this.scalesWithIntelligence = original.scalesWithIntelligence;
         this.wisdomRequirement = original.wisdomRequirement;
+        this.equipmentSlot = original.equipmentSlot;
     }
 
     /**
@@ -833,6 +837,16 @@ public class Item {
     public boolean hasAbilityScaling() {
         return scalesWithStrength || scalesWithDexterity ||
                scalesWithIntelligence || wisdomRequirement > 0;
+    }
+
+    // ==================== Equipment Slot ====================
+
+    public int getEquipmentSlot() {
+        return equipmentSlot;
+    }
+
+    public void setEquipmentSlot(int slot) {
+        this.equipmentSlot = slot;
     }
 
     /**
