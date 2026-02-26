@@ -9,7 +9,7 @@ import android.graphics.Rect;
 import java.util.Map;
 
 /**
- * Composites multiple 64x64 sprite layers with alpha transparency
+ * Composites multiple 128x128 sprite layers with alpha transparency
  * for the clothing preview system.
  *
  * Layers are composited in the order defined by {@link EquipmentSlot#RENDER_ORDER},
@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class SpriteLayerCompositor {
 
-    private static final int SIZE = AvatarRegistry.SPRITE_SIZE; // 64
+    private static final int SIZE = AvatarRegistry.SPRITE_SIZE; // 128
     private static final int FRAME_COUNT = AvatarRegistry.FRAME_COUNT; // 15
 
     private static final Paint drawPaint = new Paint();
@@ -31,9 +31,9 @@ public class SpriteLayerCompositor {
     /**
      * Composites a single frame by layering equipment sprites on top of a base avatar frame.
      *
-     * @param baseFrame The base avatar frame (64x64)
+     * @param baseFrame The base avatar frame (128x128)
      * @param slotFrames Map of slot → equipment frame for that slot (can be sparse)
-     * @return A new 64x64 composited bitmap
+     * @return A new 128x128 composited bitmap
      */
     public static Bitmap compositeFrame(Bitmap baseFrame, Map<Integer, Bitmap> slotFrames) {
         Bitmap result = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
@@ -62,7 +62,7 @@ public class SpriteLayerCompositor {
      *
      * @param baseWalk 15 base avatar walk frames
      * @param slotWalkFrames Map of slot → 15 equipment walk frames (can be sparse)
-     * @return Array of 15 composited 64x64 frames
+     * @return Array of 15 composited 128x128 frames
      */
     public static Bitmap[] compositeWalkAnimation(Bitmap[] baseWalk,
                                                     Map<Integer, Bitmap[]> slotWalkFrames) {
@@ -91,7 +91,7 @@ public class SpriteLayerCompositor {
      *
      * @param baseIdle The base avatar idle frame
      * @param slotIdleFrames Map of slot → equipment idle frame (can be sparse)
-     * @return A single composited 64x64 frame
+     * @return A single composited 128x128 frame
      */
     public static Bitmap compositeIdle(Bitmap baseIdle, Map<Integer, Bitmap> slotIdleFrames) {
         return compositeFrame(baseIdle, slotIdleFrames);
@@ -115,10 +115,10 @@ public class SpriteLayerCompositor {
             boolean walking = (f < FRAME_COUNT);
             int frameNum = walking ? f : 0;
             float walkPhase = walking ? (float)(frameNum * 2 * Math.PI / FRAME_COUNT) : 0;
-            int legSwing = walking ? (int)(Math.sin(walkPhase) * 4) : 0;
-            int armSwing = walking ? (int)(Math.sin(walkPhase) * 3) : 0;
-            int bounce = walking ? (int)(Math.abs(Math.sin(walkPhase * 2)) * 2) : 0;
-            int baseY = 58 - bounce;
+            int legSwing = walking ? (int)(Math.sin(walkPhase) * 8) : 0;
+            int armSwing = walking ? (int)(Math.sin(walkPhase) * 6) : 0;
+            int bounce = walking ? (int)(Math.abs(Math.sin(walkPhase * 2)) * 4) : 0;
+            int baseY = 116 - bounce;
 
             result[f] = generateSlotOverlay(slot, color, baseY, legSwing, armSwing);
         }
@@ -156,7 +156,7 @@ public class SpriteLayerCompositor {
         p.setFilterBitmap(false);
         p.setColor(color);
 
-        int cx = 32;
+        int cx = 64;
 
         // Semi-transparent for placeholder visibility
         int alphaColor = Color.argb(200, Color.red(color), Color.green(color), Color.blue(color));
@@ -169,103 +169,103 @@ public class SpriteLayerCompositor {
             case EquipmentSlot.SLOT_HEADWEAR:
                 // Hat/helmet shape on top of head
                 p.setColor(alphaColor);
-                c.drawRect(cx - 8, baseY - 54, cx + 8, baseY - 48, p);  // brim
-                c.drawRect(cx - 6, baseY - 58, cx + 6, baseY - 54, p);  // top
+                c.drawRect(cx - 16, baseY - 108, cx + 16, baseY - 96, p);  // brim
+                c.drawRect(cx - 12, baseY - 116, cx + 12, baseY - 108, p);  // top
                 p.setColor(borderColor);
-                c.drawRect(cx - 8, baseY - 54, cx + 8, baseY - 53, p);  // brim edge
+                c.drawRect(cx - 16, baseY - 108, cx + 16, baseY - 106, p);  // brim edge
                 break;
 
             case EquipmentSlot.SLOT_SHIRT:
                 // Shirt/tunic overlay on torso
                 p.setColor(alphaColor);
-                c.drawRect(cx - 8, baseY - 34, cx + 8, baseY - 18, p);
+                c.drawRect(cx - 16, baseY - 68, cx + 16, baseY - 36, p);
                 // Sleeves
-                c.drawRect(cx - 12, baseY - 32 - armSwing, cx - 8, baseY - 22, p);
-                c.drawRect(cx + 8, baseY - 32 + armSwing, cx + 12, baseY - 22, p);
+                c.drawRect(cx - 24, baseY - 64 - armSwing, cx - 16, baseY - 44, p);
+                c.drawRect(cx + 16, baseY - 64 + armSwing, cx + 24, baseY - 44, p);
                 p.setColor(borderColor);
-                c.drawRect(cx - 8, baseY - 34, cx + 8, baseY - 33, p);  // collar
+                c.drawRect(cx - 16, baseY - 68, cx + 16, baseY - 66, p);  // collar
                 break;
 
             case EquipmentSlot.SLOT_ARMOR:
                 // Chestplate overlay (slightly larger, with border)
                 p.setColor(alphaColor);
-                c.drawRect(cx - 9, baseY - 34, cx + 9, baseY - 18, p);
+                c.drawRect(cx - 18, baseY - 68, cx + 18, baseY - 36, p);
                 p.setColor(borderColor);
-                c.drawRect(cx - 9, baseY - 34, cx + 9, baseY - 33, p);  // top edge
-                c.drawRect(cx - 9, baseY - 19, cx + 9, baseY - 18, p);  // bottom edge
-                c.drawRect(cx - 9, baseY - 34, cx - 8, baseY - 18, p);  // left edge
-                c.drawRect(cx + 8, baseY - 34, cx + 9, baseY - 18, p);  // right edge
+                c.drawRect(cx - 18, baseY - 68, cx + 18, baseY - 66, p);  // top edge
+                c.drawRect(cx - 18, baseY - 38, cx + 18, baseY - 36, p);  // bottom edge
+                c.drawRect(cx - 18, baseY - 68, cx - 16, baseY - 36, p);  // left edge
+                c.drawRect(cx + 16, baseY - 68, cx + 18, baseY - 36, p);  // right edge
                 // Shoulder pads
-                c.drawRect(cx - 13, baseY - 34, cx - 8, baseY - 30, p);
-                c.drawRect(cx + 8, baseY - 34, cx + 13, baseY - 30, p);
+                c.drawRect(cx - 26, baseY - 68, cx - 16, baseY - 60, p);
+                c.drawRect(cx + 16, baseY - 68, cx + 26, baseY - 60, p);
                 break;
 
             case EquipmentSlot.SLOT_GAUNTLETS:
                 // Gloves/gauntlets at hand positions
                 p.setColor(alphaColor);
-                c.drawRect(cx - 13, baseY - 22, cx - 8, baseY - 17, p);  // left
-                c.drawRect(cx + 8, baseY - 22, cx + 13, baseY - 17, p);  // right
+                c.drawRect(cx - 26, baseY - 44, cx - 16, baseY - 34, p);  // left
+                c.drawRect(cx + 16, baseY - 44, cx + 26, baseY - 34, p);  // right
                 p.setColor(borderColor);
-                c.drawRect(cx - 13, baseY - 22, cx - 8, baseY - 21, p);  // left cuff
-                c.drawRect(cx + 8, baseY - 22, cx + 13, baseY - 21, p);  // right cuff
+                c.drawRect(cx - 26, baseY - 44, cx - 16, baseY - 42, p);  // left cuff
+                c.drawRect(cx + 16, baseY - 44, cx + 26, baseY - 42, p);  // right cuff
                 break;
 
             case EquipmentSlot.SLOT_PANTS:
                 // Pants on leg area
                 p.setColor(alphaColor);
-                c.drawRect(cx - 5, baseY - 18, cx - 1, baseY - 4 + legSwing, p);
-                c.drawRect(cx + 1, baseY - 18, cx + 5, baseY - 4 - legSwing, p);
+                c.drawRect(cx - 10, baseY - 36, cx - 2, baseY - 8 + legSwing, p);
+                c.drawRect(cx + 2, baseY - 36, cx + 10, baseY - 8 - legSwing, p);
                 p.setColor(borderColor);
-                c.drawRect(cx - 5, baseY - 18, cx + 5, baseY - 17, p);  // waistband
+                c.drawRect(cx - 10, baseY - 36, cx + 10, baseY - 34, p);  // waistband
                 break;
 
             case EquipmentSlot.SLOT_LEGGINGS:
                 // Armored leggings (thicker than pants, with border)
                 p.setColor(alphaColor);
-                c.drawRect(cx - 6, baseY - 18, cx - 1, baseY - 4 + legSwing, p);
-                c.drawRect(cx + 1, baseY - 18, cx + 6, baseY - 4 - legSwing, p);
+                c.drawRect(cx - 12, baseY - 36, cx - 2, baseY - 8 + legSwing, p);
+                c.drawRect(cx + 2, baseY - 36, cx + 12, baseY - 8 - legSwing, p);
                 p.setColor(borderColor);
                 // Knee guards
-                c.drawRect(cx - 6, baseY - 14, cx, baseY - 12, p);
-                c.drawRect(cx, baseY - 14, cx + 6, baseY - 12, p);
+                c.drawRect(cx - 12, baseY - 28, cx, baseY - 24, p);
+                c.drawRect(cx, baseY - 28, cx + 12, baseY - 24, p);
                 break;
 
             case EquipmentSlot.SLOT_SHOES:
                 // Shoes at feet
                 p.setColor(alphaColor);
-                c.drawRect(cx - 6, baseY - 3 + legSwing, cx, baseY, p);
-                c.drawRect(cx, baseY - 3 - legSwing, cx + 6, baseY, p);
+                c.drawRect(cx - 12, baseY - 6 + legSwing, cx, baseY, p);
+                c.drawRect(cx, baseY - 6 - legSwing, cx + 12, baseY, p);
                 break;
 
             case EquipmentSlot.SLOT_BOOTS:
                 // Tall boots (higher than shoes)
                 p.setColor(alphaColor);
-                c.drawRect(cx - 6, baseY - 6 + legSwing, cx, baseY, p);
-                c.drawRect(cx, baseY - 6 - legSwing, cx + 6, baseY, p);
+                c.drawRect(cx - 12, baseY - 12 + legSwing, cx, baseY, p);
+                c.drawRect(cx, baseY - 12 - legSwing, cx + 12, baseY, p);
                 p.setColor(borderColor);
                 // Boot tops
-                c.drawRect(cx - 6, baseY - 6 + legSwing, cx, baseY - 5 + legSwing, p);
-                c.drawRect(cx, baseY - 6 - legSwing, cx + 6, baseY - 5 - legSwing, p);
+                c.drawRect(cx - 12, baseY - 12 + legSwing, cx, baseY - 10 + legSwing, p);
+                c.drawRect(cx, baseY - 12 - legSwing, cx + 12, baseY - 10 - legSwing, p);
                 break;
 
             case EquipmentSlot.SLOT_NECKLACE:
                 // Necklace at neck area
                 p.setColor(alphaColor);
-                c.drawRect(cx - 4, baseY - 36, cx + 4, baseY - 34, p);  // chain
+                c.drawRect(cx - 8, baseY - 72, cx + 8, baseY - 68, p);  // chain
                 // Pendant
                 p.setColor(borderColor);
-                c.drawRect(cx - 2, baseY - 34, cx + 2, baseY - 32, p);
+                c.drawRect(cx - 4, baseY - 68, cx + 4, baseY - 64, p);
                 break;
 
             case EquipmentSlot.SLOT_RINGS_GLOVES:
                 // Small accent dots at wrist/finger positions
                 p.setColor(alphaColor);
-                c.drawRect(cx - 11, baseY - 19, cx - 9, baseY - 17, p);  // left ring
-                c.drawRect(cx + 9, baseY - 19, cx + 11, baseY - 17, p);  // right ring
+                c.drawRect(cx - 22, baseY - 38, cx - 18, baseY - 34, p);  // left ring
+                c.drawRect(cx + 18, baseY - 38, cx + 22, baseY - 34, p);  // right ring
                 // Sparkle accent
                 p.setColor(Color.argb(180, 255, 255, 200));
-                c.drawRect(cx - 10, baseY - 18, cx - 10, baseY - 18, p);
-                c.drawRect(cx + 10, baseY - 18, cx + 10, baseY - 18, p);
+                c.drawRect(cx - 20, baseY - 36, cx - 20, baseY - 36, p);
+                c.drawRect(cx + 20, baseY - 36, cx + 20, baseY - 36, p);
                 break;
         }
 
