@@ -65,6 +65,10 @@ public class SaveData {
     // Profile picture (Base64-encoded JPEG, max 128x128)
     public String profilePicBase64 = "";
 
+    // Character preview cosmetics
+    public int selectedAvatarIndex = 0;  // 0 = Knight, 1 = Mage, 2 = Rogue
+    public Map<String, String> equippedCosmetics = new HashMap<>();  // slot_name → item_registry_id
+
     public static class VaultItem {
         public String itemId;
         public int stackCount;

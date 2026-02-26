@@ -118,7 +118,64 @@ public class CosmeticsPopup {
 
         root.addView(scrollView);
 
-        // Divider before clothing section
+        // Divider before character preview section
+        root.addView(createDivider(context, 16, 16));
+
+        // --- Character Preview Section ---
+        TextView charPreviewTitle = new TextView(context);
+        charPreviewTitle.setText("Character Preview");
+        charPreviewTitle.setTextColor(Color.parseColor("#B8A9D4"));
+        charPreviewTitle.setTextSize(14);
+        charPreviewTitle.setTypeface(null, Typeface.BOLD);
+        charPreviewTitle.setPadding(0, 0, 0, 4);
+        root.addView(charPreviewTitle);
+
+        TextView charPreviewHint = new TextView(context);
+        charPreviewHint.setText("Customize your avatar with equipment from your vault!");
+        charPreviewHint.setTextColor(Color.parseColor("#666666"));
+        charPreviewHint.setTextSize(10);
+        charPreviewHint.setPadding(0, 0, 0, 8);
+        root.addView(charPreviewHint);
+
+        // Preview thumbnail + Customize button row
+        LinearLayout charPreviewRow = new LinearLayout(context);
+        charPreviewRow.setOrientation(LinearLayout.HORIZONTAL);
+        charPreviewRow.setGravity(Gravity.CENTER_VERTICAL);
+        charPreviewRow.setPadding(0, 0, 0, 8);
+
+        // Static preview thumbnail (128x128)
+        android.graphics.Bitmap previewBmp = ClothingPreviewPopup.generateStaticPreview(128);
+        CharPreviewThumbnailView thumbnailView = new CharPreviewThumbnailView(context, previewBmp);
+        int thumbSize = (int) (80 * context.getResources().getDisplayMetrics().density);
+        LinearLayout.LayoutParams thumbParams = new LinearLayout.LayoutParams(thumbSize, thumbSize);
+        thumbParams.gravity = Gravity.CENTER_VERTICAL;
+        thumbnailView.setLayoutParams(thumbParams);
+        charPreviewRow.addView(thumbnailView);
+
+        // Customize button
+        LinearLayout charBtnCol = new LinearLayout(context);
+        charBtnCol.setOrientation(LinearLayout.VERTICAL);
+        charBtnCol.setPadding(16, 0, 0, 0);
+
+        Button customizeBtn = new Button(context);
+        customizeBtn.setText("Customize");
+        customizeBtn.setTextColor(Color.WHITE);
+        customizeBtn.setTextSize(12);
+        customizeBtn.setBackgroundColor(Color.parseColor("#2E6B8B"));
+        customizeBtn.setPadding(24, 8, 24, 8);
+        customizeBtn.setOnClickListener(v -> {
+            dialog.dismiss();
+            ClothingPreviewPopup.show(context, () -> {
+                // Reopen cosmetics popup after customization
+                CosmeticsPopup.show(context, listener);
+            });
+        });
+        charBtnCol.addView(customizeBtn);
+
+        charPreviewRow.addView(charBtnCol);
+        root.addView(charPreviewRow);
+
+        // Divider before profile picture section
         root.addView(createDivider(context, 16, 16));
 
         // --- Profile Picture Section ---
@@ -503,6 +560,48 @@ public class CosmeticsPopup {
                 canvas.drawRect(0, 0, w, h, lockOverlayPaint);
             }
 
+            canvas.drawRect(1, 1, w - 1, h - 1, borderPaint);
+        }
+    }
+
+    /**
+     * Named View subclass for character preview thumbnail.
+     * Displays the composited idle frame upscaled with nearest-neighbor.
+     */
+    private static class CharPreviewThumbnailView extends View {
+        private final Paint paint = new Paint();
+        private final Paint borderPaint = new Paint();
+        private final Bitmap previewBitmap;
+
+        CharPreviewThumbnailView(Context context, Bitmap preview) {
+            super(context);
+            this.previewBitmap = preview;
+            paint.setFilterBitmap(false); // nearest-neighbor
+            paint.setAntiAlias(false);
+            borderPaint.setStyle(Paint.Style.STROKE);
+            borderPaint.setStrokeWidth(2);
+            borderPaint.setColor(Color.parseColor("#B8A9D4"));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int w = getWidth();
+            int h = getHeight();
+
+            // Dark background
+            paint.setColor(Color.parseColor("#12101A"));
+            canvas.drawRect(0, 0, w, h, paint);
+
+            // Draw preview bitmap centered
+            if (previewBitmap != null) {
+                Rect src = new Rect(0, 0, previewBitmap.getWidth(), previewBitmap.getHeight());
+                Rect dst = new Rect(2, 2, w - 2, h - 2);
+                paint.setColor(Color.WHITE);
+                canvas.drawBitmap(previewBitmap, src, dst, paint);
+            }
+
+            // Border
             canvas.drawRect(1, 1, w - 1, h - 1, borderPaint);
         }
     }
