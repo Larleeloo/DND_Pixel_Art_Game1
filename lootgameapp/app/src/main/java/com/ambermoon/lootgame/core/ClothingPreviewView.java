@@ -32,14 +32,11 @@ public class ClothingPreviewView extends View {
     private final Rect srcRect = new Rect();
     private final Rect dstRect = new Rect();
 
-    private final Runnable frameTickRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (animating && showWalking && walkFrames != null && walkFrames.length > 0) {
-                currentFrame = (currentFrame + 1) % walkFrames.length;
-                invalidate();
-                postDelayed(this, AvatarRegistry.FRAME_DELAY_MS);
-            }
+    private final Runnable frameTickRunnable = () -> {
+        if (animating && showWalking && walkFrames != null && walkFrames.length > 0) {
+            currentFrame = (currentFrame + 1) % walkFrames.length;
+            invalidate();
+            scheduleNextFrame();
         }
     };
 
@@ -87,13 +84,17 @@ public class ClothingPreviewView extends View {
     private void startAnimation() {
         if (!animating) {
             animating = true;
-            postDelayed(frameTickRunnable, AvatarRegistry.FRAME_DELAY_MS);
+            scheduleNextFrame();
         }
     }
 
     private void stopAnimation() {
         animating = false;
         removeCallbacks(frameTickRunnable);
+    }
+
+    private void scheduleNextFrame() {
+        postDelayed(frameTickRunnable, AvatarRegistry.FRAME_DELAY_MS);
     }
 
     @Override
