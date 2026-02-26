@@ -164,10 +164,10 @@ public class CosmeticsPopup {
         customizeBtn.setBackgroundColor(Color.parseColor("#2E6B8B"));
         customizeBtn.setPadding(24, 8, 24, 8);
         customizeBtn.setOnClickListener(v -> {
-            dialog.dismiss();
             ClothingPreviewPopup.show(context, () -> {
-                // Reopen cosmetics popup after customization
-                CosmeticsPopup.show(context, listener);
+                // Refresh the thumbnail after customization changes
+                android.graphics.Bitmap updatedBmp = ClothingPreviewPopup.generateStaticPreview(128);
+                thumbnailView.setBitmap(updatedBmp);
             });
         });
         charBtnCol.addView(customizeBtn);
@@ -571,7 +571,7 @@ public class CosmeticsPopup {
     private static class CharPreviewThumbnailView extends View {
         private final Paint paint = new Paint();
         private final Paint borderPaint = new Paint();
-        private final Bitmap previewBitmap;
+        private Bitmap previewBitmap;
 
         CharPreviewThumbnailView(Context context, Bitmap preview) {
             super(context);
@@ -581,6 +581,11 @@ public class CosmeticsPopup {
             borderPaint.setStyle(Paint.Style.STROKE);
             borderPaint.setStrokeWidth(2);
             borderPaint.setColor(Color.parseColor("#B8A9D4"));
+        }
+
+        void setBitmap(Bitmap bmp) {
+            this.previewBitmap = bmp;
+            invalidate();
         }
 
         @Override
