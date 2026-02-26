@@ -99,15 +99,19 @@ public class CosmeticsPopup {
         bgHint.setPadding(0, 0, 0, 12);
         root.addView(bgHint);
 
-        // Scrollable grid
+        // Single scrollable area for all sections
         ScrollView scrollView = new ScrollView(context);
         LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f);
         scrollView.setLayoutParams(scrollParams);
 
+        LinearLayout scrollContent = new LinearLayout(context);
+        scrollContent.setOrientation(LinearLayout.VERTICAL);
+        scrollView.addView(scrollContent);
+
+        // --- Backgrounds Grid ---
         LinearLayout gridContainer = new LinearLayout(context);
         gridContainer.setOrientation(LinearLayout.VERTICAL);
-        scrollView.addView(gridContainer);
 
         String selectedId = "none";
         if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
@@ -116,10 +120,10 @@ public class CosmeticsPopup {
 
         buildBackgroundGrid(context, gridContainer, allBackgrounds, selectedId, unlockedIds, dialog, listener);
 
-        root.addView(scrollView);
+        scrollContent.addView(gridContainer);
 
         // Divider before character preview section
-        root.addView(createDivider(context, 16, 16));
+        scrollContent.addView(createDivider(context, 16, 16));
 
         // --- Character Preview Section ---
         TextView charPreviewTitle = new TextView(context);
@@ -128,14 +132,14 @@ public class CosmeticsPopup {
         charPreviewTitle.setTextSize(14);
         charPreviewTitle.setTypeface(null, Typeface.BOLD);
         charPreviewTitle.setPadding(0, 0, 0, 4);
-        root.addView(charPreviewTitle);
+        scrollContent.addView(charPreviewTitle);
 
         TextView charPreviewHint = new TextView(context);
         charPreviewHint.setText("Customize your avatar with equipment from your vault!");
         charPreviewHint.setTextColor(Color.parseColor("#666666"));
         charPreviewHint.setTextSize(10);
         charPreviewHint.setPadding(0, 0, 0, 8);
-        root.addView(charPreviewHint);
+        scrollContent.addView(charPreviewHint);
 
         // Preview thumbnail + Customize button row
         LinearLayout charPreviewRow = new LinearLayout(context);
@@ -173,10 +177,10 @@ public class CosmeticsPopup {
         charBtnCol.addView(customizeBtn);
 
         charPreviewRow.addView(charBtnCol);
-        root.addView(charPreviewRow);
+        scrollContent.addView(charPreviewRow);
 
         // Divider before profile picture section
-        root.addView(createDivider(context, 16, 16));
+        scrollContent.addView(createDivider(context, 16, 16));
 
         // --- Profile Picture Section ---
         TextView profileSectionTitle = new TextView(context);
@@ -185,14 +189,14 @@ public class CosmeticsPopup {
         profileSectionTitle.setTextSize(14);
         profileSectionTitle.setTypeface(null, Typeface.BOLD);
         profileSectionTitle.setPadding(0, 0, 0, 4);
-        root.addView(profileSectionTitle);
+        scrollContent.addView(profileSectionTitle);
 
         TextView profileHint = new TextView(context);
         profileHint.setText("Shows next to your name in the shop");
         profileHint.setTextColor(Color.parseColor("#666666"));
         profileHint.setTextSize(10);
         profileHint.setPadding(0, 0, 0, 8);
-        root.addView(profileHint);
+        scrollContent.addView(profileHint);
 
         // Current profile picture preview + buttons row
         LinearLayout profileRow = new LinearLayout(context);
@@ -253,7 +257,9 @@ public class CosmeticsPopup {
         }
 
         profileRow.addView(btnCol);
-        root.addView(profileRow);
+        scrollContent.addView(profileRow);
+
+        root.addView(scrollView);
 
         // Close button
         Button closeBtn = new Button(context);
