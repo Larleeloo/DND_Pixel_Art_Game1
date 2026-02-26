@@ -80,25 +80,6 @@ public class CosmeticsPopup {
         unlockCount.setPadding(0, 0, 0, 16);
         root.addView(unlockCount);
 
-        // Divider
-        root.addView(createDivider(context, 0, 16));
-
-        // --- Backgrounds Section ---
-        TextView bgSectionTitle = new TextView(context);
-        bgSectionTitle.setText("Backgrounds");
-        bgSectionTitle.setTextColor(Color.parseColor("#B8A9D4"));
-        bgSectionTitle.setTextSize(14);
-        bgSectionTitle.setTypeface(null, Typeface.BOLD);
-        bgSectionTitle.setPadding(0, 0, 0, 4);
-        root.addView(bgSectionTitle);
-
-        TextView bgHint = new TextView(context);
-        bgHint.setText("Open chests to unlock new backgrounds!");
-        bgHint.setTextColor(Color.parseColor("#666666"));
-        bgHint.setTextSize(10);
-        bgHint.setPadding(0, 0, 0, 12);
-        root.addView(bgHint);
-
         // Single scrollable area for all sections
         ScrollView scrollView = new ScrollView(context);
         LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
@@ -108,22 +89,6 @@ public class CosmeticsPopup {
         LinearLayout scrollContent = new LinearLayout(context);
         scrollContent.setOrientation(LinearLayout.VERTICAL);
         scrollView.addView(scrollContent);
-
-        // --- Backgrounds Grid ---
-        LinearLayout gridContainer = new LinearLayout(context);
-        gridContainer.setOrientation(LinearLayout.VERTICAL);
-
-        String selectedId = "none";
-        if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
-            selectedId = SaveManager.getInstance().getData().selectedBackgroundId;
-        }
-
-        buildBackgroundGrid(context, gridContainer, allBackgrounds, selectedId, unlockedIds, dialog, listener);
-
-        scrollContent.addView(gridContainer);
-
-        // Divider before character preview section
-        scrollContent.addView(createDivider(context, 16, 16));
 
         // --- Character Preview Section ---
         TextView charPreviewTitle = new TextView(context);
@@ -180,7 +145,7 @@ public class CosmeticsPopup {
         scrollContent.addView(charPreviewRow);
 
         // Divider before profile picture section
-        scrollContent.addView(createDivider(context, 16, 16));
+        scrollContent.addView(createDivider(context, 8, 16));
 
         // --- Profile Picture Section ---
         TextView profileSectionTitle = new TextView(context);
@@ -202,7 +167,7 @@ public class CosmeticsPopup {
         LinearLayout profileRow = new LinearLayout(context);
         profileRow.setOrientation(LinearLayout.HORIZONTAL);
         profileRow.setGravity(Gravity.CENTER);
-        profileRow.setPadding(0, 0, 0, 16);
+        profileRow.setPadding(0, 0, 0, 8);
 
         // Profile picture preview (circular)
         View profilePreview = createProfilePicPreview(context);
@@ -258,6 +223,38 @@ public class CosmeticsPopup {
 
         profileRow.addView(btnCol);
         scrollContent.addView(profileRow);
+
+        // Divider before backgrounds section
+        scrollContent.addView(createDivider(context, 8, 16));
+
+        // --- Backgrounds Section ---
+        TextView bgSectionTitle = new TextView(context);
+        bgSectionTitle.setText("Backgrounds");
+        bgSectionTitle.setTextColor(Color.parseColor("#B8A9D4"));
+        bgSectionTitle.setTextSize(14);
+        bgSectionTitle.setTypeface(null, Typeface.BOLD);
+        bgSectionTitle.setPadding(0, 0, 0, 4);
+        scrollContent.addView(bgSectionTitle);
+
+        TextView bgHint = new TextView(context);
+        bgHint.setText("Open chests to unlock new backgrounds!");
+        bgHint.setTextColor(Color.parseColor("#666666"));
+        bgHint.setTextSize(10);
+        bgHint.setPadding(0, 0, 0, 12);
+        scrollContent.addView(bgHint);
+
+        // --- Backgrounds Grid ---
+        LinearLayout gridContainer = new LinearLayout(context);
+        gridContainer.setOrientation(LinearLayout.VERTICAL);
+
+        String selectedId = "none";
+        if (SaveManager.getInstance() != null && SaveManager.getInstance().getData() != null) {
+            selectedId = SaveManager.getInstance().getData().selectedBackgroundId;
+        }
+
+        buildBackgroundGrid(context, gridContainer, allBackgrounds, selectedId, unlockedIds, dialog, listener);
+
+        scrollContent.addView(gridContainer);
 
         root.addView(scrollView);
 
