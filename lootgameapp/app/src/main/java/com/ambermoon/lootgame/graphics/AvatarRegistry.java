@@ -4,6 +4,9 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+
+import java.util.List;
 
 /**
  * Defines 3 selectable base avatars for the clothing preview system.
@@ -73,14 +76,82 @@ public class AvatarRegistry {
         return idleFramesCache[avatarIndex];
     }
 
+    /** Asset path prefix for avatar sprite GIFs. */
+    private static final String SPRITES_PATH = "sprites/avatars/";
+
+    /** Folder names matching AVATAR_NAMES, lowercased. */
+    private static final String[] AVATAR_FOLDERS = { "knight", "mage", "rogue" };
+
     private static void ensureGenerated() {
         if (walkFramesCache != null) return;
         walkFramesCache = new Bitmap[AVATAR_COUNT][];
         idleFramesCache = new Bitmap[AVATAR_COUNT];
         for (int i = 0; i < AVATAR_COUNT; i++) {
-            walkFramesCache[i] = generateWalkFrames(i);
-            idleFramesCache[i] = generateIdleFrame(i);
+            // Try loading from GIF assets first
+            walkFramesCache[i] = loadWalkFromAsset(i);
+            idleFramesCache[i] = loadIdleFromAsset(i);
+
+            // Fall back to procedural generation
+            if (walkFramesCache[i] == null) {
+                walkFramesCache[i] = generateWalkFrames(i);
+            }
+            if (idleFramesCache[i] == null) {
+                idleFramesCache[i] = generateIdleFrame(i);
+            }
         }
+    }
+
+    /**
+     * Attempts to load walk frames from sprites/avatars/<name>/walk.gif.
+     * Returns null if the asset doesn't exist or can't be decoded.
+     */
+    private static Bitmap[] loadWalkFromAsset(int avatarIndex) {
+        String path = SPRITES_PATH + AVATAR_FOLDERS[avatarIndex] + "/walk.gif";
+        AssetLoader.ImageAsset asset = AssetLoader.load(path);
+        if (asset == null || asset.frames == null || asset.frames.size() < FRAME_COUNT) return null;
+
+        Bitmap[] frames = new Bitmap[FRAME_COUNT];
+        for (int f = 0; f < FRAME_COUNT; f++) {
+            frames[f] = ensureSpriteSize(asset.frames.get(f));
+        }
+        return frames;
+    }
+
+    /**
+     * Attempts to load idle frame from sprites/avatars/<name>/idle.gif.
+     * Returns null if the asset doesn't exist or can't be decoded.
+     */
+    private static Bitmap loadIdleFromAsset(int avatarIndex) {
+        String path = SPRITES_PATH + AVATAR_FOLDERS[avatarIndex] + "/idle.gif";
+        AssetLoader.ImageAsset asset = AssetLoader.load(path);
+        if (asset == null || asset.bitmap == null) return null;
+        return ensureSpriteSize(asset.bitmap);
+    }
+
+    /**
+     * Ensures a loaded bitmap is exactly SPRITE_SIZE x SPRITE_SIZE.
+     * Rescales with nearest-neighbor if needed, preserving pixel art crispness.
+     */
+    private static Bitmap ensureSpriteSize(Bitmap src) {
+        if (src == null) return null;
+        if (src.getWidth() == SPRITE_SIZE && src.getHeight() == SPRITE_SIZE) return src;
+        Bitmap scaled = Bitmap.createBitmap(SPRITE_SIZE, SPRITE_SIZE, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(scaled);
+        Paint p = new Paint();
+        p.setFilterBitmap(false);
+        p.setAntiAlias(false);
+        c.drawBitmap(src, new Rect(0, 0, src.getWidth(), src.getHeight()),
+                     new Rect(0, 0, SPRITE_SIZE, SPRITE_SIZE), p);
+        return scaled;
+    }
+
+    /**
+     * Clears the frame cache so that assets are re-loaded on next access.
+     * Call this after replacing GIF assets at runtime.
+     */
+    public static void clearCache() {
+        walkFramesCache = null;
+        idleFramesCache = null;
     }
 
     /**
