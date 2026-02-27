@@ -301,9 +301,12 @@ public class ClothingPreviewPopup {
             Item item = ItemRegistry.getTemplate(itemId);
             if (item == null) continue;
 
-            // Generate placeholder overlay colored by rarity
-            int color = SpriteLayerCompositor.getColorForRarity(item.getRarity().ordinal());
-            Bitmap[] allFrames = SpriteLayerCompositor.generatePlaceholderEquipment(slot, color);
+            // Try loading GIF asset overlay, fall back to placeholder
+            Bitmap[] allFrames = SpriteLayerCompositor.loadEquipmentFromAsset(slot, itemId);
+            if (allFrames == null) {
+                int color = SpriteLayerCompositor.getColorForRarity(item.getRarity().ordinal());
+                allFrames = SpriteLayerCompositor.generatePlaceholderEquipment(slot, color);
+            }
 
             slotWalkFrames.put(slot, SpriteLayerCompositor.getWalkFrames(allFrames));
             slotIdleFrames.put(slot, SpriteLayerCompositor.getIdleFrame(allFrames));
@@ -601,8 +604,12 @@ public class ClothingPreviewPopup {
             Item item = ItemRegistry.getTemplate(itemId);
             if (item == null) continue;
 
-            int color = SpriteLayerCompositor.getColorForRarity(item.getRarity().ordinal());
-            Bitmap[] allFrames = SpriteLayerCompositor.generatePlaceholderEquipment(slot, color);
+            // Try loading GIF asset overlay, fall back to placeholder
+            Bitmap[] allFrames = SpriteLayerCompositor.loadEquipmentFromAsset(slot, itemId);
+            if (allFrames == null) {
+                int color = SpriteLayerCompositor.getColorForRarity(item.getRarity().ordinal());
+                allFrames = SpriteLayerCompositor.generatePlaceholderEquipment(slot, color);
+            }
             slotIdleFrames.put(slot, SpriteLayerCompositor.getIdleFrame(allFrames));
         }
 

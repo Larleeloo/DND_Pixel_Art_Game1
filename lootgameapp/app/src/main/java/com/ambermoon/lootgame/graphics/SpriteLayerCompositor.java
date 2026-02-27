@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -95,6 +96,70 @@ public class SpriteLayerCompositor {
      */
     public static Bitmap compositeIdle(Bitmap baseIdle, Map<Integer, Bitmap> slotIdleFrames) {
         return compositeFrame(baseIdle, slotIdleFrames);
+    }
+
+    // ==================== GIF Asset Loading ====================
+
+    /** Asset path prefix for equipment sprite GIFs. */
+    private static final String EQUIPMENT_PATH = "sprites/equipment/";
+
+    /**
+     * Attempts to load equipment overlay sprites from GIF assets.
+     * Looks for: sprites/equipment/<slot_name>/<item_id>_walk.gif and _idle.gif.
+     * Returns 16 bitmaps [0-14]=walk, [15]=idle, or null if assets not found.
+     *
+     * @param slot Equipment slot constant
+     * @param itemId Item registry ID (e.g., "black_hat")
+     * @return Array of 16 Bitmaps, or null if GIF assets are missing
+     */
+    public static Bitmap[] loadEquipmentFromAsset(int slot, String itemId) {
+        if (itemId == null || itemId.isEmpty()) return null;
+        String slotName = EquipmentSlot.getSlotName(slot);
+        if (slotName == null) return null;
+
+        String walkPath = EQUIPMENT_PATH + slotName + "/" + itemId + "_walk.gif";
+        String idlePath = EQUIPMENT_PATH + slotName + "/" + itemId + "_idle.gif";
+
+        AssetLoader.ImageAsset walkAsset = AssetLoader.load(walkPath);
+        AssetLoader.ImageAsset idleAsset = AssetLoader.load(idlePath);
+
+        // Need at least the walk GIF with enough frames
+        if (walkAsset == null || walkAsset.frames == null || walkAsset.frames.size() < FRAME_COUNT) {
+            return null;
+        }
+
+        Bitmap[] result = new Bitmap[FRAME_COUNT + 1];
+
+        // Walk frames
+        for (int f = 0; f < FRAME_COUNT; f++) {
+            result[f] = ensureSpriteSize(walkAsset.frames.get(f));
+        }
+
+        // Idle frame: use dedicated idle asset, or fall back to first walk frame
+        if (idleAsset != null && idleAsset.bitmap != null) {
+            result[FRAME_COUNT] = ensureSpriteSize(idleAsset.bitmap);
+        } else {
+            result[FRAME_COUNT] = ensureSpriteSize(walkAsset.frames.get(0));
+        }
+
+        return result;
+    }
+
+    /**
+     * Ensures a loaded bitmap is exactly SIZE x SIZE.
+     * Rescales with nearest-neighbor if needed.
+     */
+    private static Bitmap ensureSpriteSize(Bitmap src) {
+        if (src == null) return null;
+        if (src.getWidth() == SIZE && src.getHeight() == SIZE) return src;
+        Bitmap scaled = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(scaled);
+        Paint p = new Paint();
+        p.setFilterBitmap(false);
+        p.setAntiAlias(false);
+        c.drawBitmap(src, new Rect(0, 0, src.getWidth(), src.getHeight()),
+                     new Rect(0, 0, SIZE, SIZE), p);
+        return scaled;
     }
 
     /**

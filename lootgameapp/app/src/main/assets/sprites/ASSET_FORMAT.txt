@@ -1,0 +1,39 @@
+Sprite Asset Format Guide
+=========================
+
+All sprites are 128x128 pixels, rendered with nearest-neighbor scaling.
+
+AVATARS (sprites/avatars/<name>/)
+---------------------------------
+Each avatar folder (knight, mage, rogue) expects:
+
+  walk.gif    - 15-frame walking animation GIF (128x128 per frame, 100ms/frame)
+  idle.gif    - Single-frame idle pose GIF (128x128)
+
+If a GIF is missing, the system falls back to procedurally generated placeholders.
+
+EQUIPMENT (sprites/equipment/<slot>/)
+--------------------------------------
+Each equipment slot folder expects item-specific GIF overlays named by item registry ID:
+
+  <item_id>_walk.gif   - 15-frame walking overlay GIF (128x128, transparent background)
+  <item_id>_idle.gif   - Single-frame idle overlay GIF (128x128, transparent background)
+
+Example for a "black_hat" item in the headwear slot:
+  sprites/equipment/headwear/black_hat_walk.gif
+  sprites/equipment/headwear/black_hat_idle.gif
+
+If item-specific GIFs are missing, the system falls back to colored placeholder overlays.
+
+Equipment overlays must use transparent backgrounds (GIF89a transparency).
+Layers are composited bottom-to-top in this order:
+  1. pants
+  2. shoes
+  3. boots
+  4. shirt
+  5. armor
+  6. leggings
+  7. gauntlets
+  8. necklace
+  9. headwear
+  10. rings_gloves
